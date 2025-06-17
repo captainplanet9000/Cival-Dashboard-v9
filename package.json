@@ -119,7 +119,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.8",
     "eslint-plugin-react": "^7.33.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
     "jsdom": "^23.0.0",
     "playwright": "^1.40.0",
     "postcss": "^8",
