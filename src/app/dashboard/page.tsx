@@ -1,10 +1,10 @@
 /**
  * Main Dashboard Page
- * Modern trading dashboard with emerald/violet/amber design
+ * V4 Modern trading dashboard with emerald/violet/amber design
  */
 
-import { ModernTradingDashboard } from '@/components/dashboard/ModernTradingDashboard'
+import ModernDashboardV4 from '@/components/dashboard/ModernDashboardV4'
 
 export default function DashboardPage() {
-  return <ModernTradingDashboard />
+  return <ModernDashboardV4 />
 }

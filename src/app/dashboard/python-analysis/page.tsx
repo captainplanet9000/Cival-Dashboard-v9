@@ -376,10 +376,10 @@ print("Starting comprehensive strategy analysis...")
                 <div className="text-sm font-medium mb-2">Console Output</div>
                 <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm h-32 overflow-y-auto">
                   <div>Python 3.11.0 | Analysis Environment Ready</div>
-                  <div>>>> Loaded libraries: pandas, numpy, matplotlib, scipy, yfinance</div>
-                  <div>>>> Trading data connection: ✓ Active</div>
-                  <div>>>> Agent performance data: ✓ Available</div>
-                  <div className="text-yellow-400">>>> Ready for analysis...</div>
+                  <div>&gt;&gt;&gt; Loaded libraries: pandas, numpy, matplotlib, scipy, yfinance</div>
+                  <div>&gt;&gt;&gt; Trading data connection: ✓ Active</div>
+                  <div>&gt;&gt;&gt; Agent performance data: ✓ Available</div>
+                  <div className="text-yellow-400">&gt;&gt;&gt; Ready for analysis...</div>
                 </div>
               </div>
             </CardContent>
