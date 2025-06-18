@@ -74,6 +74,11 @@ const navigation = [
     icon: Bot,
   },
   {
+    name: "Expert Agents",
+    href: "/dashboard/agents",
+    icon: Brain,
+  },
+  {
     name: "Analytics",
     href: "/dashboard/analytics",
     icon: PieChart,

@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {   Bot,  Plus,  Settings,  MessageSquare,  Brain,  Network,  Cloud,  Zap,  Users,  Database,  Activity,  CheckCircle2,  AlertCircle,  Clock,  Trash2,  Edit,  Copy,  Play,  Pause,  RotateCcw,  Shield,  Code,  Globe,  Cpu,  HardDrive} from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel';
 
 // Agent types and configurations
 const agentTemplates = [
@@ -229,7 +231,7 @@ export default function AgentsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Agent Management</h1>
           <p className="text-muted-foreground">
-            Create, manage, and coordinate AI agents with Google SDK integration
+            Manage specialized expert agents and general AI trading agents
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -266,7 +268,20 @@ export default function AgentsPage() {
         </CardContent>
       </Card>
 
-      {/* Agent Creation Modal */}
+      {/* Agent Management Tabs */}
+      <Tabs defaultValue="expert-agents" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="expert-agents">Expert Agents</TabsTrigger>
+          <TabsTrigger value="general-agents">General Agents</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="expert-agents" className="mt-6">
+          <ExpertAgentsPanel />
+        </TabsContent>
+
+        <TabsContent value="general-agents" className="mt-6">
+          <div className="space-y-6">
+            {/* Agent Creation Modal */}
       {showCreateAgent && (
         <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/50">
           <CardHeader>
@@ -493,6 +508,9 @@ export default function AgentsPage() {
           </div>
         </CardContent>
       </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
