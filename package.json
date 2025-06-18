@@ -7,7 +7,7 @@
     "dev": "next dev --turbopack --port 3000",
     "dev:safe": "next dev --port 8080",
     "build": "next build",
-    "start": "next start --port $PORT",
+    "start": "node server.js",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
