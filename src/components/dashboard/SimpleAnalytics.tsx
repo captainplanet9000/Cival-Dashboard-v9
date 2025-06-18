@@ -11,7 +11,7 @@ export default function SimpleAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Return</CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-600" />
+            <TrendingUp className="h-4 w-4 text-emerald-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$156,247.82</div>
@@ -22,7 +22,7 @@ export default function SimpleAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
-            <Target className="h-4 w-4 text-violet-600" />
+            <Target className="h-4 w-4 text-violet-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">78.4%</div>
@@ -33,7 +33,7 @@ export default function SimpleAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Strategies</CardTitle>
-            <Activity className="h-4 w-4 text-amber-600" />
+            <Activity className="h-4 w-4 text-amber-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">12</div>

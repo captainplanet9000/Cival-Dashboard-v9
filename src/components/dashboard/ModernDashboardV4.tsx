@@ -211,7 +211,7 @@ export function ModernDashboardV4() {
                   <Menu className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 via-violet-600 to-amber-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold text-gray-900">
                     Cival Dashboard v4
                   </h1>
                   <p className="text-sm text-gray-600">Advanced AI Trading Platform</p>
@@ -219,7 +219,7 @@ export function ModernDashboardV4() {
               </div>
               
               <div className="flex items-center gap-3">
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-900 border-emerald-200">
                   Live
                 </Badge>
                 <Button variant="outline" size="sm" className="hidden sm:flex">
@@ -241,7 +241,7 @@ export function ModernDashboardV4() {
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+                    className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900"
                   >
                     {tab.icon}
                     <span className="hidden sm:inline">{tab.label}</span>
@@ -479,7 +479,7 @@ function AgentsTab() {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800"
+                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-900"
               >
                 {tab.label}
               </TabsTrigger>
@@ -524,7 +524,7 @@ function FarmsTab() {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900"
               >
                 {tab.label}
               </TabsTrigger>
@@ -569,7 +569,7 @@ function GoalsTab() {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800"
+                className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-900"
               >
                 {tab.label}
               </TabsTrigger>
@@ -619,7 +619,7 @@ function AdvancedTab() {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-800"
+                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
               >
                 {tab.label}
               </TabsTrigger>
@@ -630,7 +630,7 @@ function AdvancedTab() {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-800"
+                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
               >
                 {tab.label}
               </TabsTrigger>
@@ -641,7 +641,7 @@ function AdvancedTab() {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-800"
+                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
               >
                 {tab.label}
               </TabsTrigger>
@@ -666,7 +666,7 @@ function LoadingScreen() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-violet-50 to-amber-50 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4"></div>
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-emerald-600 via-violet-600 to-amber-600 bg-clip-text text-transparent">
+        <h2 className="text-xl font-semibold text-gray-900">
           Loading Dashboard
         </h2>
         <p className="text-gray-600">Initializing trading systems...</p>
@@ -680,7 +680,7 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b border-emerald-200/50">
-        <h2 className="text-lg font-semibold bg-gradient-to-r from-emerald-600 to-violet-600 bg-clip-text text-transparent">
+        <h2 className="text-lg font-semibold text-gray-900">
           Cival Dashboard
         </h2>
         <Button variant="ghost" size="sm" onClick={onClose}>
@@ -691,10 +691,10 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
       <nav className="flex-1 p-4">
         <div className="space-y-2">
           <SidebarLink icon={<BarChart3 className="h-4 w-4" />} label="Overview" />
-          <SidebarLink icon={<PieChart className="h-4 w-4" />} label="Portfolio" />
-          <SidebarLink icon={<Bot className="h-4 w-4" />} label="Expert Agents" />
-          <SidebarLink icon={<Target className="h-4 w-4" />} label="Trading Farms" />
-          <SidebarLink icon={<Activity className="h-4 w-4" />} label="Analytics" />
+          <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
+          <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
+          <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
+          <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
         </div>
       </nav>
     </div>
@@ -706,7 +706,7 @@ function DesktopSidebar() {
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-emerald-200/50">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-600 via-violet-600 to-amber-600 bg-clip-text text-transparent">
+        <h2 className="text-xl font-bold text-gray-900">
           Cival Dashboard
         </h2>
         <p className="text-sm text-gray-600 mt-1">AI Trading Platform</p>
@@ -715,20 +715,20 @@ function DesktopSidebar() {
       <nav className="flex-1 p-4">
         <div className="space-y-2">
           <SidebarLink icon={<BarChart3 className="h-4 w-4" />} label="Overview" />
-          <SidebarLink icon={<PieChart className="h-4 w-4" />} label="Portfolio" />
-          <SidebarLink icon={<Bot className="h-4 w-4" />} label="Expert Agents" />
-          <SidebarLink icon={<Target className="h-4 w-4" />} label="Trading Farms" />
-          <SidebarLink icon={<Activity className="h-4 w-4" />} label="Analytics" />
+          <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
+          <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
+          <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
+          <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
         </div>
       </nav>
       
       <div className="p-4 border-t border-emerald-200/50">
         <div className="bg-emerald-50 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-emerald-800">
+          <div className="flex items-center gap-2 text-emerald-900">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
             <span className="text-sm font-medium">System Online</span>
           </div>
-          <p className="text-xs text-emerald-600 mt-1">All systems operational</p>
+          <p className="text-xs text-emerald-700 mt-1">All systems operational</p>
         </div>
       </div>
     </div>
@@ -738,7 +738,7 @@ function DesktopSidebar() {
 // Sidebar Link Component
 function SidebarLink({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <Button variant="ghost" className="w-full justify-start gap-3 text-gray-700 hover:bg-emerald-50 hover:text-emerald-800">
+    <Button variant="ghost" className="w-full justify-start gap-3 text-gray-700 hover:bg-emerald-50 hover:text-emerald-900">
       {icon}
       {label}
     </Button>
