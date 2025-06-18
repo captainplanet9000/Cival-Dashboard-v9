@@ -40,6 +40,14 @@ const GoalsPage = dynamic(() => import('@/app/dashboard/goals/page'), {
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Goals...</div>
 })
+const DeFiLendingPage = dynamic(() => import('@/app/dashboard/defi-lending/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading DeFi Lending...</div>
+})
+const CalendarPage = dynamic(() => import('@/app/calendar/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Calendar...</div>
+})
 const PythonAnalysisPage = dynamic(() => import('@/app/dashboard/python-analysis/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Python Analysis...</div>
@@ -149,6 +157,18 @@ export function ModernDashboardV4() {
       component: <GoalsTab />
     },
     {
+      id: 'defi',
+      label: 'DeFi Lending',
+      icon: <DollarSign className="h-4 w-4" />,
+      component: <DeFiTab />
+    },
+    {
+      id: 'calendar',
+      label: 'Calendar',
+      icon: <Calendar className="h-4 w-4" />,
+      component: <CalendarTab />
+    },
+    {
       id: 'advanced',
       label: 'Advanced',
       icon: <Settings className="h-4 w-4" />,
@@ -236,7 +256,7 @@ export function ModernDashboardV4() {
           {/* Dashboard Content */}
           <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 bg-white/50 backdrop-blur-sm gap-2">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 bg-white/50 backdrop-blur-sm gap-2">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
@@ -587,7 +607,43 @@ function GoalsTab() {
   )
 }
 
-// Consolidated Advanced Tab with 9 feature sub-tabs
+// DeFi Lending Tab - Moved from Advanced
+function DeFiTab() {
+  return (
+    <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5 text-green-600" />
+          DeFi Lending Platform
+        </CardTitle>
+        <CardDescription>Decentralized finance lending and borrowing operations</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <DeFiLendingPage />
+      </CardContent>
+    </Card>
+  )
+}
+
+// Calendar Tab - Moved from Advanced  
+function CalendarTab() {
+  return (
+    <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-blue-600" />
+          Trading Calendar
+        </CardTitle>
+        <CardDescription>Schedule and track trading events, earnings, and market dates</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <CalendarPage />
+      </CardContent>
+    </Card>
+  )
+}
+
+// Consolidated Advanced Tab with 7 feature sub-tabs (removed DeFi)
 function AdvancedTab() {
   const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
   
@@ -597,7 +653,6 @@ function AdvancedTab() {
     { id: 'knowledge-graph', label: 'Knowledge Graph', component: <div className="p-6 text-center">Knowledge Graph Visualization</div> },
     { id: 'python-analysis', label: 'Python Analysis', component: <div className="p-6"><PythonAnalysisPage /></div> },
     { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
-    { id: 'defi-lending', label: 'DeFi Lending', component: <div className="p-6 text-center">DeFi Lending Platform</div> },
     { id: 'persistence', label: 'Persistence', component: <div className="p-6 text-center">Data Persistence Manager</div> },
     { id: 'portfolio', label: 'Portfolio', component: <PortfolioTab /> },
     { id: 'risk', label: 'Risk Management', component: <div className="p-6 text-center">Risk Management Tools</div> }
@@ -637,8 +692,8 @@ function AdvancedTab() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-gray-50 gap-2">
-              {advancedSubTabs.slice(6, 9).map((tab) => (
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(6, 8).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
@@ -696,6 +751,8 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
           <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
           <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
           <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
+          <SidebarLink icon={<DollarSign className="h-4 w-4" />} label="DeFi Lending" />
+          <SidebarLink icon={<Calendar className="h-4 w-4" />} label="Calendar" />
           <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
         </div>
       </nav>
@@ -720,6 +777,8 @@ function DesktopSidebar() {
           <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
           <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
           <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
+          <SidebarLink icon={<DollarSign className="h-4 w-4" />} label="DeFi Lending" />
+          <SidebarLink icon={<Calendar className="h-4 w-4" />} label="Calendar" />
           <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
         </div>
       </nav>
