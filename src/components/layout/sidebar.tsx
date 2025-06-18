@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {  BarChart3,  TrendingUp,  ShoppingCart,  Shield,  Vault,  Zap,  PieChart,  Home,  Settings,  User,  Bot,  Brain,  Target,} from "lucide-react";
+import {  BarChart3,  TrendingUp,  ShoppingCart,  Shield,  Vault,  Zap,  PieChart,  Home,  Settings,  User,  Bot,  Brain,  Target,  Calendar,} from "lucide-react";
 
 const navigation = [
   {
@@ -77,6 +77,73 @@ const navigation = [
     name: "Analytics",
     href: "/dashboard/analytics",
     icon: PieChart,
+  },
+  {
+    name: "Advanced Analytics",
+    href: "/dashboard/comprehensive-analytics",
+    icon: () => (
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className="h-4 w-4"
+      >
+        <path d="M3 3v18h18"/>
+        <path d="m19 9-5 5-4-4-3 3"/>
+        <circle cx="9" cy="9" r="1"/>
+        <circle cx="20" cy="4" r="1"/>
+      </svg>
+    ),
+  },
+  {
+    name: "Calendar",
+    href: "/calendar",
+    icon: Calendar,
+  },
+  {
+    name: "Persistence",
+    href: "/dashboard/persistence",
+    icon: () => (
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className="h-4 w-4"
+      >
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <circle cx="12" cy="12" r="4"/>
+      </svg>
+    ),
+  },
+  {
+    name: "Knowledge Graph",
+    href: "/dashboard/knowledge-graph",
+    icon: () => (
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className="h-4 w-4"
+      >
+        <circle cx="18" cy="5" r="3"/>
+        <circle cx="6" cy="12" r="3"/>
+        <circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+    ),
   },
 ];
 

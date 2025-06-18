@@ -41,6 +41,16 @@ from models.paper_trading_models import CreatePaperTradeOrderRequest
 from models.execution_models import ExecutionRequest
 from models.hyperliquid_models import HyperliquidAccountSnapshot
 
+# Trading Farm Brain imports
+from services.trading_farm_brain_service import (
+    get_trading_farm_brain_service,
+    StrategyArchiveData,
+    TradeArchiveData,
+    AgentDecisionArchiveData,
+    AgentMemoryData
+)
+from services.farm_data_ingestion_service import get_farm_ingestion_service
+
 # Authentication
 from auth.dependencies import get_current_active_user
 from models.auth_models import AuthenticatedUser
@@ -1293,6 +1303,245 @@ async def real_time_data_broadcaster():
             logger.error(f"Error in real-time data broadcaster: {e}")
             await asyncio.sleep(60)  # Wait longer on error
 
+# ==========================================
+# TRADING FARM BRAIN API ENDPOINTS
+# ==========================================
+
+@app.post("/api/v1/farm/archive/strategy")
+async def archive_strategy(strategy_data: StrategyArchiveData):
+    """Archive a strategy in the trading farm brain"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        strategy_id = await farm_service.archive_strategy(strategy_data)
+        return {"strategy_id": strategy_id, "status": "archived"}
+    except Exception as e:
+        logger.error(f"Failed to archive strategy: {e}")
+        raise HTTPException(status_code=500, detail=f"Archive failed: {str(e)}")
+
+@app.post("/api/v1/farm/archive/trade")
+async def archive_trade(trade_data: TradeArchiveData):
+    """Archive a trade with complete context"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        trade_id = await farm_service.archive_trade(trade_data)
+        return {"trade_id": trade_id, "status": "archived"}
+    except Exception as e:
+        logger.error(f"Failed to archive trade: {e}")
+        raise HTTPException(status_code=500, detail=f"Archive failed: {str(e)}")
+
+@app.post("/api/v1/farm/archive/decision")
+async def archive_agent_decision(decision_data: AgentDecisionArchiveData):
+    """Archive agent decision with complete reasoning"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        decision_id = await farm_service.archive_agent_decision(decision_data)
+        return {"decision_id": decision_id, "status": "archived"}
+    except Exception as e:
+        logger.error(f"Failed to archive decision: {e}")
+        raise HTTPException(status_code=500, detail=f"Archive failed: {str(e)}")
+
+@app.get("/api/v1/farm/calendar/{year}/{month}")
+async def get_calendar_data(year: int, month: int):
+    """Get calendar performance data"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        calendar_data = await farm_service.get_calendar_data(month, year)
+        return {"data": calendar_data}
+    except Exception as e:
+        logger.error(f"Failed to get calendar data: {e}")
+        raise HTTPException(status_code=500, detail=f"Calendar data error: {str(e)}")
+
+@app.get("/api/v1/farm/daily/{date}")
+async def get_daily_performance(date: str):
+    """Get detailed daily performance"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        daily_data = await farm_service.get_daily_performance(date)
+        return {"data": daily_data}
+    except Exception as e:
+        logger.error(f"Failed to get daily performance: {e}")
+        raise HTTPException(status_code=500, detail=f"Daily performance error: {str(e)}")
+
+@app.post("/api/v1/farm/agent/memory/persist")
+async def persist_agent_memory(memory_data: AgentMemoryData):
+    """Persist agent memory for Railway deployment"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        memory_id = await farm_service.persist_agent_memory(memory_data)
+        return {"memory_id": memory_id, "status": "persisted"}
+    except Exception as e:
+        logger.error(f"Failed to persist agent memory: {e}")
+        raise HTTPException(status_code=500, detail=f"Memory persistence failed: {str(e)}")
+
+@app.get("/api/v1/farm/agent/{agent_id}/memory")
+async def get_agent_memory(agent_id: str, memory_type: Optional[str] = None):
+    """Retrieve agent memory"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        memory_data = await farm_service.get_agent_memory(agent_id, memory_type)
+        return {"data": memory_data}
+    except Exception as e:
+        logger.error(f"Failed to get agent memory: {e}")
+        raise HTTPException(status_code=500, detail=f"Memory retrieval failed: {str(e)}")
+
+@app.post("/api/v1/farm/ingestion/run")
+async def run_data_ingestion(full_ingestion: bool = False):
+    """Run data ingestion from existing systems"""
+    try:
+        ingestion_service = await get_farm_ingestion_service()
+        
+        if full_ingestion:
+            results = await ingestion_service.run_full_ingestion()
+        else:
+            results = await ingestion_service.run_incremental_ingestion()
+            
+        return {"status": "completed", "results": results}
+    except Exception as e:
+        logger.error(f"Failed to run data ingestion: {e}")
+        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+
+@app.get("/api/v1/farm/ingestion/status")
+async def get_ingestion_status():
+    """Get current ingestion status"""
+    try:
+        ingestion_service = await get_farm_ingestion_service()
+        status = await ingestion_service.get_ingestion_status()
+        return {"data": status}
+    except Exception as e:
+        logger.error(f"Failed to get ingestion status: {e}")
+        raise HTTPException(status_code=500, detail=f"Status retrieval failed: {str(e)}")
+
+@app.get("/api/v1/farm/analytics/comprehensive")
+async def get_comprehensive_analytics():
+    """Get comprehensive trading farm analytics"""
+    try:
+        farm_service = await get_trading_farm_brain_service()
+        
+        # Get basic stats for now - will expand with more analytics
+        analytics = {
+            "total_strategies": 0,
+            "total_trades": 0,
+            "total_decisions": 0,
+            "active_agents": 0,
+            "total_pnl": 0.0,
+            "win_rate": 0.0,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+        return {"data": analytics}
+    except Exception as e:
+        logger.error(f"Failed to get comprehensive analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
+
+# ==========================================
+# KNOWLEDGE GRAPH ENDPOINTS
+# ==========================================
+
+@app.post("/api/v1/knowledge-graph/initialize")
+async def initialize_knowledge_graph():
+    """Initialize the knowledge graph from archived data"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph")
+        if not knowledge_service:
+            # Create and register the knowledge graph service
+            from services.knowledge_graph_service import KnowledgeGraphService
+            knowledge_service = KnowledgeGraphService()
+            registry.register_service("knowledge_graph", knowledge_service)
+        
+        await knowledge_service.initialize()
+        return {"status": "initialized", "message": "Knowledge graph built successfully"}
+    except Exception as e:
+        logger.error(f"Failed to initialize knowledge graph: {e}")
+        raise HTTPException(status_code=500, detail=f"Initialization error: {str(e)}")
+
+@app.get("/api/v1/knowledge-graph/search")
+async def search_knowledge_graph(
+    query: str,
+    entity_type: Optional[str] = None,
+    limit: int = 10
+):
+    """Search for entities in the knowledge graph"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph")
+        if not knowledge_service:
+            raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
+        
+        results = await knowledge_service.search_similar_entities(query, entity_type, limit)
+        return {"results": results, "query": query, "total_results": len(results)}
+    except Exception as e:
+        logger.error(f"Failed to search knowledge graph: {e}")
+        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+
+@app.get("/api/v1/knowledge-graph/patterns/strategies")
+async def get_strategy_patterns():
+    """Get successful strategy patterns"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph")
+        if not knowledge_service:
+            raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
+        
+        patterns = await knowledge_service.find_strategy_patterns()
+        return {"patterns": patterns, "total_patterns": len(patterns)}
+    except Exception as e:
+        logger.error(f"Failed to get strategy patterns: {e}")
+        raise HTTPException(status_code=500, detail=f"Pattern analysis error: {str(e)}")
+
+@app.get("/api/v1/knowledge-graph/patterns/agents")
+async def get_agent_specializations():
+    """Get agent specialization patterns"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph")
+        if not knowledge_service:
+            raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
+        
+        specializations = await knowledge_service.find_agent_specializations()
+        return {"specializations": specializations, "total_agents": len(specializations)}
+    except Exception as e:
+        logger.error(f"Failed to get agent specializations: {e}")
+        raise HTTPException(status_code=500, detail=f"Specialization analysis error: {str(e)}")
+
+@app.get("/api/v1/knowledge-graph/correlations/decisions")
+async def get_decision_correlations():
+    """Get decision confidence vs trade outcome correlations"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph")
+        if not knowledge_service:
+            raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
+        
+        correlations = await knowledge_service.find_decision_trade_correlations()
+        return {"correlations": correlations, "total_buckets": len(correlations)}
+    except Exception as e:
+        logger.error(f"Failed to get decision correlations: {e}")
+        raise HTTPException(status_code=500, detail=f"Correlation analysis error: {str(e)}")
+
+@app.get("/api/v1/knowledge-graph/timeline/{entity_id}")
+async def get_entity_timeline(entity_id: str, days: int = 30):
+    """Get timeline of activities for an entity"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph")
+        if not knowledge_service:
+            raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
+        
+        timeline = await knowledge_service.get_entity_timeline(entity_id, days)
+        return {"timeline": timeline, "entity_id": entity_id, "days": days, "total_events": len(timeline)}
+    except Exception as e:
+        logger.error(f"Failed to get entity timeline: {e}")
+        raise HTTPException(status_code=500, detail=f"Timeline error: {str(e)}")
+
+@app.get("/api/v1/knowledge-graph/statistics")
+async def get_knowledge_graph_stats():
+    """Get knowledge graph statistics"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph")
+        if not knowledge_service:
+            raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
+        
+        stats = await knowledge_service.get_graph_statistics()
+        return {"statistics": stats}
+    except Exception as e:
+        logger.error(f"Failed to get knowledge graph stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Statistics error: {str(e)}")
+
 # Development and debugging endpoints
 if DEBUG:
     @app.get("/api/v1/debug/services")
@@ -1317,6 +1566,10 @@ app.include_router(phase2_router)
 # Include Phase 6-8 Autonomous Trading API endpoints
 from api.autonomous_endpoints import router as autonomous_router
 app.include_router(autonomous_router)
+
+# Include Expert Agents API endpoints
+from api.v1.expert_agents_routes import router as expert_agents_router
+app.include_router(expert_agents_router)
 
 # Mount dashboard and static files
 if os.path.exists("dashboard/static"):
