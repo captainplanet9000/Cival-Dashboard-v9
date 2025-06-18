@@ -492,7 +492,7 @@ function FarmsTab() {
   const [farmSubTab, setFarmSubTab] = useState('farms-overview')
   
   const farmSubTabs = [
-    { id: 'farms-overview', label: 'Overview', component: <FarmsPage /> },
+    { id: 'farms-overview', label: 'Overview', component: <div className="p-6"><FarmsPage /></div> },
     { id: 'farm-deployment', label: 'Deployment', component: <div className="p-6 text-center">Farm Deployment Tools</div> },
     { id: 'farm-monitoring', label: 'Monitoring', component: <div className="p-6 text-center">Farm Performance Monitoring</div> },
     { id: 'farm-optimization', label: 'Optimization', component: <div className="p-6 text-center">Farm Strategy Optimization</div> }
@@ -537,7 +537,7 @@ function GoalsTab() {
   const [goalSubTab, setGoalSubTab] = useState('goals-overview')
   
   const goalSubTabs = [
-    { id: 'goals-overview', label: 'Overview', component: <GoalsPage /> },
+    { id: 'goals-overview', label: 'Overview', component: <div className="p-6"><GoalsPage /></div> },
     { id: 'goal-tracking', label: 'Tracking', component: <div className="p-6 text-center">Goal Progress Tracking</div> },
     { id: 'goal-analytics', label: 'Analytics', component: <div className="p-6 text-center">Goal Performance Analytics</div> },
     { id: 'goal-calendar', label: 'Calendar', component: <div className="p-6 text-center">Goal Timeline Calendar</div> }
@@ -582,13 +582,13 @@ function AdvancedTab() {
   const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
   
   const advancedSubTabs = [
-    { id: 'analytics', label: 'Analytics', component: <AnalyticsPage /> },
-    { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <ComprehensiveAnalyticsPage /> },
-    { id: 'knowledge-graph', label: 'Knowledge Graph', component: <KnowledgeGraphPage /> },
-    { id: 'python-analysis', label: 'Python Analysis', component: <PythonAnalysisPage /> },
-    { id: 'eliza-ai', label: 'Eliza AI', component: <ElizaPage /> },
-    { id: 'defi-lending', label: 'DeFi Lending', component: <DeFiLendingPage /> },
-    { id: 'persistence', label: 'Persistence', component: <PersistencePage /> },
+    { id: 'analytics', label: 'Analytics', component: <div className="p-6"><AnalyticsPage /></div> },
+    { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6"><ComprehensiveAnalyticsPage /></div> },
+    { id: 'knowledge-graph', label: 'Knowledge Graph', component: <div className="p-6"><KnowledgeGraphPage /></div> },
+    { id: 'python-analysis', label: 'Python Analysis', component: <div className="p-6"><PythonAnalysisPage /></div> },
+    { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
+    { id: 'defi-lending', label: 'DeFi Lending', component: <div className="p-6"><DeFiLendingPage /></div> },
+    { id: 'persistence', label: 'Persistence', component: <div className="p-6"><PersistencePage /></div> },
     { id: 'portfolio', label: 'Portfolio', component: <PortfolioTab /> },
     { id: 'risk', label: 'Risk Management', component: <div className="p-6 text-center">Risk Management Tools</div> }
   ]
