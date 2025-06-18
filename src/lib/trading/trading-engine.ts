@@ -3,7 +3,8 @@
  * Main orchestrator for all trading functionality
  */
 
-// @ts-nocheck - Temporary bypass for build completion
+// Temporary bypass for build completion - will be refactored
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import HyperliquidConnector from './hyperliquid-connector'
 import DEXConnector from './dex-connector'

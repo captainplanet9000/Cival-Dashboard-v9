@@ -29,7 +29,9 @@ export interface WalletEvents {
   'portfolio.risk_alert': { message: string; value?: number }
   'portfolio.margin_warning': { utilization: number; threshold: number }
   'system.notification': { type: string; message: string; level: string; timestamp?: number }
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   'connection.established': {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   'connection.lost': {}
 }
 

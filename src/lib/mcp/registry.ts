@@ -55,7 +55,7 @@ export class MCPServerRegistry {
   private static instance: MCPServerRegistry;
   private servers: Map<string, MCPServerConfig> = new Map();
   private healthCheckInterval: NodeJS.Timeout | null = null;
-  private eventListeners: Map<string, Function[]> = new Map();
+  private eventListeners: Map<string, Array<(...args: any[]) => void>> = new Map();
 
   static getInstance(): MCPServerRegistry {
     if (!MCPServerRegistry.instance) {
@@ -681,7 +681,7 @@ export class MCPServerRegistry {
   }
 
   // Event System
-  on(event: string, callback: Function): void {
+  on(event: string, callback: (...args: any[]) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }

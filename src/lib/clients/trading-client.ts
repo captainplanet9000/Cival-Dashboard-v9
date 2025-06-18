@@ -5,7 +5,7 @@ import redisService from '@/lib/services/redis-service';
 export class TradingClient {
   private baseUrl: string;
   private wsConnection: WebSocket | null = null;
-  private eventListeners: Map<string, Function[]> = new Map();
+  private eventListeners: Map<string, Array<(...args: any[]) => void>> = new Map();
 
   constructor(baseUrl: string = 'http://localhost:3001') {
     this.baseUrl = baseUrl;
@@ -76,14 +76,14 @@ export class TradingClient {
   }
 
   // Event handling
-  on(event: string, callback: Function): void {
+  on(event: string, callback: (...args: any[]) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
     this.eventListeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback: Function): void {
+  off(event: string, callback: (...args: any[]) => void): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       const index = listeners.indexOf(callback);
