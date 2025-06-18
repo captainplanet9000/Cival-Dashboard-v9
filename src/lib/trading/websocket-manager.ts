@@ -322,22 +322,34 @@ export class WebSocketManager {
   private setupDataStreams(): void {
     // Market data updates
     if (this.config.enableMarketData) {
-      setInterval(() => {
-        this.broadcastMarketDataUpdate()
+      setInterval(async () => {
+        try {
+          await this.broadcastMarketDataUpdate()
+        } catch (error) {
+          console.error('Error in market data broadcast:', error)
+        }
       }, 1000) // Every second
     }
 
     // Portfolio updates
     if (this.config.enablePortfolioUpdates) {
-      setInterval(() => {
-        this.broadcastPortfolioUpdate()
+      setInterval(async () => {
+        try {
+          await this.broadcastPortfolioUpdate()
+        } catch (error) {
+          console.error('Error in portfolio broadcast:', error)
+        }
       }, 5000) // Every 5 seconds
     }
 
     // Risk monitoring
     if (this.config.enableRiskAlerts) {
-      setInterval(() => {
-        this.checkAndBroadcastRiskAlerts()
+      setInterval(async () => {
+        try {
+          await this.checkAndBroadcastRiskAlerts()
+        } catch (error) {
+          console.error('Error in risk alerts broadcast:', error)
+        }
       }, 2000) // Every 2 seconds
     }
   }
