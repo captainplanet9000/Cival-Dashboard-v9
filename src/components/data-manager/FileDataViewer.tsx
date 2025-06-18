@@ -74,7 +74,7 @@ export const FileDataViewer: React.FC<FileDataViewerProps> = ({
         setError(null)
         
         // Download file from Supabase
-        const blob = await supabaseStorageService.downloadFile(file.file_path)
+        const blob = await supabaseStorageService.instance.downloadFile(file.file_path)
         
         // Determine file type
         const fileType = file.data_format || file.file_type.toLowerCase()

@@ -829,6 +829,152 @@ class BackendApiClient {
       };
     }
   }
+
+  // Paper Trading Agent Integration
+  async createAgentPaperAccount(agentId: string, accountData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts`, {
+        method: 'POST',
+        body: JSON.stringify(accountData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create agent paper trading account',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentPaperAccounts(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent paper trading accounts',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentPaperAccount(agentId: string, accountId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts/${accountId}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent paper trading account',
+        status: 0,
+      };
+    }
+  }
+
+  async resetAgentPaperAccount(agentId: string, accountId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts/${accountId}/reset`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to reset agent paper trading account',
+        status: 0,
+      };
+    }
+  }
+
+  async executeAgentPaperOrder(agentId: string, orderData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/orders`, {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to execute agent paper order',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentPaperOrders(agentId: string, filters?: any): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.symbol) params.append('symbol', filters.symbol);
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+      
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/orders${queryString}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent paper orders',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentPaperPortfolio(agentId: string, accountId?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = accountId ? `?account_id=${accountId}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/portfolio${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent paper portfolio',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentPaperPositions(agentId: string, accountId?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = accountId ? `?account_id=${accountId}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/positions${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent paper positions',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentPaperPerformance(agentId: string, timeRange?: any): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams();
+      if (timeRange?.start) params.append('start_date', timeRange.start);
+      if (timeRange?.end) params.append('end_date', timeRange.end);
+      if (timeRange?.period) params.append('period', timeRange.period);
+      
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/performance${queryString}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent paper performance',
+        status: 0,
+      };
+    }
+  }
+
+  async closeAgentPaperPosition(agentId: string, positionId: string, quantity?: number): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/positions/${positionId}/close`, {
+        method: 'POST',
+        body: JSON.stringify({ quantity })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to close agent paper position',
+        status: 0,
+      };
+    }
+  }
 }
 
 // Export singleton instance

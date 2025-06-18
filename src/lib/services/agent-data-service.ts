@@ -1,7 +1,7 @@
 import { createBrowserClient } from '@/utils/supabase/client'
 import { createServerClient } from '@/utils/supabase/server'
 import { Database } from '@/types/database.types'
-import supabaseStorageService from './supabase-storage-service'
+import { getSupabaseStorageService } from './supabase-storage-service'
 
 /**
  * Service for agents to access and query data files
@@ -93,7 +93,12 @@ export class AgentDataService {
    */
   async getFileContent(fileId: string) {
     const file = await this.getFile(fileId);
-    const blob = await supabaseStorageService.downloadFile(file.file_path);
+    if (!file) {
+      throw new Error(`File ${fileId} not found`);
+    }
+    
+    const storageService = getSupabaseStorageService();
+    const blob = await storageService.downloadFile(file.file_path);
     
     // Parse content based on file type
     switch (file.data_format) {

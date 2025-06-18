@@ -19,7 +19,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await supabaseStorageService.getFiles(user.id);
+      const data = await supabaseStorageService.instance.getFiles(user.id);
       setFiles(data);
     } catch (err) {
       console.error('Error fetching files:', err);
@@ -48,7 +48,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const uploadedFile = await supabaseStorageService.uploadFile(file, user.id, metadata);
+      const uploadedFile = await supabaseStorageService.instance.uploadFile(file, user.id, metadata);
       setFiles(prev => [uploadedFile, ...prev]);
       return uploadedFile;
     } catch (err) {
@@ -65,7 +65,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      await supabaseStorageService.deleteFile(fileId);
+      await supabaseStorageService.instance.deleteFile(fileId);
       setFiles(prev => prev.filter(file => file.id !== fileId));
       return true;
     } catch (err) {
@@ -85,7 +85,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const updatedFile = await supabaseStorageService.updateFileMetadata(fileId, updates);
+      const updatedFile = await supabaseStorageService.instance.updateFileMetadata(fileId, updates);
       setFiles(prev => prev.map(file => file.id === fileId ? updatedFile : file));
       return updatedFile;
     } catch (err) {
@@ -100,7 +100,7 @@ export function useFileStorage() {
   // Get download URL for a file
   const getFileUrl = useCallback(async (filePath: string) => {
     try {
-      return await supabaseStorageService.getFileUrl(filePath);
+      return await supabaseStorageService.instance.getFileUrl(filePath);
     } catch (err) {
       console.error('Error getting file URL:', err);
       setError(err instanceof Error ? err : new Error('Failed to get file URL'));
@@ -113,7 +113,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const blob = await supabaseStorageService.downloadFile(file.file_path);
+      const blob = await supabaseStorageService.instance.downloadFile(file.file_path);
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -146,7 +146,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const access = await supabaseStorageService.grantAgentAccess(agentId, fileId, accessLevel);
+      const access = await supabaseStorageService.instance.grantAgentAccess(agentId, fileId, accessLevel);
       return access;
     } catch (err) {
       console.error('Error granting agent access:', err);
@@ -162,7 +162,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      await supabaseStorageService.revokeAgentAccess(agentId, fileId);
+      await supabaseStorageService.instance.revokeAgentAccess(agentId, fileId);
       return true;
     } catch (err) {
       console.error('Error revoking agent access:', err);
@@ -178,7 +178,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const accessibleFiles = await supabaseStorageService.getAgentAccessibleFiles(agentId);
+      const accessibleFiles = await supabaseStorageService.instance.getAgentAccessibleFiles(agentId);
       return accessibleFiles;
     } catch (err) {
       console.error('Error getting agent accessible files:', err);
@@ -198,7 +198,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const updatedFile = await supabaseStorageService.markFileProcessed(fileId, agentId, results);
+      const updatedFile = await supabaseStorageService.instance.markFileProcessed(fileId, agentId, results);
       setFiles(prev => prev.map(file => file.id === fileId ? updatedFile : file));
       return updatedFile;
     } catch (err) {
@@ -215,7 +215,7 @@ export function useFileStorage() {
     try {
       setLoading(true);
       setError(null);
-      const updatedFile = await supabaseStorageService.updateFileSchema(fileId, schema);
+      const updatedFile = await supabaseStorageService.instance.updateFileSchema(fileId, schema);
       setFiles(prev => prev.map(file => file.id === fileId ? updatedFile : file));
       return updatedFile;
     } catch (err) {
