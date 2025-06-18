@@ -4,7 +4,8 @@
  * Enhanced with JWT authentication and session management
  */
 
-import { authService } from '@/lib/auth/auth-service'
+// Solo operator mode - no authentication required
+// import { authService } from '@/lib/auth/auth-service'
 
 export interface ApiResponse<T = any> {
   data?: T;
@@ -140,9 +141,9 @@ class BackendApiClient {
             : {}),
         };
 
-        // Add authentication header if available
-        const authHeader = authService.getAuthHeader();
-        Object.assign(headers, authHeader);
+        // Solo operator mode - no authentication headers needed
+        // const authHeader = authService.getAuthHeader();
+        // Object.assign(headers, authHeader);
 
         const response = await fetch(url, {
           ...options,
@@ -459,12 +460,12 @@ class BackendApiClient {
 
   async logout(): Promise<void> {
     try {
-      // Auth service handles logout
-      if (authService.isAuthenticated()) {
-        await this.fetchWithTimeout(`${this.baseUrl}/api/v1/auth/logout`, {
-          method: 'POST'
-        });
-      }
+      // Solo operator mode - no logout needed
+      // if (authService.isAuthenticated()) {
+      //   await this.fetchWithTimeout(`${this.baseUrl}/api/v1/auth/logout`, {
+      //     method: 'POST'
+      //   });
+      // }
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -580,6 +581,221 @@ class BackendApiClient {
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Failed to run backtest',
+        status: 0,
+      };
+    }
+  }
+
+  // Multi-Chain Wallet Management
+  async getWallets(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get wallets',
+        status: 0,
+      };
+    }
+  }
+
+  async getWalletBalance(walletId: string, chain: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets/${walletId}/balance?chain=${chain}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get wallet balance',
+        status: 0,
+      };
+    }
+  }
+
+  async createWallet(walletData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets`, {
+        method: 'POST',
+        body: JSON.stringify(walletData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create wallet',
+        status: 0,
+      };
+    }
+  }
+
+  async transferFunds(transferData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets/transfer`, {
+        method: 'POST',
+        body: JSON.stringify(transferData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to transfer funds',
+        status: 0,
+      };
+    }
+  }
+
+  // Flash Loan Operations
+  async getFlashLoanOpportunities(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/flashloans/opportunities`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get flash loan opportunities',
+        status: 0,
+      };
+    }
+  }
+
+  async executeFlashLoan(loanData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/flashloans/execute`, {
+        method: 'POST',
+        body: JSON.stringify(loanData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to execute flash loan',
+        status: 0,
+      };
+    }
+  }
+
+  // HyperLend Integration
+  async getHyperLendPositions(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/hyperlend/positions`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get HyperLend positions',
+        status: 0,
+      };
+    }
+  }
+
+  async createHyperLendPosition(positionData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/hyperlend/positions`, {
+        method: 'POST',
+        body: JSON.stringify(positionData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create HyperLend position',
+        status: 0,
+      };
+    }
+  }
+
+  // Advanced Analytics
+  async getAnalytics(type?: string, timeframe?: string, symbol?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams();
+      if (type) params.append('type', type);
+      if (timeframe) params.append('timeframe', timeframe);
+      if (symbol) params.append('symbol', symbol);
+      
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics?${params.toString()}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get analytics',
+        status: 0,
+      };
+    }
+  }
+
+  async getUSDTDominance(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics/usdt-dominance`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get USDT dominance',
+        status: 0,
+      };
+    }
+  }
+
+  async getCorrelationMatrix(assets: string[], timeframe?: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics/correlations`, {
+        method: 'POST',
+        body: JSON.stringify({ assets, timeframe })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get correlation matrix',
+        status: 0,
+      };
+    }
+  }
+
+  async getMarketSentiment(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics/sentiment`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get market sentiment',
+        status: 0,
+      };
+    }
+  }
+
+  // Profit Tracking
+  async getProfitTracking(type?: string, timeframe?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams();
+      if (type) params.append('type', type);
+      if (timeframe) params.append('timeframe', timeframe);
+      
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/profit-tracking?${params.toString()}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get profit tracking data',
+        status: 0,
+      };
+    }
+  }
+
+  async createProfitGoal(goalData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/profit-tracking/goals`, {
+        method: 'POST',
+        body: JSON.stringify(goalData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create profit goal',
+        status: 0,
+      };
+    }
+  }
+
+  async calculateTaxLiability(taxData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/profit-tracking/tax`, {
+        method: 'POST',
+        body: JSON.stringify(taxData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to calculate tax liability',
         status: 0,
       };
     }

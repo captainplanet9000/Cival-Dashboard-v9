@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { backendApi } from '@/lib/api/backend-client';
 
 // Google ADK and A2A Protocol integration types
 interface AgentCard {
@@ -135,6 +136,55 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('id');
 
+    // Try to get real agent data from backend first
+    try {
+      const agentStatusResponse = await backendApi.getAgentsStatus();
+      if (agentStatusResponse.data && Array.isArray(agentStatusResponse.data)) {
+        const backendAgents = agentStatusResponse.data.map((agent: any) => ({
+          id: agent.agent_id,
+          name: agent.name,
+          description: `${agent.strategy} trading agent`,
+          version: '1.0.0',
+          capabilities: ['trading', 'analysis', 'risk_management'],
+          endpoint: `http://localhost:8000/api/v1/agents/${agent.agent_id}`,
+          authentication: { type: 'bearer' },
+          metadata: {
+            framework: 'FastAPI',
+            model: 'production',
+            specialization: [agent.strategy, 'trading'],
+            created_at: new Date().toISOString(),
+            last_active: agent.last_updated
+          },
+          status: agent.status,
+          current_allocation: agent.current_allocation,
+          pnl: agent.pnl,
+          trades_today: agent.trades_today,
+          win_rate: agent.win_rate,
+          last_action: agent.last_action
+        }));
+
+        if (agentId) {
+          const agent = backendAgents.find(a => a.id === agentId);
+          if (!agent) {
+            return NextResponse.json(
+              { error: 'Agent not found' },
+              { status: 404 }
+            );
+          }
+          return NextResponse.json({ agent });
+        }
+
+        return NextResponse.json({
+          agents: backendAgents,
+          total: backendAgents.length,
+          source: 'backend'
+        });
+      }
+    } catch (error) {
+      console.warn('Backend agents unavailable, using mock data:', error);
+    }
+
+    // Fallback to mock data
     if (agentId) {
       const agent = registeredAgents.get(agentId);
       if (!agent) {
@@ -171,6 +221,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       agents,
       total: agents.length,
+      source: 'fallback',
       frameworks: ['ADK', 'CrewAI', 'LangGraph', 'LlamaIndex'],
       available_capabilities: [
         'order_management', 'strategy_coordination', 'risk_control',

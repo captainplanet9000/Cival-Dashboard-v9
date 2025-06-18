@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { backendApi } from '@/lib/api/backend-client';
 
-// Mock market data
-const generateMarketData = () => {
+// Fallback market data for when backend is unavailable
+const getFallbackMarketData = () => {
   const symbols = [
+    { symbol: 'BTC/USD', name: 'Bitcoin', basePrice: 43250.75 },
+    { symbol: 'ETH/USD', name: 'Ethereum', basePrice: 2587.90 },
     { symbol: 'AAPL', name: 'Apple Inc.', basePrice: 189.75 },
     { symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 265.40 },
     { symbol: 'MSFT', name: 'Microsoft Corporation', basePrice: 355.25 },
     { symbol: 'NVDA', name: 'NVIDIA Corporation', basePrice: 445.20 },
-    { symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 142.87 },
-    { symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 155.89 },
-    { symbol: 'META', name: 'Meta Platforms Inc.', basePrice: 354.64 },
-    { symbol: 'BTC-USD', name: 'Bitcoin USD', basePrice: 43250.75 },
-    { symbol: 'ETH-USD', name: 'Ethereum USD', basePrice: 2587.90 },
     { symbol: 'SPY', name: 'SPDR S&P 500 ETF', basePrice: 425.80 }
   ];
 
   return symbols.map(stock => {
-    const changePercent = (Math.random() - 0.5) * 10; // ±5% daily change
+    const changePercent = (Math.random() - 0.5) * 6; // ±3% daily change
     const currentPrice = stock.basePrice * (1 + changePercent / 100);
     const change = currentPrice - stock.basePrice;
     const volume = Math.floor(Math.random() * 10000000) + 1000000;
@@ -26,12 +24,10 @@ const generateMarketData = () => {
       name: stock.name,
       price: Math.round(currentPrice * 100) / 100,
       change: Math.round(change * 100) / 100,
-      changePercent: Math.round(changePercent * 100) / 100,
+      change_pct: Math.round(changePercent * 100) / 100,
       volume,
-      marketCap: Math.floor(Math.random() * 1000000000000) + 100000000000,
-      high24h: Math.round((currentPrice * 1.02) * 100) / 100,
-      low24h: Math.round((currentPrice * 0.98) * 100) / 100,
-      lastUpdated: new Date().toISOString(),
+      market_cap: Math.floor(Math.random() * 1000000000000) + 100000000000,
+      last_updated: new Date().toISOString(),
     };
   });
 };
@@ -42,7 +38,29 @@ export async function GET(request: NextRequest) {
     const symbol = searchParams.get('symbol');
     const type = searchParams.get('type') || 'stocks';
     
-    const marketData = generateMarketData();
+    // Try to get real market data from backend
+    let marketData;
+    try {
+      const marketResponse = await backendApi.getMarketOverview();
+      if (marketResponse.data && marketResponse.data.market_data) {
+        marketData = marketResponse.data.market_data.map((item: any) => ({
+          symbol: item.symbol,
+          name: item.symbol, // Backend might not have name, use symbol
+          price: item.price,
+          change: item.price * (item.change_pct / 100), // Calculate absolute change
+          change_pct: item.change_pct,
+          volume: item.volume,
+          market_cap: item.market_cap,
+          last_updated: item.last_updated || new Date().toISOString(),
+        }));
+        console.log('Using real market data from backend');
+      } else {
+        throw new Error('No market data in response');
+      }
+    } catch (error) {
+      console.warn('Backend market data unavailable, using fallback:', error);
+      marketData = getFallbackMarketData();
+    }
     
     if (symbol) {
       const symbolData = marketData.find(s => s.symbol === symbol.toUpperCase());
@@ -62,9 +80,9 @@ export async function GET(request: NextRequest) {
     // Filter by type if needed
     let filteredData = marketData;
     if (type === 'crypto') {
-      filteredData = marketData.filter(s => s.symbol.includes('-USD'));
+      filteredData = marketData.filter(s => s.symbol.includes('/USD') || s.symbol.includes('-USD'));
     } else if (type === 'stocks') {
-      filteredData = marketData.filter(s => !s.symbol.includes('-USD'));
+      filteredData = marketData.filter(s => !s.symbol.includes('/USD') && !s.symbol.includes('-USD'));
     }
     
     return NextResponse.json({

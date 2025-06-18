@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { backendApi } from '@/lib/api/backend-client';
 
 // Mock trading strategies data
 const strategies = [
@@ -106,6 +107,64 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const strategyId = searchParams.get('id');
     
+    // Try to get real strategies from backend first
+    try {
+      const strategiesResponse = await backendApi.getStrategies();
+      if (strategiesResponse.data && Array.isArray(strategiesResponse.data)) {
+        const backendStrategies = strategiesResponse.data.map((strategy: any) => ({
+          id: strategy.id || `strategy-${Date.now()}`,
+          name: strategy.name || 'Backend Strategy',
+          status: strategy.status || 'active',
+          totalReturn: strategy.performance?.totalReturn || 0,
+          trades: strategy.performance?.trades || 0,
+          winRate: strategy.performance?.winRate || 0,
+          allocation: strategy.allocation || 0,
+          avgHoldTime: '3.5 days', // Default value
+          sharpeRatio: strategy.performance?.sharpeRatio || 0,
+          maxDrawdown: strategy.performance?.maxDrawdown || 0,
+          lastTrade: strategy.last_updated || new Date().toISOString(),
+          description: strategy.description || 'Strategy from backend',
+          riskLevel: strategy.risk_level || 'Medium',
+          capitalAllocated: strategy.capital_allocated || 0,
+        }));
+
+        // Filter by status if provided
+        let filteredStrategies = backendStrategies;
+        if (status) {
+          filteredStrategies = backendStrategies.filter(s => s.status === status);
+        }
+        
+        // Get specific strategy if ID provided
+        if (strategyId) {
+          const strategy = backendStrategies.find(s => s.id === strategyId);
+          if (!strategy) {
+            return NextResponse.json(
+              { success: false, error: 'Strategy not found' },
+              { status: 404 }
+            );
+          }
+          return NextResponse.json({
+            success: true,
+            data: strategy,
+            source: 'backend',
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        return NextResponse.json({
+          success: true,
+          data: filteredStrategies,
+          total: filteredStrategies.length,
+          active: filteredStrategies.filter(s => s.status === 'active').length,
+          source: 'backend',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.warn('Backend strategies unavailable, using mock data:', error);
+    }
+
+    // Fallback to mock data
     // Filter by status if provided
     let filteredStrategies = strategies;
     if (status) {
@@ -124,6 +183,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: strategy,
+        source: 'fallback',
         timestamp: new Date().toISOString(),
       });
     }
@@ -141,6 +201,7 @@ export async function GET(request: NextRequest) {
       data: liveStrategies,
       total: liveStrategies.length,
       active: liveStrategies.filter(s => s.status === 'active').length,
+      source: 'fallback',
       timestamp: new Date().toISOString(),
     });
     
@@ -160,31 +221,102 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { strategyId, action } = body;
+    const { strategyId, action, ...strategyData } = body;
     
-    const strategy = strategies.find(s => s.id === strategyId);
-    if (!strategy) {
-      return NextResponse.json(
-        { success: false, error: 'Strategy not found' },
-        { status: 404 }
-      );
+    // If creating a new strategy
+    if (!strategyId && !action) {
+      try {
+        const createResponse = await backendApi.createStrategy(strategyData);
+        if (createResponse.data) {
+          return NextResponse.json({
+            success: true,
+            data: createResponse.data,
+            message: 'Strategy created successfully',
+            source: 'backend',
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        console.warn('Backend strategy creation failed, using mock:', error);
+      }
+      
+      // Fallback: create mock strategy
+      const newStrategy = {
+        id: `strategy-${Date.now()}`,
+        name: strategyData.name || 'New Strategy',
+        status: 'active',
+        totalReturn: 0,
+        trades: 0,
+        winRate: 0,
+        allocation: strategyData.allocation || 0,
+        avgHoldTime: '0 days',
+        sharpeRatio: 0,
+        maxDrawdown: 0,
+        lastTrade: new Date().toISOString(),
+        description: strategyData.description || 'New trading strategy',
+        riskLevel: strategyData.riskLevel || 'Medium',
+        capitalAllocated: strategyData.capitalAllocated || 0,
+      };
+      
+      strategies.push(newStrategy);
+      
+      return NextResponse.json({
+        success: true,
+        data: newStrategy,
+        message: 'Strategy created successfully (mock)',
+        source: 'fallback',
+        timestamp: new Date().toISOString(),
+      });
     }
     
-    // Update strategy status based on action
-    if (action === 'start') {
-      strategy.status = 'active';
-    } else if (action === 'pause') {
-      strategy.status = 'paused';
-    } else if (action === 'stop') {
-      strategy.status = 'stopped';
+    // If updating existing strategy
+    if (strategyId && action) {
+      try {
+        const updateResponse = await backendApi.updateStrategy(strategyId, { status: action });
+        if (updateResponse.data) {
+          return NextResponse.json({
+            success: true,
+            data: updateResponse.data,
+            message: `Strategy ${action}ed successfully`,
+            source: 'backend',
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        console.warn('Backend strategy update failed, using mock:', error);
+      }
+      
+      // Fallback: update mock strategy
+      const strategy = strategies.find(s => s.id === strategyId);
+      if (!strategy) {
+        return NextResponse.json(
+          { success: false, error: 'Strategy not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Update strategy status based on action
+      if (action === 'start') {
+        strategy.status = 'active';
+      } else if (action === 'pause') {
+        strategy.status = 'paused';
+      } else if (action === 'stop') {
+        strategy.status = 'stopped';
+      }
+      
+      return NextResponse.json({
+        success: true,
+        data: strategy,
+        message: `Strategy ${strategy.name} ${action}ed successfully (mock)`,
+        source: 'fallback',
+        timestamp: new Date().toISOString(),
+      });
     }
     
-    return NextResponse.json({
-      success: true,
-      data: strategy,
-      message: `Strategy ${strategy.name} ${action}ed successfully`,
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json(
+      { success: false, error: 'Invalid request parameters' },
+      { status: 400 }
+    );
     
   } catch (error) {
     console.error('Strategy update error:', error);

@@ -26,12 +26,23 @@ import {
   Calendar,
   PieChart,
   Users,
-  Wallet
+  Wallet,
+  Star,
+  Link,
+  Coins,
+  CreditCard,
+  TrendingDownIcon,
+  Clock,
+  Settings
 } from 'lucide-react'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 // Store integrations
-import { useAppStore, usePositions, usePortfolioValue } from '@/lib/store'
+import { useAppStore, usePositions, usePortfolioValue, useRealTimeStatus } from '@/lib/store'
+import { WatchlistView } from './WatchlistView'
+import { MultiChainWalletView } from './MultiChainWalletView'
+import { HyperLendView } from './HyperLendView'
+import { AnalyticsView } from './AnalyticsView'
 
 interface DashboardMetrics {
   totalValue: number
@@ -68,6 +79,7 @@ export function ModernTradingDashboard() {
   const appStore = useAppStore()
   const positions = usePositions()
   const portfolioValue = usePortfolioValue()
+  const realTimeStatus = useRealTimeStatus()
 
   // Initialize store
   useEffect(() => {
@@ -107,11 +119,17 @@ export function ModernTradingDashboard() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'portfolio', label: 'Portfolio', icon: PieChart },
+    { id: 'watchlist', label: 'Watchlist', icon: Star },
+    { id: 'wallets', label: 'Multi-Chain', icon: Wallet },
+    { id: 'flashloans', label: 'Flash Loans', icon: Zap },
+    { id: 'hyperlend', label: 'HyperLend', icon: CreditCard },
+    { id: 'profit', label: 'Profit Center', icon: TrendingUp },
+    { id: 'hft', label: 'HFT Terminal', icon: Clock },
     { id: 'agents', label: 'Agents', icon: Bot },
-    { id: 'farms', label: 'Farms', icon: Target },
+    { id: 'analytics', label: 'Analytics', icon: TrendingDownIcon },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp }
+    { id: 'portfolio', label: 'Portfolio', icon: PieChart },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ]
 
   const MetricCard = ({ title, value, change, changeType, icon: Icon, gradient }: {
@@ -357,11 +375,23 @@ export function ModernTradingDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                <Activity className="h-3 w-3 mr-1" />
-                Live
+              <Badge 
+                variant="outline" 
+                className={`${
+                  realTimeStatus.connected 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                    : 'bg-red-50 text-red-700 border-red-200'
+                }`}
+              >
+                <Activity className={`h-3 w-3 mr-1 ${realTimeStatus.connected ? 'animate-pulse' : ''}`} />
+                {realTimeStatus.connected ? 'Live' : 'Offline'}
               </Badge>
-              <Button variant="outline" size="sm">
+              {realTimeStatus.connected && realTimeStatus.latency > 0 && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {realTimeStatus.latency}ms
+                </Badge>
+              )}
+              <Button variant="outline" size="sm" onClick={() => appStore.initialize()}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
@@ -374,7 +404,7 @@ export function ModernTradingDashboard() {
         {/* Desktop Tabs */}
         <div className="hidden lg:block mb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6 bg-white dark:bg-gray-800 border shadow-sm">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 bg-white dark:bg-gray-800 border shadow-sm overflow-x-auto">
               {tabs.map(tab => (
                 <TabsTrigger 
                   key={tab.id} 
@@ -418,11 +448,44 @@ export function ModernTradingDashboard() {
                   <p className="text-gray-500">Track daily earnings and trading performance</p>
                 </div>
               </TabsContent>
-              <TabsContent value="analytics">
+              <TabsContent value="watchlist">
+                <WatchlistView />
+              </TabsContent>
+              <TabsContent value="wallets">
+                <MultiChainWalletView />
+              </TabsContent>
+              <TabsContent value="flashloans">
                 <div className="text-center py-12">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Advanced Analytics</h3>
-                  <p className="text-gray-500">Deep insights into your trading performance</p>
+                  <Zap className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium mb-2">Flash Loan Trading</h3>
+                  <p className="text-gray-500">Automated arbitrage with flash loans across protocols</p>
+                </div>
+              </TabsContent>
+              <TabsContent value="hyperlend">
+                <HyperLendView />
+              </TabsContent>
+              <TabsContent value="profit">
+                <div className="text-center py-12">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium mb-2">Profit Center</h3>
+                  <p className="text-gray-500">Track and secure your trading profits automatically</p>
+                </div>
+              </TabsContent>
+              <TabsContent value="hft">
+                <div className="text-center py-12">
+                  <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium mb-2">HFT Terminal</h3>
+                  <p className="text-gray-500">High-frequency trading strategies and execution</p>
+                </div>
+              </TabsContent>
+              <TabsContent value="analytics">
+                <AnalyticsView />
+              </TabsContent>
+              <TabsContent value="settings">
+                <div className="text-center py-12">
+                  <Settings className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium mb-2">Platform Settings</h3>
+                  <p className="text-gray-500">Configure your trading platform preferences</p>
                 </div>
               </TabsContent>
             </div>
