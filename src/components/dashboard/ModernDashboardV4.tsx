@@ -234,17 +234,17 @@ export function ModernDashboardV4() {
           </header>
 
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5 bg-white/50 backdrop-blur-sm">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 bg-white/50 backdrop-blur-sm gap-2">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900"
+                    className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-xs sm:text-sm p-2"
                   >
                     {tab.icon}
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="hidden sm:inline truncate">{tab.label}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -362,18 +362,18 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
           <CardDescription>Frequently used trading operations</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
-            <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+            <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white w-full">
               <Plus className="h-4 w-4 mr-2" />
-              New Strategy
+              <span className="truncate">New Strategy</span>
             </Button>
-            <Button variant="outline" className="border-violet-200 text-violet-700 hover:bg-violet-50">
+            <Button variant="outline" className="border-violet-200 text-violet-700 hover:bg-violet-50 w-full">
               <Bot className="h-4 w-4 mr-2" />
-              Deploy Agent
+              <span className="truncate">Deploy Agent</span>
             </Button>
-            <Button variant="outline" className="border-amber-200 text-amber-700 hover:bg-amber-50">
+            <Button variant="outline" className="border-amber-200 text-amber-700 hover:bg-amber-50 w-full">
               <Target className="h-4 w-4 mr-2" />
-              Create Farm
+              <span className="truncate">Create Farm</span>
             </Button>
           </div>
         </CardContent>
@@ -474,12 +474,12 @@ function AgentsTab() {
       </CardHeader>
       <CardContent>
         <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 bg-violet-50">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 bg-violet-50 gap-2">
             {agentSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-900"
+                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-900 text-xs sm:text-sm p-2 truncate"
               >
                 {tab.label}
               </TabsTrigger>
@@ -519,12 +519,12 @@ function FarmsTab() {
       </CardHeader>
       <CardContent>
         <Tabs value={farmSubTab} onValueChange={setFarmSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-emerald-50">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-emerald-50 gap-2">
             {farmSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900"
+                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-xs sm:text-sm p-2 truncate"
               >
                 {tab.label}
               </TabsTrigger>
@@ -564,12 +564,12 @@ function GoalsTab() {
       </CardHeader>
       <CardContent>
         <Tabs value={goalSubTab} onValueChange={setGoalSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-amber-50">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-amber-50 gap-2">
             {goalSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-900"
+                className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-900 text-xs sm:text-sm p-2 truncate"
               >
                 {tab.label}
               </TabsTrigger>
@@ -614,39 +614,41 @@ function AdvancedTab() {
       </CardHeader>
       <CardContent>
         <Tabs value={advancedSubTab} onValueChange={setAdvancedSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-50">
-            {advancedSubTabs.slice(0, 3).map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsList className="grid w-full grid-cols-3 bg-gray-50">
-            {advancedSubTabs.slice(3, 6).map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsList className="grid w-full grid-cols-3 bg-gray-50">
-            {advancedSubTabs.slice(6, 9).map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="space-y-2">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(0, 3).map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 text-xs sm:text-sm"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(3, 6).map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 text-xs sm:text-sm"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(6, 9).map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 text-xs sm:text-sm"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           
           {advancedSubTabs.map((tab) => (
             <TabsContent key={tab.id} value={tab.id}>
