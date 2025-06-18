@@ -21,19 +21,23 @@ import {
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 // Import existing components and hooks
-import { backendApi } from '@/lib/api/backend-client'
-import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel'
+// Removing potentially problematic imports temporarily
+// import { backendApi } from '@/lib/api/backend-client'
+// import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel'
 
 // Import additional page components for consolidated tabs
-import FarmsPage from '@/app/dashboard/farms/page'
-import GoalsPage from '@/app/dashboard/goals/page'
-import PythonAnalysisPage from '@/app/dashboard/python-analysis/page'
-import ElizaPage from '@/app/dashboard/eliza/page'
-import AnalyticsPage from '@/app/dashboard/analytics/page'
-import ComprehensiveAnalyticsPage from '@/app/dashboard/comprehensive-analytics/page'
-import KnowledgeGraphPage from '@/app/dashboard/knowledge-graph/page'
-import PersistencePage from '@/app/dashboard/persistence/page'
-import DeFiLendingPage from '@/app/dashboard/defi-lending/page'
+// Using dynamic imports to prevent auto-loading issues
+import dynamic from 'next/dynamic'
+
+const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { ssr: false })
+const GoalsPage = dynamic(() => import('@/app/dashboard/goals/page'), { ssr: false })
+const PythonAnalysisPage = dynamic(() => import('@/app/dashboard/python-analysis/page'), { ssr: false })
+const ElizaPage = dynamic(() => import('@/app/dashboard/eliza/page'), { ssr: false })
+const AnalyticsPage = dynamic(() => import('@/app/dashboard/analytics/page'), { ssr: false })
+const ComprehensiveAnalyticsPage = dynamic(() => import('@/app/dashboard/comprehensive-analytics/page'), { ssr: false })
+const KnowledgeGraphPage = dynamic(() => import('@/app/dashboard/knowledge-graph/page'), { ssr: false })
+const PersistencePage = dynamic(() => import('@/app/dashboard/persistence/page'), { ssr: false })
+const DeFiLendingPage = dynamic(() => import('@/app/dashboard/defi-lending/page'), { ssr: false })
 
 interface DashboardMetrics {
   totalValue: number
@@ -102,10 +106,10 @@ export function ModernDashboardV4() {
     riskScore: 23.5
   })
 
-  // Simulate loading completion
+  // Quick loading - no external dependencies
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000)
-    return () => clearTimeout(timer)
+    // Immediately set loading to false - no backend dependencies
+    setIsLoading(false)
   }, [])
 
   // Consolidated tab configuration with organized sub-systems
@@ -442,7 +446,7 @@ function AgentsTab() {
   const [agentSubTab, setAgentSubTab] = useState('expert-agents')
   
   const agentSubTabs = [
-    { id: 'expert-agents', label: 'Expert Agents', component: <ExpertAgentsPanel /> },
+    { id: 'expert-agents', label: 'Expert Agents', component: <div className="p-6 text-center">Expert Agents Panel - Loading...</div> },
     { id: 'agent-trading', label: 'Agent Trading', component: <div className="p-6 text-center">Agent Trading Interface</div> },
     { id: 'agent-data', label: 'Agent Data', component: <div className="p-6 text-center">Agent Data Access</div> },
     { id: 'ai-enhanced', label: 'AI Enhanced', component: <div className="p-6 text-center">AI Enhanced Features</div> },
