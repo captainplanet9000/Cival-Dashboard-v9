@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { 
   Card, 
   CardContent, 
@@ -21,7 +22,12 @@ import {
   ArrowUpRightFromCircle
 } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
-import AgentDataBrowser from '@/components/agent/AgentDataBrowser'
+
+// Dynamically import the AgentDataBrowser to prevent SSR issues
+const AgentDataBrowser = dynamic(() => import('@/components/agent/AgentDataBrowser'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading data browser...</div>
+})
 import { 
   Select,
   SelectContent,

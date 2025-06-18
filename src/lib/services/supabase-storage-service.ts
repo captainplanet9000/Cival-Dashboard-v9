@@ -37,18 +37,38 @@ export interface AgentFileAccess {
 }
 
 export class SupabaseStorageService {
-  private static instance: SupabaseStorageService;
-  private client: SupabaseClient<Database>;
+  private static instance: SupabaseStorageService | null = null;
+  private client: SupabaseClient<Database> | null = null;
   private bucketName: string = 'trading-data';
+  private initialized: boolean = false;
 
   private constructor() {
+    // Don't initialize immediately - wait for first use
+  }
+
+  private initialize() {
+    if (this.initialized) return;
+    
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     
-    this.client = createClient<Database>(supabaseUrl, supabaseAnonKey);
+    // Only initialize if we have valid credentials and we're not in a build environment
+    if (supabaseUrl && supabaseAnonKey && supabaseUrl !== 'https://placeholder.supabase.co' && 
+        supabaseAnonKey !== 'placeholder-key' && typeof window !== 'undefined') {
+      try {
+        this.client = createClient<Database>(supabaseUrl, supabaseAnonKey);
+        // Ensure the bucket exists (this would normally be done at app initialization)
+        this.initializeStorage();
+      } catch (error) {
+        console.warn('Failed to initialize Supabase client:', error);
+        this.client = null;
+      }
+    } else {
+      console.warn('Supabase client not initialized: missing credentials or build environment');
+      this.client = null;
+    }
     
-    // Ensure the bucket exists (this would normally be done at app initialization)
-    this.initializeStorage();
+    this.initialized = true;
   }
 
   public static getInstance(): SupabaseStorageService {
@@ -62,6 +82,8 @@ export class SupabaseStorageService {
    * Initialize storage bucket if it doesn't exist
    */
   private async initializeStorage(): Promise<void> {
+    if (!this.client) return;
+    
     try {
       // Check if bucket exists
       const { data: buckets } = await this.client.storage.listBuckets();
@@ -93,6 +115,12 @@ export class SupabaseStorageService {
     userId: string, 
     metadata: FileUploadMetadata = {}
   ): Promise<UploadedFile> {
+    this.initialize();
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized');
+    }
+    
     try {
       // Generate a unique file path to prevent collisions
       const uniquePrefix = uuidv4();
@@ -180,6 +208,12 @@ export class SupabaseStorageService {
    * Get a list of uploaded files for a user
    */
   async getFiles(userId: string): Promise<UploadedFile[]> {
+    this.initialize();
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized');
+    }
+    
     try {
       const { data, error } = await this.client
         .from('uploaded_files')
@@ -203,6 +237,12 @@ export class SupabaseStorageService {
    * Get a specific file by ID
    */
   async getFile(fileId: string): Promise<UploadedFile> {
+    this.initialize();
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized');
+    }
+    
     try {
       const { data, error } = await this.client
         .from('uploaded_files')
@@ -226,6 +266,12 @@ export class SupabaseStorageService {
    * Generate a downloadable URL for a file
    */
   async getFileUrl(filePath: string): Promise<string> {
+    this.initialize();
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized');
+    }
+    
     try {
       const { data, error } = await this.client.storage
         .from(this.bucketName)
@@ -319,6 +365,12 @@ export class SupabaseStorageService {
    * Download file content
    */
   async downloadFile(filePath: string): Promise<Blob> {
+    this.initialize();
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized');
+    }
+    
     try {
       const { data, error } = await this.client.storage
         .from(this.bucketName)
@@ -426,6 +478,12 @@ export class SupabaseStorageService {
    * Get list of files accessible to an agent
    */
   async getAgentAccessibleFiles(agentId: string): Promise<UploadedFile[]> {
+    this.initialize();
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized');
+    }
+    
     try {
       const { data, error } = await this.client
         .from('agent_file_access')
@@ -534,7 +592,14 @@ export class SupabaseStorageService {
   }
 }
 
-// Export a singleton instance
-export const supabaseStorageService = SupabaseStorageService.getInstance();
+// Export a lazy getter for the singleton instance
+export const getSupabaseStorageService = () => SupabaseStorageService.getInstance();
+
+// For backward compatibility, provide a default export that won't instantiate during import
+const supabaseStorageService = {
+  get instance() {
+    return SupabaseStorageService.getInstance();
+  }
+};
 
 export default supabaseStorageService;
