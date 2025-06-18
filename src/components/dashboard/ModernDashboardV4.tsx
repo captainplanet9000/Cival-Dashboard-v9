@@ -21,9 +21,21 @@ import {
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 // Import existing components and hooks
-// Removing potentially problematic imports temporarily
-// import { backendApi } from '@/lib/api/backend-client'
-// import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel'
+import { backendApi } from '@/lib/api/backend-client'
+import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel'
+
+// Import real trading components for functionality
+import { LiveMarketTicker } from '@/components/realtime/LiveMarketTicker'
+import { PortfolioMonitor } from '@/components/trading/PortfolioMonitor'
+import { AgentManager } from '@/components/trading/AgentManager'
+import { RiskDashboard } from '@/components/trading/RiskDashboard'
+import { TradingInterface } from '@/components/trading/TradingInterface'
+
+// Import additional agent components
+import { AgentTradingList } from '@/components/agent-trading/AgentTradingList'
+import { AgentDataBrowser } from '@/components/agent/AgentDataBrowser'
+import AgentKnowledgeInterface from '@/components/knowledge/AgentKnowledgeInterface'
+import { StrategyCreationModal } from '@/components/trading/strategies/StrategyCreationModal'
 
 // Import additional page components for consolidated tabs
 // Using dynamic imports to prevent auto-loading issues
@@ -47,6 +59,18 @@ const DeFiLendingPage = dynamic(() => import('@/app/dashboard/defi-lending/page'
 const CalendarPage = dynamic(() => import('@/app/calendar/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Calendar...</div>
+})
+const ComprehensiveAnalyticsPage = dynamic(() => import('@/app/dashboard/comprehensive-analytics/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Analytics...</div>
+})
+const KnowledgeGraphPage = dynamic(() => import('@/app/dashboard/knowledge-graph/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Knowledge Graph...</div>
+})
+const PersistencePage = dynamic(() => import('@/app/dashboard/persistence/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Persistence...</div>
 })
 const PythonAnalysisPage = dynamic(() => import('@/app/dashboard/python-analysis/page'), { 
   ssr: false,
@@ -288,8 +312,53 @@ export function ModernDashboardV4() {
   )
 }
 
-// Overview Tab Component
+// Enhanced Overview Tab with Real Trading Functionality
 function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartData: ChartDataPoint[] }) {
+  const [overviewTab, setOverviewTab] = useState('dashboard')
+  
+  const overviewSubTabs = [
+    { id: 'dashboard', label: 'Dashboard', component: <DashboardOverview metrics={metrics} chartData={chartData} /> },
+    { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
+    { id: 'trading', label: 'Trading', component: <TradingInterface /> },
+    { id: 'agents', label: 'Agent Manager', component: <AgentManager /> },
+    { id: 'risk', label: 'Risk Monitor', component: <RiskDashboard /> }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      {/* Live Market Ticker */}
+      <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+        <CardContent className="p-4">
+          <LiveMarketTicker />
+        </CardContent>
+      </Card>
+
+      {/* Overview Sub-Navigation */}
+      <Tabs value={overviewTab} onValueChange={setOverviewTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-emerald-50 gap-2">
+          {overviewSubTabs.map((tab) => (
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-xs sm:text-sm p-2 truncate"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {overviewSubTabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id}>
+            {tab.component}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  )
+}
+
+// Dashboard Overview Component (existing functionality)
+function DashboardOverview({ metrics, chartData }: { metrics: DashboardMetrics; chartData: ChartDataPoint[] }) {
   return (
     <div className="space-y-6">
       {/* Metrics Cards */}
@@ -471,16 +540,90 @@ function PortfolioTab() {
   )
 }
 
+// Trading Strategies Panel Component
+function TradingStrategiesPanel() {
+  const [strategies, setStrategies] = useState<any[]>([])
+  
+  const handleCreateStrategy = (strategy: any) => {
+    setStrategies(prev => [strategy, ...prev])
+  }
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Trading Strategies</h3>
+          <p className="text-sm text-muted-foreground">Create and manage automated trading strategies</p>
+        </div>
+        <StrategyCreationModal onCreateStrategy={handleCreateStrategy} />
+      </div>
+      
+      {strategies.length === 0 ? (
+        <Card className="bg-white/80 backdrop-blur-sm border-dashed border-2 border-gray-300">
+          <CardContent className="p-8 text-center">
+            <Target className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No strategies created yet</h3>
+            <p className="text-gray-600 mb-4">Create your first automated trading strategy to get started</p>
+            <StrategyCreationModal onCreateStrategy={handleCreateStrategy} />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {strategies.map((strategy) => (
+            <Card key={strategy.id} className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-lg">{strategy.name}</CardTitle>
+                    <CardDescription>{strategy.type}</CardDescription>
+                  </div>
+                  <Badge variant={strategy.status === 'active' ? 'default' : 'secondary'}>
+                    {strategy.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">{strategy.description}</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Risk Level:</span>
+                      <span className="ml-1 font-medium">{strategy.riskLevel}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Allocation:</span>
+                      <span className="ml-1 font-medium">{strategy.allocation}%</span>
+                    </div>
+                  </div>
+                  {strategy.indicators && strategy.indicators.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {strategy.indicators.slice(0, 3).map((indicator: string) => (
+                        <Badge key={indicator} variant="outline" className="text-xs">
+                          {indicator}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Consolidated Agents Tab with 5 sub-tabs
 function AgentsTab() {
   const [agentSubTab, setAgentSubTab] = useState('expert-agents')
   
   const agentSubTabs = [
-    { id: 'expert-agents', label: 'Expert Agents', component: <div className="p-6 text-center">Expert Agents Panel - Loading...</div> },
-    { id: 'agent-trading', label: 'Agent Trading', component: <div className="p-6 text-center">Agent Trading Interface</div> },
-    { id: 'agent-data', label: 'Agent Data', component: <div className="p-6 text-center">Agent Data Access</div> },
-    { id: 'ai-enhanced', label: 'AI Enhanced', component: <div className="p-6 text-center">AI Enhanced Features</div> },
-    { id: 'strategies', label: 'Strategies', component: <div className="p-6 text-center">Trading Strategies</div> }
+    { id: 'expert-agents', label: 'Expert Agents', component: <ExpertAgentsPanel /> },
+    { id: 'agent-trading', label: 'Agent Trading', component: <AgentTradingList /> },
+    { id: 'agent-data', label: 'Agent Data', component: <AgentDataBrowser agentId="default-agent" /> },
+    { id: 'ai-enhanced', label: 'AI Enhanced', component: <AgentKnowledgeInterface agentId="default-agent" currentGoal="trading optimization" /> },
+    { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> }
   ]
   
   return (
@@ -517,15 +660,364 @@ function AgentsTab() {
   )
 }
 
+// Farm Deployment Panel Component
+function FarmDeploymentPanel() {
+  const [deploymentConfig, setDeploymentConfig] = useState({
+    farmName: '',
+    strategy: '',
+    agentCount: 5,
+    allocation: 10000,
+    riskLevel: 'medium',
+    environments: ['production'],
+    autoScaling: true
+  })
+  
+  const strategies = [
+    { id: 'darvas', name: 'Darvas Box', description: 'Breakout strategy with volume confirmation' },
+    { id: 'elliott', name: 'Elliott Wave', description: 'Pattern recognition for wave analysis' },
+    { id: 'momentum', name: 'Momentum', description: 'Trend-following strategy' },
+    { id: 'arbitrage', name: 'Arbitrage', description: 'Price difference exploitation' },
+    { id: 'mean_reversion', name: 'Mean Reversion', description: 'Counter-trend strategy' }
+  ]
+  
+  const handleDeploy = () => {
+    // Deployment logic would go here
+    console.log('Deploying farm with config:', deploymentConfig)
+  }
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Farm Deployment</h3>
+        <p className="text-sm text-muted-foreground">Deploy new agent farms with custom configurations</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Deployment Configuration</CardTitle>
+            <CardDescription>Configure your new farm deployment</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="farmName">Farm Name</Label>
+              <Input
+                id="farmName"
+                value={deploymentConfig.farmName}
+                onChange={(e) => setDeploymentConfig(prev => ({ ...prev, farmName: e.target.value }))}
+                placeholder="Enter farm name..."
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="strategy">Trading Strategy</Label>
+              <select
+                id="strategy"
+                value={deploymentConfig.strategy}
+                onChange={(e) => setDeploymentConfig(prev => ({ ...prev, strategy: e.target.value }))}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="">Select strategy...</option>
+                {strategies.map(strategy => (
+                  <option key={strategy.id} value={strategy.id}>{strategy.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="agentCount">Agent Count</Label>
+                <Input
+                  id="agentCount"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={deploymentConfig.agentCount}
+                  onChange={(e) => setDeploymentConfig(prev => ({ ...prev, agentCount: parseInt(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="allocation">Total Allocation ($)</Label>
+                <Input
+                  id="allocation"
+                  type="number"
+                  min="1000"
+                  value={deploymentConfig.allocation}
+                  onChange={(e) => setDeploymentConfig(prev => ({ ...prev, allocation: parseInt(e.target.value) }))}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="riskLevel">Risk Level</Label>
+              <select
+                id="riskLevel"
+                value={deploymentConfig.riskLevel}
+                onChange={(e) => setDeploymentConfig(prev => ({ ...prev, riskLevel: e.target.value }))}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="low">Low Risk</option>
+                <option value="medium">Medium Risk</option>
+                <option value="high">High Risk</option>
+              </select>
+            </div>
+            
+            <Button onClick={handleDeploy} className="w-full bg-emerald-600 hover:bg-emerald-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Deploy Farm
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Deployment History</CardTitle>
+            <CardDescription>Recent farm deployments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="border rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Momentum Farm {i}</h4>
+                      <p className="text-sm text-muted-foreground">Deployed 2 hours ago</p>
+                    </div>
+                    <Badge variant="default">Running</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+                    <span>Agents: 8</span>
+                    <span>Strategy: Momentum</span>
+                    <span>Value: $25,000</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Farm Monitoring Panel Component
+function FarmMonitoringPanel() {
+  const [selectedFarm, setSelectedFarm] = useState('farm-1')
+  
+  const farms = [
+    { id: 'farm-1', name: 'Darvas Box Farm', agents: 8, status: 'active', pnl: 1250.30 },
+    { id: 'farm-2', name: 'Elliott Wave Farm', agents: 5, status: 'active', pnl: 890.50 },
+    { id: 'farm-3', name: 'Momentum Farm', agents: 12, status: 'paused', pnl: -145.20 }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Farm Monitoring</h3>
+        <p className="text-sm text-muted-foreground">Real-time performance monitoring for all farms</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Active Farms</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {farms.map(farm => (
+                <div
+                  key={farm.id}
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    selectedFarm === farm.id ? 'border-emerald-500 bg-emerald-50' : 'hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedFarm(farm.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{farm.name}</h4>
+                    <Badge variant={farm.status === 'active' ? 'default' : 'secondary'}>
+                      {farm.status}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {farm.agents} agents • P&L: ${farm.pnl.toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Performance Metrics</CardTitle>
+            <CardDescription>Real-time monitoring for {farms.find(f => f.id === selectedFarm)?.name}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-emerald-600">8</div>
+                <div className="text-sm text-muted-foreground">Active Agents</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">$42,500</div>
+                <div className="text-sm text-muted-foreground">Total Value</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">+$1,250</div>
+                <div className="text-sm text-muted-foreground">Daily P&L</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">74.2%</div>
+                <div className="text-sm text-muted-foreground">Win Rate</div>
+              </div>
+            </div>
+            
+            <div className="mt-6 space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>CPU Usage</span>
+                  <span>65%</span>
+                </div>
+                <Progress value={65} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Memory Usage</span>
+                  <span>48%</span>
+                </div>
+                <Progress value={48} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Network I/O</span>
+                  <span>23%</span>
+                </div>
+                <Progress value={23} className="h-2" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Farm Optimization Panel Component  
+function FarmOptimizationPanel() {
+  const [optimizationSettings, setOptimizationSettings] = useState({
+    autoRebalance: true,
+    performanceThreshold: 70,
+    riskTolerance: 'medium',
+    optimizationFrequency: 'daily'
+  })
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Farm Optimization</h3>
+        <p className="text-sm text-muted-foreground">Optimize farm performance with AI-driven adjustments</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Optimization Settings</CardTitle>
+            <CardDescription>Configure automatic optimization parameters</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Auto-Rebalancing</Label>
+                <p className="text-sm text-muted-foreground">Automatically rebalance agent allocations</p>
+              </div>
+              <Switch
+                checked={optimizationSettings.autoRebalance}
+                onCheckedChange={(checked) => setOptimizationSettings(prev => ({ ...prev, autoRebalance: checked }))}
+              />
+            </div>
+            
+            <div>
+              <Label>Performance Threshold (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={optimizationSettings.performanceThreshold}
+                onChange={(e) => setOptimizationSettings(prev => ({ ...prev, performanceThreshold: parseInt(e.target.value) }))}
+              />
+            </div>
+            
+            <div>
+              <Label>Risk Tolerance</Label>
+              <select
+                value={optimizationSettings.riskTolerance}
+                onChange={(e) => setOptimizationSettings(prev => ({ ...prev, riskTolerance: e.target.value }))}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            
+            <div>
+              <Label>Optimization Frequency</Label>
+              <select
+                value={optimizationSettings.optimizationFrequency}
+                onChange={(e) => setOptimizationSettings(prev => ({ ...prev, optimizationFrequency: e.target.value }))}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="realtime">Real-time</option>
+                <option value="hourly">Hourly</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Optimization Recommendations</CardTitle>
+            <CardDescription>AI-generated performance improvements</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { title: 'Increase Elliott Wave allocation', impact: '+$420/day', confidence: 89 },
+                { title: 'Reduce Darvas Box risk exposure', impact: '-12% risk', confidence: 76 },
+                { title: 'Add momentum indicator filter', impact: '+3.2% win rate', confidence: 94 }
+              ].map((rec, i) => (
+                <div key={i} className="border rounded-lg p-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{rec.title}</h4>
+                      <p className="text-sm text-emerald-600">{rec.impact}</p>
+                    </div>
+                    <Badge variant="outline">{rec.confidence}% confidence</Badge>
+                  </div>
+                  <Button size="sm" variant="outline" className="mt-2 w-full">
+                    Apply Recommendation
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
 // Consolidated Farms Tab with 4 sub-tabs
 function FarmsTab() {
   const [farmSubTab, setFarmSubTab] = useState('farms-overview')
   
   const farmSubTabs = [
     { id: 'farms-overview', label: 'Overview', component: <div className="p-6"><FarmsPage /></div> },
-    { id: 'farm-deployment', label: 'Deployment', component: <div className="p-6 text-center">Farm Deployment Tools</div> },
-    { id: 'farm-monitoring', label: 'Monitoring', component: <div className="p-6 text-center">Farm Performance Monitoring</div> },
-    { id: 'farm-optimization', label: 'Optimization', component: <div className="p-6 text-center">Farm Strategy Optimization</div> }
+    { id: 'farm-deployment', label: 'Deployment', component: <FarmDeploymentPanel /> },
+    { id: 'farm-monitoring', label: 'Monitoring', component: <FarmMonitoringPanel /> },
+    { id: 'farm-optimization', label: 'Optimization', component: <FarmOptimizationPanel /> }
   ]
   
   return (
@@ -562,15 +1054,274 @@ function FarmsTab() {
   )
 }
 
+// Goal Progress Tracking Panel Component
+function GoalProgressTrackingPanel() {
+  const [selectedTimeframe, setSelectedTimeframe] = useState('week')
+  
+  const progressData = [
+    { date: '2024-01-15', profit: 3247, target: 5000, winRate: 68.2, trades: 24 },
+    { date: '2024-01-16', profit: 4156, target: 5000, winRate: 71.5, trades: 28 },
+    { date: '2024-01-17', profit: 2890, target: 5000, winRate: 65.8, trades: 19 },
+    { date: '2024-01-18', profit: 5420, target: 5000, winRate: 74.1, trades: 31 },
+    { date: '2024-01-19', profit: 4780, target: 5000, winRate: 69.3, trades: 26 }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Goal Progress Tracking</h3>
+          <p className="text-sm text-muted-foreground">Monitor real-time progress towards your trading objectives</p>
+        </div>
+        <select
+          value={selectedTimeframe}
+          onChange={(e) => setSelectedTimeframe(e.target.value)}
+          className="p-2 border rounded-md"
+        >
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+        </select>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Daily Progress Chart</CardTitle>
+            <CardDescription>Track daily performance against targets</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {progressData.map((day, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{new Date(day.date).toLocaleDateString()}</span>
+                    <span className="font-medium">
+                      ${day.profit.toLocaleString()} / ${day.target.toLocaleString()}
+                    </span>
+                  </div>
+                  <Progress value={(day.profit / day.target) * 100} className="h-2" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Win Rate: {day.winRate}%</span>
+                    <span>Trades: {day.trades}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Goal Performance Metrics</CardTitle>
+            <CardDescription>Key performance indicators for active goals</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-emerald-600">$3,247</div>
+                <div className="text-sm text-muted-foreground">Today's Progress</div>
+                <div className="text-xs text-emerald-600">+64.9% to target</div>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">68.2%</div>
+                <div className="text-sm text-muted-foreground">Current Win Rate</div>
+                <div className="text-xs text-blue-600">+90.9% to target</div>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">3.2%</div>
+                <div className="text-sm text-muted-foreground">Max Drawdown</div>
+                <div className="text-xs text-green-600">✓ Under 5% target</div>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">12</div>
+                <div className="text-sm text-muted-foreground">Days Remaining</div>
+                <div className="text-xs text-orange-600">To monthly deadline</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Goal Analytics Panel Component
+function GoalAnalyticsPanel() {
+  const achievements = [
+    { title: 'Consistency Master', description: 'Achieved daily profit target 5 days in a row', date: '2024-01-19', type: 'streak' },
+    { title: 'Risk Manager', description: 'Maintained drawdown below 5% for 30 days', date: '2024-01-18', type: 'risk' },
+    { title: 'Win Rate Champion', description: 'Exceeded 70% win rate for the week', date: '2024-01-17', type: 'performance' },
+    { title: 'Profit Milestone', description: 'Reached $20,000 monthly profit milestone', date: '2024-01-15', type: 'milestone' }
+  ]
+  
+  const insights = [
+    { metric: 'Best Performing Strategy', value: 'Elliott Wave', change: '+34.2%' },
+    { metric: 'Optimal Trading Hours', value: '9:30-11:30 AM EST', change: '+28.5%' },
+    { metric: 'Peak Performance Day', value: 'Tuesday', change: '+19.3%' },
+    { metric: 'Success Pattern', value: 'High Volume + Low VIX', change: '+41.7%' }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Goal Analytics</h3>
+        <p className="text-sm text-muted-foreground">Analyze performance patterns and achievements</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Recent Achievements</CardTitle>
+            <CardDescription>Your latest trading milestones</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {achievements.map((achievement, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <Star className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">{achievement.title}</h4>
+                    <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{achievement.date}</p>
+                  </div>
+                  <Badge variant="outline">{achievement.type}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Performance Insights</CardTitle>
+            <CardDescription>AI-discovered patterns in your trading</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {insights.map((insight, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">{insight.metric}</h4>
+                    <p className="text-sm text-muted-foreground">{insight.value}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-emerald-600">{insight.change}</div>
+                    <div className="text-xs text-muted-foreground">improvement</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Goal Calendar Panel Component
+function GoalCalendarPanel() {
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  
+  const calendarEvents = [
+    { date: '2024-01-20', title: 'Daily Profit Target', status: 'pending', target: '$5,000' },
+    { date: '2024-01-22', title: 'Weekly Win Rate Review', status: 'scheduled', target: '75%' },
+    { date: '2024-01-25', title: 'Monthly Risk Assessment', status: 'upcoming', target: '<5% drawdown' },
+    { date: '2024-01-30', title: 'Goal Performance Review', status: 'upcoming', target: 'All goals' }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Goal Timeline Calendar</h3>
+        <p className="text-sm text-muted-foreground">Track deadlines and milestones for your trading goals</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Upcoming Deadlines</CardTitle>
+            <CardDescription>Important dates and milestones</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {calendarEvents.map((event, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div className="text-center">
+                    <div className="text-lg font-bold">
+                      {new Date(event.date).getDate()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">{event.title}</h4>
+                    <p className="text-sm text-muted-foreground">Target: {event.target}</p>
+                  </div>
+                  <Badge variant={event.status === 'pending' ? 'default' : 'outline'}>
+                    {event.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Goal Schedule</CardTitle>
+            <CardDescription>Weekly and monthly goal timeline</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-7 gap-2 text-center text-sm">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="font-medium text-muted-foreground">{day}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 35 }, (_, i) => {
+                  const date = i + 1
+                  const hasEvent = calendarEvents.some(event => 
+                    new Date(event.date).getDate() === date
+                  )
+                  return (
+                    <div
+                      key={i}
+                      className={`p-2 text-center text-sm rounded cursor-pointer ${
+                        hasEvent 
+                          ? 'bg-emerald-100 text-emerald-700 font-medium' 
+                          : date <= 31 
+                            ? 'hover:bg-gray-100' 
+                            : 'text-muted-foreground'
+                      }`}
+                    >
+                      {date <= 31 ? date : ''}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
 // Consolidated Goals Tab with 4 sub-tabs  
 function GoalsTab() {
   const [goalSubTab, setGoalSubTab] = useState('goals-overview')
   
   const goalSubTabs = [
     { id: 'goals-overview', label: 'Overview', component: <div className="p-6"><GoalsPage /></div> },
-    { id: 'goal-tracking', label: 'Tracking', component: <div className="p-6 text-center">Goal Progress Tracking</div> },
-    { id: 'goal-analytics', label: 'Analytics', component: <div className="p-6 text-center">Goal Performance Analytics</div> },
-    { id: 'goal-calendar', label: 'Calendar', component: <div className="p-6 text-center">Goal Timeline Calendar</div> }
+    { id: 'goal-tracking', label: 'Tracking', component: <GoalProgressTrackingPanel /> },
+    { id: 'goal-analytics', label: 'Analytics', component: <GoalAnalyticsPanel /> },
+    { id: 'goal-calendar', label: 'Calendar', component: <GoalCalendarPanel /> }
   ]
   
   return (
@@ -643,19 +1394,144 @@ function CalendarTab() {
   )
 }
 
+// Risk Management Panel Component
+function RiskManagementPanel() {
+  const [riskSettings, setRiskSettings] = useState({
+    maxDailyLoss: 5000,
+    maxDrawdown: 10,
+    positionSizeLimit: 15,
+    volatilityThreshold: 25,
+    correlationLimit: 0.7,
+    stopLossEnabled: true,
+    takeProfitEnabled: true
+  })
+  
+  const riskMetrics = [
+    { label: 'Value at Risk (1d)', value: '$2,340', status: 'normal', limit: '$5,000' },
+    { label: 'Portfolio Beta', value: '1.12', status: 'moderate', limit: '1.50' },
+    { label: 'Sharpe Ratio', value: '2.34', status: 'good', limit: '>1.00' },
+    { label: 'Max Drawdown', value: '8.2%', status: 'normal', limit: '10%' },
+    { label: 'Correlation Risk', value: '0.45', status: 'good', limit: '0.70' },
+    { label: 'Leverage Ratio', value: '1.8x', status: 'normal', limit: '3.0x' }
+  ]
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'good': return 'text-green-600 bg-green-100'
+      case 'normal': return 'text-blue-600 bg-blue-100'
+      case 'moderate': return 'text-yellow-600 bg-yellow-100'
+      case 'high': return 'text-red-600 bg-red-100'
+      default: return 'text-gray-600 bg-gray-100'
+    }
+  }
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Risk Management</h3>
+        <p className="text-sm text-muted-foreground">Monitor and control portfolio risk exposure</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Risk Metrics</CardTitle>
+            <CardDescription>Current portfolio risk assessment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {riskMetrics.map((metric, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">{metric.label}</h4>
+                    <p className="text-sm text-muted-foreground">Limit: {metric.limit}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-lg">{metric.value}</div>
+                    <Badge className={getStatusColor(metric.status)}>
+                      {metric.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Risk Controls</CardTitle>
+            <CardDescription>Configure risk management parameters</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Max Daily Loss ($)</Label>
+              <Input
+                type="number"
+                value={riskSettings.maxDailyLoss}
+                onChange={(e) => setRiskSettings(prev => ({ ...prev, maxDailyLoss: parseInt(e.target.value) }))}
+              />
+            </div>
+            
+            <div>
+              <Label>Max Drawdown (%)</Label>
+              <Input
+                type="number"
+                value={riskSettings.maxDrawdown}
+                onChange={(e) => setRiskSettings(prev => ({ ...prev, maxDrawdown: parseInt(e.target.value) }))}
+              />
+            </div>
+            
+            <div>
+              <Label>Position Size Limit (%)</Label>
+              <Input
+                type="number"
+                value={riskSettings.positionSizeLimit}
+                onChange={(e) => setRiskSettings(prev => ({ ...prev, positionSizeLimit: parseInt(e.target.value) }))}
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Stop Loss Protection</Label>
+                <Switch
+                  checked={riskSettings.stopLossEnabled}
+                  onCheckedChange={(checked) => setRiskSettings(prev => ({ ...prev, stopLossEnabled: checked }))}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label>Take Profit Orders</Label>
+                <Switch
+                  checked={riskSettings.takeProfitEnabled}
+                  onCheckedChange={(checked) => setRiskSettings(prev => ({ ...prev, takeProfitEnabled: checked }))}
+                />
+              </div>
+            </div>
+            
+            <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+              Update Risk Settings
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
 // Consolidated Advanced Tab with 7 feature sub-tabs (removed DeFi)
 function AdvancedTab() {
   const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
   
   const advancedSubTabs = [
     { id: 'analytics', label: 'Analytics', component: <SimpleAnalytics /> },
-    { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6 text-center">Comprehensive Analytics - Coming Soon</div> },
-    { id: 'knowledge-graph', label: 'Knowledge Graph', component: <div className="p-6 text-center">Knowledge Graph Visualization</div> },
+    { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6"><ComprehensiveAnalyticsPage /></div> },
+    { id: 'knowledge-graph', label: 'Knowledge Graph', component: <div className="p-6"><KnowledgeGraphPage /></div> },
     { id: 'python-analysis', label: 'Python Analysis', component: <div className="p-6"><PythonAnalysisPage /></div> },
     { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
-    { id: 'persistence', label: 'Persistence', component: <div className="p-6 text-center">Data Persistence Manager</div> },
+    { id: 'persistence', label: 'Persistence', component: <div className="p-6"><PersistencePage /></div> },
     { id: 'portfolio', label: 'Portfolio', component: <PortfolioTab /> },
-    { id: 'risk', label: 'Risk Management', component: <div className="p-6 text-center">Risk Management Tools</div> }
+    { id: 'risk', label: 'Risk Management', component: <RiskManagementPanel /> }
   ]
   
   return (
