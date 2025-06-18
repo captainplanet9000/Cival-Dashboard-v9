@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { 
   Card, 
   CardContent, 
@@ -18,8 +19,17 @@ import {
   ArrowRightIcon
 } from 'lucide-react'
 import { useFileStorage } from '@/lib/hooks/useFileStorage'
-import FileManager from '@/components/data-manager/FileManager'
-import FileDataViewer from '@/components/data-manager/FileDataViewer'
+
+// Dynamically import components that use Supabase to prevent SSR issues
+const FileManager = dynamic(() => import('@/components/data-manager/FileManager'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading file manager...</div>
+})
+
+const FileDataViewer = dynamic(() => import('@/components/data-manager/FileDataViewer'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading data viewer...</div>
+})
 import { UploadedFile } from '@/lib/services/supabase-storage-service'
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
