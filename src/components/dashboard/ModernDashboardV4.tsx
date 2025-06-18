@@ -21,8 +21,19 @@ import {
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 // Import existing components and hooks
-import { useBackendClient } from '@/lib/api/backend-client'
+import { backendApi } from '@/lib/api/backend-client'
 import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel'
+
+// Import additional page components for consolidated tabs
+import FarmsPage from '@/app/dashboard/farms/page'
+import GoalsPage from '@/app/dashboard/goals/page'
+import PythonAnalysisPage from '@/app/dashboard/python-analysis/page'
+import ElizaPage from '@/app/dashboard/eliza/page'
+import AnalyticsPage from '@/app/dashboard/analytics/page'
+import ComprehensiveAnalyticsPage from '@/app/dashboard/comprehensive-analytics/page'
+import KnowledgeGraphPage from '@/app/dashboard/knowledge-graph/page'
+import PersistencePage from '@/app/dashboard/persistence/page'
+import DeFiLendingPage from '@/app/dashboard/defi-lending/page'
 
 interface DashboardMetrics {
   totalValue: number
@@ -75,7 +86,8 @@ export function ModernDashboardV4() {
   const [isLoading, setIsLoading] = useState(true)
   const [chartData] = useState<ChartDataPoint[]>(generateChartData())
   
-  const backendClient = useBackendClient()
+  // Remove unused backendClient reference
+  // const backendClient = backendApi
 
   // Dashboard metrics state with v4 minimal mock data
   const [metrics, setMetrics] = useState<DashboardMetrics>({
@@ -96,7 +108,7 @@ export function ModernDashboardV4() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Tab configuration with v4 design
+  // Consolidated tab configuration with organized sub-systems
   const tabs: DashboardTab[] = [
     {
       id: 'overview',
@@ -105,28 +117,28 @@ export function ModernDashboardV4() {
       component: <OverviewTab metrics={metrics} chartData={chartData} />
     },
     {
-      id: 'portfolio',
-      label: 'Portfolio',
-      icon: <PieChart className="h-4 w-4" />,
-      component: <PortfolioTab />
-    },
-    {
       id: 'agents',
-      label: 'Expert Agents',
+      label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <ExpertAgentsPanel />
+      component: <AgentsTab />
     },
     {
       id: 'farms',
-      label: 'Trading Farms',
+      label: 'Farms',
       icon: <Target className="h-4 w-4" />,
       component: <FarmsTab />
     },
     {
-      id: 'analytics',
-      label: 'Analytics',
-      icon: <Activity className="h-4 w-4" />,
-      component: <AnalyticsTab />
+      id: 'goals',
+      label: 'Goals',
+      icon: <Star className="h-4 w-4" />,
+      component: <GoalsTab />
+    },
+    {
+      id: 'advanced',
+      label: 'Advanced',
+      icon: <Settings className="h-4 w-4" />,
+      component: <AdvancedTab />
     }
   ]
 
@@ -425,43 +437,214 @@ function PortfolioTab() {
   )
 }
 
-// Trading Farms Tab Component
-function FarmsTab() {
+// Consolidated Agents Tab with 5 sub-tabs
+function AgentsTab() {
+  const [agentSubTab, setAgentSubTab] = useState('expert-agents')
+  
+  const agentSubTabs = [
+    { id: 'expert-agents', label: 'Expert Agents', component: <ExpertAgentsPanel /> },
+    { id: 'agent-trading', label: 'Agent Trading', component: <div className="p-6 text-center">Agent Trading Interface</div> },
+    { id: 'agent-data', label: 'Agent Data', component: <div className="p-6 text-center">Agent Data Access</div> },
+    { id: 'ai-enhanced', label: 'AI Enhanced', component: <div className="p-6 text-center">AI Enhanced Features</div> },
+    { id: 'strategies', label: 'Strategies', component: <div className="p-6 text-center">Trading Strategies</div> }
+  ]
+  
   return (
     <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
       <CardHeader>
-        <CardTitle>Trading Farms</CardTitle>
-        <CardDescription>Manage automated trading farm deployments</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Bot className="h-5 w-5 text-violet-600" />
+          Agent Management System
+        </CardTitle>
+        <CardDescription>Comprehensive agent coordination and management</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="text-center py-12">
-          <Target className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Trading Farms</h3>
-          <p className="text-gray-600 mt-2">Deploy and manage trading strategy farms</p>
-        </div>
+        <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5 bg-violet-50">
+            {agentSubTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {agentSubTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
       </CardContent>
     </Card>
   )
 }
 
-// Analytics Tab Component
-function AnalyticsTab() {
+// Consolidated Farms Tab with 4 sub-tabs
+function FarmsTab() {
+  const [farmSubTab, setFarmSubTab] = useState('farms-overview')
+  
+  const farmSubTabs = [
+    { id: 'farms-overview', label: 'Overview', component: <FarmsPage /> },
+    { id: 'farm-deployment', label: 'Deployment', component: <div className="p-6 text-center">Farm Deployment Tools</div> },
+    { id: 'farm-monitoring', label: 'Monitoring', component: <div className="p-6 text-center">Farm Performance Monitoring</div> },
+    { id: 'farm-optimization', label: 'Optimization', component: <div className="p-6 text-center">Farm Strategy Optimization</div> }
+  ]
+  
   return (
     <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
       <CardHeader>
-        <CardTitle>Advanced Analytics</CardTitle>
-        <CardDescription>Performance metrics and insights</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Target className="h-5 w-5 text-emerald-600" />
+          Trading Farms Management
+        </CardTitle>
+        <CardDescription>Deploy and manage automated trading farm clusters</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="text-center py-12">
-          <Activity className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Analytics Dashboard</h3>
-          <p className="text-gray-600 mt-2">Comprehensive trading analytics and insights</p>
-        </div>
+        <Tabs value={farmSubTab} onValueChange={setFarmSubTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4 bg-emerald-50">
+            {farmSubTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {farmSubTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
       </CardContent>
     </Card>
   )
 }
+
+// Consolidated Goals Tab with 4 sub-tabs  
+function GoalsTab() {
+  const [goalSubTab, setGoalSubTab] = useState('goals-overview')
+  
+  const goalSubTabs = [
+    { id: 'goals-overview', label: 'Overview', component: <GoalsPage /> },
+    { id: 'goal-tracking', label: 'Tracking', component: <div className="p-6 text-center">Goal Progress Tracking</div> },
+    { id: 'goal-analytics', label: 'Analytics', component: <div className="p-6 text-center">Goal Performance Analytics</div> },
+    { id: 'goal-calendar', label: 'Calendar', component: <div className="p-6 text-center">Goal Timeline Calendar</div> }
+  ]
+  
+  return (
+    <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Star className="h-5 w-5 text-amber-600" />
+          Goals & Objectives
+        </CardTitle>
+        <CardDescription>Set, track and achieve trading objectives</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={goalSubTab} onValueChange={setGoalSubTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4 bg-amber-50">
+            {goalSubTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {goalSubTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Consolidated Advanced Tab with 9 feature sub-tabs
+function AdvancedTab() {
+  const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
+  
+  const advancedSubTabs = [
+    { id: 'analytics', label: 'Analytics', component: <AnalyticsPage /> },
+    { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <ComprehensiveAnalyticsPage /> },
+    { id: 'knowledge-graph', label: 'Knowledge Graph', component: <KnowledgeGraphPage /> },
+    { id: 'python-analysis', label: 'Python Analysis', component: <PythonAnalysisPage /> },
+    { id: 'eliza-ai', label: 'Eliza AI', component: <ElizaPage /> },
+    { id: 'defi-lending', label: 'DeFi Lending', component: <DeFiLendingPage /> },
+    { id: 'persistence', label: 'Persistence', component: <PersistencePage /> },
+    { id: 'portfolio', label: 'Portfolio', component: <PortfolioTab /> },
+    { id: 'risk', label: 'Risk Management', component: <div className="p-6 text-center">Risk Management Tools</div> }
+  ]
+  
+  return (
+    <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-gray-600" />
+          Advanced Features
+        </CardTitle>
+        <CardDescription>Professional trading tools and advanced analytics</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={advancedSubTab} onValueChange={setAdvancedSubTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-50">
+            {advancedSubTabs.slice(0, 3).map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-800"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsList className="grid w-full grid-cols-3 bg-gray-50">
+            {advancedSubTabs.slice(3, 6).map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-800"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsList className="grid w-full grid-cols-3 bg-gray-50">
+            {advancedSubTabs.slice(6, 9).map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-800"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {advancedSubTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </CardContent>
+    </Card>
+  )
+}
+
 
 // Loading Screen Component
 function LoadingScreen() {
