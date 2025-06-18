@@ -4,94 +4,94 @@
 
 @layer base {
   :root {
-    /* Base colors */
-    --background: 0 0% 100%;
+    /* V4 Emerald/Violet/Amber Base Colors */
+    --background: 152 100% 98%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
+    --primary: 158 64% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 152 50% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
+    --muted: 152 50% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
+    --accent: 152 50% 96%;
     --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --destructive: 348 83% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 152 30% 91%;
+    --input: 152 30% 91%;
+    --ring: 158 64% 52%;
     --radius: 0.5rem;
 
-    /* Trading-specific colors */
-    --trading-buy: 142 76% 36%;
-    --trading-sell: 346 87% 43%;
-    --trading-profit: 142 69% 58%;
-    --trading-loss: 346 87% 43%;
-    --trading-neutral: 213 27% 84%;
+    /* V4 Trading-specific colors */
+    --trading-buy: 158 64% 52%;
+    --trading-sell: 348 83% 47%;
+    --trading-profit: 158 64% 52%;
+    --trading-loss: 348 83% 47%;
+    --trading-neutral: 152 30% 84%;
 
-    /* Chart colors */
-    --chart-grid: 214.3 31.8% 91.4%;
+    /* V4 Chart colors */
+    --chart-grid: 152 30% 91%;
     --chart-axis: 215.4 16.3% 46.9%;
-    --chart-volume: 221.2 83.2% 53.3%;
-    --chart-indicator-sma: 262.1 83.3% 57.8%;
-    --chart-indicator-ema: 346 87% 43%;
-    --chart-indicator-rsi: 47.9 95.8% 53.1%;
-    --chart-indicator-macd: 142 76% 36%;
+    --chart-volume: 158 64% 52%;
+    --chart-indicator-sma: 271 91% 65%;
+    --chart-indicator-ema: 348 83% 47%;
+    --chart-indicator-rsi: 43 96% 56%;
+    --chart-indicator-macd: 158 64% 52%;
 
-    /* Status colors */
-    --status-online: 142 69% 58%;
+    /* V4 Status colors */
+    --status-online: 158 64% 52%;
     --status-offline: 0 0% 45%;
-    --status-warning: 47.9 95.8% 53.1%;
-    --status-error: 346 87% 43%;
+    --status-warning: 43 96% 56%;
+    --status-error: 348 83% 47%;
   }
 
   .dark {
-    /* Dark mode base colors */
+    /* V4 Dark mode base colors */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 158 64% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 158 32% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 158 32% 17%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 158 32% 17%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --destructive: 348 83% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 158 32% 17%;
+    --input: 158 32% 17%;
+    --ring: 158 64% 52%;
 
-    /* Dark mode trading colors */
-    --trading-buy: 142 84% 47%;
-    --trading-sell: 346 87% 65%;
-    --trading-profit: 142 84% 47%;
-    --trading-loss: 346 87% 65%;
+    /* V4 Dark mode trading colors */
+    --trading-buy: 158 64% 52%;
+    --trading-sell: 348 83% 47%;
+    --trading-profit: 158 64% 52%;
+    --trading-loss: 348 83% 47%;
     --trading-neutral: 215 20.2% 65.1%;
 
-    /* Dark mode chart colors */
-    --chart-grid: 217.2 32.6% 17.5%;
+    /* V4 Dark mode chart colors */
+    --chart-grid: 158 32% 17%;
     --chart-axis: 215 20.2% 65.1%;
-    --chart-volume: 217.2 91.2% 59.8%;
-    --chart-indicator-sma: 262.1 83.3% 67.8%;
-    --chart-indicator-ema: 346 87% 65%;
-    --chart-indicator-rsi: 47.9 95.8% 63.1%;
-    --chart-indicator-macd: 142 84% 47%;
+    --chart-volume: 158 64% 52%;
+    --chart-indicator-sma: 271 91% 65%;
+    --chart-indicator-ema: 348 83% 47%;
+    --chart-indicator-rsi: 43 96% 56%;
+    --chart-indicator-macd: 158 64% 52%;
 
-    /* Dark mode status colors */
-    --status-online: 142 84% 47%;
+    /* V4 Dark mode status colors */
+    --status-online: 158 64% 52%;
     --status-offline: 0 0% 55%;
-    --status-warning: 47.9 95.8% 63.1%;
-    --status-error: 346 87% 65%;
+    --status-warning: 43 96% 56%;
+    --status-error: 348 83% 47%;
   }
 }
 
@@ -203,7 +203,7 @@
   }
 
   .nav-link-active {
-    @apply bg-primary text-primary-foreground;
+    @apply bg-emerald-500 text-white;
   }
 
   .nav-link-inactive {
@@ -262,7 +262,7 @@
 /* Custom utilities */
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-emerald-600 via-violet-600 to-amber-600 bg-clip-text text-transparent;
   }
 
   .glass-effect {
