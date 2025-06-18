@@ -1,0 +1,21 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm ci",
+  "devCommand": "npm run dev",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "src/pages/api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
+}
