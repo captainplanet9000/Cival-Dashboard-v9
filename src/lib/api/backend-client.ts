@@ -975,6 +975,642 @@ class BackendApiClient {
       };
     }
   }
+
+  // ==========================================
+  // TRADING FARM BRAIN ENDPOINTS
+  // ==========================================
+
+  async getFarmCalendarData(year: number, month: number): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/calendar/${year}/${month}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm calendar data',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmDailyPerformance(date: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/daily/${date}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm daily performance',
+        status: 0,
+      };
+    }
+  }
+
+  async archiveFarmStrategy(strategyData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/archive/strategy`, {
+        method: 'POST',
+        body: JSON.stringify(strategyData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to archive farm strategy',
+        status: 0,
+      };
+    }
+  }
+
+  async archiveFarmTrade(tradeData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/archive/trade`, {
+        method: 'POST',
+        body: JSON.stringify(tradeData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to archive farm trade',
+        status: 0,
+      };
+    }
+  }
+
+  async archiveFarmDecision(decisionData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/archive/decision`, {
+        method: 'POST',
+        body: JSON.stringify(decisionData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to archive farm decision',
+        status: 0,
+      };
+    }
+  }
+
+  async persistFarmAgentMemory(memoryData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/agent/memory/persist`, {
+        method: 'POST',
+        body: JSON.stringify(memoryData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to persist farm agent memory',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmAgentMemory(agentId: string, memoryType?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = memoryType ? `?memory_type=${memoryType}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/agent/${agentId}/memory${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm agent memory',
+        status: 0,
+      };
+    }
+  }
+
+  async runFarmDataIngestion(fullIngestion: boolean = false): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/ingestion/run`, {
+        method: 'POST',
+        body: JSON.stringify({ full_ingestion: fullIngestion })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to run farm data ingestion',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmIngestionStatus(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/ingestion/status`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm ingestion status',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmComprehensiveAnalytics(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/analytics/comprehensive`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm comprehensive analytics',
+        status: 0,
+      };
+    }
+  }
+
+  // ==========================================
+  // KNOWLEDGE GRAPH API METHODS
+  // ==========================================
+
+  async initializeKnowledgeGraph(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/initialize`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to initialize knowledge graph',
+        status: 0,
+      };
+    }
+  }
+
+  async searchKnowledgeGraph(query: string, entityType?: string, limit: number = 10): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams({ query, limit: limit.toString() });
+      if (entityType) params.append('entity_type', entityType);
+      
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/search?${params.toString()}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to search knowledge graph',
+        status: 0,
+      };
+    }
+  }
+
+  async getStrategyPatterns(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/patterns/strategies`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get strategy patterns',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentSpecializations(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/patterns/agents`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent specializations',
+        status: 0,
+      };
+    }
+  }
+
+  async getDecisionCorrelations(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/correlations/decisions`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get decision correlations',
+        status: 0,
+      };
+    }
+  }
+
+  async getEntityTimeline(entityId: string, days: number = 30): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/timeline/${entityId}?days=${days}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get entity timeline',
+        status: 0,
+      };
+    }
+  }
+
+  async getKnowledgeGraphStats(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/statistics`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get knowledge graph statistics',
+        status: 0,
+      };
+    }
+  }
+
+  // ==========================================
+  // EXPERT AGENTS API METHODS
+  // ==========================================
+
+  async createExpertAgent(agentType: string, config: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/create`, {
+        method: 'POST',
+        body: JSON.stringify({
+          agent_type: agentType,
+          config: config
+        })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create expert agent',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentsStatus(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/status`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agents status',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentStatus(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/status/${agentId}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agent status',
+        status: 0,
+      };
+    }
+  }
+
+  async deleteExpertAgent(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/delete/${agentId}`, {
+        method: 'DELETE'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to delete expert agent',
+        status: 0,
+      };
+    }
+  }
+
+  async analyzeSymbolWithExperts(symbol: string, marketData: any, agentTypes?: string[]): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analyze`, {
+        method: 'POST',
+        body: JSON.stringify({
+          symbol: symbol,
+          market_data: marketData,
+          agent_types: agentTypes
+        })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to analyze symbol with experts',
+        status: 0,
+      };
+    }
+  }
+
+  async quickAnalyzeSymbol(symbol: string, agentTypes?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = agentTypes ? `?agent_types=${agentTypes}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analyze/${symbol}${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to quick analyze symbol',
+        status: 0,
+      };
+    }
+  }
+
+  async assignGoalToExpertAgent(agentId: string, goalConfig: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/goals/${agentId}`, {
+        method: 'POST',
+        body: JSON.stringify(goalConfig)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to assign goal to expert agent',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentGoals(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/goals/${agentId}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agent goals',
+        status: 0,
+      };
+    }
+  }
+
+  async updateExpertAgentPerformance(agentId: string, decisionCorrect: boolean, tradeProfitable?: boolean): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/${agentId}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          decision_correct: decisionCorrect,
+          trade_profitable: tradeProfitable
+        })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to update expert agent performance',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentPerformance(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/${agentId}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agent performance',
+        status: 0,
+      };
+    }
+  }
+
+  async triggerExpertAgentLearning(agentId: string, learningData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/learning/${agentId}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          learning_data: learningData
+        })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to trigger expert agent learning',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentLearningStatus(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/learning/${agentId}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agent learning status',
+        status: 0,
+      };
+    }
+  }
+
+  async optimizeExpertAgent(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/optimize/${agentId}`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to optimize expert agent',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentCoordinationStatus(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/status`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get coordination status',
+        status: 0,
+      };
+    }
+  }
+
+  async configureExpertAgentCoordination(config: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/configure`, {
+        method: 'POST',
+        body: JSON.stringify(config)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to configure coordination',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentTypes(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/types`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agent types',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentsAnalyticsSummary(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analytics/summary`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agents analytics summary',
+        status: 0,
+      };
+    }
+  }
+
+  async listExpertAgents(filters?: { active_only?: boolean; agent_type?: string }): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.active_only) params.append('active_only', 'true');
+      if (filters?.agent_type) params.append('agent_type', filters.agent_type);
+      
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/list${queryString}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to list expert agents',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentDetails(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agent details',
+        status: 0,
+      };
+    }
+  }
+
+  async activateExpertAgent(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/activate`, {
+        method: 'PUT'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to activate expert agent',
+        status: 0,
+      };
+    }
+  }
+
+  async deactivateExpertAgent(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/deactivate`, {
+        method: 'PUT'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to deactivate expert agent',
+        status: 0,
+      };
+    }
+  }
+
+  async runExpertAnalysis(symbol: string, config?: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analyze`, {
+        method: 'POST',
+        body: JSON.stringify({
+          symbol,
+          timeframe: config?.timeframe || 'H1',
+          include_history: config?.include_history !== false,
+          price_history: config?.price_history,
+          market_data: config?.market_data || {}
+        })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to run expert analysis',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertPerformanceSummary(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/summary`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert performance summary',
+        status: 0,
+      };
+    }
+  }
+
+  async optimizeExpertWeights(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/optimize-weights`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to optimize expert weights',
+        status: 0,
+      };
+    }
+  }
+
+  async getExpertAgentMemory(agentId: string, memoryType: string = 'all'): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/memory?memory_type=${memoryType}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get expert agent memory',
+        status: 0,
+      };
+    }
+  }
+
+  async triggerExpertLearning(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/trigger-learning`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to trigger expert learning',
+        status: 0,
+      };
+    }
+  }
+
+  async getCoordinationSettings(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/settings`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get coordination settings',
+        status: 0,
+      };
+    }
+  }
+
+  async updateCoordinationSettings(settings: any): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams();
+      if (settings.coordination_mode) params.append('coordination_mode', settings.coordination_mode);
+      if (settings.consensus_threshold !== undefined) params.append('consensus_threshold', settings.consensus_threshold.toString());
+      
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/settings?${params.toString()}`, {
+        method: 'PUT'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to update coordination settings',
+        status: 0,
+      };
+    }
+  }
 }
 
 // Export singleton instance
