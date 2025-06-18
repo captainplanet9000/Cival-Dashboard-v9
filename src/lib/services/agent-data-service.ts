@@ -19,6 +19,12 @@ export class AgentDataService {
    * Get all files that this agent has access to
    */
   async getAccessibleFiles() {
+    // Return empty array if no Supabase client (during build)
+    if (!this.supabase) {
+      console.warn('AgentDataService: No Supabase client available, returning empty file list')
+      return [];
+    }
+
     const { data: permissions, error: permissionsError } = await this.supabase
       .from('file_access_permissions')
       .select('file_id, access_level')
@@ -50,6 +56,12 @@ export class AgentDataService {
    * Get a specific file by ID if the agent has access
    */
   async getFile(fileId: string) {
+    // Return null if no Supabase client (during build)
+    if (!this.supabase) {
+      console.warn('AgentDataService: No Supabase client available, cannot get file')
+      return null;
+    }
+
     // Check if agent has access to this file
     const { data: permission, error: permissionError } = await this.supabase
       .from('file_access_permissions')
@@ -151,6 +163,12 @@ export class AgentDataService {
    * Record agent activity with a file for analytics
    */
   async recordFileAccess(fileId: string, operation: 'read' | 'query') {
+    // Skip if no Supabase client (during build)
+    if (!this.supabase) {
+      console.warn('AgentDataService: No Supabase client available, skipping access log')
+      return;
+    }
+
     await this.supabase
       .from('agent_file_access_logs')
       .insert({
