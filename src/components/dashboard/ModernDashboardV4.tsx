@@ -29,15 +29,25 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 // Using dynamic imports to prevent auto-loading issues
 import dynamic from 'next/dynamic'
 
-const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { ssr: false })
-const GoalsPage = dynamic(() => import('@/app/dashboard/goals/page'), { ssr: false })
-const PythonAnalysisPage = dynamic(() => import('@/app/dashboard/python-analysis/page'), { ssr: false })
-const ElizaPage = dynamic(() => import('@/app/dashboard/eliza/page'), { ssr: false })
-const AnalyticsPage = dynamic(() => import('@/app/dashboard/analytics/page'), { ssr: false })
-const ComprehensiveAnalyticsPage = dynamic(() => import('@/app/dashboard/comprehensive-analytics/page'), { ssr: false })
-const KnowledgeGraphPage = dynamic(() => import('@/app/dashboard/knowledge-graph/page'), { ssr: false })
-const PersistencePage = dynamic(() => import('@/app/dashboard/persistence/page'), { ssr: false })
-const DeFiLendingPage = dynamic(() => import('@/app/dashboard/defi-lending/page'), { ssr: false })
+// Import simpler components without WebSocket dependencies
+import SimpleAnalytics from './SimpleAnalytics'
+
+const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Farms...</div>
+})
+const GoalsPage = dynamic(() => import('@/app/dashboard/goals/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Goals...</div>
+})
+const PythonAnalysisPage = dynamic(() => import('@/app/dashboard/python-analysis/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Python Analysis...</div>
+})
+const ElizaPage = dynamic(() => import('@/app/dashboard/eliza/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Eliza AI...</div>
+})
 
 interface DashboardMetrics {
   totalValue: number
@@ -582,13 +592,13 @@ function AdvancedTab() {
   const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
   
   const advancedSubTabs = [
-    { id: 'analytics', label: 'Analytics', component: <div className="p-6"><AnalyticsPage /></div> },
-    { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6"><ComprehensiveAnalyticsPage /></div> },
-    { id: 'knowledge-graph', label: 'Knowledge Graph', component: <div className="p-6"><KnowledgeGraphPage /></div> },
+    { id: 'analytics', label: 'Analytics', component: <SimpleAnalytics /> },
+    { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6 text-center">Comprehensive Analytics - Coming Soon</div> },
+    { id: 'knowledge-graph', label: 'Knowledge Graph', component: <div className="p-6 text-center">Knowledge Graph Visualization</div> },
     { id: 'python-analysis', label: 'Python Analysis', component: <div className="p-6"><PythonAnalysisPage /></div> },
     { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
-    { id: 'defi-lending', label: 'DeFi Lending', component: <div className="p-6"><DeFiLendingPage /></div> },
-    { id: 'persistence', label: 'Persistence', component: <div className="p-6"><PersistencePage /></div> },
+    { id: 'defi-lending', label: 'DeFi Lending', component: <div className="p-6 text-center">DeFi Lending Platform</div> },
+    { id: 'persistence', label: 'Persistence', component: <div className="p-6 text-center">Data Persistence Manager</div> },
     { id: 'portfolio', label: 'Portfolio', component: <PortfolioTab /> },
     { id: 'risk', label: 'Risk Management', component: <div className="p-6 text-center">Risk Management Tools</div> }
   ]
