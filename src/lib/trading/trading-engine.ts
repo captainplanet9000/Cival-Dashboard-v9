@@ -3,8 +3,7 @@
  * Main orchestrator for all trading functionality
  */
 
-// Temporary bypass for build completion - will be refactored
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+// Trading Engine - Core orchestration layer
 
 import HyperliquidConnector from './hyperliquid-connector'
 import DEXConnector from './dex-connector'

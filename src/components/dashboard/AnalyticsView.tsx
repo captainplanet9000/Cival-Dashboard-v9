@@ -489,7 +489,7 @@ export function AnalyticsView() {
                 <div className="text-2xl font-bold text-red-600">
                   {correlationData.filter(c => Math.abs(c.correlation24h) > 0.6).length}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">|r| > 0.6</div>
+                <div className="text-xs text-gray-500 mt-1">|r| &gt; 0.6</div>
               </CardContent>
             </Card>
 

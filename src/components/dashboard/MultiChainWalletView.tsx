@@ -641,7 +641,7 @@ export function MultiChainWalletView() {
             {selectedNetwork === 'solana' && (
               <div className="grid grid-cols-2 gap-3">
                 <Button variant="outline" onClick={() => connectToNetwork('solana', 'Phantom')}>
-                  <img src="https://www.phantom.app/img/phantom-icon.svg" className="w-4 h-4 mr-2" alt="Phantom" />
+                  <div className="w-4 h-4 mr-2 bg-purple-600 rounded" />
                   Phantom
                 </Button>
                 <Button variant="outline" onClick={() => connectToNetwork('solana', 'Solflare')}>

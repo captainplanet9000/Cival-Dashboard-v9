@@ -43,6 +43,7 @@ import { WatchlistView } from './WatchlistView'
 import { MultiChainWalletView } from './MultiChainWalletView'
 import { HyperLendView } from './HyperLendView'
 import { AnalyticsView } from './AnalyticsView'
+import { FlashLoanView } from './FlashLoanView'
 
 interface DashboardMetrics {
   totalValue: number
@@ -455,11 +456,7 @@ export function ModernTradingDashboard() {
                 <MultiChainWalletView />
               </TabsContent>
               <TabsContent value="flashloans">
-                <div className="text-center py-12">
-                  <Zap className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Flash Loan Trading</h3>
-                  <p className="text-gray-500">Automated arbitrage with flash loans across protocols</p>
-                </div>
+                <FlashLoanView />
               </TabsContent>
               <TabsContent value="hyperlend">
                 <HyperLendView />
