@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "./globals-modern.css";
 import ErrorBoundary from "@/lib/error-handling/error-boundary";
 
 const inter = Inter({

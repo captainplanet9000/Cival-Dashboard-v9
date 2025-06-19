@@ -139,6 +139,7 @@ interface DashboardTab {
   label: string
   icon: React.ReactNode
   component: React.ReactNode
+  children?: DashboardTab[]
 }
 
 // Mock chart data for portfolio performance
@@ -213,7 +214,15 @@ export function ModernDashboardV4() {
       id: 'goals',
       label: 'Goals',
       icon: <Star className="h-4 w-4" />,
-      component: <GoalsTab />
+      component: <GoalsTab />,
+      children: [
+        {
+          id: 'eliza',
+          label: 'Eliza AI',
+          icon: <Bot className="h-4 w-4" />,
+          component: <ElizaPage />
+        }
+      ]
     },
     {
       id: 'trading',
@@ -225,7 +234,15 @@ export function ModernDashboardV4() {
       id: 'vault',
       label: 'Vault',
       icon: <Wallet className="h-4 w-4" />,
-      component: <VaultTab />
+      component: <VaultTab />,
+      children: [
+        {
+          id: 'calendar',
+          label: 'Calendar',
+          icon: <Calendar className="h-4 w-4" />,
+          component: <CalendarPage />
+        }
+      ]
     },
     {
       id: 'advanced',
@@ -334,11 +351,26 @@ export function ModernDashboardV4() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
+                    className="tab-content-light"
                   >
                     {tab.component}
                   </motion.div>
                 </TabsContent>
               ))}
+              {tabs.map((tab) => 
+                tab.children?.map((child) => (
+                  <TabsContent key={child.id} value={child.id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="tab-content-light"
+                    >
+                      {child.component}
+                    </motion.div>
+                  </TabsContent>
+                ))
+              )}
             </Tabs>
           </div>
         </main>
@@ -577,31 +609,97 @@ function PortfolioTab() {
 
 // Agent Overview Panel - Stable replacement for ExpertAgentsPanel
 function AgentOverviewPanel() {
+  const [selectedAgent, setSelectedAgent] = useState(null)
   const agents = [
-    { id: 1, name: 'Darvas Box Master', status: 'active', profit: 1247.30, trades: 24, winRate: 78.5 },
-    { id: 2, name: 'Elliott Wave Analyst', status: 'active', profit: 890.50, trades: 18, winRate: 72.2 },
-    { id: 3, name: 'Momentum Trader', status: 'paused', profit: 2150.75, trades: 31, winRate: 83.9 },
-    { id: 4, name: 'Arbitrage Hunter', status: 'active', profit: 567.20, trades: 12, winRate: 91.7 },
-    { id: 5, name: 'Risk Manager', status: 'active', profit: 334.80, trades: 8, winRate: 62.5 }
+    { 
+      id: 1, 
+      name: 'Darvas Box Master', 
+      status: 'active', 
+      profit: 1247.30, 
+      trades: 24, 
+      winRate: 78.5,
+      conversations: 127,
+      toolCalls: 342,
+      memory: '2.4MB',
+      strategy: 'Darvas Box Breakout',
+      lastTrade: '2 hours ago',
+      riskLevel: 'Medium'
+    },
+    { 
+      id: 2, 
+      name: 'Elliott Wave Analyst', 
+      status: 'active', 
+      profit: 890.50, 
+      trades: 18, 
+      winRate: 72.2,
+      conversations: 98,
+      toolCalls: 267,
+      memory: '1.8MB',
+      strategy: 'Elliott Wave Pattern',
+      lastTrade: '1 hour ago',
+      riskLevel: 'Low'
+    },
+    { 
+      id: 3, 
+      name: 'Momentum Trader', 
+      status: 'paused', 
+      profit: 2150.75, 
+      trades: 31, 
+      winRate: 83.9,
+      conversations: 156,
+      toolCalls: 445,
+      memory: '3.1MB',
+      strategy: 'Momentum Following',
+      lastTrade: '6 hours ago',
+      riskLevel: 'High'
+    },
+    { 
+      id: 4, 
+      name: 'Arbitrage Hunter', 
+      status: 'active', 
+      profit: 567.20, 
+      trades: 12, 
+      winRate: 91.7,
+      conversations: 67,
+      toolCalls: 189,
+      memory: '1.2MB',
+      strategy: 'Cross-Exchange Arbitrage',
+      lastTrade: '30 minutes ago',
+      riskLevel: 'Low'
+    },
+    { 
+      id: 5, 
+      name: 'Risk Manager', 
+      status: 'active', 
+      profit: 334.80, 
+      trades: 8, 
+      winRate: 62.5,
+      conversations: 45,
+      toolCalls: 123,
+      memory: '0.9MB',
+      strategy: 'Portfolio Protection',
+      lastTrade: '4 hours ago',
+      riskLevel: 'Very Low'
+    }
   ]
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 card-light-content">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Expert Trading Agents</h3>
-        <p className="text-sm text-muted-foreground">AI-powered trading agents with specialized strategies</p>
+        <h3 className="text-lg font-semibold mb-2 text-gray-900">Expert Trading Agents</h3>
+        <p className="text-sm text-gray-600">AI-powered trading agents with specialized strategies</p>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {agents.map((agent) => (
-          <Card key={agent.id} className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <Card key={agent.id} className="modern-card card-light-content">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-lg">{agent.name}</CardTitle>
-                  <CardDescription>Strategy Agent #{agent.id}</CardDescription>
+                  <CardTitle className="text-lg text-gray-900">{agent.name}</CardTitle>
+                  <CardDescription className="text-gray-600">Strategy Agent #{agent.id}</CardDescription>
                 </div>
-                <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
+                <Badge variant={agent.status === 'active' ? 'default' : 'secondary'} className="badge-readable">
                   {agent.status}
                 </Badge>
               </div>
@@ -610,24 +708,24 @@ function AgentOverviewPanel() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Profit:</span>
+                    <span className="text-gray-600">Profit:</span>
                     <span className="ml-1 font-medium text-emerald-600">+${agent.profit}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Trades:</span>
-                    <span className="ml-1 font-medium">{agent.trades}</span>
+                    <span className="text-gray-600">Trades:</span>
+                    <span className="ml-1 font-medium text-gray-900">{agent.trades}</span>
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span>Win Rate:</span>
-                    <span className="font-medium">{agent.winRate}%</span>
+                    <span className="text-gray-600">Win Rate:</span>
+                    <span className="font-medium text-gray-900">{agent.winRate}%</span>
                   </div>
                   <Progress value={agent.winRate} className="h-2" />
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1">
-                    Configure
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => setSelectedAgent(agent)}>
+                    Details
                   </Button>
                   <Button size="sm" variant={agent.status === 'active' ? 'secondary' : 'default'} className="flex-1">
                     {agent.status === 'active' ? 'Pause' : 'Start'}
@@ -638,6 +736,99 @@ function AgentOverviewPanel() {
           </Card>
         ))}
       </div>
+
+      {/* Agent Details Modal */}
+      {selectedAgent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedAgent(null)}>
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{selectedAgent.name}</h2>
+                <p className="text-gray-600">Agent #{selectedAgent.id} - {selectedAgent.strategy}</p>
+              </div>
+              <Button variant="ghost" onClick={() => setSelectedAgent(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Performance Metrics</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Profit:</span>
+                      <span className="font-medium text-emerald-600">+${selectedAgent.profit}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Trades:</span>
+                      <span className="font-medium text-gray-900">{selectedAgent.trades}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Win Rate:</span>
+                      <span className="font-medium text-gray-900">{selectedAgent.winRate}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Risk Level:</span>
+                      <span className="font-medium text-gray-900">{selectedAgent.riskLevel}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Last Trade:</span>
+                      <span className="font-medium text-gray-900">{selectedAgent.lastTrade}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Activity Stats</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Conversations:</span>
+                      <span className="font-medium text-gray-900">{selectedAgent.conversations}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tool Calls:</span>
+                      <span className="font-medium text-gray-900">{selectedAgent.toolCalls}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Memory Usage:</span>
+                      <span className="font-medium text-gray-900">{selectedAgent.memory}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Strategy Information</h3>
+                  <p className="text-sm text-gray-600 mb-3">{selectedAgent.strategy}</p>
+                  <Badge className="badge-readable">{selectedAgent.status}</Badge>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Recent Activity</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="p-2 bg-gray-50 rounded">
+                      <span className="text-gray-600">Last analysis: Market trend confirmed bullish</span>
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      <span className="text-gray-600">Position opened: BTC/USD Long at $45,230</span>
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      <span className="text-gray-600">Risk check: Portfolio exposure within limits</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button size="sm" className="flex-1">View Full History</Button>
+                  <Button size="sm" variant="outline" className="flex-1">Export Data</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1754,35 +1945,172 @@ function GoalsTab() {
   )
 }
 
+// Paper Trading Panel - Fixed integration
+function PaperTradingPanel() {
+  const [paperPortfolio, setPaperPortfolio] = useState({
+    balance: 100000,
+    profit: 5847.32,
+    positions: 3,
+    totalTrades: 47
+  })
+
+  const [paperTrades] = useState([
+    { id: 1, symbol: 'BTC/USD', side: 'long', amount: 0.1, price: 45230, pnl: 1234.50, status: 'open' },
+    { id: 2, symbol: 'ETH/USD', side: 'short', amount: 2.5, price: 2876, pnl: -345.20, status: 'closed' },
+    { id: 3, symbol: 'SOL/USD', side: 'long', amount: 10, price: 98.50, pnl: 678.90, status: 'open' }
+  ])
+
+  return (
+    <div className="space-y-6 card-light-content">
+      <div>
+        <h3 className="text-lg font-semibold mb-2 text-gray-900">Paper Trading Engine</h3>
+        <p className="text-sm text-gray-600">Practice trading with virtual funds and real market data</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="modern-card card-light-content">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-gray-600">Virtual Balance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">${paperPortfolio.balance.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="modern-card card-light-content">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-gray-600">Total P&L</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">+${paperPortfolio.profit.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="modern-card card-light-content">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-gray-600">Open Positions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{paperPortfolio.positions}</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="modern-card card-light-content">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-gray-600">Total Trades</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{paperPortfolio.totalTrades}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="modern-card card-light-content">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Place Paper Order</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-900">Symbol</Label>
+                <select className="w-full">
+                  <option>BTC/USD</option>
+                  <option>ETH/USD</option>
+                  <option>SOL/USD</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-gray-900">Side</Label>
+                <select className="w-full">
+                  <option>Long</option>
+                  <option>Short</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-900">Amount</Label>
+                <Input type="number" placeholder="0.1" />
+              </div>
+              <div>
+                <Label className="text-gray-900">Price</Label>
+                <Input type="number" placeholder="Market" />
+              </div>
+            </div>
+            <Button className="w-full">Place Paper Order</Button>
+          </CardContent>
+        </Card>
+
+        <Card className="modern-card card-light-content">
+          <CardHeader>
+            <CardTitle className="text-gray-900">Recent Paper Trades</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {paperTrades.map((trade) => (
+                <div key={trade.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div>
+                    <div className="font-medium text-gray-900">{trade.symbol}</div>
+                    <div className="text-sm text-gray-600">{trade.side} {trade.amount} @ ${trade.price}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`font-medium ${trade.pnl > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {trade.pnl > 0 ? '+' : ''}${trade.pnl}
+                    </div>
+                    <Badge className={`text-xs ${trade.status === 'open' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {trade.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="modern-card card-light-content">
+        <CardHeader>
+          <CardTitle className="text-gray-900">Agent Paper Trading</CardTitle>
+          <CardDescription className="text-gray-600">Let AI agents trade with virtual funds</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AgentPaperTradingDashboard />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 // Consolidated Trading Tab - Live, Paper, Advanced Trading
 function TradingTab() {
   const [tradingSubTab, setTradingSubTab] = useState('live-trading')
   
   const tradingSubTabs = [
     { id: 'live-trading', label: 'Live Trading', component: <TradingInterface /> },
-    { id: 'paper-trading', label: 'Paper Trading', component: <div className="p-6"><AgentPaperTradingDashboard /></div> },
+    { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingPanel /> },
     { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> },
     { id: 'risk', label: 'Risk Monitor', component: <RiskDashboard /> }
   ]
   
   return (
-    <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+    <Card className="modern-card card-light-content">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-gray-900">
           <TrendingUp className="h-5 w-5 text-emerald-600" />
           Unified Trading Interface
         </CardTitle>
-        <CardDescription>Live trading, paper trading, and strategy management</CardDescription>
+        <CardDescription className="text-gray-600">Live trading, paper trading, and strategy management</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={tradingSubTab} onValueChange={setTradingSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-emerald-50 gap-2">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-gray-100 gap-2">
             {tradingSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-xs sm:text-sm p-2 truncate"
+                className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-gray-900 text-xs sm:text-sm p-2 truncate"
               >
                 {tab.label}
               </TabsTrigger>
@@ -1790,7 +2118,7 @@ function TradingTab() {
           </TabsList>
           
           {tradingSubTabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id}>
+            <TabsContent key={tab.id} value={tab.id} className="tab-content-light">
               {tab.component}
             </TabsContent>
           ))}
@@ -2077,13 +2405,36 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
       
       <nav className="flex-1 p-4">
         <div className="space-y-2">
-          <SidebarLink icon={<BarChart3 className="h-4 w-4" />} label="Overview" />
-          <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
-          <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
-          <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
-          <SidebarLink icon={<TrendingUp className="h-4 w-4" />} label="Trading" />
-          <SidebarLink icon={<Wallet className="h-4 w-4" />} label="Vault" />
-          <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
+          {tabs.map((tab) => (
+            <div key={tab.id}>
+              <SidebarLink 
+                icon={tab.icon} 
+                label={tab.label} 
+                isActive={activeTab === tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  onClose()
+                }}
+              />
+              {tab.children && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {tab.children.map((child) => (
+                    <SidebarLink 
+                      key={child.id}
+                      icon={child.icon} 
+                      label={child.label} 
+                      isActive={activeTab === child.id}
+                      onClick={() => {
+                        setActiveTab(child.id)
+                        onClose()
+                      }}
+                      isChild
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </nav>
     </div>
@@ -2103,13 +2454,30 @@ function DesktopSidebar() {
       
       <nav className="flex-1 p-4">
         <div className="space-y-2">
-          <SidebarLink icon={<BarChart3 className="h-4 w-4" />} label="Overview" />
-          <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
-          <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
-          <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
-          <SidebarLink icon={<TrendingUp className="h-4 w-4" />} label="Trading" />
-          <SidebarLink icon={<Wallet className="h-4 w-4" />} label="Vault" />
-          <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
+          {tabs.map((tab) => (
+            <div key={tab.id}>
+              <SidebarLink 
+                icon={tab.icon} 
+                label={tab.label} 
+                isActive={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+              />
+              {tab.children && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {tab.children.map((child) => (
+                    <SidebarLink 
+                      key={child.id}
+                      icon={child.icon} 
+                      label={child.label} 
+                      isActive={activeTab === child.id}
+                      onClick={() => setActiveTab(child.id)}
+                      isChild
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </nav>
       
@@ -2127,9 +2495,29 @@ function DesktopSidebar() {
 }
 
 // Sidebar Link Component
-function SidebarLink({ icon, label }: { icon: React.ReactNode; label: string }) {
+function SidebarLink({ 
+  icon, 
+  label, 
+  isActive = false, 
+  onClick, 
+  isChild = false 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  isActive?: boolean;
+  onClick?: () => void;
+  isChild?: boolean;
+}) {
   return (
-    <Button variant="ghost" className="w-full justify-start gap-3 text-gray-300 hover:bg-gray-700/50 hover:text-white font-medium transition-all">
+    <Button 
+      variant="ghost" 
+      onClick={onClick}
+      className={`w-full justify-start gap-3 font-medium transition-all ${
+        isActive 
+          ? 'bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-500' 
+          : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+      } ${isChild ? 'text-sm py-1.5' : ''}`}
+    >
       {icon}
       {label}
     </Button>

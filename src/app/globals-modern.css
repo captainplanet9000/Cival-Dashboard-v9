@@ -132,3 +132,114 @@
 .dark-surface .text-muted-foreground {
   @apply text-gray-300;
 }
+
+/* Fix light background text contrast issues */
+.light-bg-text {
+  @apply text-gray-900 !important;
+}
+
+.light-bg-text * {
+  @apply text-gray-900 !important;
+}
+
+.light-bg-text .text-muted-foreground {
+  @apply text-gray-700 !important;
+}
+
+/* Dropdown and select styling fixes */
+select, 
+.select-trigger,
+[role="combobox"] {
+  @apply bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2;
+}
+
+select:focus,
+.select-trigger:focus,
+[role="combobox"]:focus {
+  @apply ring-2 ring-blue-500 border-blue-500 outline-none;
+}
+
+/* Dropdown menu content */
+.dropdown-content,
+[role="listbox"],
+[role="menu"] {
+  @apply bg-white text-gray-900 border border-gray-200 rounded-md shadow-lg;
+}
+
+.dropdown-item,
+[role="option"],
+[role="menuitem"] {
+  @apply text-gray-900 hover:bg-gray-100 px-3 py-2 cursor-pointer;
+}
+
+.dropdown-item:hover,
+[role="option"]:hover,
+[role="menuitem"]:hover {
+  @apply bg-gray-100 text-gray-900;
+}
+
+/* Form input styling */
+input, textarea {
+  @apply bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2;
+  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  @apply text-gray-500;
+}
+
+/* Light card content text */
+.card-light-content {
+  @apply bg-white text-gray-900;
+}
+
+.card-light-content h1,
+.card-light-content h2,
+.card-light-content h3,
+.card-light-content h4,
+.card-light-content h5,
+.card-light-content h6 {
+  @apply text-gray-900 !important;
+}
+
+.card-light-content p,
+.card-light-content span,
+.card-light-content div {
+  @apply text-gray-900 !important;
+}
+
+.card-light-content .text-muted-foreground {
+  @apply text-gray-600 !important;
+}
+
+/* Tab content text fixes */
+.tab-content-light {
+  @apply text-gray-900;
+}
+
+.tab-content-light * {
+  @apply text-gray-900;
+}
+
+.tab-content-light .text-muted-foreground {
+  @apply text-gray-600;
+}
+
+/* Table styling fixes */
+table {
+  @apply bg-white;
+}
+
+th, td {
+  @apply text-gray-900 border-gray-200;
+}
+
+th {
+  @apply bg-gray-50 font-semibold;
+}
+
+/* Badge contrast fixes */
+.badge-readable {
+  @apply bg-white text-gray-900 border border-gray-300;
+}
