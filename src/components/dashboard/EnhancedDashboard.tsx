@@ -35,6 +35,9 @@ import { TradingInterface } from '@/components/trading/TradingInterface'
 // Import enhanced farm dashboard
 import EnhancedFarmDashboard from '@/components/farm/EnhancedFarmDashboard'
 
+// Import live market data component
+import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
+
 // Import AG-UI components
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
@@ -193,6 +196,12 @@ export function EnhancedDashboard() {
       label: 'Live Trading',
       icon: <Zap className="h-4 w-4" />,
       component: <LiveTradingDashboard />
+    },
+    {
+      id: 'market-data',
+      label: 'Live Market Data',
+      icon: <TrendingUp className="h-4 w-4" />,
+      component: <LiveMarketDataPanel />
     },
     {
       id: 'agents',
@@ -488,18 +497,18 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
       {/* Quick Access to Professional Tools */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <QuickAccessCard
-          title="Live Trading Dashboard"
-          description="Real-time autonomous trading interface"
-          icon={<Zap className="h-12 w-12 mx-auto mb-4 text-blue-500" />}
-          targetTab="live-trading"
+          title="Live Market Data"
+          description="Real-time prices & technical analysis"
+          icon={<TrendingUp className="h-12 w-12 mx-auto mb-4 text-emerald-500" />}
+          targetTab="market-data"
           onNavigate={onNavigate}
         />
         
         <QuickAccessCard
-          title="Agent Farms"
-          description="Coordinate multi-agent trading strategies"
-          icon={<Target className="h-12 w-12 mx-auto mb-4 text-orange-500" />}
-          targetTab="farms"
+          title="Live Trading Dashboard"
+          description="Real-time autonomous trading interface"
+          icon={<Zap className="h-12 w-12 mx-auto mb-4 text-blue-500" />}
+          targetTab="live-trading"
           onNavigate={onNavigate}
         />
         
