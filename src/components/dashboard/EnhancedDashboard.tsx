@@ -38,6 +38,9 @@ import EnhancedFarmDashboard from '@/components/farm/EnhancedFarmDashboard'
 // Import live market data component
 import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
 
+// Import memory analytics component
+import { MemoryAnalyticsDashboard } from '@/components/memory/MemoryAnalyticsDashboard'
+
 // Import AG-UI components
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
@@ -217,6 +220,12 @@ export function EnhancedDashboard() {
       label: 'System Monitor',
       icon: <Activity className="h-4 w-4" />,
       component: <SystemMonitoringDashboard />
+    },
+    {
+      id: 'memory',
+      label: 'Memory Analytics',
+      icon: <Brain className="h-4 w-4" />,
+      component: <MemoryAnalyticsDashboard />
     },
     {
       id: 'farms',
@@ -528,6 +537,14 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           description="Comprehensive system health monitoring"
           icon={<Activity className="h-12 w-12 mx-auto mb-4 text-green-500" />}
           targetTab="monitoring"
+          onNavigate={onNavigate}
+        />
+        
+        <QuickAccessCard
+          title="Memory Analytics"
+          description="AI agent memory optimization and analytics"
+          icon={<Brain className="h-12 w-12 mx-auto mb-4 text-purple-500" />}
+          targetTab="memory"
           onNavigate={onNavigate}
         />
       </div>
