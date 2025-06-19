@@ -319,7 +319,7 @@ export function EnhancedDashboard() {
                 </Button>
                 <div>
                   <h1 className="text-2xl font-bold text-foreground">
-                    Autonomous Trading System
+                    Cival Trading Dashboard
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     AI-Powered Trading Platform
@@ -636,7 +636,7 @@ function LoadingScreen() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-muted border-t-primary mx-auto mb-4"></div>
         <h2 className="text-xl font-semibold text-foreground">
-          Loading Autonomous Trading System
+          Loading Cival Trading Dashboard
         </h2>
         <p className="text-muted-foreground">Initializing AI agents and market data...</p>
       </div>
