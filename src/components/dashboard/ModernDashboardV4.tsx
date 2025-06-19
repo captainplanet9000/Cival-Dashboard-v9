@@ -283,14 +283,14 @@ export function ModernDashboardV4() {
               className="fixed inset-y-0 left-0 z-50 w-64 sidebar lg:hidden"
               style={{ boxShadow: 'var(--shadow-xl)' }}
             >
-              <MobileSidebar onClose={() => setIsMobileMenuOpen(false)} />
+              <MobileSidebar onClose={() => setIsMobileMenuOpen(false)} tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
             </motion.aside>
           )}
         </AnimatePresence>
 
         {/* Desktop Sidebar */}
         <aside className="hidden lg:flex lg:flex-col sidebar">
-          <DesktopSidebar />
+          <DesktopSidebar tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
         </aside>
 
         {/* Main Content */}
@@ -2421,7 +2421,7 @@ function LoadingScreen() {
 }
 
 // Mobile Sidebar Component
-function MobileSidebar({ onClose }: { onClose: () => void }) {
+function MobileSidebar({ onClose, tabs, activeTab, setActiveTab }: { onClose: () => void; tabs: DashboardTab[]; activeTab: string; setActiveTab: (tab: string) => void }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between" style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-gray-200)' }}>
@@ -2472,7 +2472,7 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
 }
 
 // Desktop Sidebar Component
-function DesktopSidebar() {
+function DesktopSidebar({ tabs, activeTab, setActiveTab }: { tabs: DashboardTab[]; activeTab: string; setActiveTab: (tab: string) => void }) {
   return (
     <div className="flex flex-col h-full">
       <div style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-gray-200)' }}>
