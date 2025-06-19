@@ -139,7 +139,6 @@ interface DashboardTab {
   label: string
   icon: React.ReactNode
   component: React.ReactNode
-  children?: DashboardTab[]
 }
 
 // Mock chart data for portfolio performance
@@ -190,7 +189,7 @@ export function ModernDashboardV4() {
     setIsLoading(false)
   }, [])
 
-  // Consolidated tab configuration with new structure as requested
+  // Flat navigation - all tabs in one row as requested
   const tabs: DashboardTab[] = [
     {
       id: 'overview',
@@ -214,15 +213,13 @@ export function ModernDashboardV4() {
       id: 'goals',
       label: 'Goals',
       icon: <Star className="h-4 w-4" />,
-      component: <GoalsTab />,
-      children: [
-        {
-          id: 'eliza',
-          label: 'Eliza AI',
-          icon: <Bot className="h-4 w-4" />,
-          component: <ElizaPage />
-        }
-      ]
+      component: <GoalsTab />
+    },
+    {
+      id: 'eliza',
+      label: 'Eliza AI',
+      icon: <Bot className="h-4 w-4" />,
+      component: <ElizaPage />
     },
     {
       id: 'trading',
@@ -234,15 +231,13 @@ export function ModernDashboardV4() {
       id: 'vault',
       label: 'Vault',
       icon: <Wallet className="h-4 w-4" />,
-      component: <VaultTab />,
-      children: [
-        {
-          id: 'calendar',
-          label: 'Calendar',
-          icon: <Calendar className="h-4 w-4" />,
-          component: <CalendarPage />
-        }
-      ]
+      component: <VaultTab />
+    },
+    {
+      id: 'calendar',
+      label: 'Calendar',
+      icon: <Calendar className="h-4 w-4" />,
+      component: <CalendarPage />
     },
     {
       id: 'advanced',
@@ -257,7 +252,7 @@ export function ModernDashboardV4() {
   }
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-dark">
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -265,114 +260,116 @@ export function ModernDashboardV4() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm lg:hidden"
+            className="mobile-overlay lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}
       </AnimatePresence>
 
-      <div className="flex h-screen">
-        {/* Mobile Sidebar */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-50 w-64 sidebar lg:hidden"
-              style={{ boxShadow: 'var(--shadow-xl)' }}
-            >
-              <MobileSidebar onClose={() => setIsMobileMenuOpen(false)} tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
-            </motion.aside>
-          )}
-        </AnimatePresence>
-
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col sidebar">
-          <DesktopSidebar tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="dashboard-container">
+        {/* Sidebar */}
+        <aside className={`sidebar-dark ${isMobileMenuOpen ? 'open' : ''}`}>
+          <div className="sidebar-header">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-primary">
+                  Cival Dashboard
+                </h2>
+                <p className="text-sm text-tertiary">AI Trading Platform</p>
+              </div>
+              <button
+                className="mobile-menu-btn lg:hidden"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          
+          <nav className="sidebar-nav">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  setIsMobileMenuOpen(false)
+                }}
+                className={`sidebar-link ${activeTab === tab.id ? 'active' : ''}`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+          
+          <div className="mt-auto p-4 border-t border-primary">
+            <div className="card-dark p-3">
+              <div className="flex items-center gap-2 text-success">
+                <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                <span className="text-sm font-medium">System Online</span>
+              </div>
+              <p className="text-xs text-muted mt-1">All systems operational</p>
+            </div>
+          </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="main-content">
           {/* Header */}
           <header className="dashboard-header">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="lg:hidden btn-icon"
+                <button
+                  className="mobile-menu-btn"
                   onClick={() => setIsMobileMenuOpen(true)}
                 >
                   <Menu className="h-5 w-5" />
-                </Button>
+                </button>
                 <div>
-                  <h1 className="text-2xl font-bold" style={{ color: 'var(--color-gray-900)' }}>
+                  <h1 className="text-2xl font-bold text-primary">
                     Cival Dashboard
                   </h1>
-                  <p className="text-sm" style={{ color: 'var(--color-gray-500)' }}>Advanced AI Trading Platform</p>
+                  <p className="text-sm text-secondary">Advanced AI Trading Platform</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="badge badge-success">
+                <div className="badge-success-dark">
                   Live
                 </div>
-                <Button variant="outline" size="sm" className="hidden sm:flex btn-secondary">
+                <button className="btn-secondary-dark hidden sm:flex">
                   <Bell className="h-4 w-4 mr-2" />
                   Alerts
-                </Button>
-                <Button variant="outline" size="sm" className="btn-icon">
+                </button>
+                <button className="btn-ghost-dark">
                   <Settings className="h-4 w-4" />
-                </Button>
+                </button>
               </div>
             </div>
           </header>
 
           {/* Dashboard Content */}
-          <div className="dashboard-main dashboard-content">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <div className="nav-tab-bar">
+          <div className="dashboard-content">
+            <div className="space-y-6">
+              {/* Navigation Tabs */}
+              <div className="nav-tabs-dark">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                    className={`nav-tab-dark ${activeTab === tab.id ? 'active' : ''}`}
                   >
                     {tab.icon}
-                    <span className="hidden sm:inline truncate">{tab.label}</span>
+                    <span className="hidden xs:inline">{tab.label}</span>
                   </button>
                 ))}
               </div>
 
-              {tabs.map((tab) => (
-                <TabsContent key={tab.id} value={tab.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="tab-content-light"
-                  >
-                    {tab.component}
-                  </motion.div>
-                </TabsContent>
-              ))}
-              {tabs.map((tab) => 
-                tab.children?.map((child) => (
-                  <TabsContent key={child.id} value={child.id}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="tab-content-light"
-                    >
-                      {child.component}
-                    </motion.div>
-                  </TabsContent>
-                ))
-              )}
-            </Tabs>
+              {/* Tab Content */}
+              <div className="animate-fade-in">
+                {tabs.find(tab => tab.id === activeTab)?.component}
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -442,15 +439,15 @@ function ModernMetricCard({
   icon: React.ReactNode; 
 }) {
   return (
-    <div className="metric-card animate-fade-in">
+    <div className="metric-card-dark">
       <div className="flex items-start justify-between mb-3">
-        <div className="metric-title">{title}</div>
-        <div style={{ color: 'var(--color-primary-blue-main)' }}>
+        <div className="metric-title-dark">{title}</div>
+        <div className="text-primary">
           {icon}
         </div>
       </div>
-      <div className="metric-value">{value}</div>
-      <div className={`metric-change ${isPositive ? 'positive' : 'negative'}`}>
+      <div className="metric-value-dark">{value}</div>
+      <div className={`metric-change-dark ${isPositive ? 'positive' : 'negative'}`}>
         {change} {changePercent && <span className="ml-1">{changePercent}</span>}
       </div>
     </div>
@@ -460,9 +457,9 @@ function ModernMetricCard({
 // Dashboard Overview Component (existing functionality)
 function DashboardOverview({ metrics, chartData }: { metrics: DashboardMetrics; chartData: ChartDataPoint[] }) {
   return (
-    <div className="grid-desktop">
+    <div className="space-y-6">
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid-responsive">
         <ModernMetricCard
           title="Total Portfolio"
           value={`$${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
@@ -498,41 +495,42 @@ function DashboardOverview({ metrics, chartData }: { metrics: DashboardMetrics; 
       </div>
 
       {/* Performance Chart */}
-      <div className="chart-container" style={{ gridColumn: '1 / -1', marginTop: 'var(--space-xl)' }}>
+      <div className="chart-container-dark">
         <div className="flex items-center gap-2 mb-4">
-          <div style={{ color: 'var(--color-primary-green-main)' }}>
+          <div className="text-success">
             <BarChart3 className="h-5 w-5" />
           </div>
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--color-gray-900)' }}>
+          <h3 className="text-lg font-semibold text-primary">
             Portfolio Performance
           </h3>
         </div>
-        <p className="text-sm mb-4" style={{ color: 'var(--color-gray-500)' }}>30-day portfolio value and P&L trend</p>
+        <p className="text-sm mb-4 text-secondary">30-day portfolio value and P&L trend</p>
         
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-primary-green-main)" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="var(--color-primary-green-main)" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200)" />
-              <XAxis dataKey="time" stroke="var(--color-gray-500)" />
-              <YAxis stroke="var(--color-gray-500)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="time" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
               <Tooltip 
                 contentStyle={{
-                  backgroundColor: 'var(--color-white)',
-                  border: '1px solid var(--color-gray-200)',
-                  borderRadius: 'var(--radius-md)',
-                  boxShadow: 'var(--shadow-lg)'
+                  backgroundColor: '#1F1F1F',
+                  border: '1px solid #374151',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+                  color: '#F9FAFB'
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="var(--color-primary-green-main)"
+                stroke="#10B981"
                 strokeWidth={2}
                 fill="url(#portfolioGradient)"
               />
@@ -2420,137 +2418,5 @@ function LoadingScreen() {
   )
 }
 
-// Mobile Sidebar Component
-function MobileSidebar({ onClose, tabs, activeTab, setActiveTab }: { onClose: () => void; tabs: DashboardTab[]; activeTab: string; setActiveTab: (tab: string) => void }) {
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between" style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-gray-200)' }}>
-        <h2 className="text-lg font-bold" style={{ color: 'var(--color-gray-900)' }}>
-          Cival Dashboard
-        </h2>
-        <Button variant="ghost" size="sm" onClick={onClose} className="btn-icon" style={{ color: 'var(--color-gray-600)' }}>
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-      
-      <nav className="flex-1" style={{ padding: 'var(--space-lg)' }}>
-        <div className="sidebar-nav">
-          {tabs.map((tab) => (
-            <div key={tab.id}>
-              <SidebarLink 
-                icon={tab.icon} 
-                label={tab.label} 
-                isActive={activeTab === tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id)
-                  onClose()
-                }}
-              />
-              {tab.children && (
-                <div style={{ marginLeft: 'var(--space-lg)', marginTop: 'var(--space-xs)' }} className="sidebar-nav">
-                  {tab.children.map((child) => (
-                    <SidebarLink 
-                      key={child.id}
-                      icon={child.icon} 
-                      label={child.label} 
-                      isActive={activeTab === child.id}
-                      onClick={() => {
-                        setActiveTab(child.id)
-                        onClose()
-                      }}
-                      isChild
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </nav>
-    </div>
-  )
-}
-
-// Desktop Sidebar Component
-function DesktopSidebar({ tabs, activeTab, setActiveTab }: { tabs: DashboardTab[]; activeTab: string; setActiveTab: (tab: string) => void }) {
-  return (
-    <div className="flex flex-col h-full">
-      <div style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-gray-200)' }}>
-        <h2 className="text-xl font-bold" style={{ color: 'var(--color-gray-900)' }}>
-          Cival Dashboard
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-gray-500)', marginTop: 'var(--space-xs)' }}>AI Trading Platform</p>
-      </div>
-      
-      <nav className="flex-1" style={{ padding: 'var(--space-lg)' }}>
-        <div className="sidebar-nav">
-          {tabs.map((tab) => (
-            <div key={tab.id}>
-              <SidebarLink 
-                icon={tab.icon} 
-                label={tab.label} 
-                isActive={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
-              />
-              {tab.children && (
-                <div style={{ marginLeft: 'var(--space-lg)', marginTop: 'var(--space-xs)' }} className="sidebar-nav">
-                  {tab.children.map((child) => (
-                    <SidebarLink 
-                      key={child.id}
-                      icon={child.icon} 
-                      label={child.label} 
-                      isActive={activeTab === child.id}
-                      onClick={() => setActiveTab(child.id)}
-                      isChild
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </nav>
-      
-      <div style={{ padding: 'var(--space-lg)', borderTop: '1px solid var(--color-gray-200)' }}>
-        <div className="modern-card" style={{ padding: 'var(--space-md)' }}>
-          <div className="flex items-center gap-2" style={{ color: 'var(--color-success)' }}>
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-success)' }}></div>
-            <span className="text-sm font-medium">System Online</span>
-          </div>
-          <p className="text-xs mt-1" style={{ color: 'var(--color-gray-500)' }}>All systems operational</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Sidebar Link Component
-function SidebarLink({ 
-  icon, 
-  label, 
-  isActive = false, 
-  onClick, 
-  isChild = false 
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
-  isActive?: boolean;
-  onClick?: () => void;
-  isChild?: boolean;
-}) {
-  return (
-    <button 
-      onClick={onClick}
-      className={`sidebar-link ${isActive ? 'active' : ''}`}
-      style={{
-        fontSize: isChild ? 'var(--text-sm)' : 'var(--text-base)',
-        padding: isChild ? 'var(--space-sm) var(--space-md)' : 'var(--space-md)'
-      }}
-    >
-      {icon}
-      {label}
-    </button>
-  )
-}
 
 export default ModernDashboardV4
