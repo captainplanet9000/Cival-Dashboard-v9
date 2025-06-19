@@ -257,7 +257,7 @@ export function ModernDashboardV4() {
   }
 
   return (
-    <div className="min-h-screen modern-gradient-bg font-sans">
+    <div className="dashboard-container">
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -280,7 +280,8 @@ export function ModernDashboardV4() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-50 w-64 modern-card shadow-2xl lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-64 sidebar lg:hidden"
+              style={{ boxShadow: 'var(--shadow-xl)' }}
             >
               <MobileSidebar onClose={() => setIsMobileMenuOpen(false)} />
             </motion.aside>
@@ -288,41 +289,41 @@ export function ModernDashboardV4() {
         </AnimatePresence>
 
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 modern-card-dark lg:border-r lg:border-gray-700">
+        <aside className="hidden lg:flex lg:flex-col sidebar">
           <DesktopSidebar />
         </aside>
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="modern-card border-b border-gray-200 dark:border-gray-700 p-4">
+          <header className="dashboard-header">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="lg:hidden"
+                  className="lg:hidden btn-icon"
                   onClick={() => setIsMobileMenuOpen(true)}
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-display modern-text-primary">
-                    Cival Dashboard v4
+                  <h1 className="text-2xl font-bold" style={{ color: 'var(--color-gray-900)' }}>
+                    Cival Dashboard
                   </h1>
-                  <p className="text-sm modern-text-secondary">Advanced AI Trading Platform</p>
+                  <p className="text-sm" style={{ color: 'var(--color-gray-500)' }}>Advanced AI Trading Platform</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <Badge className="modern-badge modern-badge-success">
+                <div className="badge badge-success">
                   Live
-                </Badge>
-                <Button variant="outline" size="sm" className="hidden sm:flex">
+                </div>
+                <Button variant="outline" size="sm" className="hidden sm:flex btn-secondary">
                   <Bell className="h-4 w-4 mr-2" />
                   Alerts
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="btn-icon">
                   <Settings className="h-4 w-4" />
                 </Button>
               </div>
@@ -330,20 +331,20 @@ export function ModernDashboardV4() {
           </header>
 
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
+          <div className="dashboard-main dashboard-content">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 modern-card gap-2">
+              <div className="nav-tab-bar">
                 {tabs.map((tab) => (
-                  <TabsTrigger
+                  <button
                     key={tab.id}
-                    value={tab.id}
-                    className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-medium text-xs sm:text-sm p-2 transition-all"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
                   >
                     {tab.icon}
                     <span className="hidden sm:inline truncate">{tab.label}</span>
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
 
               {tabs.map((tab) => (
                 <TabsContent key={tab.id} value={tab.id}>
@@ -424,92 +425,121 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
   )
 }
 
+// Modern Metric Card Component
+function ModernMetricCard({ 
+  title, 
+  value, 
+  change, 
+  changePercent, 
+  isPositive, 
+  icon 
+}: { 
+  title: string; 
+  value: string; 
+  change: string; 
+  changePercent?: string; 
+  isPositive: boolean; 
+  icon: React.ReactNode; 
+}) {
+  return (
+    <div className="metric-card animate-fade-in">
+      <div className="flex items-start justify-between mb-3">
+        <div className="metric-title">{title}</div>
+        <div style={{ color: 'var(--color-primary-blue-main)' }}>
+          {icon}
+        </div>
+      </div>
+      <div className="metric-value">{value}</div>
+      <div className={`metric-change ${isPositive ? 'positive' : 'negative'}`}>
+        {change} {changePercent && <span className="ml-1">{changePercent}</span>}
+      </div>
+    </div>
+  )
+}
+
 // Dashboard Overview Component (existing functionality)
 function DashboardOverview({ metrics, chartData }: { metrics: DashboardMetrics; chartData: ChartDataPoint[] }) {
   return (
-    <div className="space-y-6">
-      {/* Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
+    <div className="grid-desktop">
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <ModernMetricCard
           title="Total Portfolio"
           value={`$${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           change={`+${metrics.dailyPnL.toFixed(2)}`}
           changePercent="+2.34%"
           isPositive={metrics.dailyPnL > 0}
           icon={<DollarSign className="h-5 w-5" />}
-          gradient="from-emerald-500 to-emerald-600"
         />
         
-        <MetricCard
+        <ModernMetricCard
           title="Active Agents"
           value={metrics.activeAgents.toString()}
           change="Expert Agents"
           isPositive={true}
           icon={<Bot className="h-5 w-5" />}
-          gradient="from-violet-500 to-violet-600"
         />
         
-        <MetricCard
+        <ModernMetricCard
           title="Win Rate"
           value={`${metrics.winRate}%`}
           change="Last 30 days"
           isPositive={metrics.winRate > 70}
           icon={<Target className="h-5 w-5" />}
-          gradient="from-amber-500 to-amber-600"
         />
         
-        <MetricCard
+        <ModernMetricCard
           title="Risk Score"
           value={`${metrics.riskScore}%`}
           change="Low Risk"
           isPositive={metrics.riskScore < 30}
           icon={<Shield className="h-5 w-5" />}
-          gradient="from-rose-500 to-rose-600"
         />
       </div>
 
       {/* Performance Chart */}
-      <Card className="modern-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 modern-text-primary">
-            <BarChart3 className="h-5 w-5 text-emerald-600" />
-            Portfolio Performance
-          </CardTitle>
-          <CardDescription className="modern-text-secondary">30-day portfolio value and P&L trend</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="time" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid #d1fae5',
-                    borderRadius: '8px',
-                    backdropFilter: 'blur(4px)'
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fill="url(#portfolioGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+      <div className="chart-container" style={{ gridColumn: '1 / -1', marginTop: 'var(--space-xl)' }}>
+        <div className="flex items-center gap-2 mb-4">
+          <div style={{ color: 'var(--color-primary-green-main)' }}>
+            <BarChart3 className="h-5 w-5" />
           </div>
-        </CardContent>
-      </Card>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--color-gray-900)' }}>
+            Portfolio Performance
+          </h3>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'var(--color-gray-500)' }}>30-day portfolio value and P&L trend</p>
+        
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-primary-green-main)" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="var(--color-primary-green-main)" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200)" />
+              <XAxis dataKey="time" stroke="var(--color-gray-500)" />
+              <YAxis stroke="var(--color-gray-500)" />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'var(--color-white)',
+                  border: '1px solid var(--color-gray-200)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="var(--color-primary-green-main)"
+                strokeWidth={2}
+                fill="url(#portfolioGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       {/* Quick Actions */}
       <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
@@ -2393,18 +2423,18 @@ function LoadingScreen() {
 // Mobile Sidebar Component
 function MobileSidebar({ onClose }: { onClose: () => void }) {
   return (
-    <div className="flex flex-col h-full dark-surface">
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
-        <h2 className="text-lg font-display text-white">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between" style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-gray-200)' }}>
+        <h2 className="text-lg font-bold" style={{ color: 'var(--color-gray-900)' }}>
           Cival Dashboard
         </h2>
-        <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-300 hover:text-white">
+        <Button variant="ghost" size="sm" onClick={onClose} className="btn-icon" style={{ color: 'var(--color-gray-600)' }}>
           <X className="h-5 w-5" />
         </Button>
       </div>
       
-      <nav className="flex-1 p-4">
-        <div className="space-y-2">
+      <nav className="flex-1" style={{ padding: 'var(--space-lg)' }}>
+        <div className="sidebar-nav">
           {tabs.map((tab) => (
             <div key={tab.id}>
               <SidebarLink 
@@ -2417,7 +2447,7 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
                 }}
               />
               {tab.children && (
-                <div className="ml-6 mt-1 space-y-1">
+                <div style={{ marginLeft: 'var(--space-lg)', marginTop: 'var(--space-xs)' }} className="sidebar-nav">
                   {tab.children.map((child) => (
                     <SidebarLink 
                       key={child.id}
@@ -2444,16 +2474,16 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
 // Desktop Sidebar Component
 function DesktopSidebar() {
   return (
-    <div className="flex flex-col h-full dark-surface">
-      <div className="p-6 border-b border-gray-700">
-        <h2 className="text-xl font-display text-white">
+    <div className="flex flex-col h-full">
+      <div style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-gray-200)' }}>
+        <h2 className="text-xl font-bold" style={{ color: 'var(--color-gray-900)' }}>
           Cival Dashboard
         </h2>
-        <p className="text-sm text-gray-300 mt-1">AI Trading Platform</p>
+        <p className="text-sm" style={{ color: 'var(--color-gray-500)', marginTop: 'var(--space-xs)' }}>AI Trading Platform</p>
       </div>
       
-      <nav className="flex-1 p-4">
-        <div className="space-y-2">
+      <nav className="flex-1" style={{ padding: 'var(--space-lg)' }}>
+        <div className="sidebar-nav">
           {tabs.map((tab) => (
             <div key={tab.id}>
               <SidebarLink 
@@ -2463,7 +2493,7 @@ function DesktopSidebar() {
                 onClick={() => setActiveTab(tab.id)}
               />
               {tab.children && (
-                <div className="ml-6 mt-1 space-y-1">
+                <div style={{ marginLeft: 'var(--space-lg)', marginTop: 'var(--space-xs)' }} className="sidebar-nav">
                   {tab.children.map((child) => (
                     <SidebarLink 
                       key={child.id}
@@ -2481,13 +2511,13 @@ function DesktopSidebar() {
         </div>
       </nav>
       
-      <div className="p-4 border-t border-gray-700">
-        <div className="bg-gray-700/50 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-emerald-400">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+      <div style={{ padding: 'var(--space-lg)', borderTop: '1px solid var(--color-gray-200)' }}>
+        <div className="modern-card" style={{ padding: 'var(--space-md)' }}>
+          <div className="flex items-center gap-2" style={{ color: 'var(--color-success)' }}>
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-success)' }}></div>
             <span className="text-sm font-medium">System Online</span>
           </div>
-          <p className="text-xs text-gray-400 mt-1">All systems operational</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--color-gray-500)' }}>All systems operational</p>
         </div>
       </div>
     </div>
@@ -2509,18 +2539,17 @@ function SidebarLink({
   isChild?: boolean;
 }) {
   return (
-    <Button 
-      variant="ghost" 
+    <button 
       onClick={onClick}
-      className={`w-full justify-start gap-3 font-medium transition-all ${
-        isActive 
-          ? 'bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-500' 
-          : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-      } ${isChild ? 'text-sm py-1.5' : ''}`}
+      className={`sidebar-link ${isActive ? 'active' : ''}`}
+      style={{
+        fontSize: isChild ? 'var(--text-sm)' : 'var(--text-base)',
+        padding: isChild ? 'var(--space-sm) var(--space-md)' : 'var(--space-md)'
+      }}
     >
       {icon}
       {label}
-    </Button>
+    </button>
   )
 }
 
