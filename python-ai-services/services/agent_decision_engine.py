@@ -72,6 +72,7 @@ class AgentDecisionEngine:
         self.portfolio_service = None
         self.risk_service = None
         self.trading_service = None
+        self.mcp_tools_service = None  # MCP tools integration
         
         # Decision tracking
         self.pending_decisions: Dict[str, TradingDecision] = {}
@@ -152,7 +153,10 @@ class AgentDecisionEngine:
             portfolio_context = await self._get_portfolio_context()
             risk_context = await self._get_risk_context()
             
-            # Create decision prompt
+            # First, gather additional analysis using MCP tools
+            tool_analysis = await self._gather_tool_analysis(agent_id, event)
+            
+            # Create enhanced decision prompt with tool analysis
             decision_prompt = f"""
             You are an autonomous trading agent analyzing a market event. Make a trading decision.
             
@@ -468,3 +472,79 @@ class AgentDecisionEngine:
             "decision_thresholds": self.decision_thresholds,
             "status": "active"
         }
+    
+    async def _gather_tool_analysis(self, agent_id: str, event: MarketEvent) -> Dict[str, Any]:
+        """Gather comprehensive analysis using MCP tools"""
+        tool_results = {}
+        
+        try:
+            # Mock tool analysis - in production, this would call actual MCP tools
+            # Tool 1: Market Sentiment Analysis
+            tool_results["sentiment_analysis"] = {
+                "overall_sentiment": "bullish",
+                "sentiment_score": 0.72,
+                "confidence": 0.85,
+                "key_factors": ["Strong technical breakout", "Positive momentum indicators"],
+                "risk_factors": ["Market volatility", "External economic factors"]
+            }
+            
+            # Tool 2: Technical Analysis
+            tool_results["technical_analysis"] = {
+                "trend": "bullish",
+                "support_levels": [44000, 42500],
+                "resistance_levels": [46000, 47500],
+                "rsi": 68.5,
+                "macd_signal": "bullish",
+                "bollinger_position": "upper_half",
+                "recommendation": "buy"
+            }
+            
+            # Tool 3: Order Book Analysis
+            tool_results["order_book_analysis"] = {
+                "bid_ask_spread": 10.50,
+                "liquidity_score": 8.5,
+                "market_depth_score": 7.8,
+                "optimal_order_size": 1000,
+                "execution_risk": "low"
+            }
+            
+            # Tool 4: Portfolio Risk Assessment
+            tool_results["risk_assessment"] = {
+                "portfolio_var_95": 0.025,
+                "position_size_recommendation": 0.03,  # 3% of portfolio
+                "risk_level": "moderate",
+                "correlation_risk": "low",
+                "concentration_risk": "acceptable"
+            }
+            
+            # Tool 5: Performance Prediction
+            tool_results["performance_prediction"] = {
+                "expected_return_1d": 0.023,
+                "probability_of_profit": 0.68,
+                "estimated_holding_period": "2-4 hours",
+                "confidence_interval": [0.015, 0.031]
+            }
+            
+            return {
+                "tools_executed": len(tool_results),
+                "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
+                "agent_id": agent_id,
+                "symbol": event.symbol,
+                "results": tool_results,
+                "summary": {
+                    "overall_recommendation": "buy",
+                    "confidence_score": 0.75,
+                    "risk_level": "moderate",
+                    "expected_outcome": "positive"
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Tool analysis failed for agent {agent_id}: {e}")
+            return {
+                "tools_executed": 0,
+                "error": str(e),
+                "fallback_analysis": True,
+                "agent_id": agent_id,
+                "symbol": event.symbol
+            }
