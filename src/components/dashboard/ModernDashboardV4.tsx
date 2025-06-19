@@ -350,25 +350,23 @@ export function ModernDashboardV4() {
 
           {/* Dashboard Content */}
           <div className="dashboard-content">
-            <div className="space-y-6">
-              {/* Navigation Tabs */}
-              <div className="nav-tabs-dark">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`nav-tab-dark ${activeTab === tab.id ? 'active' : ''}`}
-                  >
-                    {tab.icon}
-                    <span className="hidden xs:inline">{tab.label}</span>
-                  </button>
-                ))}
-              </div>
+            {/* Fixed Navigation Tabs */}
+            <div className="nav-tabs-dark">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`nav-tab-dark ${activeTab === tab.id ? 'active' : ''}`}
+                >
+                  {tab.icon}
+                  <span className="hidden xs:inline">{tab.label}</span>
+                </button>
+              ))}
+            </div>
 
-              {/* Tab Content */}
-              <div className="animate-fade-in">
-                {tabs.find(tab => tab.id === activeTab)?.component}
-              </div>
+            {/* Dynamic Content Area */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {tabs.find(tab => tab.id === activeTab)?.component}
             </div>
           </div>
         </main>

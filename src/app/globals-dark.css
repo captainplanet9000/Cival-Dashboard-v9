@@ -265,22 +265,14 @@ body {
   z-index: 40;
 }
 
-/* Content Area */
+/* Content Area - Fixed Layout */
 .dashboard-content {
   flex: 1;
-  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-bg-secondary);
-  overflow-y: auto;
   height: calc(100vh - 80px);
-  
-  /* Mobile adjustments */
-  padding: var(--space-4);
-}
-
-@media (min-width: 768px) {
-  .dashboard-content {
-    padding: var(--space-6);
-  }
+  overflow: hidden;
 }
 
 /* Modern Card System */
@@ -359,19 +351,21 @@ body {
   color: var(--color-text-tertiary);
 }
 
-/* Navigation Tabs */
+/* Fixed Navigation Tabs */
 .nav-tabs-dark {
   background-color: var(--color-bg-elevated);
   border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-2);
+  margin: var(--space-4) var(--space-6) 0 var(--space-6);
   display: flex;
   gap: var(--space-1);
+  flex-shrink: 0;
+  
+  /* Mobile: horizontal scroll */
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  
-  /* Mobile: horizontal scroll */
   flex-wrap: nowrap;
 }
 
@@ -379,29 +373,61 @@ body {
   display: none;
 }
 
+/* Responsive navigation adjustments */
+@media (max-width: 768px) {
+  .nav-tabs-dark {
+    margin: var(--space-2) var(--space-4) 0 var(--space-4);
+  }
+}
+
 @media (min-width: 768px) {
   .nav-tabs-dark {
     flex-wrap: wrap;
     overflow-x: visible;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-tabs-dark {
+    justify-content: space-between;
   }
 }
 
 .nav-tab-dark {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
   color: var(--color-text-tertiary);
   font-weight: var(--font-medium);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   text-decoration: none;
   transition: all var(--transition-normal);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   border: none;
   background: none;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  min-width: fit-content;
+}
+
+/* Responsive tab sizing */
+@media (min-width: 640px) {
+  .nav-tab-dark {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    gap: var(--space-2);
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-tab-dark {
+    flex: 1;
+    justify-content: center;
+    min-width: 80px;
+  }
 }
 
 .nav-tab-dark:hover:not(.active) {
@@ -657,6 +683,29 @@ input::placeholder, textarea::placeholder {
 .focus-visible {
   outline: 2px solid var(--color-primary-blue);
   outline-offset: 2px;
+}
+
+/* Dynamic Content Filling */
+.dashboard-content > div:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Ensure tab content fills available space */
+.dashboard-content .space-y-6,
+.dashboard-content .space-y-4 {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Make grids and cards responsive to container height */
+.dashboard-content .grid {
+  flex: 1;
+  align-content: start;
 }
 
 /* Mobile Menu Button */
