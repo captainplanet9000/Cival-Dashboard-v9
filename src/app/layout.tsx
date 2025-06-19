@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import "./globals-dark.css";
 import ErrorBoundary from "@/lib/error-handling/error-boundary";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,15 +26,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} font-sans antialiased bg-background text-foreground`}
       >
-        <ErrorBoundary>
-          <div id="root" className="min-h-screen">
-            {children}
-          </div>
-        </ErrorBoundary>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ErrorBoundary>
+            <div id="root" className="min-h-screen">
+              {children}
+            </div>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

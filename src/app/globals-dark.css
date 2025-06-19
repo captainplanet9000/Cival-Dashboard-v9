@@ -3,9 +3,9 @@
 /* Import Inter font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* Dark Theme Design System Variables */
+/* Modern ShadCN Design System Variables */
 :root {
-  /* Dark Theme Primary Colors */
+  /* Primary Brand Colors */
   --color-primary-blue: #3B82F6;
   --color-primary-blue-light: #60A5FA;
   --color-primary-blue-dark: #1D4ED8;
@@ -21,31 +21,86 @@
   --color-primary-purple-dark: #7C3AED;
   --color-primary-purple-bg: rgba(139, 92, 246, 0.1);
   
-  /* Dark Theme Semantic Colors */
+  /* Semantic Colors */
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
   --color-info: #3B82F6;
+
+  /* ShadCN CSS Variables - Light Theme */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.09 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.09 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.09 0 0);
+  --primary: oklch(0.62 0.25 264);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.09 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.09 0 0);
+  --destructive: oklch(0.65 0.25 29);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.91 0 0);
+  --input: oklch(0.96 0 0);
+  --ring: oklch(0.62 0.25 264);
+  --radius: 0.5rem;
+  --chart-1: oklch(0.62 0.25 264);
+  --chart-2: oklch(0.70 0.25 156);
+  --chart-3: oklch(0.65 0.25 295);
+  --chart-4: oklch(0.75 0.25 67);
+  --chart-5: oklch(0.65 0.25 29);
+}
+
+.dark {
+  /* ShadCN CSS Variables - Dark Theme */
+  --background: oklch(0.09 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.62 0.25 264);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.16 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.16 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.16 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.65 0.25 29);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.22 0 0);
+  --input: oklch(0.16 0 0);
+  --ring: oklch(0.62 0.25 264);
+  --chart-1: oklch(0.62 0.25 264);
+  --chart-2: oklch(0.70 0.25 156);
+  --chart-3: oklch(0.65 0.25 295);
+  --chart-4: oklch(0.75 0.25 67);
+  --chart-5: oklch(0.65 0.25 29);
   
-  /* Dark Theme Backgrounds & Surfaces */
-  --color-bg-primary: #0F0F0F;
-  --color-bg-secondary: #1A1A1A;
-  --color-bg-tertiary: #262626;
-  --color-bg-elevated: #2A2A2A;
-  --color-bg-card: #1F1F1F;
-  --color-bg-overlay: rgba(0, 0, 0, 0.8);
+  /* Dark Theme Backgrounds & Surfaces - ShadCN Aligned */
+  --color-bg-primary: oklch(0.09 0 0);
+  --color-bg-secondary: oklch(0.11 0 0);
+  --color-bg-tertiary: oklch(0.16 0 0);
+  --color-bg-elevated: oklch(0.18 0 0);
+  --color-bg-card: oklch(0.12 0 0);
+  --color-bg-overlay: oklch(0.05 0 0 / 0.8);
   
-  /* Dark Theme Text Colors */
-  --color-text-primary: #F9FAFB;
-  --color-text-secondary: #D1D5DB;
-  --color-text-tertiary: #9CA3AF;
-  --color-text-muted: #6B7280;
-  --color-text-disabled: #4B5563;
+  /* Dark Theme Text Colors - ShadCN Aligned */
+  --color-text-primary: oklch(0.98 0 0);
+  --color-text-secondary: oklch(0.85 0 0);
+  --color-text-tertiary: oklch(0.65 0 0);
+  --color-text-muted: oklch(0.45 0 0);
+  --color-text-disabled: oklch(0.35 0 0);
   
-  /* Dark Theme Borders */
-  --color-border-primary: #374151;
-  --color-border-secondary: #4B5563;
-  --color-border-accent: #6B7280;
+  /* Dark Theme Borders - ShadCN Aligned */
+  --color-border-primary: oklch(0.22 0 0);
+  --color-border-secondary: oklch(0.28 0 0);
+  --color-border-accent: oklch(0.35 0 0);
   
   /* Typography */
   --font-primary: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -122,11 +177,12 @@ body {
   font-family: var(--font-primary);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-primary);
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background)) !important;
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -135,22 +191,80 @@ body {
 #root, #__next {
   height: 100%;
   width: 100%;
+  background-color: hsl(var(--background)) !important;
+}
+
+/* Eliminate ALL white backgrounds */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: hsl(var(--background)) !important;
+  width: 100%;
+}
+
+/* Override any white/light backgrounds */
+.bg-white,
+.bg-gray-50,
+.bg-gray-100,
+.bg-slate-50,
+.bg-slate-100,
+.bg-neutral-50,
+.bg-neutral-100,
+.bg-stone-50,
+.bg-stone-100,
+.bg-red-50,
+.bg-orange-50,
+.bg-amber-50,
+.bg-yellow-50,
+.bg-lime-50,
+.bg-green-50,
+.bg-emerald-50,
+.bg-teal-50,
+.bg-cyan-50,
+.bg-sky-50,
+.bg-blue-50,
+.bg-indigo-50,
+.bg-violet-50,
+.bg-purple-50,
+.bg-fuchsia-50,
+.bg-pink-50,
+.bg-rose-50 {
+  background-color: hsl(var(--card)) !important;
+}
+
+/* Ensure all containers inherit dark background */
+div,
+section,
+article,
+aside,
+header,
+footer,
+main,
+nav {
+  background-color: inherit;
 }
 
 /* Dark Dashboard Container */
 .dashboard-dark {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
-  color: var(--color-text-primary);
+  width: 100vw;
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground));
   font-family: var(--font-primary);
+  margin: 0;
+  padding: 0;
 }
 
-/* Mobile Responsive Layout */
+/* Full Width Dashboard Container */
 .dashboard-container {
   display: flex;
   min-height: 100vh;
-  width: 100%;
-  background-color: var(--color-bg-primary);
+  width: 100vw;
+  background-color: hsl(var(--background)) !important;
+  margin: 0;
+  padding: 0;
   
   /* Mobile first */
   flex-direction: column;
@@ -164,9 +278,9 @@ body {
 
 /* Sidebar Styles */
 .sidebar-dark {
-  background-color: var(--color-bg-card);
-  border-right: 1px solid var(--color-border-primary);
-  color: var(--color-text-primary);
+  background-color: hsl(var(--card));
+  border-right: 1px solid hsl(var(--border));
+  color: hsl(var(--card-foreground));
   width: 100%;
   height: auto;
   overflow-y: auto;
@@ -196,7 +310,7 @@ body {
 
 .sidebar-header {
   padding: var(--space-6);
-  border-bottom: 1px solid var(--color-border-primary);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .sidebar-nav {
@@ -242,10 +356,11 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  overflow-x: hidden;
-  
-  /* Mobile: full width */
   width: 100%;
+  background-color: hsl(var(--background)) !important;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 @media (min-width: 1024px) {
@@ -256,8 +371,8 @@ body {
 
 /* Header */
 .dashboard-header {
-  background-color: var(--color-bg-card);
-  border-bottom: 1px solid var(--color-border-primary);
+  background-color: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
   padding: var(--space-4) var(--space-6);
   box-shadow: var(--shadow-sm);
   position: sticky;
@@ -265,38 +380,48 @@ body {
   z-index: 40;
 }
 
-/* Content Area - Fixed Layout */
+/* Content Area - Full Width Fixed Layout */
 .dashboard-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-secondary);
+  background-color: hsl(var(--background)) !important;
   height: calc(100vh - 80px);
+  width: 100%;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-/* Modern Card System */
-.card-dark {
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-xl);
+/* Modern Card System - ShadCN Aligned */
+.card-dark,
+.modern-card,
+[data-radix-card],
+.card {
+  background-color: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
   padding: var(--space-6);
   box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
   overflow: hidden;
+  color: hsl(var(--card-foreground)) !important;
 }
 
-.card-dark:hover {
+.card-dark:hover,
+.modern-card:hover,
+[data-radix-card]:hover,
+.card:hover {
   box-shadow: var(--shadow-lg);
-  border-color: var(--color-border-secondary);
+  border-color: hsl(var(--border) / 0.8);
   transform: translateY(-2px);
 }
 
 /* Metric Cards */
 .metric-card-dark {
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-xl);
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
   padding: var(--space-6);
   box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
@@ -311,12 +436,12 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--color-primary-blue), var(--color-primary-green));
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--chart-2)));
 }
 
 .metric-title-dark {
   font-size: var(--text-sm);
-  color: var(--color-text-tertiary);
+  color: hsl(var(--muted-foreground));
   font-weight: var(--font-medium);
   margin-bottom: var(--space-2);
   text-transform: uppercase;
@@ -326,7 +451,7 @@ body {
 .metric-value-dark {
   font-size: var(--text-3xl);
   font-weight: var(--font-bold);
-  color: var(--color-text-primary);
+  color: hsl(var(--foreground));
   margin-bottom: var(--space-2);
   line-height: var(--leading-tight);
 }
@@ -353,9 +478,9 @@ body {
 
 /* Fixed Navigation Tabs */
 .nav-tabs-dark {
-  background-color: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-xl);
+  background-color: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
   padding: var(--space-2);
   margin: var(--space-4) var(--space-6) 0 var(--space-6);
   display: flex;
@@ -396,8 +521,8 @@ body {
 
 .nav-tab-dark {
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-tertiary);
+  border-radius: calc(var(--radius) - 2px);
+  color: hsl(var(--muted-foreground));
   font-weight: var(--font-medium);
   font-size: var(--text-xs);
   text-decoration: none;

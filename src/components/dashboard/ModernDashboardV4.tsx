@@ -18,6 +18,7 @@ import {
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
   Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight
 } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 // Import existing components and hooks
@@ -341,6 +342,7 @@ export function ModernDashboardV4() {
                   <Bell className="h-4 w-4 mr-2" />
                   Alerts
                 </button>
+                <ThemeToggle />
                 <button className="btn-ghost-dark">
                   <Settings className="h-4 w-4" />
                 </button>
