@@ -139,7 +139,15 @@ class AutonomousAgentCoordinator:
             'decision_timeout': 300  # 5 minutes
         }
         
-        logger.info("AutonomousAgentCoordinator Phase 11 initialized")
+        # Enhanced LLM Integration
+        self.agent_llm_preferences = {
+            "trend_follower_001": "marcus_trend_follower",
+            "arbitrage_bot_003": "alex_arbitrage", 
+            "mean_reversion_002": "sophia_mean_reversion",
+            "risk_manager_004": "riley_risk_manager"
+        }
+        
+        logger.info("AutonomousAgentCoordinator Phase 11 initialized with enhanced LLM integration")
     
     async def initialize(self):
         """Initialize the autonomous agent coordinator"""
@@ -566,13 +574,21 @@ class AutonomousAgentCoordinator:
             if self.llm_service:
                 from ..models.llm_models import LLMRequest, LLMTaskType
                 
+                # Get agent-specific LLM preference
+                agent_llm_id = self.agent_llm_preferences.get(agent_id)
+                
                 request = LLMRequest(
                     task_type=LLMTaskType.TRADING_DECISION,
                     prompt=analysis_prompt,
-                    context=asdict(context)
+                    context=asdict(context),
+                    agent_id=agent_llm_id  # Pass agent ID for optimal LLM routing
                 )
                 
-                response = await self.llm_service.process_llm_request(request)
+                # Call LLM service with agent-specific routing
+                response = await self.llm_service.process_llm_request(
+                    request, 
+                    agent_id=agent_llm_id
+                )
                 
                 # Parse LLM response into structured analysis
                 analysis = {

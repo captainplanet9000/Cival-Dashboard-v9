@@ -19,8 +19,12 @@ import anthropic
 from transformers import pipeline
 import tiktoken
 import redis.asyncio as redis
+import google.generativeai as genai
+import httpx
+import os
 
 from ..core.service_registry import get_registry
+from ..core.llm_router import LLMRouter
 from ..models.llm_models import (
     LLMRequest, LLMResponse, ConversationContext, 
     AgentCommunication, TradingDecision, MarketAnalysis
@@ -34,8 +38,12 @@ class LLMProvider(Enum):
     OPENAI_GPT35 = "openai_gpt35"
     ANTHROPIC_CLAUDE = "anthropic_claude"
     HUGGINGFACE_LOCAL = "huggingface_local"
-    GOOGLE_PALM = "google_palm"
-    COHERE = "cohere"
+    GOOGLE_GEMINI = "google_gemini"
+    GEMINI_FLASH = "gemini_flash"
+    OPENROUTER_GPT4 = "openrouter_gpt4"
+    OPENROUTER_CLAUDE = "openrouter_claude"
+    OPENROUTER_LLAMA = "openrouter_llama"
+    OPENROUTER_MISTRAL = "openrouter_mistral"
 
 class LLMTaskType(Enum):
     """Types of LLM tasks"""
@@ -127,6 +135,9 @@ class LLMIntegrationService:
         self.response_cache: Dict[str, Dict[str, Any]] = {}
         self.cache_ttl = 300  # 5 minutes
         
+        # Initialize LLM router
+        self.router = LLMRouter()
+        
         logger.info("LLMIntegrationService Phase 10 initialized")
     
     async def initialize(self):
@@ -214,6 +225,112 @@ class LLMIntegrationService:
                 )
             except Exception as e:
                 logger.warning(f"Failed to initialize HuggingFace local model: {e}")
+            
+            # Google Gemini
+            try:
+                google_api_key = os.getenv("GOOGLE_API_KEY")
+                if google_api_key and google_api_key != "your_google_gemini_api_key_here":
+                    genai.configure(api_key=google_api_key)
+                    gemini_model = genai.GenerativeModel('gemini-pro')
+                    self.providers[LLMProvider.GOOGLE_GEMINI] = gemini_model
+                    self.provider_configs[LLMProvider.GOOGLE_GEMINI] = LLMConfig(
+                        provider=LLMProvider.GOOGLE_GEMINI,
+                        model_name="gemini-pro",
+                        api_key=google_api_key,
+                        endpoint="https://generativelanguage.googleapis.com",
+                        max_tokens=8192,
+                        temperature=0.7,
+                        timeout=30,
+                        cost_per_token=0.0,  # Free tier
+                        rate_limit_rpm=60,
+                        rate_limit_tpm=32000
+                    )
+                    
+                    # Gemini Flash (faster, cheaper model)
+                    gemini_flash = genai.GenerativeModel('gemini-1.5-flash')
+                    self.providers[LLMProvider.GEMINI_FLASH] = gemini_flash
+                    self.provider_configs[LLMProvider.GEMINI_FLASH] = LLMConfig(
+                        provider=LLMProvider.GEMINI_FLASH,
+                        model_name="gemini-1.5-flash",
+                        api_key=google_api_key,
+                        endpoint="https://generativelanguage.googleapis.com",
+                        max_tokens=8192,
+                        temperature=0.7,
+                        timeout=15,
+                        cost_per_token=0.0,  # Free tier
+                        rate_limit_rpm=120,
+                        rate_limit_tpm=64000
+                    )
+                    logger.info("Google Gemini models initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Google Gemini: {e}")
+            
+            # OpenRouter Integration
+            try:
+                openrouter_key = os.getenv("OPENROUTER_API_KEY")
+                if openrouter_key:
+                    # OpenRouter GPT-4
+                    self.providers[LLMProvider.OPENROUTER_GPT4] = "openrouter_client"
+                    self.provider_configs[LLMProvider.OPENROUTER_GPT4] = LLMConfig(
+                        provider=LLMProvider.OPENROUTER_GPT4,
+                        model_name="openai/gpt-4-turbo-preview",
+                        api_key=openrouter_key,
+                        endpoint="https://openrouter.ai/api/v1",
+                        max_tokens=4096,
+                        temperature=0.7,
+                        timeout=60,
+                        cost_per_token=0.00003,
+                        rate_limit_rpm=500,
+                        rate_limit_tpm=30000
+                    )
+                    
+                    # OpenRouter Claude
+                    self.providers[LLMProvider.OPENROUTER_CLAUDE] = "openrouter_client"
+                    self.provider_configs[LLMProvider.OPENROUTER_CLAUDE] = LLMConfig(
+                        provider=LLMProvider.OPENROUTER_CLAUDE,
+                        model_name="anthropic/claude-3-opus",
+                        api_key=openrouter_key,
+                        endpoint="https://openrouter.ai/api/v1",
+                        max_tokens=4096,
+                        temperature=0.7,
+                        timeout=60,
+                        cost_per_token=0.000015,
+                        rate_limit_rpm=200,
+                        rate_limit_tpm=20000
+                    )
+                    
+                    # OpenRouter Llama
+                    self.providers[LLMProvider.OPENROUTER_LLAMA] = "openrouter_client"
+                    self.provider_configs[LLMProvider.OPENROUTER_LLAMA] = LLMConfig(
+                        provider=LLMProvider.OPENROUTER_LLAMA,
+                        model_name="meta-llama/llama-3-70b-instruct",
+                        api_key=openrouter_key,
+                        endpoint="https://openrouter.ai/api/v1",
+                        max_tokens=4096,
+                        temperature=0.7,
+                        timeout=60,
+                        cost_per_token=0.0000009,
+                        rate_limit_rpm=300,
+                        rate_limit_tpm=25000
+                    )
+                    
+                    # OpenRouter Mistral
+                    self.providers[LLMProvider.OPENROUTER_MISTRAL] = "openrouter_client"
+                    self.provider_configs[LLMProvider.OPENROUTER_MISTRAL] = LLMConfig(
+                        provider=LLMProvider.OPENROUTER_MISTRAL,
+                        model_name="mistralai/mixtral-8x7b-instruct",
+                        api_key=openrouter_key,
+                        endpoint="https://openrouter.ai/api/v1",
+                        max_tokens=4096,
+                        temperature=0.7,
+                        timeout=45,
+                        cost_per_token=0.0000006,
+                        rate_limit_rpm=400,
+                        rate_limit_tpm=35000
+                    )
+                    logger.info("OpenRouter models initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize OpenRouter: {e}")
             
             logger.info(f"Initialized {len(self.providers)} LLM providers")
             
@@ -318,7 +435,8 @@ class LLMIntegrationService:
     async def process_llm_request(
         self,
         request: LLMRequest,
-        preferred_provider: Optional[LLMProvider] = None
+        preferred_provider: Optional[LLMProvider] = None,
+        agent_id: Optional[str] = None
     ) -> LLMResponse:
         """Process an LLM request with intelligent provider selection"""
         try:
@@ -330,7 +448,7 @@ class LLMIntegrationService:
                 return cached_response
             
             # Select optimal provider
-            provider = await self._select_optimal_provider(request, preferred_provider)
+            provider = await self._select_optimal_provider(request, preferred_provider, agent_id)
             
             # Process request
             response = await self._process_with_provider(provider, request)
@@ -362,46 +480,55 @@ class LLMIntegrationService:
     async def _select_optimal_provider(
         self,
         request: LLMRequest,
-        preferred_provider: Optional[LLMProvider] = None
+        preferred_provider: Optional[LLMProvider] = None,
+        agent_id: Optional[str] = None
     ) -> LLMProvider:
-        """Select the optimal LLM provider for the request"""
+        """Select the optimal LLM provider using intelligent routing"""
         try:
             if preferred_provider and preferred_provider in self.providers:
                 return preferred_provider
             
-            # Provider selection based on task type and requirements
-            task_type = request.task_type
+            # Assess task complexity
+            complexity = self.router.assess_complexity(
+                request.prompt, 
+                request.task_type, 
+                request.context
+            )
             
-            # High-complexity tasks prefer GPT-4 or Claude
-            if task_type in [LLMTaskType.PORTFOLIO_OPTIMIZATION, LLMTaskType.STRATEGY_GENERATION]:
-                if LLMProvider.OPENAI_GPT4 in self.providers:
-                    return LLMProvider.OPENAI_GPT4
-                elif LLMProvider.ANTHROPIC_CLAUDE in self.providers:
-                    return LLMProvider.ANTHROPIC_CLAUDE
+            # Get routing decision
+            routing_decision = await self.router.select_provider(
+                task_type=request.task_type,
+                complexity=complexity,
+                agent_id=agent_id,
+                context=request.context
+            )
             
-            # Communication tasks can use lighter models
-            elif task_type == LLMTaskType.AGENT_COMMUNICATION:
-                if LLMProvider.HUGGINGFACE_LOCAL in self.providers:
-                    return LLMProvider.HUGGINGFACE_LOCAL
-                elif LLMProvider.OPENAI_GPT35 in self.providers:
-                    return LLMProvider.OPENAI_GPT35
+            # Check if primary provider is available
+            if routing_decision.primary_provider in self.providers:
+                logger.info(f"Selected {routing_decision.primary_provider.value}: {routing_decision.reasoning}")
+                return routing_decision.primary_provider
             
-            # Default to most capable available provider
-            provider_priority = [
-                LLMProvider.OPENAI_GPT4,
-                LLMProvider.ANTHROPIC_CLAUDE,
-                LLMProvider.OPENAI_GPT35,
-                LLMProvider.HUGGINGFACE_LOCAL
-            ]
+            # Fallback to secondary provider
+            if routing_decision.fallback_provider and routing_decision.fallback_provider in self.providers:
+                logger.info(f"Fallback to {routing_decision.fallback_provider.value}")
+                return routing_decision.fallback_provider
             
-            for provider in provider_priority:
-                if provider in self.providers:
-                    return provider
+            # Emergency fallback - use any available provider
+            available_providers = list(self.providers.keys())
+            if available_providers:
+                provider = available_providers[0]
+                logger.warning(f"Emergency fallback to {provider.value}")
+                return provider
             
-            raise ValueError("No suitable LLM provider available")
+            raise ValueError("No LLM providers available")
             
         except Exception as e:
             logger.error(f"Failed to select optimal provider: {e}")
+            # Final fallback
+            if LLMProvider.GOOGLE_GEMINI in self.providers:
+                return LLMProvider.GOOGLE_GEMINI
+            elif LLMProvider.GEMINI_FLASH in self.providers:
+                return LLMProvider.GEMINI_FLASH
             raise
     
     async def _process_with_provider(
@@ -419,6 +546,13 @@ class LLMIntegrationService:
                 response = await self._process_anthropic(request)
             elif provider == LLMProvider.HUGGINGFACE_LOCAL:
                 response = await self._process_huggingface(request)
+            elif provider == LLMProvider.GOOGLE_GEMINI:
+                response = await self._process_gemini(request, "gemini-pro")
+            elif provider == LLMProvider.GEMINI_FLASH:
+                response = await self._process_gemini(request, "gemini-1.5-flash")
+            elif provider in [LLMProvider.OPENROUTER_GPT4, LLMProvider.OPENROUTER_CLAUDE, 
+                            LLMProvider.OPENROUTER_LLAMA, LLMProvider.OPENROUTER_MISTRAL]:
+                response = await self._process_openrouter(request, provider)
             else:
                 raise ValueError(f"Unsupported provider: {provider}")
             
@@ -546,6 +680,115 @@ class LLMIntegrationService:
             
         except Exception as e:
             logger.error(f"HuggingFace processing failed: {e}")
+            raise
+    
+    async def _process_gemini(self, request: LLMRequest, model_name: str) -> Dict[str, Any]:
+        """Process request with Google Gemini"""
+        try:
+            if model_name == "gemini-pro":
+                model = self.providers[LLMProvider.GOOGLE_GEMINI]
+            else:
+                model = self.providers[LLMProvider.GEMINI_FLASH]
+            
+            # Prepare the prompt
+            prompt = request.prompt
+            if request.system_prompt:
+                prompt = f"{request.system_prompt}\n\n{prompt}"
+            if request.context:
+                context_str = json.dumps(request.context, indent=2)
+                prompt = f"Context: {context_str}\n\n{prompt}"
+            
+            # Generate response
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: model.generate_content(
+                    prompt,
+                    generation_config=genai.GenerationConfig(
+                        max_output_tokens=request.max_tokens or 4096,
+                        temperature=request.temperature or 0.7,
+                    )
+                )
+            )
+            
+            content = response.text if response.text else "No response generated"
+            
+            return {
+                'content': content,
+                'tokens_used': len(content.split()) * 1.3,  # Approximate token count
+                'confidence_score': 0.85,
+                'metadata': {
+                    'model': model_name,
+                    'provider': 'google_gemini',
+                    'cost': 0.0  # Free tier
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Gemini processing failed: {e}")
+            raise
+    
+    async def _process_openrouter(self, request: LLMRequest, provider: LLMProvider) -> Dict[str, Any]:
+        """Process request with OpenRouter"""
+        try:
+            config = self.provider_configs[provider]
+            
+            # Prepare messages
+            messages = [
+                {"role": "system", "content": request.system_prompt or "You are a helpful AI assistant for trading analysis."},
+                {"role": "user", "content": request.prompt}
+            ]
+            
+            if request.context:
+                context_message = f"Context: {json.dumps(request.context, indent=2)}"
+                messages.insert(-1, {"role": "user", "content": context_message})
+            
+            # Make API call to OpenRouter
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{config.endpoint}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {config.api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://cival-trading-platform.com",
+                        "X-Title": "Cival Trading Platform"
+                    },
+                    json={
+                        "model": config.model_name,
+                        "messages": messages,
+                        "max_tokens": request.max_tokens or config.max_tokens,
+                        "temperature": request.temperature or config.temperature,
+                        "top_p": 1,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    },
+                    timeout=config.timeout
+                )
+                
+                if response.status_code != 200:
+                    raise Exception(f"OpenRouter API error: {response.status_code} - {response.text}")
+                
+                result = response.json()
+                
+                if 'choices' not in result or not result['choices']:
+                    raise Exception("No response from OpenRouter")
+                
+                content = result['choices'][0]['message']['content']
+                tokens_used = result.get('usage', {}).get('total_tokens', 0)
+                
+                return {
+                    'content': content,
+                    'tokens_used': tokens_used,
+                    'confidence_score': 0.9,
+                    'metadata': {
+                        'model': config.model_name,
+                        'provider': 'openrouter',
+                        'cost': tokens_used * config.cost_per_token,
+                        'usage': result.get('usage', {})
+                    }
+                }
+                
+        except Exception as e:
+            logger.error(f"OpenRouter processing failed for {provider}: {e}")
             raise
     
     async def start_agent_conversation(

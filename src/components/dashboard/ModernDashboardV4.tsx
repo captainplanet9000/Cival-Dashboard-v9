@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Activity, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Zap,
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
-  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight
+  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -59,8 +59,7 @@ import { CommandPalette } from '@/components/expansions/command-palette'
 import { TradingDataTable } from '@/components/expansions/trading-data-table'
 
 // Import AG-UI infrastructure
-import { AGUIProvider } from '@/components/ag-ui/AGUIProvider'
-import { AGUIChat } from '@/components/ag-ui/AGUIChat'
+import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,

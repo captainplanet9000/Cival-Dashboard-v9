@@ -30,6 +30,7 @@ scipy>=1.10.0
 
 # Multi-LLM Support
 tiktoken>=0.5.0
+google-generativeai==0.3.2
 
 # Trading and Financial Data - Production Compatible
 yfinance==0.2.50

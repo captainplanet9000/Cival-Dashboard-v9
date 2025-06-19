@@ -17,8 +17,12 @@ class LLMProvider(Enum):
     OPENAI_GPT35 = "openai_gpt35"
     ANTHROPIC_CLAUDE = "anthropic_claude"
     HUGGINGFACE_LOCAL = "huggingface_local"
-    GOOGLE_PALM = "google_palm"
-    COHERE = "cohere"
+    GOOGLE_GEMINI = "google_gemini"
+    GEMINI_FLASH = "gemini_flash"
+    OPENROUTER_GPT4 = "openrouter_gpt4"
+    OPENROUTER_CLAUDE = "openrouter_claude"
+    OPENROUTER_LLAMA = "openrouter_llama"
+    OPENROUTER_MISTRAL = "openrouter_mistral"
 
 class LLMTaskType(Enum):
     """Types of LLM tasks"""
