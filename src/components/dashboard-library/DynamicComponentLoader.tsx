@@ -40,6 +40,10 @@ const components = {
   'agui-chat': lazy(() => import('@/components/ag-ui/fallback').then(module => ({ default: module.AGUIChat }))),
 
   // Vault & Financial Components
+  'comprehensive-wallet-dashboard': lazy(() => import('@/components/wallet/ComprehensiveWalletDashboard')),
+  'vault-banking-dashboard': lazy(() => import('@/components/vault/VaultBankingDashboard')),
+  'multi-chain-wallet-view': lazy(() => import('@/components/dashboard/MultiChainWalletView')),
+  'defi-integration-hub': lazy(() => import('@/components/defi/DeFiIntegrationHub')),
   'vault-banking': lazy(() => import('@/app/dashboard/vault/page')),
   'defi-lending': lazy(() => import('@/app/dashboard/defi-lending/page')),
   'multi-chain-wallet': lazy(() => import('@/components/wallet/MultiChainWalletView')),
@@ -81,8 +85,10 @@ const components = {
   'persistence-dashboard': lazy(() => import('@/app/dashboard/persistence/page'))
 }
 
+export type ComponentKey = keyof typeof components
+
 interface DynamicComponentLoaderProps {
-  componentKey: keyof typeof components
+  componentKey: ComponentKey
   fallback?: React.ReactNode
   errorFallback?: React.ReactNode
 }

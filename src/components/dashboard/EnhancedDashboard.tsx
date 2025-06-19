@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Activity, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Zap,
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
-  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search
+  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search,
+  Building, Brain
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -46,6 +47,11 @@ import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
 // Import the comprehensive Advanced Dashboard Tab
 import AdvancedDashboardTab from '@/components/dashboard/AdvancedDashboardTab'
+
+// Import wallet system components
+import ComprehensiveWalletDashboard from '@/components/wallet/ComprehensiveWalletDashboard'
+import VaultBankingDashboard from '@/components/vault/VaultBankingDashboard'
+import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 // Import existing page components
 import dynamic from 'next/dynamic'
@@ -240,9 +246,27 @@ export function EnhancedDashboard() {
       component: <GoalsPage />
     },
     {
-      id: 'vault',
-      label: 'Vault',
+      id: 'wallets',
+      label: 'Multi-Chain Wallets',
       icon: <Wallet className="h-4 w-4" />,
+      component: <ComprehensiveWalletDashboard />
+    },
+    {
+      id: 'vault-banking',
+      label: 'Vault Banking',
+      icon: <Building className="h-4 w-4" />,
+      component: <VaultBankingDashboard />
+    },
+    {
+      id: 'defi',
+      label: 'DeFi Hub',
+      icon: <Zap className="h-4 w-4" />,
+      component: <DeFiIntegrationHub />
+    },
+    {
+      id: 'vault',
+      label: 'Legacy Vault',
+      icon: <PieChart className="h-4 w-4" />,
       component: <VaultPage />
     },
     {
@@ -507,7 +531,7 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
       </Card>
 
       {/* Quick Access to Professional Tools */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <QuickAccessCard
           title="Live Market Data"
           description="Real-time prices & technical analysis"
@@ -525,9 +549,25 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         />
         
         <QuickAccessCard
+          title="Multi-Chain Wallets"
+          description="Cross-chain wallet management"
+          icon={<Wallet className="h-12 w-12 mx-auto mb-4 text-purple-500" />}
+          targetTab="wallets"
+          onNavigate={onNavigate}
+        />
+        
+        <QuickAccessCard
+          title="DeFi Integration"
+          description="Yield farming & protocol management"
+          icon={<Zap className="h-12 w-12 mx-auto mb-4 text-violet-500" />}
+          targetTab="defi"
+          onNavigate={onNavigate}
+        />
+        
+        <QuickAccessCard
           title="AI Agent Control"
           description="Monitor and control trading agents"
-          icon={<Bot className="h-12 w-12 mx-auto mb-4 text-purple-500" />}
+          icon={<Bot className="h-12 w-12 mx-auto mb-4 text-indigo-500" />}
           targetTab="agents"
           onNavigate={onNavigate}
         />
@@ -537,14 +577,6 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           description="Comprehensive system health monitoring"
           icon={<Activity className="h-12 w-12 mx-auto mb-4 text-green-500" />}
           targetTab="monitoring"
-          onNavigate={onNavigate}
-        />
-        
-        <QuickAccessCard
-          title="Memory Analytics"
-          description="AI agent memory optimization and analytics"
-          icon={<Brain className="h-12 w-12 mx-auto mb-4 text-purple-500" />}
-          targetTab="memory"
           onNavigate={onNavigate}
         />
       </div>

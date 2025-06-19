@@ -233,16 +233,46 @@ const dashboardFeatures: FeatureCard[] = [
     tags: ['farms', 'agents', 'coordination']
   },
 
-  // Financial Management
+  // Financial Management & Wallets
   {
-    id: 'vault-banking',
-    title: 'Vault Banking System',
-    description: 'Multi-vault banking with DeFi integration',
+    id: 'comprehensive-wallet-dashboard',
+    title: 'Comprehensive Wallet System',
+    description: 'Complete multi-chain wallet management with master wallet coordination',
     icon: <Wallet className="h-6 w-6" />,
-    componentKey: 'vault-banking',
+    componentKey: 'comprehensive-wallet-dashboard',
     category: 'Financial',
     status: 'available',
-    tags: ['vault', 'banking', 'defi']
+    tags: ['wallet', 'multi-chain', 'master-wallet', 'comprehensive']
+  },
+  {
+    id: 'vault-banking-dashboard',
+    title: 'Vault Banking System',
+    description: 'Enterprise-grade banking with compliance and risk management',
+    icon: <Building className="h-6 w-6" />,
+    componentKey: 'vault-banking-dashboard',
+    category: 'Financial',
+    status: 'available',
+    tags: ['vault', 'banking', 'enterprise', 'compliance']
+  },
+  {
+    id: 'multi-chain-wallet-view',
+    title: 'Multi-Chain Wallet View',
+    description: 'Cross-chain wallet management for Ethereum, Solana, Sui, and Sonic',
+    icon: <Globe className="h-6 w-6" />,
+    componentKey: 'multi-chain-wallet-view',
+    category: 'Financial',
+    status: 'available',
+    tags: ['wallet', 'multi-chain', 'ethereum', 'solana', 'sui', 'sonic']
+  },
+  {
+    id: 'defi-integration-hub',
+    title: 'DeFi Integration Hub',
+    description: 'Advanced DeFi protocol integration with yield optimization',
+    icon: <Zap className="h-6 w-6" />,
+    componentKey: 'defi-integration-hub',
+    category: 'Financial',
+    status: 'available',
+    tags: ['defi', 'yield-farming', 'staking', 'lending', 'protocols']
   },
   {
     id: 'defi-lending',
@@ -261,7 +291,7 @@ const dashboardFeatures: FeatureCard[] = [
     icon: <Network className="h-6 w-6" />,
     componentKey: 'multi-chain-wallet',
     category: 'Financial',
-    status: 'pending',
+    status: 'available',
     tags: ['wallet', 'multi-chain', 'cross-chain']
   },
 
