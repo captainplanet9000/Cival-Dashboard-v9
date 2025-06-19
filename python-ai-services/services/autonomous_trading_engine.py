@@ -19,6 +19,10 @@ from concurrent.futures import ThreadPoolExecutor
 from ..core.service_registry import get_registry
 from ..models.agent_models import AgentDecision, TradingStrategy
 from ..models.llm_models import LLMRequest, LLMTaskType, LLMProvider
+from python_ai_services.services.enhanced_market_data_service import EnhancedMarketDataService
+from python_ai_services.models.enhanced_market_data_models import (
+    TradingSignal, TechnicalIndicators, TimeFrame, MarketAlert
+)
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +108,7 @@ class AutonomousTradingEngine:
         self.agent_coordinator = None
         self.decision_engine = None
         self.trading_gateway = None
-        self.market_data_service = None
+        self.market_data_service = EnhancedMarketDataService()
         self.risk_service = None
         self.mcp_tools = None
         
@@ -393,6 +397,107 @@ class AutonomousTradingEngine:
                 await asyncio.sleep(60)
     
     async def _generate_market_signal(self, symbol: str, market_data: Dict[str, Any]) -> Optional[MarketSignal]:
+        """Generate enhanced market signal using technical analysis and LLM insights"""
+        try:
+            # Get technical analysis data
+            technical_indicators = await self.market_data_service.get_technical_analysis(symbol)
+            trading_signals = await self.market_data_service.generate_trading_signals(symbol)
+            
+            if not technical_indicators or not trading_signals:
+                return None
+            
+            # Find the highest confidence signal
+            best_signal = max(trading_signals, key=lambda s: s.confidence) if trading_signals else None
+            
+            if not best_signal or best_signal.confidence < Decimal("0.6"):
+                return None
+            
+            # Enhance with LLM analysis
+            llm_analysis = await self._analyze_signal_with_llm(symbol, technical_indicators, best_signal)
+            
+            return MarketSignal(
+                signal_id=str(uuid.uuid4()),
+                source="enhanced_technical_analysis",
+                symbol=symbol,
+                signal_type=best_signal.signal_type.lower(),
+                strength=float(best_signal.confidence),
+                direction=best_signal.signal_type.lower(),
+                confidence=float(best_signal.confidence),
+                metadata={
+                    "technical_source": best_signal.source,
+                    "reasoning": best_signal.reasoning,
+                    "rsi": float(technical_indicators.rsi or 0),
+                    "macd": float(technical_indicators.macd or 0),
+                    "sma_20": float(technical_indicators.sma_20 or 0),
+                    "sma_50": float(technical_indicators.sma_50 or 0),
+                    "bollinger_position": self._calculate_bollinger_position(technical_indicators),
+                    "llm_analysis": llm_analysis,
+                    "timeframe": best_signal.timeframe.value,
+                    "risk_score": float(best_signal.risk_score or 0)
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Error generating enhanced market signal for {symbol}: {e}")
+            return None
+    
+    def _calculate_bollinger_position(self, indicators: TechnicalIndicators) -> str:
+        """Calculate position relative to Bollinger Bands"""
+        if not all([indicators.bollinger_upper, indicators.bollinger_middle, indicators.bollinger_lower]):
+            return "unknown"
+        
+        # This would need the current price - simplified for now
+        # In a real implementation, we'd get current price and compare
+        return "middle"  # placeholder
+    
+    async def _analyze_signal_with_llm(self, symbol: str, indicators: TechnicalIndicators, signal: TradingSignal) -> Dict[str, Any]:
+        """Use LLM to provide additional signal analysis"""
+        try:
+            if not self.llm_service:
+                return {"analysis": "LLM service not available"}
+            
+            prompt = f"""
+            Analyze this trading signal for {symbol}:
+            
+            Signal: {signal.signal_type} ({signal.confidence:.2f} confidence)
+            Source: {signal.source}
+            Reasoning: {signal.reasoning}
+            
+            Technical Indicators:
+            - RSI: {indicators.rsi or 'N/A'}
+            - MACD: {indicators.macd or 'N/A'}
+            - SMA 20: {indicators.sma_20 or 'N/A'}
+            - SMA 50: {indicators.sma_50 or 'N/A'}
+            - Bollinger Upper: {indicators.bollinger_upper or 'N/A'}
+            - Bollinger Lower: {indicators.bollinger_lower or 'N/A'}
+            
+            Provide:
+            1. Risk assessment (1-10 scale)
+            2. Optimal position size recommendation
+            3. Key factors supporting/opposing the signal
+            4. Market context considerations
+            
+            Keep response concise and actionable.
+            """
+            
+            request = LLMRequest(
+                task_type=LLMTaskType.ANALYSIS,
+                prompt=prompt,
+                max_tokens=500,
+                temperature=0.3
+            )
+            
+            response = await self.llm_service.process_request(request)
+            
+            return {
+                "analysis": response.content if response else "No LLM analysis available",
+                "model_used": response.model_used if response else None,
+                "tokens_used": response.tokens_used if response else 0
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting LLM analysis for {symbol}: {e}")
+            return {"analysis": f"LLM analysis error: {str(e)}"}
         """Generate market signal using LLM analysis"""
         try:
             # Prepare market analysis prompt
