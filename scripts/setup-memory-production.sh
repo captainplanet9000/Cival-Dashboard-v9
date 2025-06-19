@@ -7,7 +7,7 @@ echo "🚀 Setting up Production Memory System..."
 # 1. Install Python dependencies
 echo "📦 Installing Python memory dependencies..."
 cd python-ai-services
-pip install pymemgpt redis[hiredis] aioredis psycopg2-binary sqlalchemy
+pip install letta redis[hiredis] aioredis psycopg2-binary sqlalchemy
 
 # 2. Install Node.js dependencies
 echo "📦 Installing Node.js memory dependencies..."
@@ -22,8 +22,8 @@ python scripts/create-memory-schema.py
 echo "🔍 Testing memory system connections..."
 python scripts/test-memory-connections.py
 
-# 5. Initialize MemGPT
-echo "🧠 Initializing MemGPT..."
-python scripts/initialize-memgpt.py
+# 5. Initialize Letta
+echo "🧠 Initializing Letta..."
+python scripts/initialize-letta.py
 
 echo "✅ Production Memory System setup complete!"

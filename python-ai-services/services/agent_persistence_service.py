@@ -71,15 +71,16 @@ class AgentPersistenceService:
             logger.error("Supabase URL or Key not fully configured. Both are required. Supabase client cannot be initialized.")
             self.supabase_client = None
 
-        # Redis connection
+        # Redis connection (Redis Cloud)
         if self.redis_url and not self.redis_client and aioredis:
             try:
-                logger.info(f"Connecting to Redis at {self.redis_url}...")
-                self.redis_client = await aioredis.from_url(self.redis_url)
+                logger.info(f"Connecting to Redis Cloud...")
+                # Redis Cloud requires decode_responses=True for string operations
+                self.redis_client = await aioredis.from_url(self.redis_url, decode_responses=True)
                 await self.redis_client.ping()
-                logger.info("Successfully connected to Redis and ping successful.")
+                logger.info("Successfully connected to Redis Cloud and ping successful.")
             except aioredis.RedisError as e:
-                logger.error(f"Failed to connect to Redis at {self.redis_url}: {e}")
+                logger.error(f"Failed to connect to Redis Cloud: {e}")
                 self.redis_client = None
             except Exception as e:
                 logger.error(f"An unexpected error occurred during Redis connection: {e}")
@@ -143,9 +144,13 @@ class AgentPersistenceService:
             serialized_state = await self.redis_client.get(key)
             if serialized_state:
                 logger.debug(f"Cache hit from Redis for real-time state of agent '{agent_id}'. Key: '{key}'")
-                if isinstance(serialized_state, bytes):
-                    serialized_state = serialized_state.decode('utf-8')
-                return json.loads(serialized_state)
+                # With decode_responses=True, Redis returns strings directly
+                if isinstance(serialized_state, str):
+                    return json.loads(serialized_state)
+                elif isinstance(serialized_state, bytes):
+                    return json.loads(serialized_state.decode('utf-8'))
+                else:
+                    return serialized_state
             else:
                 logger.debug(f"Cache miss from Redis for real-time state of agent '{agent_id}'. Key: '{key}'")
                 return None

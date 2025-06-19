@@ -3,11 +3,10 @@ import uuid
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 
-from pymemgpt import MemGPT
-from pymemgpt.config import MemGPTConfig
-from pymemgpt.constants import DEFAULT_PERSONA, DEFAULT_HUMAN # Default persona/human files
-# For specific storage connectors if needed, though MemGPTConfig handles it based on type
-# from memgpt.persistence_manager import PostgresStorageConnector 
+from letta import create_client
+from letta.client.client import LocalClient, RESTClient
+from letta.schemas import LettaRequest, LettaResponse
+# Letta configuration and constants 
 from datetime import datetime, timezone # For simulated memory timestamps
 
 # It's good practice to load environment variables at the entry point of your application (e.g., main.py)
@@ -28,7 +27,7 @@ class MemoryServiceError(Exception):
     pass
 
 class MemoryInitializationError(MemoryServiceError):
-    """Raised when MemGPT client initialization fails."""
+    """Raised when Letta client initialization fails."""
     pass
 
 
@@ -44,160 +43,156 @@ class MemoryService:
             config_overrides: Optional dictionary to override specific MemGPT configurations.
         """
         self.user_id = str(user_id) 
-        self.agent_id_context = str(agent_id_context) # This will be part of the MemGPT agent name
-        self.memgpt_agent_instance: Optional[MemGPT] = None
-        self.memgpt_agent_name = f"cival_agent__{self.user_id}__{self.agent_id_context}" # Unique name for MemGPT agent state
+        self.agent_id_context = str(agent_id_context) # This will be part of the Letta agent name
+        self.letta_client: Optional[LocalClient] = None
+        self.letta_agent_id: Optional[str] = None
+        self.letta_agent_name = f"cival_agent__{self.user_id}__{self.agent_id_context}" # Unique name for Letta agent state
 
-        logger.info(f"Initializing MemoryService for user {self.user_id}, agent_context {self.agent_id_context} (MemGPT agent name: {self.memgpt_agent_name})")
+        logger.info(f"Initializing MemoryService for user {self.user_id}, agent_context {self.agent_id_context} (Letta agent name: {self.letta_agent_name})")
 
         try:
-            # Configure MemGPT
-            # For simplicity, we'll rely on environment variables primarily.
-            # MemGPTConfig.load() will pick them up.
-            # Ensure essential env vars like OPENAI_API_KEY (or other LLM provider) and MEMGPT_DB_URL are set.
+            # Initialize Letta client
+            self.letta_client = create_client()
             
-            # These can be overridden by direct config file or specific overrides if needed
-            # For this POC, we assume env vars are the primary source for MemGPTConfig.
-            # Example of direct config if needed:
-            # cfg = MemGPTConfig(
-            #     archival_storage_type="postgres",
-            #     archival_storage_uri=os.getenv("MEMGPT_DB_URL"),
-            #     model_type=os.getenv("MEMGPT_MODEL_TYPE", "openai"), # Default to openai if not set
-            #     # ... other configs like persona, human, embedding settings ...
-            # )
-
-            # Check if agent state already exists, otherwise create
-            if MemGPT.exists(agent_name=self.memgpt_agent_name):
-                logger.info(f"Loading existing MemGPT agent: {self.memgpt_agent_name}")
-                self.memgpt_agent_instance = MemGPT(agent_name=self.memgpt_agent_name)
+            # Check if agent already exists, otherwise create
+            existing_agents = self.letta_client.list_agents()
+            existing_agent = None
+            
+            for agent in existing_agents:
+                if agent.name == self.letta_agent_name:
+                    existing_agent = agent
+                    break
+            
+            if existing_agent:
+                logger.info(f"Loading existing Letta agent: {self.letta_agent_name}")
+                self.letta_agent_id = existing_agent.id
             else:
-                logger.info(f"Creating new MemGPT agent: {self.memgpt_agent_name}")
-                # Using default persona/human for simplicity in POC.
-                # These can be customized by setting MEMGPT_DEFAULT_PERSONA_NAME / MEMGPT_DEFAULT_HUMAN_NAME env vars
-                # or by passing persona_text/human_text arguments here.
-                self.memgpt_agent_instance = MemGPT(
-                    agent_name=self.memgpt_agent_name,
-                    persona=os.getenv("MEMGPT_DEFAULT_PERSONA_NAME") or DEFAULT_PERSONA,
-                    human=os.getenv("MEMGPT_DEFAULT_HUMAN_NAME") or DEFAULT_HUMAN,
+                logger.info(f"Creating new Letta agent: {self.letta_agent_name}")
+                # Create new agent with default configuration
+                new_agent = self.letta_client.create_agent(
+                    name=self.letta_agent_name,
+                    persona="You are a helpful AI assistant that manages trading memories and decisions for autonomous trading agents.",
+                    human="You are working with an autonomous trading system that learns from past decisions."
                 )
-            logger.info(f"MemGPT agent '{self.memgpt_agent_name}' initialized/loaded successfully.")
+                self.letta_agent_id = new_agent.id
+                
+            logger.info(f"Letta agent '{self.letta_agent_name}' initialized/loaded successfully with ID: {self.letta_agent_id}")
 
         except Exception as e:
-            logger.error(f"Failed to initialize MemGPT for agent {self.memgpt_agent_name}: {e}", exc_info=True)
-            # self.memgpt_agent_instance remains None, methods will return error
-            raise MemoryInitializationError(f"Failed to initialize MemGPT: {e}")
+            logger.error(f"Failed to initialize Letta for agent {self.letta_agent_name}: {e}", exc_info=True)
+            # self.letta_client remains None, methods will return error
+            raise MemoryInitializationError(f"Failed to initialize Letta: {e}")
 
 
     async def add_observation(self, observation_text: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Adds an observation to the agent's memory. Metadata is currently ignored by MemGPT's step/send_message."""
-        if not self.memgpt_agent_instance:
-            logger.warning(f"MemGPT not initialized for agent {self.memgpt_agent_name}. Observation not added.")
-            return {"status": "error", "message": "MemGPT client/agent not initialized."}
+        """Adds an observation to the agent's memory using Letta."""
+        if not self.letta_client or not self.letta_agent_id:
+            logger.warning(f"Letta not initialized for agent {self.letta_agent_name}. Observation not added.")
+            return {"status": "error", "message": "Letta client/agent not initialized."}
         
         try:
-            logger.info(f"Agent {self.memgpt_agent_name} received observation (first 100 chars): {observation_text[:100]}...")
-            # Send message to MemGPT agent. This will be processed, stored in recall, and potentially archived.
-            # The `step` method also returns agent messages, which might include internal thoughts or a reply.
-            # For just adding to memory, `send_message` might be more direct if available and suitable.
-            # However, `step` is the primary interaction method.
+            logger.info(f"Agent {self.letta_agent_name} received observation (first 100 chars): {observation_text[:100]}...")
             
-            # response_messages is a list of messages (dict) from the agent after processing the input
-            response_messages = self.memgpt_agent_instance.step(input_message=observation_text) 
+            # Send message to Letta agent for processing and storage
+            response = self.letta_client.send_message(
+                agent_id=self.letta_agent_id,
+                message=observation_text,
+                role="user"
+            )
             
-            # For this POC, we're not focusing on the agent's response, just that the observation was processed.
-            # The actual 'message_id' of the stored memory isn't directly returned by step().
-            # We can return a generic success or details from response_messages if useful.
+            # Log the agent's response if any
+            if response and hasattr(response, 'messages'):
+                for msg in response.messages:
+                    if hasattr(msg, 'internal_monologue') and msg.internal_monologue:
+                        logger.info(f"Letta agent {self.letta_agent_name} internal monologue: {msg.internal_monologue}")
+                    if hasattr(msg, 'assistant_message') and msg.assistant_message:
+                        logger.info(f"Letta agent {self.letta_agent_name} assistant message: {msg.assistant_message}")
             
-            # Example: log what the agent responded with (if anything)
-            if response_messages:
-                for msg in response_messages:
-                    if msg.get("internal_monologue"):
-                         logger.info(f"MemGPT agent {self.memgpt_agent_name} internal monologue: {msg['internal_monologue']}")
-                    if msg.get("assistant_message"):
-                         logger.info(f"MemGPT agent {self.memgpt_agent_name} assistant message: {msg['assistant_message']}")
-            
-            return {"status": "success", "message_id": str(uuid.uuid4()), "info": "Observation processed by MemGPT."}
+            return {"status": "success", "message_id": str(uuid.uuid4()), "info": "Observation processed by Letta."}
         except Exception as e:
-            logger.error(f"Error adding observation to MemGPT agent {self.memgpt_agent_name}: {e}", exc_info=True)
+            logger.error(f"Error adding observation to Letta agent {self.letta_agent_name}: {e}", exc_info=True)
             return {"status": "error", "message": f"Failed to add observation: {str(e)}"}
 
 
     async def list_memories(self, query: str = "*", limit: int = 20) -> List[Dict[str, Any]]:
         """
-        Retrieves memories for the agent. Uses a broad query by default.
-        The structure of returned dicts depends on memory_search output.
+        Retrieves memories for the agent using Letta.
         """
-        if not self.memgpt_agent_instance:
-            logger.warning(f"MemGPT not initialized for agent {self.memgpt_agent_name}. Cannot list memories.")
-            return [{"error": "MemGPT client/agent not initialized."}]
+        if not self.letta_client or not self.letta_agent_id:
+            logger.warning(f"Letta not initialized for agent {self.letta_agent_name}. Cannot list memories.")
+            return [{"error": "Letta client/agent not initialized."}]
 
         try:
-            effective_query = query if query and query != "*" else "Retrieve a general sample of recent or important memories."
-            logger.info(f"Listing memories for agent {self.memgpt_agent_name} with effective query (first 100 chars): {effective_query[:100]}... Limit: {limit}")
+            effective_query = query if query and query != "*" else "recent important memories"
+            logger.info(f"Listing memories for agent {self.letta_agent_name} with effective query: {effective_query[:100]}... Limit: {limit}")
             
-            # pymemgpt's memory_search returns List[str]
-            results: List[str] = self.memgpt_agent_instance.memory_search(query=effective_query, count=limit)
+            # Get agent's message history which contains memories
+            messages = self.letta_client.get_messages(
+                agent_id=self.letta_agent_id,
+                limit=limit
+            )
             
             formatted_results = []
-            # If results are just strings, wrap them in the expected dict structure.
-            # The API model AgentMemoryResponseItem expects "retrieved_memory_content".
-            for i, res_text in enumerate(results):
-                formatted_results.append({
-                    "retrieved_memory_content": res_text,
-                    # "query": effective_query, # Can include the query used if helpful for frontend
-                    # "score": 1.0 - (i / len(results)) if len(results) > 0 else 0, # Simulated score
-                    # "timestamp": datetime.now(timezone.utc).isoformat() # Actual timestamp not available
-                })
+            for i, message in enumerate(messages):
+                if hasattr(message, 'text') and message.text:
+                    formatted_results.append({
+                        "retrieved_memory_content": message.text,
+                        "timestamp": message.created_at.isoformat() if hasattr(message, 'created_at') else datetime.now(timezone.utc).isoformat(),
+                        "role": getattr(message, 'role', 'unknown'),
+                        "score": 1.0 - (i / len(messages)) if len(messages) > 0 else 0
+                    })
+            
             return formatted_results
         except Exception as e:
-            logger.error(f"Error listing memories from MemGPT agent {self.memgpt_agent_name}: {e}", exc_info=True)
+            logger.error(f"Error listing memories from Letta agent {self.letta_agent_name}: {e}", exc_info=True)
             return [{"error": f"Failed to list memories: {str(e)}"}]
 
     async def get_agent_memory_stats(self) -> Dict[str, Any]:
         """
-        Retrieves statistics about the agent's memory. (Functional Stub)
-        This is a stub and returns mock data. Future implementation should query MemGPT.
+        Retrieves statistics about the agent's memory using Letta.
         """
-        if not self.memgpt_agent_instance:
-            logger.warning(f"MemGPT not initialized for agent {self.memgpt_agent_name}. Cannot get memory stats.")
+        if not self.letta_client or not self.letta_agent_id:
+            logger.warning(f"Letta not initialized for agent {self.letta_agent_name}. Cannot get memory stats.")
             return {
                 "status": "error",
-                "message": "MemGPT client/agent not initialized.",
+                "message": "Letta client/agent not initialized.",
                 "stats": None
             }
 
         try:
-            # In a real implementation, you would query the MemGPT agent instance or its underlying storage
-            # for actual statistics. For example:
-            # - Count of messages in recall memory: len(self.memgpt_agent_instance.persistence_manager.recall_memory)
-            # - Count of passages in archival memory: self.memgpt_agent_instance.persistence_manager.archival_memory.storage.size() (if available)
-            # This often requires direct interaction with the persistence manager components.
-
-            logger.info(f"Generating STUBBED memory stats for MemGPT agent: {self.memgpt_agent_name}")
-
-            # Mock data for the stub
-            mock_stats = {
-                "memgpt_agent_name": self.memgpt_agent_name,
-                "total_memories": 125, # Example value
-                "recall_memory_entries": 25, # Example value (e.g., self.memgpt_agent_instance.recall_memory.size())
-                "archival_memory_entries": 100, # Example value (e.g., self.memgpt_agent_instance.archival_memory.size())
+            logger.info(f"Generating memory stats for Letta agent: {self.letta_agent_name}")
+            
+            # Get agent details and message count
+            agent_info = self.letta_client.get_agent(agent_id=self.letta_agent_id)
+            messages = self.letta_client.get_messages(agent_id=self.letta_agent_id, limit=1000)
+            
+            # Calculate basic statistics
+            total_messages = len(messages)
+            recent_messages = len([m for m in messages if hasattr(m, 'created_at') and 
+                                 (datetime.now(timezone.utc) - m.created_at).days < 7])
+            
+            stats = {
+                "letta_agent_name": self.letta_agent_name,
+                "letta_agent_id": self.letta_agent_id,
+                "total_memories": total_messages,
+                "recent_memories": recent_messages,
+                "agent_created": agent_info.created_at.isoformat() if hasattr(agent_info, 'created_at') else None,
                 "last_memory_update_timestamp": datetime.now(timezone.utc).isoformat(),
-                "core_memory_tokens": 500, # Example: self.memgpt_agent_instance.persistence_manager.agent_state.llm_config.model_max_context_tokens
-                "persona_tokens": 200, # Example
-                "human_tokens": 150, # Example
-                "notes": "These are stubbed values and do not reflect actual memory usage yet."
+                "memory_size_estimate_kb": total_messages * 0.5,  # Rough estimate
+                "persona": getattr(agent_info, 'persona', 'Default trading agent persona'),
+                "human": getattr(agent_info, 'human', 'Default human interaction model')
             }
 
             return {
                 "status": "success",
-                "message": "Memory stats retrieved successfully (stubbed data).",
-                "stats": mock_stats
+                "message": "Memory stats retrieved successfully from Letta.",
+                "stats": stats
             }
         except Exception as e:
-            logger.error(f"Error generating stubbed memory stats for MemGPT agent {self.memgpt_agent_name}: {e}", exc_info=True)
+            logger.error(f"Error getting memory stats for Letta agent {self.letta_agent_name}: {e}", exc_info=True)
             return {
                 "status": "error",
-                "message": f"Failed to generate stubbed memory stats: {str(e)}",
+                "message": f"Failed to get memory stats: {str(e)}",
                 "stats": None
             }
 

@@ -84,15 +84,21 @@ python scripts/create-memory-schema.py
 
 ## 🎯 **QUICK START PRODUCTION SETUP**
 
-### **Phase 1: Core Dependencies (30 minutes)**
+### **Phase 1: Core Dependencies (15 minutes)**
 ```bash
-# 1. Install all dependencies
-./scripts/setup-memory-production.sh
+# 1. Install Redis, Letta and dependencies
+pip install redis aioredis letta
 
-# 2. Test connections
-python scripts/test-memory-connections.py
+# 2. Test Redis Cloud connection
+python3 test-redis-simple.py
 
-# 3. Verify dashboard
+# 3. Initialize Letta
+python3 scripts/initialize-letta.py
+
+# 4. Test all connections
+python3 scripts/test-memory-connections.py
+
+# 5. Verify dashboard
 npm run dev
 # Navigate to Memory Analytics tab
 ```
@@ -172,10 +178,12 @@ Analytics Dashboard ← Memory Optimization ← Cleanup Service
 ## 📋 **TODO: REMAINING TASKS**
 
 ### **High Priority (Production Blockers)**
-- [ ] Install MemGPT: `pip install pymemgpt`
+- [ ] Install Letta: `pip install letta`
 - [ ] Install Redis: `pip install redis aioredis`
-- [ ] Run memory schema creation: `python scripts/create-memory-schema.py`
-- [ ] Test all connections: `python scripts/test-memory-connections.py`
+- [ ] Test Redis Cloud: `python3 test-redis-simple.py`
+- [ ] Initialize Letta: `python3 scripts/initialize-letta.py`
+- [ ] Run memory schema creation: `python3 scripts/create-memory-schema.py`
+- [ ] Test all connections: `python3 scripts/test-memory-connections.py`
 
 ### **Medium Priority (Production Enhancements)**
 - [ ] Configure automated cleanup scheduler

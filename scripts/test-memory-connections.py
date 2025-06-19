@@ -7,6 +7,7 @@ Comprehensive testing of all memory system components
 import asyncio
 import os
 import sys
+import time
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -15,24 +16,46 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python-ai-serv
 load_dotenv()
 
 async def test_redis_connection():
-    """Test Redis connection"""
-    print("🔍 Testing Redis connection...")
+    """Test Redis Cloud connection"""
+    print("🔍 Testing Redis Cloud connection...")
     try:
         import redis.asyncio as aioredis
         
-        redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
-        print(f"   Connecting to: {redis_url}")
+        # Test both URL format and individual credentials
+        redis_url = os.getenv('REDIS_URL')
+        redis_host = os.getenv('REDIS_HOST')
+        redis_port = int(os.getenv('REDIS_PORT', 6379))
+        redis_username = os.getenv('REDIS_USERNAME')
+        redis_password = os.getenv('REDIS_PASSWORD')
         
-        redis_client = await aioredis.from_url(redis_url)
+        if redis_url:
+            print(f"   Connecting via URL to: {redis_host}:{redis_port}")
+            redis_client = await aioredis.from_url(redis_url, decode_responses=True)
+        elif redis_host and redis_password:
+            print(f"   Connecting via credentials to: {redis_host}:{redis_port}")
+            redis_client = await aioredis.Redis(
+                host=redis_host,
+                port=redis_port,
+                username=redis_username,
+                password=redis_password,
+                decode_responses=True
+            )
+        else:
+            print("   ⚠️ Redis connection information not found in environment")
+            return False
+        
+        # Test connection
         await redis_client.ping()
+        print("   ✅ Redis ping successful")
         
         # Test basic operations
-        await redis_client.set('test_key', 'test_value', ex=60)
-        value = await redis_client.get('test_key')
-        await redis_client.delete('test_key')
+        test_key = f'cival_test_{int(time.time())}'
+        await redis_client.set(test_key, 'test_value', ex=60)
+        value = await redis_client.get(test_key)
+        await redis_client.delete(test_key)
         
-        if value and value.decode('utf-8') == 'test_value':
-            print("   ✅ Redis connection successful")
+        if value == 'test_value':
+            print("   ✅ Redis operations successful")
             return True
         else:
             print("   ❌ Redis value test failed")
@@ -78,38 +101,60 @@ async def test_supabase_connection():
         print(f"   ❌ Supabase connection failed: {e}")
         return False
 
-async def test_memgpt_initialization():
-    """Test MemGPT initialization"""
-    print("🔍 Testing MemGPT initialization...")
+async def test_letta_initialization():
+    """Test Letta initialization"""
+    print("🔍 Testing Letta initialization...")
     try:
-        from pymemgpt import MemGPT
-        from pymemgpt.config import MemGPTConfig
+        from letta import create_client
         
-        # Test basic MemGPT initialization
+        # Test basic Letta initialization
+        print("   Creating Letta client...")
+        client = create_client()
+        
+        # List existing agents
+        agents = client.list_agents()
+        print(f"   Found {len(agents)} existing agents")
+        
+        # Test agent creation
         test_agent_name = "test_memory_agent"
+        existing_agent = None
         
-        if MemGPT.exists(agent_name=test_agent_name):
-            print(f"   Found existing test agent: {test_agent_name}")
-            memgpt_agent = MemGPT(agent_name=test_agent_name)
+        for agent in agents:
+            if agent.name == test_agent_name:
+                existing_agent = agent
+                break
+        
+        if existing_agent:
+            print(f"   Using existing test agent: {test_agent_name}")
+            agent_id = existing_agent.id
         else:
-            print(f"   Creating test agent: {test_agent_name}")
-            memgpt_agent = MemGPT(agent_name=test_agent_name)
+            print(f"   Creating new test agent: {test_agent_name}")
+            new_agent = client.create_agent(
+                name=test_agent_name,
+                persona="You are a test agent for memory system validation.",
+                human="You are testing the memory capabilities."
+            )
+            agent_id = new_agent.id
         
         # Test basic memory operation
-        response = memgpt_agent.step(input_message="Test memory storage")
+        response = client.send_message(
+            agent_id=agent_id,
+            message="Test memory storage - this is a validation message",
+            role="user"
+        )
         
         if response:
-            print("   ✅ MemGPT initialization successful")
+            print("   ✅ Letta initialization and messaging successful")
             return True
         else:
-            print("   ❌ MemGPT test interaction failed")
+            print("   ❌ Letta test interaction failed")
             return False
             
     except ImportError:
-        print("   ⚠️ MemGPT library not installed (pip install pymemgpt)")
+        print("   ⚠️ Letta library not installed (pip install letta)")
         return False
     except Exception as e:
-        print(f"   ❌ MemGPT initialization failed: {e}")
+        print(f"   ❌ Letta initialization failed: {e}")
         return False
 
 async def test_agent_persistence_service():
@@ -216,7 +261,7 @@ async def main():
     # Test individual components
     results['Redis'] = await test_redis_connection()
     results['Supabase'] = await test_supabase_connection()
-    results['MemGPT'] = await test_memgpt_initialization()
+    results['Letta'] = await test_letta_initialization()
     results['AgentPersistence'] = await test_agent_persistence_service()
     results['MemoryService'] = await test_memory_service()
     
@@ -247,9 +292,9 @@ async def main():
     if not results.get('Supabase'):
         print("   - Set up Supabase project and get credentials")
         print("   - Run database schema creation script")
-    if not results.get('MemGPT'):
-        print("   - Install MemGPT: pip install pymemgpt")
-        print("   - Configure MemGPT environment variables")
+    if not results.get('Letta'):
+        print("   - Install Letta: pip install letta")
+        print("   - Configure Letta environment variables")
 
 if __name__ == "__main__":
     asyncio.run(main())
