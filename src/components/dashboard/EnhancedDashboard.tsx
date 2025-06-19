@@ -41,6 +41,9 @@ import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
 // Import AG-UI components
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
+// Import the comprehensive Advanced Dashboard Tab
+import AdvancedDashboardTab from '@/components/dashboard/AdvancedDashboardTab'
+
 // Import existing page components
 import dynamic from 'next/dynamic'
 
@@ -578,48 +581,9 @@ function EnhancedAgentsTab() {
   )
 }
 
-// Advanced Tab with AG-UI Chat moved here
+// Advanced Tab with complete feature library
 function AdvancedTab() {
-  const [advancedSubTab, setAdvancedSubTab] = useState('ag-ui-chat')
-  
-  const advancedSubTabs = [
-    { id: 'ag-ui-chat', label: 'AG-UI Chat', component: <AGUIChat /> },
-    { id: 'settings', label: 'Settings', component: <div className="p-6">Advanced Settings Coming Soon</div> },
-    { id: 'api', label: 'API Access', component: <div className="p-6">API Documentation Coming Soon</div> }
-  ]
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="h-6 w-6 text-gray-600" />
-          Advanced Features
-        </CardTitle>
-        <CardDescription>Professional tools, AI chat, and system configuration</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={advancedSubTab} onValueChange={setAdvancedSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 gap-2">
-            {advancedSubTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          
-          {advancedSubTabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id}>
-              {tab.component}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-    </Card>
-  )
+  return <AdvancedDashboardTab />
 }
 
 // Metric Card Component

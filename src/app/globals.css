@@ -38,13 +38,13 @@
     --chart-4: oklch(0.5880 0.0993 245.7394);
     --chart-5: oklch(0.5905 0.1608 148.2409);
     --sidebar: oklch(0.9824 0.0013 286.3757);
-    --sidebar-foreground: oklch(0.3211 0 0);
-    --sidebar-primary: oklch(0.6487 0.1538 150.3071);
-    --sidebar-primary-foreground: oklch(1.0000 0 0);
-    --sidebar-accent: oklch(0.8269 0.1080 211.9627);
-    --sidebar-accent-foreground: oklch(0.3211 0 0);
-    --sidebar-border: oklch(0.8699 0 0);
-    --sidebar-ring: oklch(0.6487 0.1538 150.3071);
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
     --font-sans: 'Plus Jakarta Sans', sans-serif;
     --font-serif: 'Source Serif 4', serif;
     --font-mono: 'JetBrains Mono', monospace;
@@ -57,6 +57,7 @@
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --sidebar-background: 0 0% 98%;
   }
 
   .dark {
@@ -85,13 +86,13 @@
     --chart-4: oklch(0.8269 0.1080 211.9627);
     --chart-5: oklch(0.5905 0.1608 148.2409);
     --sidebar: oklch(0.2303 0.0125 264.2926);
-    --sidebar-foreground: oklch(0.9219 0 0);
-    --sidebar-primary: oklch(0.6487 0.1538 150.3071);
-    --sidebar-primary-foreground: oklch(1.0000 0 0);
-    --sidebar-accent: oklch(0.6746 0.1414 261.3380);
-    --sidebar-accent-foreground: oklch(0.9219 0 0);
-    --sidebar-border: oklch(0.3867 0 0);
-    --sidebar-ring: oklch(0.6487 0.1538 150.3071);
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
     --font-sans: 'Plus Jakarta Sans', sans-serif;
     --font-serif: 'Source Serif 4', serif;
     --font-mono: 'JetBrains Mono', monospace;
@@ -104,6 +105,7 @@
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --sidebar-background: 240 5.9% 10%;
   }
 
   @theme inline {
