@@ -48,6 +48,78 @@ export interface TradingSignal {
   predicted_change_pct: number;
   reasoning: string;
   generated_at: string;
+}
+
+// Farm-related interfaces
+export interface Farm {
+  id: string;
+  name: string;
+  description: string;
+  strategy: string;
+  farmType: string;
+  agents: FarmAgent[];
+  status: string;
+  totalValue: number;
+  dailyPnL: number;
+  totalPnL: number;
+  createdAt: string;
+  performance: FarmPerformance;
+  targets: FarmTargets;
+  riskMetrics: FarmRiskMetrics;
+  realTimeMetrics: FarmRealTimeMetrics;
+}
+
+export interface FarmAgent {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  allocation: number;
+  pnl: number;
+  trades: number;
+  winRate: number;
+  lastActivity: string;
+  performance: AgentPerformance;
+}
+
+export interface FarmPerformance {
+  winRate: number;
+  sharpeRatio: number;
+  maxDrawdown: number;
+  totalTrades: number;
+  avgProfitPerTrade: number;
+  riskAdjustedReturn: number;
+  coordinationScore: number;
+  strategyEfficiency: number;
+}
+
+export interface FarmTargets {
+  dailyTarget: number;
+  monthlyTarget: number;
+  currentProgress: number;
+  targetProgress: number;
+}
+
+export interface FarmRiskMetrics {
+  currentExposure: number;
+  maxExposure: number;
+  diversificationScore: number;
+  correlationRisk: number;
+}
+
+export interface FarmRealTimeMetrics {
+  systemLoad: number;
+  networkLatency: number;
+  processingSpeed: number;
+  errorRate: number;
+}
+
+export interface AgentPerformance {
+  dailyPnL: number;
+  weeklyPnL: number;
+  monthlyPnL: number;
+  sharpeRatio: number;
+  maxDrawdown: number;
   source: string;
 }
 
@@ -1607,6 +1679,280 @@ class BackendApiClient {
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Failed to update coordination settings',
+        status: 0,
+      };
+    }
+  }
+
+  // ==========================================
+  // FARM MANAGEMENT API METHODS
+  // ==========================================
+
+  async getFarms(): Promise<ApiResponse<Farm[]>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms`);
+      return this.handleResponse<Farm[]>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farms',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarm(farmId: string): Promise<ApiResponse<Farm>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}`);
+      return this.handleResponse<Farm>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmMetrics(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/metrics`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm metrics',
+        status: 0,
+      };
+    }
+  }
+
+  async createFarm(farmData: any): Promise<ApiResponse<Farm>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms`, {
+        method: 'POST',
+        body: JSON.stringify(farmData)
+      });
+      return this.handleResponse<Farm>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create farm',
+        status: 0,
+      };
+    }
+  }
+
+  async updateFarm(farmId: string, farmData: any): Promise<ApiResponse<Farm>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}`, {
+        method: 'PUT',
+        body: JSON.stringify(farmData)
+      });
+      return this.handleResponse<Farm>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to update farm',
+        status: 0,
+      };
+    }
+  }
+
+  async deleteFarm(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}`, {
+        method: 'DELETE'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to delete farm',
+        status: 0,
+      };
+    }
+  }
+
+  async startFarm(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/start`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to start farm',
+        status: 0,
+      };
+    }
+  }
+
+  async pauseFarm(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/pause`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to pause farm',
+        status: 0,
+      };
+    }
+  }
+
+  async stopFarm(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/stop`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to stop farm',
+        status: 0,
+      };
+    }
+  }
+
+  async assignAgentToFarm(farmId: string, agentId: string, role: string = 'primary'): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/agents`, {
+        method: 'POST',
+        body: JSON.stringify({ agent_id: agentId, role })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to assign agent to farm',
+        status: 0,
+      };
+    }
+  }
+
+  async removeAgentFromFarm(farmId: string, agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/agents/${agentId}`, {
+        method: 'DELETE'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to remove agent from farm',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmPerformance(farmId: string, timeframe?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = timeframe ? `?timeframe=${timeframe}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/performance${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm performance',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmAgents(farmId: string): Promise<ApiResponse<FarmAgent[]>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/agents`);
+      return this.handleResponse<FarmAgent[]>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm agents',
+        status: 0,
+      };
+    }
+  }
+
+  async updateFarmConfiguration(farmId: string, config: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/config`, {
+        method: 'PUT',
+        body: JSON.stringify(config)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to update farm configuration',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmRiskMetrics(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/risk`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm risk metrics',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmRealTimeMetrics(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/realtime`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm real-time metrics',
+        status: 0,
+      };
+    }
+  }
+
+  async scaleFarm(farmId: string, targetAgents: number): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/scale`, {
+        method: 'POST',
+        body: JSON.stringify({ target_agents: targetAgents })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to scale farm',
+        status: 0,
+      };
+    }
+  }
+
+  async optimizeFarm(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/optimize`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to optimize farm',
+        status: 0,
+      };
+    }
+  }
+
+  async getFarmCoordinationScore(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/coordination`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get farm coordination score',
+        status: 0,
+      };
+    }
+  }
+
+  async triggerFarmRebalancing(farmId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/rebalance`, {
+        method: 'POST'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to trigger farm rebalancing',
         status: 0,
       };
     }

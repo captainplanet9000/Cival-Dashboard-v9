@@ -32,6 +32,9 @@ import { AgentManager } from '@/components/trading/AgentManager'
 import { RiskDashboard } from '@/components/trading/RiskDashboard'
 import { TradingInterface } from '@/components/trading/TradingInterface'
 
+// Import enhanced farm dashboard
+import EnhancedFarmDashboard from '@/components/farm/EnhancedFarmDashboard'
+
 // Import AG-UI components
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
@@ -58,6 +61,7 @@ interface DashboardMetrics {
   activePositions: number
   activeAgents: number
   activeFarms: number
+  farmPerformance: number
   winRate: number
   avgReturn: number
   riskScore: number
@@ -140,6 +144,8 @@ export function EnhancedDashboard() {
           dailyPnL: (Math.random() - 0.5) * 5000,
           totalPnL: 15420 + (Math.random() - 0.5) * 2000,
           activePositions: tradingStatus.data?.active_orders || 3,
+          activeFarms: 3 + Math.floor(Math.random() * 2),
+          farmPerformance: 7500 + (Math.random() - 0.5) * 2000,
           winRate: 68.5 + (Math.random() - 0.5) * 10,
           avgReturn: 12.8 + (Math.random() - 0.5) * 4,
           riskScore: 65 + (Math.random() - 0.5) * 20
@@ -156,7 +162,8 @@ export function EnhancedDashboard() {
           totalPnL: 15420.50,
           activePositions: 3,
           activeAgents: 4,
-          activeFarms: 2,
+          activeFarms: 3,
+          farmPerformance: 7500,
           winRate: 68.5,
           avgReturn: 12.8,
           riskScore: 65,
@@ -201,9 +208,9 @@ export function EnhancedDashboard() {
     },
     {
       id: 'farms',
-      label: 'Farms',
+      label: 'Agent Farms',
       icon: <Target className="h-4 w-4" />,
-      component: <FarmsPage />
+      component: <EnhancedFarmDashboard />
     },
     {
       id: 'goals',
@@ -418,12 +425,12 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           icon={<DollarSign className="h-6 w-6" />}
         />
         <MetricCard
-          title="Active Agents"
-          value={metrics.activeAgents.toString()}
-          change={0}
-          changePercent={0}
-          isPositive={true}
-          icon={<Bot className="h-6 w-6" />}
+          title="Agent Farms"
+          value={metrics.activeFarms.toString()}
+          change={metrics.farmPerformance}
+          changePercent={(metrics.farmPerformance / 10000) * 100}
+          isPositive={metrics.farmPerformance >= 0}
+          icon={<Target className="h-6 w-6" />}
         />
         <MetricCard
           title="Win Rate"
@@ -479,12 +486,20 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
       </Card>
 
       {/* Quick Access to Professional Tools */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <QuickAccessCard
           title="Live Trading Dashboard"
           description="Real-time autonomous trading interface"
           icon={<Zap className="h-12 w-12 mx-auto mb-4 text-blue-500" />}
           targetTab="live-trading"
+          onNavigate={onNavigate}
+        />
+        
+        <QuickAccessCard
+          title="Agent Farms"
+          description="Coordinate multi-agent trading strategies"
+          icon={<Target className="h-12 w-12 mx-auto mb-4 text-orange-500" />}
+          targetTab="farms"
           onNavigate={onNavigate}
         />
         

@@ -36,6 +36,19 @@ google-generativeai==0.3.2
 yfinance==0.2.50
 ccxt>=4.0.0
 
+# Market Data Providers - Multi-source integration
+alpha-vantage==2.3.1
+polygon-api-client==1.12.3
+finnhub-python==2.4.18
+pandas-datareader==0.10.0
+
+# Technical Analysis
+talib==0.4.25
+
+# Enhanced WebSocket and Real-time
+websockets==12.0
+python-socketio[asyncio]==5.10.0
+
 # Web3 Integration - Simplified for Production
 web3>=6.11.0
 eth-account>=0.9.0
