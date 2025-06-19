@@ -250,7 +250,7 @@ export function EnhancedDashboard() {
 
   return (
     <AGUIProvider>
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-violet-50 to-amber-50">
+      <div className="min-h-screen bg-background">
         {/* Mobile Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
@@ -265,12 +265,12 @@ export function EnhancedDashboard() {
                 initial={{ x: -300 }}
                 animate={{ x: 0 }}
                 exit={{ x: -300 }}
-                className="fixed left-0 top-0 h-full w-64 bg-white shadow-xl"
+                className="fixed left-0 top-0 h-full w-64 bg-background shadow-xl border-r border-border"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">Navigation</h2>
+                    <h2 className="text-xl font-bold text-foreground">Navigation</h2>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -289,8 +289,8 @@ export function EnhancedDashboard() {
                         }}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                           activeTab === tab.id
-                            ? 'bg-emerald-100 text-emerald-900'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-foreground hover:bg-muted'
                         }`}
                       >
                         {tab.icon}
@@ -305,7 +305,7 @@ export function EnhancedDashboard() {
         </AnimatePresence>
 
         {/* Header */}
-        <header className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-emerald-100 sticky top-0 z-40">
+        <header className="bg-background/80 backdrop-blur-sm shadow-lg border-b border-border sticky top-0 z-40">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -318,10 +318,10 @@ export function EnhancedDashboard() {
                   <Menu className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-violet-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold text-foreground">
                     Autonomous Trading System
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     AI-Powered Trading Platform
                   </p>
                 </div>
@@ -349,7 +349,7 @@ export function EnhancedDashboard() {
 
         {/* Navigation Tabs */}
         <div className="container mx-auto px-4 py-4">
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 shadow-lg border border-emerald-100">
+          <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2 shadow-lg border border-border">
             <div className="hidden lg:flex space-x-1 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
@@ -357,8 +357,8 @@ export function EnhancedDashboard() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'bg-emerald-100 text-emerald-900 shadow-sm'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-foreground hover:bg-muted'
                   }`}
                 >
                   {tab.icon}
@@ -372,7 +372,7 @@ export function EnhancedDashboard() {
               <select
                 value={activeTab}
                 onChange={(e) => setActiveTab(e.target.value)}
-                className="w-full p-2 rounded-lg border border-gray-200 bg-white"
+                className="w-full p-2 rounded-lg border border-border bg-background text-foreground"
               >
                 {tabs.map((tab) => (
                   <option key={tab.id} value={tab.id}>
@@ -632,13 +632,13 @@ function MetricCard({
 // Loading Screen
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-violet-50 to-amber-50 flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4"></div>
-        <h2 className="text-xl font-semibold text-gray-900">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-muted border-t-primary mx-auto mb-4"></div>
+        <h2 className="text-xl font-semibold text-foreground">
           Loading Autonomous Trading System
         </h2>
-        <p className="text-gray-600">Initializing AI agents and market data...</p>
+        <p className="text-muted-foreground">Initializing AI agents and market data...</p>
       </div>
     </div>
   )

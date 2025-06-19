@@ -25,16 +25,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          enableSystem={false}
-          forcedTheme="dark"
-          themes={["dark"]}
+          enableSystem
+          themes={["light", "dark", "system"]}
           disableTransitionOnChange
         >
           <ErrorBoundary>
