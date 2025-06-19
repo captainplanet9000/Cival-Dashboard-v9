@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "./globals-dark.css";
 import ErrorBoundary from "@/lib/error-handling/error-boundary";
 import { ThemeProvider } from "@/components/theme-provider";
 
