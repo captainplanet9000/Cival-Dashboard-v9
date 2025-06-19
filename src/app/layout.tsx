@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "./globals-dark.css";
 import ErrorBoundary from "@/lib/error-handling/error-boundary";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -26,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${inter.variable} font-sans antialiased bg-background text-foreground`}
       >
@@ -34,7 +33,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="dark"
           enableSystem
-          themes={["light", "dark", "green", "neo", "cyber", "system"]}
+          themes={["light", "dark", "system"]}
           disableTransitionOnChange
         >
           <ErrorBoundary>
