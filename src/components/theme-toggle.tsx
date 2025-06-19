@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun, Monitor } from "lucide-react"
+import { Moon, Sun, Monitor, Leaf, Square, Zap } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +12,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useTheme()
+  const { setTheme, theme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  // useEffect only runs on the client, so now we can safely show the UI
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return null
+  }
 
   return (
     <DropdownMenu>
@@ -31,6 +41,18 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("green")}>
+          <Leaf className="mr-2 h-4 w-4" />
+          <span>Green</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("neo")}>
+          <Square className="mr-2 h-4 w-4" />
+          <span>Neo</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("cyber")}>
+          <Zap className="mr-2 h-4 w-4" />
+          <span>Cyber</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="mr-2 h-4 w-4" />
