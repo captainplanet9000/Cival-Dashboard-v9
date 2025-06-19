@@ -8,7 +8,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './globals-modern.css';
+/* @import './globals-modern.css'; */
 
 @layer base {
   /* New user-provided theme variables */
