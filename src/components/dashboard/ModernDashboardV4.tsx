@@ -240,7 +240,7 @@ export function ModernDashboardV4() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-violet-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen modern-gradient-bg font-sans">
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -263,7 +263,7 @@ export function ModernDashboardV4() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-50 w-64 bg-white/95 backdrop-blur-md shadow-xl lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-64 modern-card shadow-2xl lg:hidden"
             >
               <MobileSidebar onClose={() => setIsMobileMenuOpen(false)} />
             </motion.aside>
@@ -271,14 +271,14 @@ export function ModernDashboardV4() {
         </AnimatePresence>
 
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:bg-white/80 lg:backdrop-blur-md lg:border-r lg:border-emerald-200/50">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 modern-card-dark lg:border-r lg:border-gray-700">
           <DesktopSidebar />
         </aside>
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="bg-white/80 backdrop-blur-md border-b border-emerald-200/50 p-4">
+          <header className="modern-card border-b border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button
@@ -290,15 +290,15 @@ export function ModernDashboardV4() {
                   <Menu className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-2xl font-display modern-text-primary">
                     Cival Dashboard v4
                   </h1>
-                  <p className="text-sm text-gray-600">Advanced AI Trading Platform</p>
+                  <p className="text-sm modern-text-secondary">Advanced AI Trading Platform</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-900 border-emerald-200">
+                <Badge className="modern-badge modern-badge-success">
                   Live
                 </Badge>
                 <Button variant="outline" size="sm" className="hidden sm:flex">
@@ -313,14 +313,14 @@ export function ModernDashboardV4() {
           </header>
 
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
+          <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 bg-white/50 backdrop-blur-sm gap-2">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 modern-card gap-2">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-xs sm:text-sm p-2"
+                    className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-medium text-xs sm:text-sm p-2 transition-all"
                   >
                     {tab.icon}
                     <span className="hidden sm:inline truncate">{tab.label}</span>
@@ -362,7 +362,7 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
   return (
     <div className="space-y-6">
       {/* Live Market Ticker */}
-      <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+      <Card className="modern-card">
         <CardContent className="p-4">
           <LiveMarketTicker />
         </CardContent>
@@ -437,13 +437,13 @@ function DashboardOverview({ metrics, chartData }: { metrics: DashboardMetrics; 
       </div>
 
       {/* Performance Chart */}
-      <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+      <Card className="modern-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 modern-text-primary">
             <BarChart3 className="h-5 w-5 text-emerald-600" />
             Portfolio Performance
           </CardTitle>
-          <CardDescription>30-day portfolio value and P&L trend</CardDescription>
+          <CardDescription className="modern-text-secondary">30-day portfolio value and P&L trend</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-80">
@@ -525,12 +525,12 @@ function MetricCard({
   gradient: string
 }) {
   return (
-    <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50 hover:shadow-lg transition-all duration-300">
+    <Card className="modern-card hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-sm font-medium modern-text-secondary">{title}</p>
+            <p className="text-2xl font-bold modern-text-primary">{value}</p>
             <div className="flex items-center gap-1 mt-1">
               {isPositive ? (
                 <ArrowUpRight className="h-3 w-3 text-emerald-600" />
@@ -1022,22 +1022,22 @@ function AgentsTab() {
   ]
   
   return (
-    <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+    <Card className="modern-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 modern-text-primary">
           <Bot className="h-5 w-5 text-violet-600" />
           Agent Management System
         </CardTitle>
-        <CardDescription>Comprehensive agent coordination and management</CardDescription>
+        <CardDescription className="modern-text-secondary">Comprehensive agent coordination and management</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 bg-violet-50 gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 modern-card gap-2">
             {agentSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-900 text-xs sm:text-sm p-2 truncate"
+                className="data-[state=active]:bg-violet-600 data-[state=active]:text-white font-medium text-xs sm:text-sm p-2 truncate transition-all"
               >
                 {tab.label}
               </TabsTrigger>
@@ -2065,12 +2065,12 @@ function LoadingScreen() {
 // Mobile Sidebar Component
 function MobileSidebar({ onClose }: { onClose: () => void }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b border-emerald-200/50">
-        <h2 className="text-lg font-semibold text-gray-900">
+    <div className="flex flex-col h-full dark-surface">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <h2 className="text-lg font-display text-white">
           Cival Dashboard
         </h2>
-        <Button variant="ghost" size="sm" onClick={onClose}>
+        <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-300 hover:text-white">
           <X className="h-5 w-5" />
         </Button>
       </div>
@@ -2093,12 +2093,12 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
 // Desktop Sidebar Component
 function DesktopSidebar() {
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b border-emerald-200/50">
-        <h2 className="text-xl font-bold text-gray-900">
+    <div className="flex flex-col h-full dark-surface">
+      <div className="p-6 border-b border-gray-700">
+        <h2 className="text-xl font-display text-white">
           Cival Dashboard
         </h2>
-        <p className="text-sm text-gray-600 mt-1">AI Trading Platform</p>
+        <p className="text-sm text-gray-300 mt-1">AI Trading Platform</p>
       </div>
       
       <nav className="flex-1 p-4">
@@ -2113,13 +2113,13 @@ function DesktopSidebar() {
         </div>
       </nav>
       
-      <div className="p-4 border-t border-emerald-200/50">
-        <div className="bg-emerald-50 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-emerald-900">
+      <div className="p-4 border-t border-gray-700">
+        <div className="bg-gray-700/50 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-emerald-400">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
             <span className="text-sm font-medium">System Online</span>
           </div>
-          <p className="text-xs text-emerald-700 mt-1">All systems operational</p>
+          <p className="text-xs text-gray-400 mt-1">All systems operational</p>
         </div>
       </div>
     </div>
@@ -2129,7 +2129,7 @@ function DesktopSidebar() {
 // Sidebar Link Component
 function SidebarLink({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <Button variant="ghost" className="w-full justify-start gap-3 text-gray-700 hover:bg-emerald-50 hover:text-emerald-900">
+    <Button variant="ghost" className="w-full justify-start gap-3 text-gray-300 hover:bg-gray-700/50 hover:text-white font-medium transition-all">
       {icon}
       {label}
     </Button>

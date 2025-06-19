@@ -1,0 +1,134 @@
+/* Modern Dashboard Typography and Contrast Enhancements */
+
+/* Modern color variables for better contrast */
+:root {
+  /* High contrast text colors */
+  --text-primary-light: hsl(0, 0%, 15%);
+  --text-primary-dark: hsl(0, 0%, 95%);
+  --text-secondary-light: hsl(0, 0%, 35%);
+  --text-secondary-dark: hsl(0, 0%, 75%);
+  
+  /* Modern surface colors */
+  --surface-light: hsl(0, 0%, 100%);
+  --surface-dark: hsl(222, 20%, 11%);
+  --surface-elevated-light: hsl(0, 0%, 98%);
+  --surface-elevated-dark: hsl(222, 20%, 15%);
+}
+
+/* Modern Dashboard Typography and Contrast */
+.modern-gradient-bg {
+  @apply bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900;
+}
+
+.modern-card {
+  @apply bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200 dark:border-gray-700 shadow-xl;
+}
+
+.modern-card-dark {
+  @apply bg-gray-800/95 text-white border-gray-700;
+}
+
+.modern-text-primary {
+  @apply text-gray-900 dark:text-white font-semibold;
+}
+
+.modern-text-secondary {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+.modern-badge {
+  @apply px-3 py-1 rounded-full text-xs font-medium tracking-wide;
+}
+
+.modern-badge-success {
+  @apply bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800;
+}
+
+.modern-badge-info {
+  @apply bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800;
+}
+
+.modern-badge-warning {
+  @apply bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800;
+}
+
+.modern-badge-danger {
+  @apply bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800;
+}
+
+/* Enhanced button styles */
+.modern-button {
+  @apply font-medium tracking-wide transition-all duration-200 transform hover:scale-105;
+}
+
+/* Gradient text for modern look */
+.gradient-text {
+  @apply bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent;
+}
+
+.gradient-text-amber {
+  @apply bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent;
+}
+
+/* High contrast text utilities */
+.text-high-contrast-light {
+  color: var(--text-primary-light);
+}
+
+.text-high-contrast-dark {
+  color: var(--text-primary-dark);
+}
+
+/* Modern surface styles */
+.surface-elevated {
+  @apply bg-white dark:bg-gray-800 shadow-2xl rounded-xl;
+}
+
+.surface-inset {
+  @apply bg-gray-50 dark:bg-gray-900 rounded-lg;
+}
+
+/* Typography improvements */
+.text-balance {
+  text-wrap: balance;
+}
+
+.font-display {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.font-body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Ensure contrast on colored backgrounds */
+.bg-primary-contrast {
+  @apply bg-emerald-600 text-white;
+}
+
+.bg-primary-contrast * {
+  @apply text-white;
+}
+
+.dark-surface {
+  @apply bg-gray-800 text-white;
+}
+
+.dark-surface h1,
+.dark-surface h2,
+.dark-surface h3,
+.dark-surface h4,
+.dark-surface h5,
+.dark-surface h6,
+.dark-surface p,
+.dark-surface span {
+  @apply text-white;
+}
+
+.dark-surface .text-muted-foreground {
+  @apply text-gray-300;
+}
