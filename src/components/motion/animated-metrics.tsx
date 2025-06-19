@@ -4,7 +4,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react'
-import { AnimatedNumber } from 'motion-primitives'
+import { motion } from 'framer-motion'
 
 interface AnimatedMetricsProps {
   className?: string
@@ -70,14 +70,17 @@ export function AnimatedMetrics({ className }: AnimatedMetricsProps) {
               <Icon className={`h-4 w-4 ${metric.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                <AnimatedNumber
-                  value={metric.value}
-                  format={metric.format}
-                  duration={1000}
-                  className={metric.color}
-                />
-              </div>
+              <motion.div 
+                className="text-2xl font-bold"
+                key={metric.value}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <span className={metric.color}>
+                  {metric.format(metric.value)}
+                </span>
+              </motion.div>
               {metric.title === 'Daily Change' && (
                 <Badge 
                   variant={dailyChange >= 0 ? 'default' : 'destructive'}

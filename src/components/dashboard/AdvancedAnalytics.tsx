@@ -21,6 +21,9 @@ import {
   XCircle,
   Info
 } from 'lucide-react'
+import { AnimatedCards } from '@/components/motion/animated-cards'
+import { AnimatedNotifications } from '@/components/motion/animated-notifications'
+import { AnimatedChart } from '@/components/motion/animated-chart'
 
 interface AdvancedAnalyticsProps {
   className?: string
@@ -61,10 +64,12 @@ export function AdvancedAnalytics({ className }: AdvancedAnalyticsProps) {
   return (
     <div className={className}>
       <Tabs defaultValue="performance" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="risk">Risk Analysis</TabsTrigger>
           <TabsTrigger value="allocation">Allocation</TabsTrigger>
+          <TabsTrigger value="positions">Positions</TabsTrigger>
+          <TabsTrigger value="chart">Live Chart</TabsTrigger>
           <TabsTrigger value="insights">AI Insights</TabsTrigger>
         </TabsList>
 
@@ -255,6 +260,14 @@ export function AdvancedAnalytics({ className }: AdvancedAnalyticsProps) {
           </div>
         </TabsContent>
 
+        <TabsContent value="positions" className="space-y-4">
+          <AnimatedCards />
+        </TabsContent>
+
+        <TabsContent value="chart" className="space-y-4">
+          <AnimatedChart />
+        </TabsContent>
+
         <TabsContent value="insights" className="space-y-4">
           {/* AI Insights Summary */}
           <Card>
@@ -292,28 +305,8 @@ export function AdvancedAnalytics({ className }: AdvancedAnalyticsProps) {
             </CardContent>
           </Card>
 
-          {/* Recent Alerts */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Alerts & Notifications</CardTitle>
-              <CardDescription>Important updates from your AI agents</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-3">
-                  {recentAlerts.map((alert, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                      {getAlertIcon(alert.type)}
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{alert.message}</p>
-                        <p className="text-xs text-muted-foreground">{alert.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+          {/* Recent Alerts with Motion */}
+          <AnimatedNotifications />
 
           {/* Recommendations */}
           <Card>

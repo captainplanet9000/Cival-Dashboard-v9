@@ -50,6 +50,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 
+// Import new ShadCN migration components
+import TradingCharts from './TradingCharts'
+import AdvancedAnalytics from './AdvancedAnalytics'
+import { AnimatedMetrics } from '@/components/motion/animated-metrics'
+import { TradingForm } from '@/components/forms/trading-form'
+import { CommandPalette } from '@/components/expansions/command-palette'
+import { TradingDataTable } from '@/components/expansions/trading-data-table'
+
+// Import AG-UI infrastructure
+import { AGUIProvider } from '@/components/ag-ui/AGUIProvider'
+import { AGUIChat } from '@/components/ag-ui/AGUIChat'
+
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Farms...</div>
@@ -166,6 +178,7 @@ export function ModernDashboardV4() {
   const [activeTab, setActiveTab] = useState('overview')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartData] = useState<ChartDataPoint[]>(generateChartData())
   
   // Remove unused backendClient reference
@@ -205,6 +218,12 @@ export function ModernDashboardV4() {
       component: <AgentsTab />
     },
     {
+      id: 'agui-chat',
+      label: 'AG-UI Chat',
+      icon: <Users className="h-4 w-4" />,
+      component: <AGUIChat />
+    },
+    {
       id: 'farms',
       label: 'Farms',
       icon: <Target className="h-4 w-4" />,
@@ -227,6 +246,18 @@ export function ModernDashboardV4() {
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
       component: <TradingTab />
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: <PieChart className="h-4 w-4" />,
+      component: <AdvancedAnalytics />
+    },
+    {
+      id: 'history',
+      label: 'History',
+      icon: <Activity className="h-4 w-4" />,
+      component: <TradingDataTable />
     },
     {
       id: 'vault',
@@ -253,7 +284,8 @@ export function ModernDashboardV4() {
   }
 
   return (
-    <div className="dashboard-dark">
+    <AGUIProvider>
+      <div className="dashboard-dark">
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -338,6 +370,13 @@ export function ModernDashboardV4() {
                 <div className="badge-success-dark">
                   Live
                 </div>
+                <button 
+                  className="btn-secondary-dark hidden sm:flex"
+                  onClick={() => setCommandPaletteOpen(true)}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </button>
                 <button className="btn-secondary-dark hidden sm:flex">
                   <Bell className="h-4 w-4 mr-2" />
                   Alerts
@@ -373,7 +412,14 @@ export function ModernDashboardV4() {
           </div>
         </main>
       </div>
-    </div>
+
+      {/* Command Palette */}
+      <CommandPalette 
+        open={commandPaletteOpen} 
+        onOpenChange={setCommandPaletteOpen} 
+      />
+      </div>
+    </AGUIProvider>
   )
 }
 
@@ -458,6 +504,9 @@ function ModernMetricCard({
 function DashboardOverview({ metrics, chartData }: { metrics: DashboardMetrics; chartData: ChartDataPoint[] }) {
   return (
     <div className="space-y-6">
+      {/* Animated Metrics */}
+      <AnimatedMetrics className="mb-6" />
+      
       {/* Key Metrics Cards */}
       <div className="grid-responsive">
         <ModernMetricCard
@@ -2112,9 +2161,11 @@ function PaperTradingPanel() {
 
 // Consolidated Trading Tab - Live, Paper, Advanced Trading
 function TradingTab() {
-  const [tradingSubTab, setTradingSubTab] = useState('live-trading')
+  const [tradingSubTab, setTradingSubTab] = useState('charts')
   
   const tradingSubTabs = [
+    { id: 'charts', label: 'Charts', component: <TradingCharts /> },
+    { id: 'order-form', label: 'Order Form', component: <TradingForm /> },
     { id: 'live-trading', label: 'Live Trading', component: <TradingInterface /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingPanel /> },
     { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
@@ -2133,7 +2184,7 @@ function TradingTab() {
       </CardHeader>
       <CardContent>
         <Tabs value={tradingSubTab} onValueChange={setTradingSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-gray-100 gap-2">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 bg-gray-100 gap-2">
             {tradingSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
