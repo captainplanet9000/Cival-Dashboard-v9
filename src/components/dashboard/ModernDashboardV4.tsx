@@ -44,6 +44,11 @@ import dynamic from 'next/dynamic'
 // Import simpler components without WebSocket dependencies
 import SimpleAnalytics from './SimpleAnalytics'
 
+// Import missing UI components for forms
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Farms...</div>
@@ -51,6 +56,10 @@ const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), {
 const GoalsPage = dynamic(() => import('@/app/dashboard/goals/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Goals...</div>
+})
+const VaultPage = dynamic(() => import('@/app/dashboard/vault/page'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Vault...</div>
 })
 const DeFiLendingPage = dynamic(() => import('@/app/dashboard/defi-lending/page'), { 
   ssr: false,
@@ -79,6 +88,32 @@ const PythonAnalysisPage = dynamic(() => import('@/app/dashboard/python-analysis
 const ElizaPage = dynamic(() => import('@/app/dashboard/eliza/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Eliza AI...</div>
+})
+
+// Import advanced feature components
+const FlashLoanView = dynamic(() => import('@/components/dashboard/FlashLoanView'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading FlashLoan...</div>
+})
+const HyperLendView = dynamic(() => import('@/components/dashboard/HyperLendView'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading HyperLend...</div>
+})
+const MultiChainWalletView = dynamic(() => import('@/components/dashboard/MultiChainWalletView'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Multi-Chain Wallets...</div>
+})
+const WatchlistView = dynamic(() => import('@/components/dashboard/WatchlistView'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Watchlist...</div>
+})
+const AnalyticsView = dynamic(() => import('@/components/dashboard/AnalyticsView'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Analytics...</div>
+})
+const AgentPaperTradingDashboard = dynamic(() => import('@/components/agent-trading/AgentPaperTradingDashboard'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Paper Trading...</div>
 })
 
 interface DashboardMetrics {
@@ -154,7 +189,7 @@ export function ModernDashboardV4() {
     setIsLoading(false)
   }, [])
 
-  // Consolidated tab configuration with organized sub-systems
+  // Consolidated tab configuration with new structure as requested
   const tabs: DashboardTab[] = [
     {
       id: 'overview',
@@ -181,16 +216,16 @@ export function ModernDashboardV4() {
       component: <GoalsTab />
     },
     {
-      id: 'defi',
-      label: 'DeFi Lending',
-      icon: <DollarSign className="h-4 w-4" />,
-      component: <DeFiTab />
+      id: 'trading',
+      label: 'Trading',
+      icon: <TrendingUp className="h-4 w-4" />,
+      component: <TradingTab />
     },
     {
-      id: 'calendar',
-      label: 'Calendar',
-      icon: <Calendar className="h-4 w-4" />,
-      component: <CalendarTab />
+      id: 'vault',
+      label: 'Vault',
+      icon: <Wallet className="h-4 w-4" />,
+      component: <VaultTab />
     },
     {
       id: 'advanced',
@@ -540,6 +575,366 @@ function PortfolioTab() {
   )
 }
 
+// Agent Overview Panel - Stable replacement for ExpertAgentsPanel
+function AgentOverviewPanel() {
+  const agents = [
+    { id: 1, name: 'Darvas Box Master', status: 'active', profit: 1247.30, trades: 24, winRate: 78.5 },
+    { id: 2, name: 'Elliott Wave Analyst', status: 'active', profit: 890.50, trades: 18, winRate: 72.2 },
+    { id: 3, name: 'Momentum Trader', status: 'paused', profit: 2150.75, trades: 31, winRate: 83.9 },
+    { id: 4, name: 'Arbitrage Hunter', status: 'active', profit: 567.20, trades: 12, winRate: 91.7 },
+    { id: 5, name: 'Risk Manager', status: 'active', profit: 334.80, trades: 8, winRate: 62.5 }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Expert Trading Agents</h3>
+        <p className="text-sm text-muted-foreground">AI-powered trading agents with specialized strategies</p>
+      </div>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {agents.map((agent) => (
+          <Card key={agent.id} className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-lg">{agent.name}</CardTitle>
+                  <CardDescription>Strategy Agent #{agent.id}</CardDescription>
+                </div>
+                <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
+                  {agent.status}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Profit:</span>
+                    <span className="ml-1 font-medium text-emerald-600">+${agent.profit}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Trades:</span>
+                    <span className="ml-1 font-medium">{agent.trades}</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Win Rate:</span>
+                    <span className="font-medium">{agent.winRate}%</span>
+                  </div>
+                  <Progress value={agent.winRate} className="h-2" />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1">
+                    Configure
+                  </Button>
+                  <Button size="sm" variant={agent.status === 'active' ? 'secondary' : 'default'} className="flex-1">
+                    {agent.status === 'active' ? 'Pause' : 'Start'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Agent Creation Panel - New functionality for creating agents
+function AgentCreationPanel() {
+  const [agentConfig, setAgentConfig] = useState({
+    name: '',
+    strategy: '',
+    riskLevel: 'medium',
+    allocation: 5000,
+    stopLoss: 5,
+    takeProfit: 10
+  })
+  
+  const strategies = [
+    { id: 'darvas', name: 'Darvas Box', description: 'Breakout trading with box patterns' },
+    { id: 'elliott', name: 'Elliott Wave', description: 'Wave pattern analysis' },
+    { id: 'momentum', name: 'Momentum', description: 'Trend following strategy' },
+    { id: 'arbitrage', name: 'Arbitrage', description: 'Price difference exploitation' },
+    { id: 'mean_reversion', name: 'Mean Reversion', description: 'Counter-trend strategy' }
+  ]
+  
+  const handleCreateAgent = () => {
+    console.log('Creating agent with config:', agentConfig)
+    // Agent creation logic would go here
+  }
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Create New Trading Agent</h3>
+        <p className="text-sm text-muted-foreground">Configure and deploy a new AI trading agent</p>
+      </div>
+      
+      <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+        <CardHeader>
+          <CardTitle>Agent Configuration</CardTitle>
+          <CardDescription>Set up your new trading agent parameters</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Agent Name</label>
+            <input
+              type="text"
+              value={agentConfig.name}
+              onChange={(e) => setAgentConfig(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Enter agent name..."
+              className="w-full p-2 border rounded-md mt-1"
+            />
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium">Trading Strategy</label>
+            <select
+              value={agentConfig.strategy}
+              onChange={(e) => setAgentConfig(prev => ({ ...prev, strategy: e.target.value }))}
+              className="w-full p-2 border rounded-md mt-1"
+            >
+              <option value="">Select strategy...</option>
+              {strategies.map(strategy => (
+                <option key={strategy.id} value={strategy.id}>{strategy.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Risk Level</label>
+              <select
+                value={agentConfig.riskLevel}
+                onChange={(e) => setAgentConfig(prev => ({ ...prev, riskLevel: e.target.value }))}
+                className="w-full p-2 border rounded-md mt-1"
+              >
+                <option value="low">Low Risk</option>
+                <option value="medium">Medium Risk</option>
+                <option value="high">High Risk</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Allocation ($)</label>
+              <input
+                type="number"
+                value={agentConfig.allocation}
+                onChange={(e) => setAgentConfig(prev => ({ ...prev, allocation: parseInt(e.target.value) }))}
+                className="w-full p-2 border rounded-md mt-1"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Stop Loss (%)</label>
+              <input
+                type="number"
+                value={agentConfig.stopLoss}
+                onChange={(e) => setAgentConfig(prev => ({ ...prev, stopLoss: parseInt(e.target.value) }))}
+                className="w-full p-2 border rounded-md mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Take Profit (%)</label>
+              <input
+                type="number"
+                value={agentConfig.takeProfit}
+                onChange={(e) => setAgentConfig(prev => ({ ...prev, takeProfit: parseInt(e.target.value) }))}
+                className="w-full p-2 border rounded-md mt-1"
+              />
+            </div>
+          </div>
+          
+          <Button onClick={handleCreateAgent} className="w-full bg-emerald-600 hover:bg-emerald-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Agent
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Agent Management Panel - For managing existing agents
+function AgentManagementPanel() {
+  const [selectedAgent, setSelectedAgent] = useState('agent-1')
+  
+  const agents = [
+    { id: 'agent-1', name: 'Darvas Box Master', status: 'active', uptime: '5d 12h' },
+    { id: 'agent-2', name: 'Elliott Wave Analyst', status: 'active', uptime: '3d 8h' },
+    { id: 'agent-3', name: 'Momentum Trader', status: 'paused', uptime: '0h' }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Agent Management</h3>
+        <p className="text-sm text-muted-foreground">Monitor and control your trading agents</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Active Agents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {agents.map(agent => (
+                <div
+                  key={agent.id}
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    selectedAgent === agent.id ? 'border-emerald-500 bg-emerald-50' : 'hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedAgent(agent.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{agent.name}</h4>
+                    <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
+                      {agent.status}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Uptime: {agent.uptime}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardHeader>
+            <CardTitle>Agent Controls</CardTitle>
+            <CardDescription>Manage {agents.find(a => a.id === selectedAgent)?.name}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Button variant="outline" className="flex flex-col items-center p-4 h-auto">
+                <RefreshCw className="h-6 w-6 mb-2" />
+                <span className="text-sm">Restart</span>
+              </Button>
+              <Button variant="outline" className="flex flex-col items-center p-4 h-auto">
+                <Settings className="h-6 w-6 mb-2" />
+                <span className="text-sm">Configure</span>
+              </Button>
+              <Button variant="outline" className="flex flex-col items-center p-4 h-auto">
+                <BarChart3 className="h-6 w-6 mb-2" />
+                <span className="text-sm">Analytics</span>
+              </Button>
+              <Button variant="outline" className="flex flex-col items-center p-4 h-auto">
+                <Activity className="h-6 w-6 mb-2" />
+                <span className="text-sm">Logs</span>
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium mb-2">Current Status</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className="font-medium text-green-600">Active</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>CPU Usage:</span>
+                    <span className="font-medium">23%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Memory:</span>
+                    <span className="font-medium">156 MB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Network:</span>
+                    <span className="font-medium">12 KB/s</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Agent Performance Panel - Performance metrics and analytics
+function AgentPerformancePanel() {
+  const performanceData = [
+    { agent: 'Darvas Box Master', trades: 24, profit: 1247.30, winRate: 78.5, sharpe: 2.1 },
+    { agent: 'Elliott Wave Analyst', trades: 18, profit: 890.50, winRate: 72.2, sharpe: 1.8 },
+    { agent: 'Momentum Trader', trades: 31, profit: 2150.75, winRate: 83.9, sharpe: 2.5 },
+    { agent: 'Arbitrage Hunter', trades: 12, profit: 567.20, winRate: 91.7, sharpe: 3.2 },
+    { agent: 'Risk Manager', trades: 8, profit: 334.80, winRate: 62.5, sharpe: 1.4 }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Agent Performance Analytics</h3>
+        <p className="text-sm text-muted-foreground">Comprehensive performance metrics for all agents</p>
+      </div>
+      
+      <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+        <CardHeader>
+          <CardTitle>Performance Summary</CardTitle>
+          <CardDescription>Key metrics across all trading agents</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">Agent</th>
+                  <th className="text-right p-2">Trades</th>
+                  <th className="text-right p-2">Profit</th>
+                  <th className="text-right p-2">Win Rate</th>
+                  <th className="text-right p-2">Sharpe Ratio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {performanceData.map((agent, i) => (
+                  <tr key={i} className="border-b hover:bg-gray-50">
+                    <td className="p-2 font-medium">{agent.agent}</td>
+                    <td className="p-2 text-right">{agent.trades}</td>
+                    <td className="p-2 text-right text-emerald-600">+${agent.profit}</td>
+                    <td className="p-2 text-right">{agent.winRate}%</td>
+                    <td className="p-2 text-right">{agent.sharpe}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-emerald-600">$5,190</div>
+            <div className="text-sm text-muted-foreground">Total Profit</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-blue-600">77.8%</div>
+            <div className="text-sm text-muted-foreground">Avg Win Rate</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-purple-600">93</div>
+            <div className="text-sm text-muted-foreground">Total Trades</div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
 // Trading Strategies Panel Component
 function TradingStrategiesPanel() {
   const [strategies, setStrategies] = useState<any[]>([])
@@ -614,15 +1009,15 @@ function TradingStrategiesPanel() {
   )
 }
 
-// Consolidated Agents Tab with 5 sub-tabs
+// Consolidated Agents Tab with 5 sub-tabs - Fixed browser freeze issues
 function AgentsTab() {
   const [agentSubTab, setAgentSubTab] = useState('expert-agents')
   
   const agentSubTabs = [
-    { id: 'expert-agents', label: 'Expert Agents', component: <ExpertAgentsPanel /> },
-    { id: 'agent-trading', label: 'Agent Trading', component: <AgentTradingList /> },
-    { id: 'agent-data', label: 'Agent Data', component: <AgentDataBrowser agentId="default-agent" /> },
-    { id: 'ai-enhanced', label: 'AI Enhanced', component: <AgentKnowledgeInterface agentId="default-agent" currentGoal="trading optimization" /> },
+    { id: 'expert-agents', label: 'Expert Agents', component: <AgentOverviewPanel /> },
+    { id: 'agent-creation', label: 'Create Agent', component: <AgentCreationPanel /> },
+    { id: 'agent-management', label: 'Management', component: <AgentManagementPanel /> },
+    { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> }
   ]
   
@@ -1313,7 +1708,7 @@ function GoalCalendarPanel() {
   )
 }
 
-// Consolidated Goals Tab with 4 sub-tabs  
+// Consolidated Goals Tab with 5 sub-tabs (including Watchlist)
 function GoalsTab() {
   const [goalSubTab, setGoalSubTab] = useState('goals-overview')
   
@@ -1321,7 +1716,8 @@ function GoalsTab() {
     { id: 'goals-overview', label: 'Overview', component: <div className="p-6"><GoalsPage /></div> },
     { id: 'goal-tracking', label: 'Tracking', component: <GoalProgressTrackingPanel /> },
     { id: 'goal-analytics', label: 'Analytics', component: <GoalAnalyticsPanel /> },
-    { id: 'goal-calendar', label: 'Calendar', component: <GoalCalendarPanel /> }
+    { id: 'goal-calendar', label: 'Calendar', component: <GoalCalendarPanel /> },
+    { id: 'watchlist', label: 'Watchlist', component: <div className="p-6"><WatchlistView /></div> }
   ]
   
   return (
@@ -1331,11 +1727,11 @@ function GoalsTab() {
           <Star className="h-5 w-5 text-amber-600" />
           Goals & Objectives
         </CardTitle>
-        <CardDescription>Set, track and achieve trading objectives</CardDescription>
+        <CardDescription>Set, track and achieve trading objectives with market watchlist</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={goalSubTab} onValueChange={setGoalSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-amber-50 gap-2">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-amber-50 gap-2">
             {goalSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
@@ -1358,41 +1754,97 @@ function GoalsTab() {
   )
 }
 
-// DeFi Lending Tab - Moved from Advanced
-function DeFiTab() {
+// Consolidated Trading Tab - Live, Paper, Advanced Trading
+function TradingTab() {
+  const [tradingSubTab, setTradingSubTab] = useState('live-trading')
+  
+  const tradingSubTabs = [
+    { id: 'live-trading', label: 'Live Trading', component: <TradingInterface /> },
+    { id: 'paper-trading', label: 'Paper Trading', component: <div className="p-6"><AgentPaperTradingDashboard /></div> },
+    { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
+    { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> },
+    { id: 'risk', label: 'Risk Monitor', component: <RiskDashboard /> }
+  ]
+  
   return (
     <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-green-600" />
-          DeFi Lending Platform
+          <TrendingUp className="h-5 w-5 text-emerald-600" />
+          Unified Trading Interface
         </CardTitle>
-        <CardDescription>Decentralized finance lending and borrowing operations</CardDescription>
+        <CardDescription>Live trading, paper trading, and strategy management</CardDescription>
       </CardHeader>
       <CardContent>
-        <DeFiLendingPage />
+        <Tabs value={tradingSubTab} onValueChange={setTradingSubTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-emerald-50 gap-2">
+            {tradingSubTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-xs sm:text-sm p-2 truncate"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {tradingSubTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
       </CardContent>
     </Card>
   )
 }
 
-// Calendar Tab - Moved from Advanced  
-function CalendarTab() {
+// Enhanced Vault Tab with Multi-Chain Wallets and DeFi
+function VaultTab() {
+  const [vaultSubTab, setVaultSubTab] = useState('vault-overview')
+  
+  const vaultSubTabs = [
+    { id: 'vault-overview', label: 'Vault Banking', component: <div className="p-6"><VaultPage /></div> },
+    { id: 'multi-chain', label: 'Multi-Chain Wallets', component: <div className="p-6"><MultiChainWalletView /></div> },
+    { id: 'defi-lending', label: 'DeFi Operations', component: <div className="p-6"><DeFiLendingPage /></div> },
+    { id: 'portfolio', label: 'Portfolio Overview', component: <PortfolioTab /> }
+  ]
+  
   return (
     <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-blue-600" />
-          Trading Calendar
+          <Wallet className="h-5 w-5 text-blue-600" />
+          Vault & Portfolio Management
         </CardTitle>
-        <CardDescription>Schedule and track trading events, earnings, and market dates</CardDescription>
+        <CardDescription>Multi-chain wallets, DeFi operations, and portfolio infrastructure</CardDescription>
       </CardHeader>
       <CardContent>
-        <CalendarPage />
+        <Tabs value={vaultSubTab} onValueChange={setVaultSubTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-blue-50 gap-2">
+            {vaultSubTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 text-xs sm:text-sm p-2 truncate"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {vaultSubTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
       </CardContent>
     </Card>
   )
 }
+
 
 // Risk Management Panel Component
 function RiskManagementPanel() {
@@ -1519,18 +1971,20 @@ function RiskManagementPanel() {
   )
 }
 
-// Consolidated Advanced Tab with 7 feature sub-tabs (removed DeFi)
+// Advanced Tab with ALL extra features organized as requested
 function AdvancedTab() {
   const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
   
   const advancedSubTabs = [
     { id: 'analytics', label: 'Analytics', component: <SimpleAnalytics /> },
     { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6"><ComprehensiveAnalyticsPage /></div> },
+    { id: 'flashloan', label: 'FlashLoan', component: <div className="p-6"><FlashLoanView /></div> },
+    { id: 'hyperlend', label: 'HyperLend', component: <div className="p-6"><HyperLendView /></div> },
     { id: 'knowledge-graph', label: 'Knowledge Graph', component: <div className="p-6"><KnowledgeGraphPage /></div> },
     { id: 'python-analysis', label: 'Python Analysis', component: <div className="p-6"><PythonAnalysisPage /></div> },
-    { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
     { id: 'persistence', label: 'Persistence', component: <div className="p-6"><PersistencePage /></div> },
-    { id: 'portfolio', label: 'Portfolio', component: <PortfolioTab /> },
+    { id: 'calendar', label: 'Calendar', component: <div className="p-6"><CalendarPage /></div> },
+    { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
     { id: 'risk', label: 'Risk Management', component: <RiskManagementPanel /> }
   ]
   
@@ -1541,13 +1995,13 @@ function AdvancedTab() {
           <Settings className="h-5 w-5 text-gray-600" />
           Advanced Features
         </CardTitle>
-        <CardDescription>Professional trading tools and advanced analytics</CardDescription>
+        <CardDescription>All professional trading tools, AI features, and advanced analytics</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={advancedSubTab} onValueChange={setAdvancedSubTab} className="space-y-4">
           <div className="space-y-2">
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-gray-50 gap-2">
-              {advancedSubTabs.slice(0, 3).map((tab) => (
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 md:grid-cols-4 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(0, 4).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
@@ -1557,8 +2011,8 @@ function AdvancedTab() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-gray-50 gap-2">
-              {advancedSubTabs.slice(3, 6).map((tab) => (
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 md:grid-cols-3 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(4, 7).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
@@ -1568,8 +2022,8 @@ function AdvancedTab() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 bg-gray-50 gap-2">
-              {advancedSubTabs.slice(6, 8).map((tab) => (
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(7, 10).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
@@ -1627,8 +2081,8 @@ function MobileSidebar({ onClose }: { onClose: () => void }) {
           <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
           <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
           <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
-          <SidebarLink icon={<DollarSign className="h-4 w-4" />} label="DeFi Lending" />
-          <SidebarLink icon={<Calendar className="h-4 w-4" />} label="Calendar" />
+          <SidebarLink icon={<TrendingUp className="h-4 w-4" />} label="Trading" />
+          <SidebarLink icon={<Wallet className="h-4 w-4" />} label="Vault" />
           <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
         </div>
       </nav>
@@ -1653,8 +2107,8 @@ function DesktopSidebar() {
           <SidebarLink icon={<Bot className="h-4 w-4" />} label="Agents" />
           <SidebarLink icon={<Target className="h-4 w-4" />} label="Farms" />
           <SidebarLink icon={<Star className="h-4 w-4" />} label="Goals" />
-          <SidebarLink icon={<DollarSign className="h-4 w-4" />} label="DeFi Lending" />
-          <SidebarLink icon={<Calendar className="h-4 w-4" />} label="Calendar" />
+          <SidebarLink icon={<TrendingUp className="h-4 w-4" />} label="Trading" />
+          <SidebarLink icon={<Wallet className="h-4 w-4" />} label="Vault" />
           <SidebarLink icon={<Settings className="h-4 w-4" />} label="Advanced" />
         </div>
       </nav>
