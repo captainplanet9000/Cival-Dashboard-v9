@@ -33,7 +33,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="dark"
           enableSystem
-          themes={["light", "dark", "green", "neo", "cyber", "system"]}
+          themes={["light", "dark", "system"]}
           disableTransitionOnChange
         >
           <ErrorBoundary>
