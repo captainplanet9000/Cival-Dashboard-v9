@@ -1,11 +1,11 @@
 /**
  * Main Dashboard Page
- * V4 Modern trading dashboard with emerald/violet/amber design
- * Consolidated navigation with organized tab system
+ * Enhanced trading dashboard with professional trading interface
+ * Fixed navigation with real backend integration
  */
 
-import ModernDashboardV4 from '@/components/dashboard/ModernDashboardV4'
+import { EnhancedDashboard } from '@/components/dashboard/EnhancedDashboard'
 
 export default function DashboardPage() {
-  return <ModernDashboardV4 />
+  return <EnhancedDashboard />
 }
