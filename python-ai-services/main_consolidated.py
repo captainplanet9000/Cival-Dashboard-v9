@@ -2773,6 +2773,1395 @@ async def get_vaults_summary():
         raise HTTPException(status_code=500, detail=f"Vaults summary error: {str(e)}")
 
 # ==========================================
+# MULTI-CHAIN WALLET INTEGRATION ENDPOINTS - PHASE 9
+# ==========================================
+
+@app.get("/api/v1/wallets/multi-chain")
+async def get_multi_chain_overview():
+    """Get multi-chain wallet overview"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock multi-chain overview
+            return {
+                "total_balance_usd": 982456.78,
+                "active_chains": 5,
+                "total_chains": 5,
+                "total_wallets": 9,
+                "chains": {
+                    "ethereum": {
+                        "chain_id": 1,
+                        "name": "Ethereum",
+                        "native_token": "ETH",
+                        "total_balance_usd": 456789.12,
+                        "wallet_count": 3,
+                        "last_block": 18945673,
+                        "gas_price_gwei": 25.4,
+                        "status": "active"
+                    },
+                    "bsc": {
+                        "chain_id": 56,
+                        "name": "Binance Smart Chain",
+                        "native_token": "BNB",
+                        "total_balance_usd": 234567.89,
+                        "wallet_count": 2,
+                        "last_block": 34856729,
+                        "gas_price_gwei": 5.2,
+                        "status": "active"
+                    },
+                    "polygon": {
+                        "chain_id": 137,
+                        "name": "Polygon",
+                        "native_token": "MATIC",
+                        "total_balance_usd": 123456.78,
+                        "wallet_count": 2,
+                        "last_block": 50123987,
+                        "gas_price_gwei": 32.1,
+                        "status": "active"
+                    },
+                    "arbitrum": {
+                        "chain_id": 42161,
+                        "name": "Arbitrum One",
+                        "native_token": "ETH",
+                        "total_balance_usd": 78945.67,
+                        "wallet_count": 1,
+                        "last_block": 145678912,
+                        "gas_price_gwei": 0.3,
+                        "status": "active"
+                    },
+                    "solana": {
+                        "chain_id": 101,
+                        "name": "Solana",
+                        "native_token": "SOL",
+                        "total_balance_usd": 89012.34,
+                        "wallet_count": 1,
+                        "last_block": 234567890,
+                        "gas_price_gwei": 0.0001,
+                        "status": "active"
+                    }
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        overview = await vault_service.get_multi_chain_overview()
+        return overview
+    except Exception as e:
+        logger.error(f"Failed to get multi-chain overview: {e}")
+        raise HTTPException(status_code=500, detail=f"Multi-chain overview error: {str(e)}")
+
+@app.get("/api/v1/wallets/{wallet_id}/balances")
+async def get_chain_balances(wallet_id: str):
+    """Get balances for all chains for a specific wallet"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock chain balances
+            return {
+                "wallet_id": wallet_id,
+                "total_usd_value": 163754.89,
+                "balances": {
+                    "ethereum": {
+                        "native": {
+                            "symbol": "ETH",
+                            "balance": 15.47623,
+                            "usd_value": 31254.89,
+                            "price_usd": 2021.45
+                        },
+                        "tokens": [
+                            {
+                                "symbol": "USDC",
+                                "balance": 25000.0,
+                                "usd_value": 25000.0,
+                                "price_usd": 1.0,
+                                "contract": "0xa0b86a33e6d86a4b11e8f7e3b9a1a8a7f8b9c0d1e2"
+                            },
+                            {
+                                "symbol": "WBTC",
+                                "balance": 2.5,
+                                "usd_value": 107500.0,
+                                "price_usd": 43000.0,
+                                "contract": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+                            }
+                        ]
+                    },
+                    "bsc": {
+                        "native": {
+                            "symbol": "BNB",
+                            "balance": 45.287,
+                            "usd_value": 13586.1,
+                            "price_usd": 300.0
+                        },
+                        "tokens": [
+                            {
+                                "symbol": "CAKE",
+                                "balance": 1250.0,
+                                "usd_value": 5000.0,
+                                "price_usd": 4.0,
+                                "contract": "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"
+                            }
+                        ]
+                    }
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        balances = await vault_service.get_chain_balances(wallet_id)
+        return balances
+    except Exception as e:
+        logger.error(f"Failed to get chain balances for {wallet_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Chain balances error: {str(e)}")
+
+@app.get("/api/v1/wallets/cross-chain-positions")
+async def get_cross_chain_positions():
+    """Get cross-chain position summary"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock cross-chain positions
+            return [
+                {
+                    "position_id": "pos_1",
+                    "asset": "ETH",
+                    "total_amount": 25.67,
+                    "total_usd_value": 51854.32,
+                    "chains": {
+                        "ethereum": {"amount": 15.47, "percentage": 60.3},
+                        "arbitrum": {"amount": 5.2, "percentage": 20.3},
+                        "polygon": {"amount": 5.0, "percentage": 19.4}
+                    },
+                    "avg_cost_basis": 1890.45,
+                    "unrealized_pnl": 3367.82,
+                    "unrealized_pnl_percent": 6.95
+                },
+                {
+                    "position_id": "pos_2",
+                    "asset": "USDC",
+                    "total_amount": 75000.0,
+                    "total_usd_value": 75000.0,
+                    "chains": {
+                        "ethereum": {"amount": 40000.0, "percentage": 53.3},
+                        "polygon": {"amount": 20000.0, "percentage": 26.7},
+                        "bsc": {"amount": 15000.0, "percentage": 20.0}
+                    },
+                    "avg_cost_basis": 1.0,
+                    "unrealized_pnl": 0.0,
+                    "unrealized_pnl_percent": 0.0
+                }
+            ]
+        
+        positions = await vault_service.get_cross_chain_positions()
+        return positions
+    except Exception as e:
+        logger.error(f"Failed to get cross-chain positions: {e}")
+        raise HTTPException(status_code=500, detail=f"Cross-chain positions error: {str(e)}")
+
+@app.post("/api/v1/wallets/cross-chain-transfer")
+async def initiate_cross_chain_transfer(transfer_request: dict):
+    """Initiate a cross-chain transfer"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock transfer initiation
+            import uuid
+            transfer_id = str(uuid.uuid4())
+            from_chain = transfer_request.get("from_chain", "ethereum")
+            to_chain = transfer_request.get("to_chain", "polygon")
+            asset = transfer_request.get("asset", "ETH")
+            amount = transfer_request.get("amount", 1.0)
+            
+            # Mock bridge selection
+            bridge_options = {
+                ("ethereum", "polygon"): {"bridge": "Polygon Bridge", "fee_usd": 15.0, "time_minutes": 8},
+                ("ethereum", "arbitrum"): {"bridge": "Arbitrum Bridge", "fee_usd": 8.0, "time_minutes": 12},
+                ("ethereum", "bsc"): {"bridge": "Binance Bridge", "fee_usd": 5.0, "time_minutes": 15}
+            }
+            
+            bridge_info = bridge_options.get((from_chain, to_chain), {
+                "bridge": "Generic Bridge", "fee_usd": 10.0, "time_minutes": 20
+            })
+            
+            return {
+                "transfer_id": transfer_id,
+                "from_chain": from_chain,
+                "to_chain": to_chain,
+                "asset": asset,
+                "amount": amount,
+                "bridge": bridge_info["bridge"],
+                "estimated_fee_usd": bridge_info["fee_usd"],
+                "estimated_time_minutes": bridge_info["time_minutes"],
+                "status": "pending",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "tx_hash": f"0x{uuid.uuid4().hex}"
+            }
+        
+        result = await vault_service.initiate_cross_chain_transfer(transfer_request)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to initiate cross-chain transfer: {e}")
+        raise HTTPException(status_code=500, detail=f"Cross-chain transfer error: {str(e)}")
+
+@app.get("/api/v1/wallets/transaction-history")
+async def get_transaction_history_multi_chain(chain: str = None, limit: int = 50):
+    """Get multi-chain transaction history"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock transaction history
+            import uuid
+            transactions = []
+            chains = ["ethereum", "bsc", "polygon", "arbitrum", "solana"]
+            
+            if chain:
+                chains = [chain]
+            
+            for i in range(limit):
+                selected_chain = chains[i % len(chains)]
+                tx_types = ["transfer", "swap", "bridge", "deposit", "withdrawal"]
+                
+                tx = {
+                    "tx_id": f"tx_{uuid.uuid4().hex[:8]}",
+                    "chain": selected_chain,
+                    "type": tx_types[i % len(tx_types)],
+                    "asset": ["ETH", "BTC", "USDC", "BNB", "MATIC"][i % 5],
+                    "amount": round(10 + (i * 13.7) % 1000, 4),
+                    "usd_value": round(100 + (i * 456.78) % 10000, 2),
+                    "from_address": f"0x{uuid.uuid4().hex[:40]}",
+                    "to_address": f"0x{uuid.uuid4().hex[:40]}",
+                    "tx_hash": f"0x{uuid.uuid4().hex}",
+                    "status": "confirmed" if i % 10 != 0 else "pending",
+                    "gas_fee_usd": round(5 + (i * 2.3) % 50, 2),
+                    "timestamp": (datetime.now(timezone.utc) - timedelta(hours=i)).isoformat()
+                }
+                transactions.append(tx)
+            
+            return transactions
+        
+        params = {"limit": limit}
+        if chain:
+            params["chain"] = chain
+            
+        history = await vault_service.get_transaction_history_multi_chain(params)
+        return history
+    except Exception as e:
+        logger.error(f"Failed to get multi-chain transaction history: {e}")
+        raise HTTPException(status_code=500, detail=f"Transaction history error: {str(e)}")
+
+@app.get("/api/v1/wallets/portfolio-overview")
+async def get_portfolio_allocation_multi_chain():
+    """Get portfolio allocation across chains"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock portfolio allocation
+            return {
+                "total_portfolio_usd": 982456.78,
+                "chain_allocation": {
+                    "ethereum": {"usd_value": 456789.12, "percentage": 46.5},
+                    "bsc": {"usd_value": 234567.89, "percentage": 23.9},
+                    "polygon": {"usd_value": 123456.78, "percentage": 12.6},
+                    "arbitrum": {"usd_value": 78945.67, "percentage": 8.0},
+                    "solana": {"usd_value": 89012.34, "percentage": 9.0}
+                },
+                "asset_allocation": {
+                    "ETH": {"usd_value": 298456.78, "percentage": 30.4},
+                    "BTC": {"usd_value": 245678.90, "percentage": 25.0},
+                    "USDC": {"usd_value": 196789.12, "percentage": 20.0},
+                    "BNB": {"usd_value": 147890.12, "percentage": 15.1},
+                    "Others": {"usd_value": 93642.86, "percentage": 9.5}
+                },
+                "defi_exposure": {
+                    "lending": {"usd_value": 147890.12, "percentage": 15.1},
+                    "liquidity_pools": {"usd_value": 98567.89, "percentage": 10.0},
+                    "staking": {"usd_value": 73456.78, "percentage": 7.5},
+                    "yield_farming": {"usd_value": 49234.56, "percentage": 5.0}
+                },
+                "risk_metrics": {
+                    "concentration_risk": 0.35,
+                    "chain_diversification": 0.78,
+                    "asset_diversification": 0.82,
+                    "liquidity_score": 0.89
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        allocation = await vault_service.get_portfolio_allocation_multi_chain()
+        return allocation
+    except Exception as e:
+        logger.error(f"Failed to get portfolio allocation: {e}")
+        raise HTTPException(status_code=500, detail=f"Portfolio allocation error: {str(e)}")
+
+@app.get("/api/v1/wallets/supported-chains")
+async def get_supported_chains():
+    """Get list of supported blockchain networks"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock supported chains
+            return [
+                {
+                    "chain_id": 1,
+                    "name": "Ethereum",
+                    "symbol": "ETH",
+                    "rpc_url": "https://eth-mainnet.alchemyapi.io/v2/...",
+                    "explorer_url": "https://etherscan.io",
+                    "bridge_support": True,
+                    "defi_protocols": ["Uniswap", "Aave", "Compound", "MakerDAO"],
+                    "avg_gas_price_gwei": 25.4,
+                    "status": "active"
+                },
+                {
+                    "chain_id": 56,
+                    "name": "Binance Smart Chain",
+                    "symbol": "BNB",
+                    "rpc_url": "https://bsc-dataseed.binance.org/",
+                    "explorer_url": "https://bscscan.com",
+                    "bridge_support": True,
+                    "defi_protocols": ["PancakeSwap", "Venus", "Alpaca Finance"],
+                    "avg_gas_price_gwei": 5.2,
+                    "status": "active"
+                },
+                {
+                    "chain_id": 137,
+                    "name": "Polygon",
+                    "symbol": "MATIC",
+                    "rpc_url": "https://polygon-mainnet.alchemyapi.io/v2/...",
+                    "explorer_url": "https://polygonscan.com",
+                    "bridge_support": True,
+                    "defi_protocols": ["QuickSwap", "Aave", "Curve"],
+                    "avg_gas_price_gwei": 32.1,
+                    "status": "active"
+                },
+                {
+                    "chain_id": 42161,
+                    "name": "Arbitrum One",
+                    "symbol": "ETH",
+                    "rpc_url": "https://arb1.arbitrum.io/rpc",
+                    "explorer_url": "https://arbiscan.io",
+                    "bridge_support": True,
+                    "defi_protocols": ["GMX", "Balancer", "Uniswap V3"],
+                    "avg_gas_price_gwei": 0.3,
+                    "status": "active"
+                },
+                {
+                    "chain_id": 101,
+                    "name": "Solana",
+                    "symbol": "SOL",
+                    "rpc_url": "https://api.mainnet-beta.solana.com",
+                    "explorer_url": "https://solscan.io",
+                    "bridge_support": True,
+                    "defi_protocols": ["Raydium", "Serum", "Orca"],
+                    "avg_gas_price_gwei": 0.0001,
+                    "status": "active"
+                }
+            ]
+        
+        chains = await vault_service.get_supported_chains()
+        return chains
+    except Exception as e:
+        logger.error(f"Failed to get supported chains: {e}")
+        raise HTTPException(status_code=500, detail=f"Supported chains error: {str(e)}")
+
+@app.get("/api/v1/wallets/connections")
+async def get_wallet_connections():
+    """Get connected wallet information"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock wallet connections
+            return [
+                {
+                    "wallet_id": "metamask_1",
+                    "wallet_type": "MetaMask",
+                    "address": "0x742d35cc6634c0532925a3b8d8a742e684e",
+                    "chain": "ethereum",
+                    "status": "connected",
+                    "last_activity": datetime.now(timezone.utc).isoformat(),
+                    "balance_usd": 456789.12
+                },
+                {
+                    "wallet_id": "trust_1",
+                    "wallet_type": "Trust Wallet",
+                    "address": "0x9876543210abcdef1234567890abcdef12345678",
+                    "chain": "bsc",
+                    "status": "connected",
+                    "last_activity": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                    "balance_usd": 234567.89
+                },
+                {
+                    "wallet_id": "phantom_1",
+                    "wallet_type": "Phantom",
+                    "address": "Hx7vL8bK9pQr3mN4cF6aE2dW1zS8tU5vY7rT9qP",
+                    "chain": "solana",
+                    "status": "connected",
+                    "last_activity": (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat(),
+                    "balance_usd": 89012.34
+                }
+            ]
+        
+        connections = await vault_service.get_wallet_connections()
+        return connections
+    except Exception as e:
+        logger.error(f"Failed to get wallet connections: {e}")
+        raise HTTPException(status_code=500, detail=f"Wallet connections error: {str(e)}")
+
+@app.post("/api/v1/wallets/estimate-gas")
+async def estimate_gas_fees(transaction_params: dict):
+    """Estimate gas fees for a transaction"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock gas estimation
+            chain = transaction_params.get("chain", "ethereum")
+            tx_type = transaction_params.get("type", "transfer")
+            
+            gas_estimates = {
+                "ethereum": {
+                    "transfer": {"gas_limit": 21000, "gas_price_gwei": 25.4},
+                    "swap": {"gas_limit": 150000, "gas_price_gwei": 25.4},
+                    "bridge": {"gas_limit": 200000, "gas_price_gwei": 25.4}
+                },
+                "bsc": {
+                    "transfer": {"gas_limit": 21000, "gas_price_gwei": 5.2},
+                    "swap": {"gas_limit": 120000, "gas_price_gwei": 5.2},
+                    "bridge": {"gas_limit": 180000, "gas_price_gwei": 5.2}
+                }
+            }
+            
+            estimate = gas_estimates.get(chain, {}).get(tx_type, {
+                "gas_limit": 21000, "gas_price_gwei": 20.0
+            })
+            
+            gas_fee_eth = (estimate["gas_limit"] * estimate["gas_price_gwei"]) / 1e9
+            gas_fee_usd = gas_fee_eth * 2021.45  # Mock ETH price
+            
+            return {
+                "chain": chain,
+                "transaction_type": tx_type,
+                "gas_limit": estimate["gas_limit"],
+                "gas_price_gwei": estimate["gas_price_gwei"],
+                "gas_fee_eth": round(gas_fee_eth, 6),
+                "gas_fee_usd": round(gas_fee_usd, 2),
+                "estimated_time_minutes": 2 if chain != "ethereum" else 5
+            }
+        
+        estimate = await vault_service.estimate_gas_fees(transaction_params)
+        return estimate
+    except Exception as e:
+        logger.error(f"Failed to estimate gas fees: {e}")
+        raise HTTPException(status_code=500, detail=f"Gas estimation error: {str(e)}")
+
+@app.get("/api/v1/wallets/yield-positions")
+async def get_yield_positions():
+    """Get DeFi yield positions across chains"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock yield positions
+            return [
+                {
+                    "position_id": "yield_1",
+                    "protocol": "Aave",
+                    "chain": "ethereum",
+                    "position_type": "lending",
+                    "asset": "USDC",
+                    "amount": 50000.0,
+                    "apy": 4.25,
+                    "earned_usd": 2125.0,
+                    "status": "active",
+                    "auto_compound": True
+                },
+                {
+                    "position_id": "yield_2",
+                    "protocol": "PancakeSwap",
+                    "chain": "bsc",
+                    "position_type": "liquidity_pool",
+                    "asset": "CAKE-BNB LP",
+                    "amount": 15000.0,
+                    "apy": 18.5,
+                    "earned_usd": 925.0,
+                    "status": "active",
+                    "auto_compound": False
+                },
+                {
+                    "position_id": "yield_3",
+                    "protocol": "Curve",
+                    "chain": "polygon",
+                    "position_type": "liquidity_pool",
+                    "asset": "3pool",
+                    "amount": 25000.0,
+                    "apy": 6.75,
+                    "earned_usd": 687.5,
+                    "status": "active",
+                    "auto_compound": True
+                }
+            ]
+        
+        positions = await vault_service.get_yield_positions()
+        return positions
+    except Exception as e:
+        logger.error(f"Failed to get yield positions: {e}")
+        raise HTTPException(status_code=500, detail=f"Yield positions error: {str(e)}")
+
+# ==========================================
+# DEFI PROTOCOL INTEGRATION ENDPOINTS - PHASE 11
+# ==========================================
+
+@app.get("/api/v1/defi/protocols")
+async def get_supported_protocols(chain: str = None):
+    """Get list of supported DeFi protocols"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock DeFi protocols
+            protocols = [
+                {
+                    "protocol_id": "ethereum_uniswap_v3",
+                    "name": "Uniswap V3",
+                    "protocol_type": "dex",
+                    "chain": "ethereum",
+                    "tvl_usd": 4500000000.0,
+                    "base_apy": 5.2,
+                    "reward_apy": 1.56,
+                    "total_apy": 6.76,
+                    "contract_address": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+                    "risk_score": 0.15,
+                    "audit_status": "audited",
+                    "last_updated": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "protocol_id": "ethereum_aave",
+                    "name": "Aave",
+                    "protocol_type": "lending",
+                    "chain": "ethereum",
+                    "tvl_usd": 12000000000.0,
+                    "base_apy": 3.8,
+                    "reward_apy": 1.14,
+                    "total_apy": 4.94,
+                    "contract_address": "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9",
+                    "risk_score": 0.12,
+                    "audit_status": "audited",
+                    "last_updated": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "protocol_id": "polygon_quickswap",
+                    "name": "QuickSwap",
+                    "protocol_type": "dex",
+                    "chain": "polygon",
+                    "tvl_usd": 250000000.0,
+                    "base_apy": 8.5,
+                    "reward_apy": 2.55,
+                    "total_apy": 11.05,
+                    "contract_address": "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff",
+                    "risk_score": 0.25,
+                    "audit_status": "reviewed",
+                    "last_updated": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "protocol_id": "bsc_pancakeswap",
+                    "name": "PancakeSwap",
+                    "protocol_type": "dex",
+                    "chain": "bsc",
+                    "tvl_usd": 1800000000.0,
+                    "base_apy": 12.3,
+                    "reward_apy": 3.69,
+                    "total_apy": 15.99,
+                    "contract_address": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+                    "risk_score": 0.35,
+                    "audit_status": "reviewed",
+                    "last_updated": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "protocol_id": "ethereum_lido",
+                    "name": "Lido",
+                    "protocol_type": "liquid_staking",
+                    "chain": "ethereum",
+                    "tvl_usd": 25000000000.0,
+                    "base_apy": 4.1,
+                    "reward_apy": 0.0,
+                    "total_apy": 4.1,
+                    "contract_address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                    "risk_score": 0.08,
+                    "audit_status": "audited",
+                    "last_updated": datetime.now(timezone.utc).isoformat()
+                }
+            ]
+            
+            if chain:
+                protocols = [p for p in protocols if p["chain"].lower() == chain.lower()]
+            
+            return protocols
+        
+        protocols = await defi_service.get_supported_protocols(chain)
+        return protocols
+    except Exception as e:
+        logger.error(f"Failed to get DeFi protocols: {e}")
+        raise HTTPException(status_code=500, detail=f"DeFi protocols error: {str(e)}")
+
+@app.get("/api/v1/defi/protocols/{protocol_id}")
+async def get_protocol_details(protocol_id: str):
+    """Get detailed information about a specific DeFi protocol"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock protocol details
+            return {
+                "protocol_id": protocol_id,
+                "name": "Uniswap V3",
+                "protocol_type": "dex",
+                "chain": "ethereum",
+                "tvl_usd": 4500000000.0,
+                "base_apy": 5.2,
+                "reward_apy": 1.56,
+                "total_apy": 6.76,
+                "contract_address": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+                "risk_score": 0.15,
+                "audit_status": "audited",
+                "available_pools": [
+                    {"pair": "ETH/USDC", "apy": 6.8, "tvl": 450000000.0},
+                    {"pair": "BTC/ETH", "apy": 5.9, "tvl": 280000000.0},
+                    {"pair": "USDC/USDT", "apy": 4.2, "tvl": 180000000.0}
+                ],
+                "fees": {"deposit": 0.0, "withdrawal": 0.0, "performance": 0.05},
+                "lock_period_days": 0,
+                "auto_compound": True,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        protocol = await defi_service.get_protocol_details(protocol_id)
+        if not protocol:
+            raise HTTPException(status_code=404, detail="Protocol not found")
+        
+        return protocol
+    except Exception as e:
+        logger.error(f"Failed to get protocol details: {e}")
+        raise HTTPException(status_code=500, detail=f"Protocol details error: {str(e)}")
+
+@app.get("/api/v1/defi/opportunities")
+async def discover_yield_opportunities(
+    min_apy: float = 5.0,
+    max_risk_score: float = 0.5,
+    chains: str = None
+):
+    """Discover yield farming opportunities based on criteria"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock yield opportunities
+            opportunities = [
+                {
+                    "opportunity_id": "bsc_pancakeswap_cake_bnb",
+                    "protocol_name": "PancakeSwap",
+                    "pool_name": "CAKE-BNB Pool",
+                    "asset_pair": "CAKE/BNB",
+                    "chain": "bsc",
+                    "apy": 18.5,
+                    "tvl_usd": 45000000.0,
+                    "minimum_deposit": 100.0,
+                    "risk_score": 0.35,
+                    "impermanent_loss_risk": 0.25,
+                    "lock_period_days": 0,
+                    "auto_compound": True,
+                    "rewards_tokens": ["CAKE"]
+                },
+                {
+                    "opportunity_id": "ethereum_aave_usdc",
+                    "protocol_name": "Aave",
+                    "pool_name": "USDC Lending",
+                    "asset_pair": "USDC",
+                    "chain": "ethereum",
+                    "apy": 4.25,
+                    "tvl_usd": 2400000000.0,
+                    "minimum_deposit": 50.0,
+                    "risk_score": 0.12,
+                    "impermanent_loss_risk": 0.0,
+                    "lock_period_days": 0,
+                    "auto_compound": True,
+                    "rewards_tokens": ["AAVE"]
+                },
+                {
+                    "opportunity_id": "polygon_quickswap_matic_usdt",
+                    "protocol_name": "QuickSwap",
+                    "pool_name": "MATIC-USDT Pool",
+                    "asset_pair": "MATIC/USDT",
+                    "chain": "polygon",
+                    "apy": 12.8,
+                    "tvl_usd": 15000000.0,
+                    "minimum_deposit": 25.0,
+                    "risk_score": 0.28,
+                    "impermanent_loss_risk": 0.18,
+                    "lock_period_days": 0,
+                    "auto_compound": True,
+                    "rewards_tokens": ["QUICK", "MATIC"]
+                }
+            ]
+            
+            # Apply filters
+            if chains:
+                chain_list = [c.strip() for c in chains.split(',')]
+                opportunities = [o for o in opportunities if o["chain"] in chain_list]
+            
+            opportunities = [o for o in opportunities if o["apy"] >= min_apy and o["risk_score"] <= max_risk_score]
+            
+            return opportunities
+        
+        chain_list = chains.split(',') if chains else None
+        opportunities = await defi_service.discover_yield_opportunities(min_apy, max_risk_score, chain_list)
+        return opportunities
+    except Exception as e:
+        logger.error(f"Failed to discover yield opportunities: {e}")
+        raise HTTPException(status_code=500, detail=f"Yield opportunities error: {str(e)}")
+
+@app.post("/api/v1/defi/positions")
+async def enter_defi_position(position_request: dict):
+    """Enter a new DeFi position"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock position creation
+            import uuid
+            position_id = str(uuid.uuid4())
+            return {
+                "position_id": position_id,
+                "protocol_id": position_request.get("protocol_id"),
+                "position_type": position_request.get("position_type", "liquidity_pool"),
+                "asset_symbol": position_request.get("asset_symbol"),
+                "amount_deposited": position_request.get("amount", 1000.0),
+                "status": "active",
+                "entry_timestamp": datetime.now(timezone.utc).isoformat(),
+                "expected_apy": 8.5,
+                "tx_hash": f"0x{uuid.uuid4().hex}",
+                "message": "Position entered successfully (mock mode)"
+            }
+        
+        from decimal import Decimal
+        position = await defi_service.enter_position(
+            protocol_id=position_request["protocol_id"],
+            position_type=position_request["position_type"],
+            asset_symbol=position_request["asset_symbol"],
+            amount=Decimal(str(position_request["amount"])),
+            wallet_address=position_request.get("wallet_address", "0x742d35cc6634c0532925a3b8d8a742e684e"),
+            auto_compound=position_request.get("auto_compound", True)
+        )
+        
+        return position
+    except Exception as e:
+        logger.error(f"Failed to enter DeFi position: {e}")
+        raise HTTPException(status_code=500, detail=f"DeFi position entry error: {str(e)}")
+
+@app.delete("/api/v1/defi/positions/{position_id}")
+async def exit_defi_position(position_id: str):
+    """Exit a DeFi position"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock exit summary
+            return {
+                "position_id": position_id,
+                "exit_timestamp": datetime.now(timezone.utc).isoformat(),
+                "initial_deposit": 1000.0,
+                "final_value": 1085.50,
+                "total_return": 85.50,
+                "return_percentage": 8.55,
+                "rewards_earned": 35.20,
+                "time_in_position_days": 45,
+                "annualized_return": 69.2,
+                "tx_hash": f"0x{uuid.uuid4().hex}",
+                "message": "Position exited successfully"
+            }
+        
+        exit_summary = await defi_service.exit_position(position_id)
+        return exit_summary
+    except Exception as e:
+        logger.error(f"Failed to exit DeFi position: {e}")
+        raise HTTPException(status_code=500, detail=f"DeFi position exit error: {str(e)}")
+
+@app.post("/api/v1/defi/positions/{position_id}/harvest")
+async def harvest_position_rewards(position_id: str):
+    """Harvest rewards from a DeFi position"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock harvest result
+            return {
+                "position_id": position_id,
+                "harvest_timestamp": datetime.now(timezone.utc).isoformat(),
+                "rewards_harvested": 25.80,
+                "total_rewards_earned": 156.40,
+                "auto_compounded": True,
+                "new_position_value": 1156.40,
+                "tx_hash": f"0x{uuid.uuid4().hex}",
+                "message": "Rewards harvested and compounded successfully"
+            }
+        
+        harvest_result = await defi_service.harvest_rewards(position_id)
+        return harvest_result
+    except Exception as e:
+        logger.error(f"Failed to harvest position rewards: {e}")
+        raise HTTPException(status_code=500, detail=f"Harvest rewards error: {str(e)}")
+
+@app.get("/api/v1/defi/portfolio")
+async def get_defi_portfolio_overview(wallet_address: str = None):
+    """Get comprehensive DeFi portfolio overview"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock portfolio overview
+            return {
+                "portfolio_summary": {
+                    "total_deposited": 90000.0,
+                    "total_current_value": 96750.0,
+                    "total_rewards_earned": 4250.0,
+                    "total_unrealized_pnl": 6750.0,
+                    "portfolio_return_percentage": 7.5,
+                    "active_positions": 5,
+                    "protocols_used": 4,
+                    "chains_used": 3
+                },
+                "protocol_breakdown": {
+                    "Uniswap V3": {
+                        "total_value": 35000.0,
+                        "positions": 2,
+                        "rewards_earned": 1750.0
+                    },
+                    "Aave": {
+                        "total_value": 25000.0,
+                        "positions": 1,
+                        "rewards_earned": 1125.0
+                    },
+                    "PancakeSwap": {
+                        "total_value": 20000.0,
+                        "positions": 1,
+                        "rewards_earned": 900.0
+                    },
+                    "QuickSwap": {
+                        "total_value": 16750.0,
+                        "positions": 1,
+                        "rewards_earned": 475.0
+                    }
+                },
+                "chain_breakdown": {
+                    "ethereum": {"total_value": 60000.0, "positions": 3, "percentage": 62.0},
+                    "polygon": {"total_value": 16750.0, "positions": 1, "percentage": 17.3},
+                    "bsc": {"total_value": 20000.0, "positions": 1, "percentage": 20.7}
+                },
+                "risk_metrics": {
+                    "average_risk_score": 0.18,
+                    "diversification_score": 0.8,
+                    "chain_diversification": 3
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        portfolio = await defi_service.get_portfolio_overview(wallet_address)
+        return portfolio
+    except Exception as e:
+        logger.error(f"Failed to get DeFi portfolio overview: {e}")
+        raise HTTPException(status_code=500, detail=f"DeFi portfolio error: {str(e)}")
+
+@app.get("/api/v1/defi/positions/{position_id}")
+async def get_position_details(position_id: str):
+    """Get detailed information about a specific DeFi position"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock position details
+            return {
+                "position_id": position_id,
+                "user_wallet": "0x742d35cc6634c0532925a3b8d8a742e684e",
+                "protocol_id": "ethereum_uniswap_v3",
+                "position_type": "liquidity_pool",
+                "status": "active",
+                "asset_symbol": "ETH/USDC",
+                "amount_deposited": 15000.0,
+                "current_value_usd": 15750.0,
+                "rewards_earned_usd": 450.0,
+                "unrealized_pnl_usd": 750.0,
+                "entry_timestamp": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat(),
+                "last_harvest": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
+                "auto_compound": True,
+                "protocol_info": {
+                    "name": "Uniswap V3",
+                    "type": "dex",
+                    "chain": "ethereum",
+                    "current_apy": 6.8,
+                    "risk_score": 0.15,
+                    "contract_address": "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+                },
+                "performance": {
+                    "days_in_position": 30,
+                    "daily_return_usd": 25.0,
+                    "annualized_return_percentage": 8.0,
+                    "total_return_percentage": 8.0
+                }
+            }
+        
+        position_details = await defi_service.get_position_details(position_id)
+        if not position_details:
+            raise HTTPException(status_code=404, detail="Position not found")
+        
+        return position_details
+    except Exception as e:
+        logger.error(f"Failed to get position details: {e}")
+        raise HTTPException(status_code=500, detail=f"Position details error: {str(e)}")
+
+@app.get("/api/v1/defi/analytics")
+async def get_defi_analytics_dashboard():
+    """Get comprehensive DeFi analytics for dashboard"""
+    try:
+        defi_service = registry.get_service("defi_protocol_integration_service")
+        if not defi_service:
+            # Return mock analytics
+            return {
+                "protocol_analytics": {
+                    "total_protocols_supported": 12,
+                    "active_protocols": 8,
+                    "total_tvl_usd": 45200000000.0,
+                    "average_apy": 8.7,
+                    "average_risk_score": 0.21
+                },
+                "position_analytics": {
+                    "total_positions": 5,
+                    "position_types": {
+                        "liquidity_pool": {"count": 3, "total_value": 71750.0},
+                        "lending_deposit": {"count": 1, "total_value": 25000.0},
+                        "yield_farm": {"count": 1, "total_value": 20000.0}
+                    },
+                    "total_value_locked": 116750.0,
+                    "total_rewards_earned": 4250.0
+                },
+                "chain_distribution": {
+                    "ethereum": 5,
+                    "polygon": 3,
+                    "bsc": 2,
+                    "arbitrum": 2
+                },
+                "opportunity_metrics": {
+                    "high_yield_opportunities": 6,
+                    "low_risk_opportunities": 4,
+                    "audited_protocols": 8
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        analytics = await defi_service.get_analytics_dashboard()
+        return analytics
+    except Exception as e:
+        logger.error(f"Failed to get DeFi analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"DeFi analytics error: {str(e)}")
+
+# ==========================================
+# ADVANCED ANALYTICS SYSTEM ENDPOINTS - PHASE 12
+# ==========================================
+
+@app.get("/api/v1/analytics/performance")
+async def get_performance_metrics(entity_id: str = "portfolio", timeframe: str = "1m"):
+    """Get comprehensive performance metrics"""
+    try:
+        analytics_service = registry.get_service("advanced_analytics_service")
+        if not analytics_service:
+            # Return mock performance metrics
+            return {
+                "entity_id": entity_id,
+                "timeframe": timeframe,
+                "total_return": 0.085,
+                "annual_return": 0.124,
+                "sharpe_ratio": 1.42,
+                "sortino_ratio": 1.68,
+                "max_drawdown": 0.085,
+                "volatility": 0.18,
+                "win_rate": 0.675,
+                "profit_factor": 2.15,
+                "calmar_ratio": 1.46,
+                "var_95": 0.025,
+                "var_99": 0.045,
+                "beta": 0.85,
+                "alpha": 0.045,
+                "information_ratio": 0.68,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        from services.advanced_analytics_service import TimeFrame
+        timeframe_enum = TimeFrame(timeframe)
+        metrics = await analytics_service.calculate_performance_metrics(entity_id, timeframe_enum)
+        
+        result = {
+            "entity_id": entity_id,
+            "timeframe": timeframe,
+            **{k: v for k, v in metrics.__dict__.items()},
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        return result
+    except Exception as e:
+        logger.error(f"Failed to get performance metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Performance metrics error: {str(e)}")
+
+@app.get("/api/v1/analytics/risk")
+async def get_risk_metrics(entity_id: str = "portfolio", confidence_level: float = 0.95):
+    """Get comprehensive risk metrics"""
+    try:
+        analytics_service = registry.get_service("advanced_analytics_service")
+        if not analytics_service:
+            # Return mock risk metrics
+            return {
+                "entity_id": entity_id,
+                "confidence_level": confidence_level,
+                "portfolio_var": 0.035,
+                "expected_shortfall": 0.052,
+                "concentration_risk": 0.28,
+                "correlation_risk": 0.42,
+                "liquidity_risk": 0.15,
+                "leverage_ratio": 1.85,
+                "risk_budget_utilization": 0.78,
+                "stress_test_results": {
+                    "market_crash_2008": -0.35,
+                    "covid_crash_2020": -0.28,
+                    "crypto_winter_2022": -0.45,
+                    "interest_rate_shock": -0.15,
+                    "liquidity_crisis": -0.25
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        metrics = await analytics_service.calculate_risk_metrics(entity_id, confidence_level)
+        
+        result = {
+            "entity_id": entity_id,
+            "confidence_level": confidence_level,
+            **{k: v for k, v in metrics.__dict__.items()},
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        return result
+    except Exception as e:
+        logger.error(f"Failed to get risk metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Risk metrics error: {str(e)}")
+
+@app.get("/api/v1/analytics/market")
+async def get_market_analytics():
+    """Get market analytics and regime detection"""
+    try:
+        analytics_service = registry.get_service("advanced_analytics_service")
+        if not analytics_service:
+            # Return mock market analytics
+            return {
+                "market_regime": "bull_market",
+                "volatility_regime": "normal",
+                "correlation_regime": "low_correlation",
+                "sentiment_score": 0.72,
+                "trend_strength": 0.85,
+                "momentum_score": 0.68,
+                "mean_reversion_score": 0.32,
+                "market_breadth": 0.75,
+                "regime_confidence": 0.82,
+                "regime_duration_days": 45,
+                "volatility_percentile": 0.45,
+                "fear_greed_index": 68,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        analytics = await analytics_service.calculate_market_analytics()
+        
+        result = {
+            **{k: v for k, v in analytics.__dict__.items()},
+            "regime_confidence": 0.82,
+            "regime_duration_days": 45,
+            "volatility_percentile": 0.45,
+            "fear_greed_index": 68,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        return result
+    except Exception as e:
+        logger.error(f"Failed to get market analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Market analytics error: {str(e)}")
+
+@app.get("/api/v1/analytics/attribution")
+async def get_performance_attribution(entity_id: str = "portfolio", timeframe: str = "1m"):
+    """Get performance attribution analysis"""
+    try:
+        analytics_service = registry.get_service("advanced_analytics_service")
+        if not analytics_service:
+            # Return mock attribution analysis
+            return {
+                "entity_id": entity_id,
+                "timeframe": timeframe,
+                "total_return": 0.085,
+                "attribution_breakdown": {
+                    "agent_selection": {"return": 0.035, "percentage": 41.2},
+                    "strategy_allocation": {"return": 0.025, "percentage": 29.4},
+                    "timing": {"return": 0.015, "percentage": 17.6},
+                    "interaction": {"return": 0.010, "percentage": 11.8}
+                },
+                "risk_attribution": {
+                    "systematic_risk": {"contribution": 0.040, "percentage": 65.0},
+                    "idiosyncratic_risk": {"contribution": 0.022, "percentage": 35.0}
+                },
+                "factor_attribution": {
+                    "momentum": {"exposure": 0.35, "return": 0.028},
+                    "mean_reversion": {"exposure": 0.25, "return": 0.018},
+                    "volatility": {"exposure": 0.20, "return": 0.012},
+                    "carry": {"exposure": 0.20, "return": 0.027}
+                },
+                "alpha_sources": {
+                    "security_selection": 0.025,
+                    "market_timing": 0.015,
+                    "cross_asset": 0.020,
+                    "volatility_trading": 0.025
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        from services.advanced_analytics_service import TimeFrame
+        timeframe_enum = TimeFrame(timeframe)
+        attribution = await analytics_service.generate_performance_attribution(entity_id, timeframe_enum)
+        return attribution
+    except Exception as e:
+        logger.error(f"Failed to get performance attribution: {e}")
+        raise HTTPException(status_code=500, detail=f"Performance attribution error: {str(e)}")
+
+@app.get("/api/v1/analytics/correlation")
+async def get_correlation_analysis(timeframe: str = "1m"):
+    """Get correlation analysis between assets and strategies"""
+    try:
+        analytics_service = registry.get_service("advanced_analytics_service")
+        if not analytics_service:
+            # Return mock correlation analysis
+            return {
+                "timeframe": timeframe,
+                "asset_correlations": {
+                    "BTC": {"ETH": 0.75, "SPY": 0.25, "BONDS": -0.15, "GOLD": 0.10, "DXY": -0.45},
+                    "ETH": {"BTC": 0.75, "SPY": 0.30, "BONDS": -0.10, "GOLD": 0.05, "DXY": -0.40},
+                    "SPY": {"BTC": 0.25, "ETH": 0.30, "BONDS": -0.20, "GOLD": -0.05, "DXY": -0.30},
+                    "BONDS": {"BTC": -0.15, "ETH": -0.10, "SPY": -0.20, "GOLD": 0.40, "DXY": 0.20},
+                    "GOLD": {"BTC": 0.10, "ETH": 0.05, "SPY": -0.05, "BONDS": 0.40, "DXY": -0.60},
+                    "DXY": {"BTC": -0.45, "ETH": -0.40, "SPY": -0.30, "BONDS": 0.20, "GOLD": -0.60}
+                },
+                "strategy_correlations": {
+                    "momentum": {"BTC": 0.45, "ETH": 0.40, "SPY": 0.35, "BONDS": -0.15, "GOLD": 0.05, "DXY": -0.25},
+                    "mean_reversion": {"BTC": -0.25, "ETH": -0.20, "SPY": 0.15, "BONDS": 0.30, "GOLD": 0.20, "DXY": 0.10},
+                    "arbitrage": {"BTC": 0.05, "ETH": 0.08, "SPY": 0.02, "BONDS": 0.01, "GOLD": 0.00, "DXY": -0.02},
+                    "volatility": {"BTC": 0.60, "ETH": 0.55, "SPY": 0.40, "BONDS": -0.10, "GOLD": 0.15, "DXY": -0.30}
+                },
+                "concentration_metrics": {
+                    "max_correlation": 0.75,
+                    "average_correlation": 0.18,
+                    "correlation_clusters": ["crypto_cluster", "traditional_cluster", "safe_haven_cluster"]
+                },
+                "regime_analysis": {
+                    "current_regime": "normal_correlation",
+                    "regime_probability": 0.75,
+                    "regime_stability": 0.68
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        from services.advanced_analytics_service import TimeFrame
+        timeframe_enum = TimeFrame(timeframe)
+        correlation = await analytics_service.generate_correlation_analysis(timeframe_enum)
+        return correlation
+    except Exception as e:
+        logger.error(f"Failed to get correlation analysis: {e}")
+        raise HTTPException(status_code=500, detail=f"Correlation analysis error: {str(e)}")
+
+@app.get("/api/v1/analytics/dashboard")
+async def get_analytics_dashboard():
+    """Get comprehensive analytics dashboard"""
+    try:
+        analytics_service = registry.get_service("advanced_analytics_service")
+        if not analytics_service:
+            # Return mock analytics dashboard
+            return {
+                "portfolio_summary": {
+                    "total_return_ytd": 0.085,
+                    "sharpe_ratio": 1.42,
+                    "max_drawdown": 0.085,
+                    "win_rate": 0.675,
+                    "volatility": 0.18,
+                    "var_95": 0.035,
+                    "current_positions": 15,
+                    "active_strategies": 8,
+                    "last_updated": datetime.now(timezone.utc).isoformat()
+                },
+                "performance_metrics": {
+                    "total_return": 0.085,
+                    "annual_return": 0.124,
+                    "sharpe_ratio": 1.42,
+                    "max_drawdown": 0.085,
+                    "win_rate": 0.675,
+                    "profit_factor": 2.15
+                },
+                "risk_metrics": {
+                    "portfolio_var": 0.035,
+                    "expected_shortfall": 0.052,
+                    "concentration_risk": 0.28,
+                    "correlation_risk": 0.42,
+                    "leverage_ratio": 1.85
+                },
+                "market_analytics": {
+                    "market_regime": "bull_market",
+                    "volatility_regime": "normal",
+                    "sentiment_score": 0.72,
+                    "trend_strength": 0.85
+                },
+                "performance_trends": {
+                    "daily_returns": [0.002, 0.001, -0.003, 0.005, 0.002, -0.001, 0.004],
+                    "cumulative_returns": [0.075, 0.076, 0.073, 0.078, 0.080, 0.079, 0.083],
+                    "rolling_sharpe": [1.35, 1.38, 1.32, 1.45, 1.42, 1.40, 1.44]
+                },
+                "agent_performance": {
+                    "agent_marcus": {"total_return": 0.12, "sharpe_ratio": 1.55, "max_drawdown": 0.06, "win_rate": 0.70},
+                    "agent_alex": {"total_return": 0.08, "sharpe_ratio": 1.25, "max_drawdown": 0.04, "win_rate": 0.65},
+                    "agent_sophia": {"total_return": 0.15, "sharpe_ratio": 1.75, "max_drawdown": 0.08, "win_rate": 0.75}
+                },
+                "alerts": [
+                    {
+                        "id": "risk_001",
+                        "type": "risk",
+                        "severity": "medium",
+                        "message": "Portfolio VaR has increased by 15% over the last week",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "id": "rec_001",
+                        "category": "risk_management",
+                        "priority": "high",
+                        "recommendation": "Consider reducing position sizes in highly correlated assets",
+                        "rationale": "Correlation risk has increased to 0.75, above the 0.70 threshold"
+                    }
+                ],
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        dashboard = await analytics_service.generate_analytics_dashboard()
+        return dashboard
+    except Exception as e:
+        logger.error(f"Failed to get analytics dashboard: {e}")
+        raise HTTPException(status_code=500, detail=f"Analytics dashboard error: {str(e)}")
+
+@app.get("/api/v1/analytics/reports/{report_type}")
+async def generate_analytics_report(report_type: str, entity_id: str = "portfolio", timeframe: str = "1m"):
+    """Generate specific analytics reports"""
+    try:
+        analytics_service = registry.get_service("advanced_analytics_service")
+        
+        if report_type == "performance":
+            if not analytics_service:
+                return {
+                    "report_type": "performance",
+                    "entity_id": entity_id,
+                    "summary": {
+                        "total_return": 0.085,
+                        "sharpe_ratio": 1.42,
+                        "max_drawdown": 0.085,
+                        "win_rate": 0.675
+                    },
+                    "detailed_metrics": {
+                        "monthly_returns": [0.015, 0.025, -0.010, 0.032, 0.018, 0.005],
+                        "rolling_volatility": [0.15, 0.16, 0.19, 0.17, 0.18, 0.16],
+                        "drawdown_periods": [
+                            {"start": "2024-01-15", "end": "2024-01-25", "max_drawdown": 0.035},
+                            {"start": "2024-03-05", "end": "2024-03-12", "max_drawdown": 0.022}
+                        ]
+                    },
+                    "benchmark_comparison": {
+                        "benchmark": "SPY",
+                        "excess_return": 0.035,
+                        "tracking_error": 0.08,
+                        "information_ratio": 0.68
+                    },
+                    "generated_at": datetime.now(timezone.utc).isoformat()
+                }
+            
+            from services.advanced_analytics_service import TimeFrame
+            timeframe_enum = TimeFrame(timeframe)
+            metrics = await analytics_service.calculate_performance_metrics(entity_id, timeframe_enum)
+            attribution = await analytics_service.generate_performance_attribution(entity_id, timeframe_enum)
+            
+            return {
+                "report_type": "performance",
+                "entity_id": entity_id,
+                "timeframe": timeframe,
+                "performance_metrics": {k: v for k, v in metrics.__dict__.items()},
+                "attribution_analysis": attribution,
+                "generated_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        elif report_type == "risk":
+            if not analytics_service:
+                return {
+                    "report_type": "risk",
+                    "entity_id": entity_id,
+                    "risk_summary": {
+                        "portfolio_var": 0.035,
+                        "expected_shortfall": 0.052,
+                        "max_drawdown": 0.085,
+                        "concentration_risk": 0.28
+                    },
+                    "stress_tests": {
+                        "market_crash": -0.35,
+                        "liquidity_crisis": -0.25,
+                        "interest_rate_shock": -0.15
+                    },
+                    "risk_limits": {
+                        "var_limit": 0.05,
+                        "concentration_limit": 0.40,
+                        "leverage_limit": 3.0,
+                        "current_utilization": 0.78
+                    },
+                    "generated_at": datetime.now(timezone.utc).isoformat()
+                }
+            
+            risk_metrics = await analytics_service.calculate_risk_metrics(entity_id)
+            
+            return {
+                "report_type": "risk",
+                "entity_id": entity_id,
+                "risk_metrics": {k: v for k, v in risk_metrics.__dict__.items()},
+                "risk_limits": {
+                    "var_limit": 0.05,
+                    "concentration_limit": 0.40,
+                    "leverage_limit": 3.0,
+                    "current_utilization": risk_metrics.risk_budget_utilization
+                },
+                "generated_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        elif report_type == "correlation":
+            if not analytics_service:
+                return {
+                    "report_type": "correlation",
+                    "correlation_matrix": {
+                        "BTC": {"ETH": 0.75, "SPY": 0.25},
+                        "ETH": {"BTC": 0.75, "SPY": 0.30},
+                        "SPY": {"BTC": 0.25, "ETH": 0.30}
+                    },
+                    "risk_analysis": {
+                        "max_correlation": 0.75,
+                        "diversification_ratio": 0.68,
+                        "concentration_risk": 0.28
+                    },
+                    "generated_at": datetime.now(timezone.utc).isoformat()
+                }
+            
+            from services.advanced_analytics_service import TimeFrame
+            timeframe_enum = TimeFrame(timeframe)
+            correlation = await analytics_service.generate_correlation_analysis(timeframe_enum)
+            
+            return {
+                "report_type": "correlation",
+                "timeframe": timeframe,
+                **correlation,
+                "generated_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown report type: {report_type}")
+            
+    except Exception as e:
+        logger.error(f"Failed to generate analytics report: {e}")
+        raise HTTPException(status_code=500, detail=f"Analytics report error: {str(e)}")
+
+# ==========================================
 # ENHANCED MARKET DATA API ENDPOINTS
 # ==========================================
 
@@ -3864,7 +5253,7 @@ async def process_chat_command(command: str) -> Dict[str, Any]:
         elif cmd == "farms":
             farm_service = registry.get_service("farm_management")
             if farm_service:
-                farms = await farm_service.get_all_farms()
+                farms = await farm_service.get_all_farms_api()
                 return {"success": True, "data": farms}
             else:
                 return {
@@ -3947,6 +5336,2267 @@ async def websocket_dashboard_endpoint(websocket: WebSocket):
         await websocket_service.handle_websocket(websocket)
     except Exception as e:
         print(f"WebSocket error: {e}")
+
+# Farm Management API Endpoints - Phase 8
+@app.get("/api/v1/farms")
+async def get_all_farms():
+    """Get all farms"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            return await farm_service.get_all_farms_api()
+        else:
+            # Mock data fallback
+            return [
+                {
+                    "farm_id": "farm_1",
+                    "farm_name": "Momentum Farm",
+                    "farm_type": "trend_following",
+                    "status": "active",
+                    "current_agents": 3,
+                    "max_agents": 5,
+                    "performance": {
+                        "total_pnl": 15420.50,
+                        "win_rate": 68.5,
+                        "active_agents": 3
+                    }
+                },
+                {
+                    "farm_id": "farm_2", 
+                    "farm_name": "Arbitrage Farm",
+                    "farm_type": "arbitrage",
+                    "status": "active",
+                    "current_agents": 2,
+                    "max_agents": 4,
+                    "performance": {
+                        "total_pnl": 8950.75,
+                        "win_rate": 72.1,
+                        "active_agents": 2
+                    }
+                }
+            ]
+    except Exception as e:
+        logger.error(f"Error getting farms: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/farms")
+async def create_farm(farm_data: Dict[str, Any]):
+    """Create a new farm"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            return await farm_service.create_farm_api(farm_data)
+        else:
+            # Mock creation
+            import uuid
+            farm_id = str(uuid.uuid4())
+            return {
+                "farm_id": farm_id,
+                "farm_name": farm_data.get("name", "New Farm"),
+                "farm_type": farm_data.get("type", "multi_strategy"),
+                "status": "inactive",
+                "current_agents": 0,
+                "max_agents": farm_data.get("max_agents", 5),
+                "created_at": datetime.now().isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Error creating farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/farms/{farm_id}")
+async def get_farm_by_id(farm_id: str):
+    """Get farm details by ID"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            farm = await farm_service.get_farm_by_id_api(farm_id)
+            if not farm:
+                raise HTTPException(status_code=404, detail="Farm not found")
+            return farm
+        else:
+            # Mock data
+            return {
+                "farm_id": farm_id,
+                "farm_name": "Sample Farm",
+                "farm_type": "multi_strategy",
+                "status": "active",
+                "current_agents": 2,
+                "max_agents": 5,
+                "performance": {
+                    "total_pnl": 12500.0,
+                    "win_rate": 65.0,
+                    "active_agents": 2
+                }
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/v1/farms/{farm_id}")
+async def update_farm(farm_id: str, farm_data: Dict[str, Any]):
+    """Update farm configuration"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            return await farm_service.update_farm_api(farm_id, farm_data)
+        else:
+            # Mock update
+            return {
+                "farm_id": farm_id,
+                "farm_name": farm_data.get("name", "Updated Farm"),
+                "updated_at": datetime.now().isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Error updating farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/v1/farms/{farm_id}")
+async def delete_farm(farm_id: str):
+    """Delete a farm"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            success = await farm_service.delete_farm_api(farm_id)
+            return {"success": success}
+        else:
+            return {"success": True}
+    except Exception as e:
+        logger.error(f"Error deleting farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/farms/{farm_id}/agents")
+async def get_farm_agents(farm_id: str):
+    """Get agents assigned to a farm"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            return await farm_service.get_farm_agents_detailed(farm_id)
+        else:
+            # Mock data
+            return [
+                {
+                    "agent_id": "agent_1",
+                    "name": "Marcus Momentum",
+                    "role": "primary",
+                    "status": "active",
+                    "performance": {
+                        "profit": 5420.50,
+                        "trades": 45,
+                        "win_rate": 68.5
+                    }
+                }
+            ]
+    except Exception as e:
+        logger.error(f"Error getting farm agents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/farms/{farm_id}/agents")
+async def add_agent_to_farm(farm_id: str, request: Dict[str, Any]):
+    """Add agent to farm"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        agent_id = request.get("agent_id")
+        role = request.get("role", "support")
+        
+        if farm_service:
+            success = await farm_service.add_agent_to_farm(farm_id, agent_id, role)
+            return {"success": success}
+        else:
+            return {"success": True}
+    except Exception as e:
+        logger.error(f"Error adding agent to farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/v1/farms/{farm_id}/agents/{agent_id}")
+async def remove_agent_from_farm(farm_id: str, agent_id: str):
+    """Remove agent from farm"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            success = await farm_service.remove_agent_from_farm(agent_id, farm_id)
+            return {"success": success}
+        else:
+            return {"success": True}
+    except Exception as e:
+        logger.error(f"Error removing agent from farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/farms/{farm_id}/performance")
+async def get_farm_performance(farm_id: str):
+    """Get farm performance metrics"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            performance = await farm_service.get_farm_performance_detailed(farm_id)
+            if not performance:
+                raise HTTPException(status_code=404, detail="Farm performance not found")
+            return performance
+        else:
+            # Mock performance data
+            return {
+                "total_pnl": 15420.50,
+                "average_pnl": 5140.17,
+                "total_trades": 75,
+                "win_rate": 68.5,
+                "farm_return": 15.2,
+                "risk_adjusted_return": 12.8,
+                "utilization_rate": 85.0,
+                "consistency_score": 78.5,
+                "active_agents": 3
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting farm performance: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/farms/{farm_id}/start")
+async def start_farm(farm_id: str):
+    """Start farm operations"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            success = await farm_service.activate_farm(farm_id)
+            return {"success": success, "status": "active"}
+        else:
+            return {"success": True, "status": "active"}
+    except Exception as e:
+        logger.error(f"Error starting farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/farms/{farm_id}/stop")
+async def stop_farm(farm_id: str):
+    """Stop farm operations"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            success = await farm_service.pause_farm(farm_id)
+            return {"success": success, "status": "paused"}
+        else:
+            return {"success": True, "status": "paused"}
+    except Exception as e:
+        logger.error(f"Error stopping farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/farms/{farm_id}/rebalance")
+async def rebalance_farm(farm_id: str, rebalance_params: Dict[str, Any]):
+    """Rebalance farm allocation"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            return await farm_service.rebalance_farm_api(farm_id, rebalance_params)
+        else:
+            # Mock rebalance result
+            return {
+                "farm_id": farm_id,
+                "rebalance_type": rebalance_params.get("type", "performance_based"),
+                "expected_improvement": 12.5,
+                "status": "completed",
+                "rebalance_timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Error rebalancing farm: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/farms/metrics")
+async def get_farm_metrics():
+    """Get overall farm system metrics"""
+    try:
+        farm_service = registry.get_service("farm_management")
+        if farm_service:
+            return await farm_service.get_farm_metrics()
+        else:
+            # Mock metrics
+            return {
+                "total_farms": 3,
+                "active_farms": 2,
+                "paused_farms": 1,
+                "total_agents": 8,
+                "total_profit": 25750.50,
+                "avg_agents_per_farm": 2.7,
+                "system_efficiency": 85.0
+            }
+    except Exception as e:
+        logger.error(f"Error getting farm metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# KNOWLEDGE GRAPH API ENDPOINTS - PHASE 13
+# ==========================================
+
+@app.get("/api/v1/knowledge/graph/overview")
+async def get_knowledge_graph_overview():
+    """Get comprehensive knowledge graph overview and dashboard"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph_service")
+        if not knowledge_service:
+            # Return comprehensive mock knowledge graph data
+            return {
+                "graph_overview": {
+                    "total_nodes": 47,
+                    "total_relationships": 68,
+                    "entity_distribution": {
+                        "symbol": 12,
+                        "strategy": 8,
+                        "agent": 6,
+                        "indicator": 9,
+                        "event": 4,
+                        "pattern": 5,
+                        "sentiment": 3
+                    },
+                    "category_distribution": {
+                        "asset": 12,
+                        "strategy": 8,
+                        "agent": 6,
+                        "market_data": 15,
+                        "analytics": 4,
+                        "external": 2
+                    },
+                    "relationship_distribution": {
+                        "correlates_with": 15,
+                        "influences": 12,
+                        "operates_on": 10,
+                        "measures": 8,
+                        "depends_on": 6,
+                        "triggers": 5,
+                        "affects": 4,
+                        "similar_to": 3,
+                        "caused_by": 3,
+                        "contains": 2
+                    }
+                },
+                "recent_activity": {
+                    "nodes": [
+                        {"id": "node_1", "name": "BTC/USD", "type": "symbol", "updated": "2025-06-20T10:30:00Z"},
+                        {"id": "node_4", "name": "Momentum Trading", "type": "strategy", "updated": "2025-06-20T09:15:00Z"},
+                        {"id": "node_6", "name": "Marcus Momentum", "type": "agent", "updated": "2025-06-20T08:45:00Z"},
+                        {"id": "node_8", "name": "RSI", "type": "indicator", "updated": "2025-06-20T08:30:00Z"},
+                        {"id": "node_10", "name": "Fed Rate Decision", "type": "event", "updated": "2025-06-20T07:20:00Z"}
+                    ],
+                    "relationships": [
+                        {"id": "rel_1", "source": "BTC/USD", "target": "ETH/USD", "type": "correlates_with", "strength": 0.85, "updated": "2025-06-20T10:15:00Z"},
+                        {"id": "rel_4", "source": "Momentum Trading", "target": "BTC/USD", "type": "operates_on", "strength": 0.90, "updated": "2025-06-20T09:30:00Z"},
+                        {"id": "rel_6", "source": "Marcus Momentum", "target": "Momentum Trading", "type": "depends_on", "strength": 0.95, "updated": "2025-06-20T09:00:00Z"},
+                        {"id": "rel_8", "source": "RSI", "target": "BTC/USD", "type": "measures", "strength": 0.80, "updated": "2025-06-20T08:45:00Z"},
+                        {"id": "rel_10", "source": "Fed Rate Decision", "target": "BTC/USD", "type": "influences", "strength": 0.60, "updated": "2025-06-20T08:00:00Z"}
+                    ]
+                },
+                "insights": {
+                    "graph_metrics": {
+                        "nodes": 47,
+                        "relationships": 68,
+                        "density": 0.032,
+                        "connected_components": 3,
+                        "average_clustering": 0.34,
+                        "diameter": 6
+                    },
+                    "centrality_analysis": {
+                        "top_degree_nodes": [
+                            {"node_id": "node_1", "name": "BTC/USD", "centrality": 0.85},
+                            {"node_id": "node_4", "name": "Momentum Trading", "centrality": 0.72},
+                            {"node_id": "node_8", "name": "RSI", "centrality": 0.68}
+                        ],
+                        "top_betweenness_nodes": [
+                            {"node_id": "node_1", "name": "BTC/USD", "centrality": 0.45},
+                            {"node_id": "node_6", "name": "Marcus Momentum", "centrality": 0.38}
+                        ]
+                    },
+                    "community_detection": {
+                        "total_communities": 4,
+                        "communities": {
+                            "0": [{"name": "BTC/USD"}, {"name": "ETH/USD"}, {"name": "Crypto Assets"}],
+                            "1": [{"name": "Momentum Trading"}, {"name": "Marcus Momentum"}, {"name": "Trend Strategies"}],
+                            "2": [{"name": "RSI"}, {"name": "MACD"}, {"name": "Technical Indicators"}],
+                            "3": [{"name": "Fed Rate Decision"}, {"name": "Market Events"}]
+                        },
+                        "modularity_score": 0.67
+                    },
+                    "influence_patterns": {
+                        "top_influencers": [
+                            {"node_id": "node_10", "name": "Fed Rate Decision", "influence_score": 0.92},
+                            {"node_id": "node_1", "name": "BTC/USD", "influence_score": 0.78},
+                            {"node_id": "node_4", "name": "Momentum Trading", "influence_score": 0.65}
+                        ]
+                    },
+                    "knowledge_gaps": [
+                        {"type": "sparse_coverage", "description": "Limited sentiment entity coverage", "severity": "medium"},
+                        {"type": "missing_relationships", "description": "Few correlation relationships for altcoins", "severity": "low"}
+                    ]
+                },
+                "search_suggestions": [
+                    "BTC correlation analysis",
+                    "momentum strategy patterns",
+                    "RSI indicator relationships",
+                    "market event impacts",
+                    "agent performance connections",
+                    "trading pattern recognition",
+                    "cross-asset correlations",
+                    "strategy effectiveness analysis"
+                ],
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        dashboard = await knowledge_service.get_knowledge_dashboard()
+        return dashboard
+        
+    except Exception as e:
+        logger.error(f"Failed to get knowledge graph overview: {e}")
+        raise HTTPException(status_code=500, detail=f"Knowledge graph error: {str(e)}")
+
+@app.get("/api/v1/knowledge/search")
+async def semantic_search_knowledge_graph(
+    query: str,
+    entity_types: Optional[str] = None,
+    categories: Optional[str] = None,
+    limit: int = 10
+):
+    """Perform semantic search across the knowledge graph"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph_service")
+        if not knowledge_service:
+            # Return mock search results
+            return {
+                "query": query,
+                "results": [
+                    {
+                        "node_id": "node_1",
+                        "score": 0.95,
+                        "relevance": "name_match, description_match",
+                        "path": ["ETH/USD", "Momentum Trading", "Marcus Momentum"],
+                        "context": {
+                            "entity_type": "symbol",
+                            "category": "asset",
+                            "name": "BTC/USD",
+                            "description": "Bitcoin to US Dollar trading pair with high volatility and strong market influence"
+                        }
+                    },
+                    {
+                        "node_id": "node_4",
+                        "score": 0.78,
+                        "relevance": "property_match, partial_name_match",
+                        "path": ["BTC/USD", "Marcus Momentum", "RSI"],
+                        "context": {
+                            "entity_type": "strategy",
+                            "category": "strategy",
+                            "name": "Momentum Trading",
+                            "description": "Trend-following strategy using momentum indicators for cryptocurrency trading"
+                        }
+                    },
+                    {
+                        "node_id": "node_8",
+                        "score": 0.65,
+                        "relevance": "description_match, property_indicator_type",
+                        "path": ["BTC/USD", "ETH/USD"],
+                        "context": {
+                            "entity_type": "indicator",
+                            "category": "market_data",
+                            "name": "RSI",
+                            "description": "Relative Strength Index oscillator for identifying overbought/oversold conditions"
+                        }
+                    }
+                ],
+                "total_results": 3,
+                "search_time_ms": 45,
+                "filters_applied": {
+                    "entity_types": entity_types.split(",") if entity_types else None,
+                    "categories": categories.split(",") if categories else None,
+                    "limit": limit
+                }
+            }
+        
+        # Parse filters
+        entity_type_list = None
+        category_list = None
+        
+        if entity_types:
+            from services.knowledge_graph_service import EntityType
+            entity_type_list = [EntityType(t.strip()) for t in entity_types.split(",")]
+        
+        if categories:
+            from services.knowledge_graph_service import NodeCategory
+            category_list = [NodeCategory(c.strip()) for c in categories.split(",")]
+        
+        results = await knowledge_service.semantic_search(query, entity_type_list, category_list, limit)
+        
+        return {
+            "query": query,
+            "results": [
+                {
+                    "node_id": result.node_id,
+                    "score": result.score,
+                    "relevance": result.relevance,
+                    "path": result.path,
+                    "context": result.context
+                } for result in results
+            ],
+            "total_results": len(results),
+            "filters_applied": {
+                "entity_types": entity_types.split(",") if entity_types else None,
+                "categories": categories.split(",") if categories else None,
+                "limit": limit
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to perform semantic search: {e}")
+        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+
+@app.get("/api/v1/knowledge/entity/{entity_id}/relationships")
+async def get_entity_relationships(
+    entity_id: str,
+    relationship_types: Optional[str] = None,
+    max_depth: int = 2
+):
+    """Get relationships for a specific entity"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph_service")
+        if not knowledge_service:
+            # Return mock relationship data
+            return {
+                "entity_id": entity_id,
+                "direct_relationships": [
+                    {
+                        "relationship_id": "rel_1",
+                        "target_node_id": "node_2",
+                        "target_name": "ETH/USD",
+                        "relationship_type": "correlates_with",
+                        "strength": 0.85,
+                        "confidence": 0.90
+                    },
+                    {
+                        "relationship_id": "rel_4",
+                        "target_node_id": "node_4",
+                        "target_name": "Momentum Trading",
+                        "relationship_type": "operates_on",
+                        "strength": 0.90,
+                        "confidence": 0.85
+                    },
+                    {
+                        "relationship_id": "rel_8",
+                        "target_node_id": "node_8",
+                        "target_name": "RSI",
+                        "relationship_type": "measures",
+                        "strength": 0.80,
+                        "confidence": 0.85
+                    }
+                ],
+                "indirect_relationships": [
+                    {
+                        "target_node_id": "node_6",
+                        "target_name": "Marcus Momentum",
+                        "path": ["BTC/USD", "Momentum Trading", "Marcus Momentum"],
+                        "path_length": 2,
+                        "path_strength": 0.855
+                    },
+                    {
+                        "target_node_id": "node_9",
+                        "target_name": "MACD",
+                        "path": ["BTC/USD", "RSI", "MACD"],
+                        "path_length": 2,
+                        "path_strength": 0.68
+                    }
+                ],
+                "relationship_summary": {
+                    "total_direct": 3,
+                    "total_indirect": 2,
+                    "average_strength": 0.85,
+                    "relationship_types": {
+                        "correlates_with": 1,
+                        "operates_on": 1,
+                        "measures": 1
+                    },
+                    "connectivity_score": 4.0
+                }
+            }
+        
+        # Parse relationship types filter
+        relationship_type_list = None
+        if relationship_types:
+            from services.knowledge_graph_service import RelationshipType
+            relationship_type_list = [RelationshipType(t.strip()) for t in relationship_types.split(",")]
+        
+        relationships = await knowledge_service.find_relationships(entity_id, relationship_type_list, max_depth)
+        return relationships
+        
+    except Exception as e:
+        logger.error(f"Failed to get entity relationships: {e}")
+        raise HTTPException(status_code=500, detail=f"Relationship query error: {str(e)}")
+
+@app.get("/api/v1/knowledge/entity/{entity_id}/insights")
+async def get_entity_insights(entity_id: str):
+    """Get comprehensive insights about a specific entity"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph_service")
+        if not knowledge_service:
+            # Return mock entity insights
+            return {
+                "entity_info": {
+                    "id": entity_id,
+                    "name": "BTC/USD",
+                    "type": "symbol",
+                    "category": "asset",
+                    "description": "Bitcoin to US Dollar trading pair",
+                    "confidence": 0.95
+                },
+                "relationship_analysis": {
+                    "total_direct": 8,
+                    "total_indirect": 15,
+                    "average_strength": 0.72,
+                    "connectivity_score": 15.5
+                },
+                "network_position": {
+                    "centrality_scores": {
+                        "degree": 0.85,
+                        "betweenness": 0.42,
+                        "closeness": 0.68
+                    },
+                    "local_structure": {
+                        "clustering_coefficient": 0.34,
+                        "degree": 8,
+                        "neighbor_types": {
+                            "symbol": 3,
+                            "strategy": 2,
+                            "indicator": 2,
+                            "event": 1
+                        }
+                    },
+                    "influence_score": 0.65,
+                    "broker_score": 0.42,
+                    "hub_score": 0.85
+                },
+                "semantic_context": {
+                    "semantic_cluster": "asset",
+                    "entity_class": "symbol",
+                    "related_entities": [
+                        {"node_id": "node_2", "name": "ETH/USD", "relationship": "same_type"},
+                        {"node_id": "node_3", "name": "SOL/USD", "relationship": "same_category"}
+                    ],
+                    "key_properties": ["symbol", "asset_class", "volatility", "market_cap"],
+                    "confidence": 0.95
+                },
+                "temporal_analysis": {
+                    "creation_date": "2025-05-15T10:30:00Z",
+                    "last_updated": "2025-06-20T14:25:00Z",
+                    "age_days": 36,
+                    "update_frequency": "daily",
+                    "activity_score": 0.88,
+                    "trend": "increasing"
+                },
+                "recommendations": [
+                    {
+                        "type": "connect",
+                        "target_node": "node_12",
+                        "target_name": "Volatility Index",
+                        "reason": "Similar volatility characteristics",
+                        "priority": "medium"
+                    },
+                    {
+                        "type": "enrich",
+                        "property": "trading_volume",
+                        "reason": "Common property for symbol entities",
+                        "priority": "low"
+                    }
+                ]
+            }
+        
+        insights = await knowledge_service.get_entity_insights(entity_id)
+        return insights
+        
+    except Exception as e:
+        logger.error(f"Failed to get entity insights: {e}")
+        raise HTTPException(status_code=500, detail=f"Entity insights error: {str(e)}")
+
+@app.get("/api/v1/knowledge/patterns/analysis")
+async def analyze_graph_patterns():
+    """Analyze patterns and insights in the knowledge graph"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph_service")
+        if not knowledge_service:
+            # Return mock pattern analysis
+            return {
+                "graph_metrics": {
+                    "nodes": 47,
+                    "relationships": 68,
+                    "density": 0.032,
+                    "connected_components": 3,
+                    "average_clustering": 0.34,
+                    "diameter": 6
+                },
+                "centrality_analysis": {
+                    "degree_centrality": {
+                        "top_nodes": [
+                            ["node_1", 0.85, "BTC/USD"],
+                            ["node_4", 0.72, "Momentum Trading"],
+                            ["node_8", 0.68, "RSI"],
+                            ["node_6", 0.65, "Marcus Momentum"],
+                            ["node_2", 0.58, "ETH/USD"]
+                        ],
+                        "average": 0.34
+                    },
+                    "betweenness_centrality": {
+                        "top_nodes": [
+                            ["node_1", 0.45, "BTC/USD"],
+                            ["node_6", 0.38, "Marcus Momentum"],
+                            ["node_4", 0.32, "Momentum Trading"],
+                            ["node_8", 0.28, "RSI"],
+                            ["node_10", 0.25, "Fed Rate Decision"]
+                        ],
+                        "average": 0.18
+                    },
+                    "closeness_centrality": {
+                        "top_nodes": [
+                            ["node_1", 0.68, "BTC/USD"],
+                            ["node_4", 0.62, "Momentum Trading"],
+                            ["node_8", 0.58, "RSI"],
+                            ["node_6", 0.55, "Marcus Momentum"],
+                            ["node_2", 0.52, "ETH/USD"]
+                        ],
+                        "average": 0.42
+                    },
+                    "eigenvector_centrality": {
+                        "top_nodes": [
+                            ["node_1", 0.78, "BTC/USD"],
+                            ["node_4", 0.65, "Momentum Trading"],
+                            ["node_6", 0.58, "Marcus Momentum"],
+                            ["node_8", 0.52, "RSI"],
+                            ["node_2", 0.48, "ETH/USD"]
+                        ],
+                        "average": 0.28
+                    }
+                },
+                "clustering_analysis": {
+                    "global_clustering_coefficient": 0.34,
+                    "nodes_with_high_clustering": [
+                        {"node_id": "node_1", "name": "BTC/USD", "clustering": 0.67},
+                        {"node_id": "node_4", "name": "Momentum Trading", "clustering": 0.58},
+                        {"node_id": "node_8", "name": "RSI", "clustering": 0.52}
+                    ],
+                    "triangles": 12,
+                    "transitivity": 0.41
+                },
+                "community_detection": {
+                    "total_communities": 4,
+                    "communities": {
+                        "0": [
+                            {"node_id": "node_1", "name": "BTC/USD", "type": "symbol", "category": "asset"},
+                            {"node_id": "node_2", "name": "ETH/USD", "type": "symbol", "category": "asset"},
+                            {"node_id": "node_3", "name": "SOL/USD", "type": "symbol", "category": "asset"}
+                        ],
+                        "1": [
+                            {"node_id": "node_4", "name": "Momentum Trading", "type": "strategy", "category": "strategy"},
+                            {"node_id": "node_6", "name": "Marcus Momentum", "type": "agent", "category": "agent"},
+                            {"node_id": "node_5", "name": "Mean Reversion", "type": "strategy", "category": "strategy"}
+                        ],
+                        "2": [
+                            {"node_id": "node_8", "name": "RSI", "type": "indicator", "category": "market_data"},
+                            {"node_id": "node_9", "name": "MACD", "type": "indicator", "category": "market_data"},
+                            {"node_id": "node_11", "name": "Bollinger Bands", "type": "indicator", "category": "market_data"}
+                        ],
+                        "3": [
+                            {"node_id": "node_10", "name": "Fed Rate Decision", "type": "event", "category": "external"},
+                            {"node_id": "node_12", "name": "Market Sentiment", "type": "sentiment", "category": "analytics"}
+                        ]
+                    },
+                    "modularity_score": 0.67,
+                    "largest_community": 8
+                },
+                "influence_patterns": {
+                    "top_influencers": [
+                        {"node_id": "node_10", "name": "Fed Rate Decision", "influence_out": 6, "influence_in": 1, "net_influence": 5},
+                        {"node_id": "node_1", "name": "BTC/USD", "influence_out": 4, "influence_in": 2, "net_influence": 2},
+                        {"node_id": "node_4", "name": "Momentum Trading", "influence_out": 3, "influence_in": 1, "net_influence": 2}
+                    ],
+                    "total_influence_relationships": 28,
+                    "average_influence": 1.4
+                },
+                "knowledge_gaps": [
+                    {
+                        "type": "isolation",
+                        "description": "3 nodes have no relationships",
+                        "severity": "medium",
+                        "nodes": ["node_15", "node_22", "node_31"]
+                    },
+                    {
+                        "type": "sparse_coverage",
+                        "description": "Limited coverage for 2 entity types",
+                        "severity": "low",
+                        "entities": ["sentiment", "news"]
+                    }
+                ]
+            }
+        
+        analysis = await knowledge_service.analyze_graph_patterns()
+        return analysis
+        
+    except Exception as e:
+        logger.error(f"Failed to analyze graph patterns: {e}")
+        raise HTTPException(status_code=500, detail=f"Pattern analysis error: {str(e)}")
+
+@app.post("/api/v1/knowledge/query")
+async def query_knowledge_graph(query_request: dict):
+    """Execute complex graph queries"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph_service")
+        if not knowledge_service:
+            # Return mock query results based on query type
+            query_type = query_request.get("query_type", "similarity")
+            
+            if query_type == "shortest_path":
+                return {
+                    "query_type": "shortest_path",
+                    "path": ["node_1", "node_4", "node_6"],
+                    "path_names": ["BTC/USD", "Momentum Trading", "Marcus Momentum"],
+                    "length": 2,
+                    "total_strength": 0.855
+                }
+            elif query_type == "subgraph":
+                return {
+                    "query_type": "subgraph",
+                    "nodes": ["node_1", "node_2", "node_4", "node_6", "node_8"],
+                    "node_names": ["BTC/USD", "ETH/USD", "Momentum Trading", "Marcus Momentum", "RSI"],
+                    "edges": 8,
+                    "density": 0.4,
+                    "subgraph_score": 0.78
+                }
+            elif query_type == "similarity":
+                return {
+                    "query_type": "similarity",
+                    "target_node": query_request.get("parameters", {}).get("node", "node_1"),
+                    "similar_nodes": [
+                        {"node_id": "node_2", "name": "ETH/USD", "similarity": 0.85},
+                        {"node_id": "node_3", "name": "SOL/USD", "similarity": 0.72},
+                        {"node_id": "node_7", "name": "MATIC/USD", "similarity": 0.68}
+                    ]
+                }
+            elif query_type == "influence":
+                return {
+                    "query_type": "influence",
+                    "source_node": query_request.get("parameters", {}).get("node", "node_1"),
+                    "influenced_nodes": [
+                        {
+                            "node_id": "node_4",
+                            "name": "Momentum Trading",
+                            "influence_strength": 0.85,
+                            "path_length": 1,
+                            "path": ["BTC/USD", "Momentum Trading"]
+                        },
+                        {
+                            "node_id": "node_6",
+                            "name": "Marcus Momentum",
+                            "influence_strength": 0.72,
+                            "path_length": 2,
+                            "path": ["BTC/USD", "Momentum Trading", "Marcus Momentum"]
+                        }
+                    ]
+                }
+            else:
+                return {"error": f"Unknown query type: {query_type}"}
+        
+        from services.knowledge_graph_service import GraphQuery
+        graph_query = GraphQuery(
+            query_id=str(uuid.uuid4()),
+            query_type=query_request["query_type"],
+            parameters=query_request.get("parameters", {}),
+            filters=query_request.get("filters", {}),
+            limit=query_request.get("limit", 100)
+        )
+        
+        result = await knowledge_service.query_graph(graph_query)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to execute graph query: {e}")
+        raise HTTPException(status_code=500, detail=f"Graph query error: {str(e)}")
+
+@app.get("/api/v1/knowledge/service/status")
+async def get_knowledge_service_status():
+    """Get knowledge graph service status and metrics"""
+    try:
+        knowledge_service = registry.get_service("knowledge_graph_service")
+        if not knowledge_service:
+            return {
+                "service": "knowledge_graph_service",
+                "status": "mock_mode",
+                "graph_metrics": {
+                    "total_nodes": 47,
+                    "total_relationships": 68,
+                    "connected_components": 3,
+                    "average_clustering": 0.34,
+                    "density": 0.032,
+                    "diameter": 6
+                },
+                "cache_size": 0,
+                "entity_types": ["symbol", "strategy", "agent", "market", "indicator", "event", "correlation", "pattern", "sentiment", "news", "metric"],
+                "relationship_types": ["correlates_with", "influences", "caused_by", "similar_to", "depends_on", "contains", "triggers", "precedes", "affects", "operates_on", "measures"],
+                "last_update": datetime.now(timezone.utc).isoformat(),
+                "mode": "mock_data"
+            }
+        
+        status = await knowledge_service.get_service_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get knowledge service status: {e}")
+        raise HTTPException(status_code=500, detail=f"Service status error: {str(e)}")
+
+# ==========================================
+# DATA MANAGEMENT PIPELINE API ENDPOINTS - PHASE 15
+# ==========================================
+
+@app.get("/api/v1/data/pipeline/status")
+async def get_data_pipeline_status():
+    """Get comprehensive data pipeline status and metrics"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            # Return comprehensive mock pipeline status
+            import random
+            return {
+                "pipeline_status": "running",
+                "data_sources": {
+                    "total": 8,
+                    "active": 7,
+                    "inactive": 1
+                },
+                "processing_metrics": {
+                    "records_processed": 125847,
+                    "processing_rate": 45.7,
+                    "success_rate": 0.967,
+                    "error_rate": 0.033,
+                    "avg_processing_time": 12.4
+                },
+                "quality_metrics": {
+                    "overall_quality": 0.89,
+                    "distribution": {
+                        "high": 98234,
+                        "medium": 21567,
+                        "low": 4892,
+                        "invalid": 1154
+                    }
+                },
+                "stage_distribution": {
+                    "raw": 1247,
+                    "validated": 2156,
+                    "enriched": 3842,
+                    "transformed": 8934,
+                    "aggregated": 15672,
+                    "archived": 93996
+                },
+                "buffer_status": {
+                    "current_size": 127,
+                    "max_size": 1000,
+                    "utilization": 0.127
+                },
+                "recent_activity": [
+                    {
+                        "timestamp": "2025-06-20T14:45:00Z",
+                        "action": "data_ingested",
+                        "source": "binance_market_data",
+                        "records": 342
+                    },
+                    {
+                        "timestamp": "2025-06-20T14:44:00Z",
+                        "action": "validation_completed",
+                        "source": "tradingview_signals",
+                        "records": 89
+                    },
+                    {
+                        "timestamp": "2025-06-20T14:43:00Z",
+                        "action": "enrichment_applied",
+                        "source": "news_feeds",
+                        "records": 156
+                    }
+                ],
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        status = await pipeline_service.get_pipeline_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get data pipeline status: {e}")
+        raise HTTPException(status_code=500, detail=f"Pipeline status error: {str(e)}")
+
+@app.get("/api/v1/data/quality/report")
+async def get_data_quality_report(
+    source_id: Optional[str] = None,
+    timeframe: str = "24h"
+):
+    """Generate comprehensive data quality report"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            # Return mock quality report
+            if source_id:
+                return {
+                    "source_id": source_id,
+                    "source_name": "Binance Market Data",
+                    "timeframe": timeframe,
+                    "quality_metrics": {
+                        "overall_score": 0.92,
+                        "completeness": 0.96,
+                        "accuracy": 0.94,
+                        "consistency": 0.89,
+                        "timeliness": 0.91,
+                        "validity": 0.95
+                    },
+                    "quality_distribution": {
+                        "high": 8934,
+                        "medium": 1247,
+                        "low": 156,
+                        "invalid": 23
+                    },
+                    "quality_trends": {
+                        "last_24h": [0.89, 0.91, 0.94, 0.92, 0.93, 0.92],
+                        "timestamps": ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
+                    },
+                    "issues_detected": [
+                        {"type": "missing_fields", "count": 45, "severity": "low"},
+                        {"type": "outlier_values", "count": 12, "severity": "medium"},
+                        {"type": "duplicate_records", "count": 3, "severity": "low"}
+                    ],
+                    "recommendations": [
+                        {
+                            "category": "validation",
+                            "description": "Increase field validation for price data",
+                            "priority": "medium"
+                        }
+                    ],
+                    "generated_at": datetime.now(timezone.utc).isoformat()
+                }
+            else:
+                return {
+                    "timeframe": timeframe,
+                    "overall_metrics": {
+                        "total_records": 125847,
+                        "quality_score": 0.89,
+                        "completeness": 0.94,
+                        "accuracy": 0.91,
+                        "consistency": 0.87,
+                        "timeliness": 0.92
+                    },
+                    "source_breakdown": {
+                        "source_1": {"name": "Binance Market Data", "records": 45672, "quality_score": 0.92, "error_rate": 0.015},
+                        "source_2": {"name": "TradingView Signals", "records": 23451, "quality_score": 0.87, "error_rate": 0.032},
+                        "source_3": {"name": "CryptoPanic News", "records": 12983, "quality_score": 0.84, "error_rate": 0.041},
+                        "source_4": {"name": "Twitter Sentiment", "records": 34567, "quality_score": 0.78, "error_rate": 0.067},
+                        "source_5": {"name": "Ethereum Node", "records": 9174, "quality_score": 0.95, "error_rate": 0.008}
+                    },
+                    "quality_trends": {
+                        "hourly": [0.87, 0.89, 0.91, 0.88, 0.92, 0.90, 0.89, 0.94, 0.91, 0.88, 0.93, 0.89],
+                        "daily": [0.88, 0.91, 0.89, 0.92, 0.87, 0.94, 0.89]
+                    },
+                    "top_issues": [
+                        {"source": "Twitter Sentiment", "issue": "Rate limit exceeded", "count": 89},
+                        {"source": "TradingView Signals", "issue": "Missing confidence scores", "count": 45},
+                        {"source": "Binance Market Data", "issue": "Price spike outliers", "count": 23}
+                    ],
+                    "generated_at": datetime.now(timezone.utc).isoformat()
+                }
+        
+        report = await pipeline_service.get_data_quality_report(source_id, timeframe)
+        return report
+        
+    except Exception as e:
+        logger.error(f"Failed to generate quality report: {e}")
+        raise HTTPException(status_code=500, detail=f"Quality report error: {str(e)}")
+
+@app.get("/api/v1/data/sources")
+async def get_data_sources():
+    """Get list of all configured data sources"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            # Return mock data sources
+            return {
+                "data_sources": [
+                    {
+                        "source_id": "source_1",
+                        "name": "Binance Market Data",
+                        "type": "market_data",
+                        "status": "active",
+                        "url": "wss://stream.binance.com:9443/ws/!ticker@arr",
+                        "update_frequency": 1,
+                        "quality_threshold": 0.95,
+                        "retention_days": 90,
+                        "records_today": 45672,
+                        "last_update": "2025-06-20T14:45:32Z"
+                    },
+                    {
+                        "source_id": "source_2",
+                        "name": "TradingView Signals",
+                        "type": "trading_signals",
+                        "status": "active",
+                        "url": "https://api.tradingview.com/signals",
+                        "update_frequency": 60,
+                        "quality_threshold": 0.85,
+                        "retention_days": 30,
+                        "records_today": 1247,
+                        "last_update": "2025-06-20T14:44:15Z"
+                    },
+                    {
+                        "source_id": "source_3",
+                        "name": "CryptoPanic News",
+                        "type": "news_feeds",
+                        "status": "active",
+                        "url": "https://cryptopanic.com/api/v1/posts/",
+                        "update_frequency": 300,
+                        "quality_threshold": 0.75,
+                        "retention_days": 7,
+                        "records_today": 523,
+                        "last_update": "2025-06-20T14:40:00Z"
+                    },
+                    {
+                        "source_id": "source_4",
+                        "name": "Twitter Sentiment",
+                        "type": "social_sentiment",
+                        "status": "warning",
+                        "url": "https://api.twitter.com/2/tweets/search/stream",
+                        "update_frequency": 30,
+                        "quality_threshold": 0.70,
+                        "retention_days": 3,
+                        "records_today": 8934,
+                        "last_update": "2025-06-20T14:43:45Z"
+                    },
+                    {
+                        "source_id": "source_5",
+                        "name": "Ethereum Node",
+                        "type": "blockchain_data",
+                        "status": "active",
+                        "url": "https://mainnet.infura.io/v3/PROJECT_ID",
+                        "update_frequency": 15,
+                        "quality_threshold": 0.90,
+                        "retention_days": 180,
+                        "records_today": 2156,
+                        "last_update": "2025-06-20T14:45:12Z"
+                    }
+                ],
+                "summary": {
+                    "total_sources": 5,
+                    "active_sources": 4,
+                    "warning_sources": 1,
+                    "inactive_sources": 0,
+                    "total_records_today": 58532
+                }
+            }
+        
+        sources = {
+            source_id: {
+                "source_id": source_id,
+                "name": source.name,
+                "type": source.source_type.value,
+                "status": "active" if source.is_active else "inactive",
+                "url": source.url,
+                "update_frequency": source.update_frequency,
+                "quality_threshold": source.quality_threshold,
+                "retention_days": source.retention_days,
+                "metadata": source.metadata
+            } for source_id, source in pipeline_service.data_sources.items()
+        }
+        
+        return {
+            "data_sources": list(sources.values()),
+            "summary": {
+                "total_sources": len(sources),
+                "active_sources": sum(1 for s in sources.values() if s["status"] == "active"),
+                "inactive_sources": sum(1 for s in sources.values() if s["status"] == "inactive")
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get data sources: {e}")
+        raise HTTPException(status_code=500, detail=f"Data sources error: {str(e)}")
+
+@app.post("/api/v1/data/sources")
+async def add_data_source(source_config: dict):
+    """Add a new data source to the pipeline"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            # Return mock response
+            source_id = str(uuid.uuid4())
+            return {
+                "source_id": source_id,
+                "name": source_config.get("name", "New Data Source"),
+                "type": source_config.get("source_type", "market_data"),
+                "status": "created",
+                "message": "Data source created successfully (mock mode)",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        source = await pipeline_service.add_data_source(source_config)
+        return {
+            "source_id": source.source_id,
+            "name": source.name,
+            "type": source.source_type.value,
+            "status": "created",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to add data source: {e}")
+        raise HTTPException(status_code=500, detail=f"Add data source error: {str(e)}")
+
+@app.get("/api/v1/data/lineage/{record_id}")
+async def get_data_lineage(record_id: str):
+    """Get data lineage for a specific record"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            # Return mock lineage
+            return {
+                "record_id": record_id,
+                "lineage": [
+                    {
+                        "stage": "ingestion",
+                        "timestamp": "2025-06-20T14:30:00Z",
+                        "source": "binance_market_data",
+                        "action": "data_received",
+                        "metadata": {"format": "json", "size_bytes": 1024}
+                    },
+                    {
+                        "stage": "validation",
+                        "timestamp": "2025-06-20T14:30:05Z",
+                        "action": "schema_validated",
+                        "metadata": {"validation_rules": 12, "passed": 11, "failed": 1}
+                    },
+                    {
+                        "stage": "enrichment",
+                        "timestamp": "2025-06-20T14:30:08Z",
+                        "action": "market_data_enriched",
+                        "metadata": {"fields_added": ["volatility", "market_cap"], "source": "external_api"}
+                    },
+                    {
+                        "stage": "transformation",
+                        "timestamp": "2025-06-20T14:30:12Z",
+                        "action": "data_normalized",
+                        "metadata": {"transformations": ["price_formatting", "timestamp_conversion"]}
+                    },
+                    {
+                        "stage": "storage",
+                        "timestamp": "2025-06-20T14:30:15Z",
+                        "action": "data_stored",
+                        "metadata": {"storage_type": "time_series", "partition": "2025-06-20"}
+                    }
+                ],
+                "current_stage": "stored",
+                "quality_score": 0.94,
+                "transformations_applied": 4,
+                "enrichments_applied": 2,
+                "generated_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        lineage = await pipeline_service.get_data_lineage(record_id)
+        return lineage
+        
+    except Exception as e:
+        logger.error(f"Failed to get data lineage: {e}")
+        raise HTTPException(status_code=500, detail=f"Data lineage error: {str(e)}")
+
+@app.get("/api/v1/data/analytics/dashboard")
+async def get_data_analytics_dashboard():
+    """Get comprehensive data analytics dashboard"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            # Return comprehensive mock analytics dashboard
+            import random
+            return {
+                "overview": {
+                    "total_data_sources": 8,
+                    "total_records_today": 58947,
+                    "processing_throughput": 45.7,
+                    "overall_quality_score": 0.89,
+                    "pipeline_uptime": "99.7%",
+                    "storage_utilization": "67.3%"
+                },
+                "source_performance": {
+                    "binance_market_data": {
+                        "name": "Binance Market Data",
+                        "type": "market_data",
+                        "status": "active",
+                        "records_today": 23456,
+                        "quality_score": 0.94,
+                        "latency_ms": 45.2,
+                        "error_rate": 0.008
+                    },
+                    "tradingview_signals": {
+                        "name": "TradingView Signals",
+                        "type": "trading_signals",
+                        "status": "active",
+                        "records_today": 1247,
+                        "quality_score": 0.87,
+                        "latency_ms": 120.5,
+                        "error_rate": 0.023
+                    },
+                    "news_feeds": {
+                        "name": "CryptoPanic News",
+                        "type": "news_feeds",
+                        "status": "active",
+                        "records_today": 892,
+                        "quality_score": 0.82,
+                        "latency_ms": 89.3,
+                        "error_rate": 0.035
+                    },
+                    "social_sentiment": {
+                        "name": "Twitter Sentiment",
+                        "type": "social_sentiment",
+                        "status": "warning",
+                        "records_today": 12456,
+                        "quality_score": 0.76,
+                        "latency_ms": 156.7,
+                        "error_rate": 0.078
+                    }
+                },
+                "processing_pipeline": {
+                    "stages": {
+                        "ingestion": {"records": 1247, "rate": "45.7/s", "errors": 3},
+                        "validation": {"records": 1203, "rate": "43.2/s", "errors": 12},
+                        "enrichment": {"records": 1191, "rate": "42.8/s", "errors": 5},
+                        "transformation": {"records": 1186, "rate": "42.5/s", "errors": 2},
+                        "storage": {"records": 1184, "rate": "42.4/s", "errors": 1}
+                    },
+                    "bottlenecks": ["validation", "enrichment"],
+                    "optimization_suggestions": [
+                        "Increase validation thread pool",
+                        "Cache enrichment API responses",
+                        "Implement parallel processing for transformation stage"
+                    ]
+                },
+                "quality_metrics": {
+                    "completeness": 0.94,
+                    "accuracy": 0.91,
+                    "consistency": 0.87,
+                    "timeliness": 0.92,
+                    "validity": 0.89
+                },
+                "data_volume_trends": {
+                    "hourly": [42.5, 45.7, 48.2, 44.1, 39.8, 52.3, 47.9, 43.6, 49.1, 41.7, 46.8, 44.3],
+                    "daily": [45234, 52198, 41567, 48923, 44781, 50432, 47856]
+                },
+                "alerts": [
+                    {
+                        "id": "alert_001",
+                        "severity": "warning",
+                        "message": "High error rate detected in Twitter Sentiment source",
+                        "timestamp": "2025-06-20T14:30:00Z",
+                        "source": "social_sentiment"
+                    },
+                    {
+                        "id": "alert_002",
+                        "severity": "info",
+                        "message": "Data enrichment cache hit ratio dropped to 75%",
+                        "timestamp": "2025-06-20T14:15:00Z",
+                        "source": "enrichment_service"
+                    },
+                    {
+                        "id": "alert_003",
+                        "severity": "low",
+                        "message": "Storage utilization reached 70% threshold",
+                        "timestamp": "2025-06-20T14:00:00Z",
+                        "source": "storage_manager"
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "category": "performance",
+                        "title": "Increase validation parallelism",
+                        "description": "Current validation stage is bottleneck with 43.2/s throughput",
+                        "priority": "high",
+                        "estimated_impact": "15-20% throughput increase"
+                    },
+                    {
+                        "category": "quality",
+                        "title": "Implement data profiling",
+                        "description": "Automatic quality threshold adjustment based on historical patterns",
+                        "priority": "medium",
+                        "estimated_impact": "5-8% quality score improvement"
+                    },
+                    {
+                        "category": "storage",
+                        "title": "Archive old data",
+                        "description": "Move data older than retention period to cold storage",
+                        "priority": "medium",
+                        "estimated_impact": "25% storage reduction"
+                    }
+                ],
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        dashboard = await pipeline_service.get_data_analytics_dashboard()
+        return dashboard
+        
+    except Exception as e:
+        logger.error(f"Failed to get data analytics dashboard: {e}")
+        raise HTTPException(status_code=500, detail=f"Data analytics error: {str(e)}")
+
+@app.post("/api/v1/data/process/batch")
+async def process_data_batch(batch_request: dict):
+    """Process a batch of data records through the pipeline"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            # Return mock batch processing result
+            records_count = batch_request.get("records_count", 100)
+            processing_time = records_count * 0.124  # Mock processing time
+            
+            return {
+                "batch_id": str(uuid.uuid4()),
+                "processed_count": records_count,
+                "error_count": max(0, int(records_count * 0.02)),  # 2% error rate
+                "processing_time_ms": processing_time,
+                "success_rate": 0.98,
+                "throughput": records_count / (processing_time / 1000),
+                "errors": [
+                    {"record_id": f"rec_{i}", "error": "validation_failed", "timestamp": datetime.now(timezone.utc).isoformat()}
+                    for i in range(max(0, int(records_count * 0.02)))
+                ],
+                "processed_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        # Create mock data records for processing
+        from services.data_management_pipeline_service import DataRecord, DataSourceType, ProcessingStage, DataQuality
+        
+        records = []
+        for i in range(batch_request.get("records_count", 10)):
+            record = DataRecord(
+                record_id=str(uuid.uuid4()),
+                source_id="source_1",
+                data_type=DataSourceType.MARKET_DATA,
+                stage=ProcessingStage.RAW,
+                quality=DataQuality.HIGH,
+                timestamp=datetime.now(timezone.utc),
+                data={"price": 67234.85, "volume": 1247},
+                metadata={"batch_id": batch_request.get("batch_id", str(uuid.uuid4()))}
+            )
+            records.append(record)
+        
+        result = await pipeline_service.process_data_batch(records)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to process data batch: {e}")
+        raise HTTPException(status_code=500, detail=f"Batch processing error: {str(e)}")
+
+@app.get("/api/v1/data/service/status")
+async def get_data_service_status():
+    """Get data management service status and metrics"""
+    try:
+        pipeline_service = registry.get_service("data_management_pipeline_service")
+        if not pipeline_service:
+            return {
+                "service": "data_management_pipeline_service",
+                "status": "mock_mode",
+                "data_sources": 5,
+                "processing_queue_size": 127,
+                "records_processed": 125847,
+                "success_rate": 0.967,
+                "last_update": datetime.now(timezone.utc).isoformat(),
+                "mode": "mock_data"
+            }
+        
+        status = await pipeline_service.get_service_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get data service status: {e}")
+        raise HTTPException(status_code=500, detail=f"Service status error: {str(e)}")
+
+# ==========================================
+# ELIZA AI INTEGRATION API ENDPOINTS - PHASE 16
+# ==========================================
+
+@app.post("/api/v1/ai/conversation/start")
+async def start_ai_conversation(conversation_request: dict):
+    """Start a new AI conversation session"""
+    try:
+        eliza_service = registry.get_service("eliza_ai_integration_service")
+        if not eliza_service:
+            # Return mock conversation session
+            session_id = str(uuid.uuid4())
+            return {
+                "session_id": session_id,
+                "user_id": conversation_request.get("user_id", "user_1"),
+                "mode": conversation_request.get("mode", "trading_assistant"),
+                "personality": conversation_request.get("personality", "professional"),
+                "status": "started",
+                "welcome_message": {
+                    "message_id": str(uuid.uuid4()),
+                    "content": "Hello! I'm your AI trading assistant. I'm here to help you analyze markets, review your portfolio, and make informed trading decisions. How can I help you today?",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "confidence_score": 1.0
+                },
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        from services.eliza_ai_integration_service import ConversationMode, ElizaPersonality
+        
+        mode = ConversationMode(conversation_request.get("mode", "trading_assistant"))
+        personality = ElizaPersonality(conversation_request.get("personality", "professional"))
+        
+        session = await eliza_service.start_conversation(
+            user_id=conversation_request["user_id"],
+            mode=mode,
+            personality=personality,
+            context=conversation_request.get("context", {})
+        )
+        
+        welcome_message = session.message_history[-1] if session.message_history else None
+        
+        return {
+            "session_id": session.session_id,
+            "user_id": session.user_id,
+            "mode": session.mode.value,
+            "personality": session.personality.value,
+            "status": "started",
+            "welcome_message": {
+                "message_id": welcome_message.message_id,
+                "content": welcome_message.content,
+                "timestamp": welcome_message.timestamp.isoformat(),
+                "confidence_score": welcome_message.confidence_score
+            } if welcome_message else None,
+            "created_at": session.created_at.isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to start AI conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Conversation start error: {str(e)}")
+
+@app.post("/api/v1/ai/conversation/{session_id}/message")
+async def send_ai_message(session_id: str, message_request: dict):
+    """Send a message in an AI conversation"""
+    try:
+        eliza_service = registry.get_service("eliza_ai_integration_service")
+        if not eliza_service:
+            # Return mock AI response
+            return {
+                "message_id": str(uuid.uuid4()),
+                "session_id": session_id,
+                "user_message": {
+                    "content": message_request.get("message", ""),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                },
+                "ai_response": {
+                    "message_id": str(uuid.uuid4()),
+                    "content": f"Thank you for your message about {message_request.get('message', 'trading')[:20]}... Based on current market conditions, I recommend focusing on risk management and maintaining a diversified portfolio. The technical indicators suggest we're in a period of heightened volatility, so consider reducing position sizes and focusing on high-probability setups.",
+                    "confidence_score": 0.87,
+                    "processing_time_ms": 1247,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "metadata": {
+                        "model": "gpt-4-turbo",
+                        "personality": "professional",
+                        "tokens_used": 156
+                    }
+                },
+                "conversation_updated": True
+            }
+        
+        from services.eliza_ai_integration_service import MessageType
+        
+        ai_response = await eliza_service.send_message(
+            session_id=session_id,
+            message=message_request["message"],
+            user_id=message_request["user_id"],
+            message_type=MessageType.USER_QUERY
+        )
+        
+        return {
+            "message_id": ai_response.message_id,
+            "session_id": session_id,
+            "ai_response": {
+                "message_id": ai_response.message_id,
+                "content": ai_response.content,
+                "confidence_score": ai_response.confidence_score,
+                "timestamp": ai_response.timestamp.isoformat(),
+                "metadata": ai_response.metadata
+            },
+            "conversation_updated": True
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to send AI message: {e}")
+        raise HTTPException(status_code=500, detail=f"Message send error: {str(e)}")
+
+@app.get("/api/v1/ai/conversation/{session_id}/history")
+async def get_conversation_history(session_id: str):
+    """Get conversation message history"""
+    try:
+        eliza_service = registry.get_service("eliza_ai_integration_service")
+        if not eliza_service:
+            # Return mock conversation history
+            return {
+                "session_id": session_id,
+                "messages": [
+                    {
+                        "message_id": "msg_1",
+                        "type": "ai_response",
+                        "content": "Hello! I'm your AI trading assistant. How can I help you today?",
+                        "timestamp": "2025-06-20T14:00:00Z",
+                        "confidence_score": 1.0,
+                        "metadata": {"type": "welcome_message"}
+                    },
+                    {
+                        "message_id": "msg_2", 
+                        "type": "user_query",
+                        "content": "What's your analysis of Bitcoin's recent price action?",
+                        "timestamp": "2025-06-20T14:01:00Z",
+                        "user_id": "user_1"
+                    },
+                    {
+                        "message_id": "msg_3",
+                        "type": "ai_response", 
+                        "content": "Bitcoin has shown strong momentum recently, breaking above the $67,000 resistance level with good volume confirmation. The technical indicators suggest continued upward potential, but I'd recommend watching for profit-taking around $70,000. Given your moderate risk tolerance, consider taking partial profits if we reach that level.",
+                        "timestamp": "2025-06-20T14:01:15Z",
+                        "confidence_score": 0.89,
+                        "metadata": {"model": "gpt-4-turbo", "tokens_used": 145}
+                    }
+                ],
+                "total_messages": 3,
+                "session_info": {
+                    "mode": "trading_assistant",
+                    "personality": "professional",
+                    "created_at": "2025-06-20T14:00:00Z",
+                    "last_activity": "2025-06-20T14:01:15Z"
+                }
+            }
+        
+        messages = await eliza_service.get_conversation_history(session_id)
+        
+        return {
+            "session_id": session_id,
+            "messages": [
+                {
+                    "message_id": msg.message_id,
+                    "type": msg.message_type.value,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.isoformat(),
+                    "confidence_score": msg.confidence_score,
+                    "user_id": msg.user_id,
+                    "metadata": msg.metadata
+                } for msg in messages
+            ],
+            "total_messages": len(messages)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get conversation history: {e}")
+        raise HTTPException(status_code=500, detail=f"History retrieval error: {str(e)}")
+
+@app.get("/api/v1/ai/insights")
+async def get_ai_insights(
+    categories: Optional[str] = None,
+    limit: int = 10
+):
+    """Get AI-generated insights and recommendations"""
+    try:
+        eliza_service = registry.get_service("eliza_ai_integration_service")
+        if not eliza_service:
+            # Return mock AI insights
+            return {
+                "insights": [
+                    {
+                        "insight_id": "insight_1",
+                        "category": "market_analysis",
+                        "title": "Bitcoin Bullish Momentum Continuation",
+                        "content": "Technical analysis indicates Bitcoin is forming a bull flag pattern on the 4-hour chart. The pattern suggests potential upside to $72,000 level.",
+                        "confidence": 0.84,
+                        "risk_level": "medium",
+                        "supporting_data": {
+                            "price_target": 72000,
+                            "probability": 0.74,
+                            "timeframe": "5-7 days"
+                        },
+                        "recommended_actions": [
+                            "Consider long position with tight stop-loss",
+                            "Monitor volume confirmation on breakout"
+                        ],
+                        "created_at": "2025-06-20T14:30:00Z"
+                    },
+                    {
+                        "insight_id": "insight_2",
+                        "category": "portfolio_optimization",
+                        "title": "Rebalancing Opportunity Detected",
+                        "content": "Your portfolio allocation has drifted from target weights due to crypto outperformance. Consider rebalancing to lock in gains.",
+                        "confidence": 0.91,
+                        "risk_level": "low",
+                        "supporting_data": {
+                            "current_allocation": {"crypto": 35, "stocks": 45, "bonds": 20},
+                            "target_allocation": {"crypto": 30, "stocks": 50, "bonds": 20}
+                        },
+                        "recommended_actions": [
+                            "Sell 5% of crypto positions",
+                            "Increase stock allocation by 5%"
+                        ],
+                        "created_at": "2025-06-20T13:15:00Z"
+                    },
+                    {
+                        "insight_id": "insight_3",
+                        "category": "risk_management",
+                        "title": "Correlation Risk Alert",
+                        "content": "Detected increased correlation between your tech stock and crypto holdings, reducing diversification benefits.",
+                        "confidence": 0.89,
+                        "risk_level": "medium",
+                        "supporting_data": {
+                            "current_correlation": 0.78,
+                            "historical_correlation": 0.45,
+                            "risk_increase": "23%"
+                        },
+                        "recommended_actions": [
+                            "Consider reducing exposure to growth tech",
+                            "Add defensive positions"
+                        ],
+                        "created_at": "2025-06-20T12:45:00Z"
+                    }
+                ],
+                "total_insights": 3,
+                "categories_available": ["market_analysis", "portfolio_optimization", "risk_management", "trading_opportunity", "education"],
+                "generated_at": datetime.now(timezone.utc).isoformat()
+            }
+        
+        category_list = categories.split(",") if categories else None
+        insights = await eliza_service.get_ai_insights(category_list, limit)
+        
+        return {
+            "insights": [
+                {
+                    "insight_id": insight.insight_id,
+                    "category": insight.category,
+                    "title": insight.title,
+                    "content": insight.content,
+                    "confidence": insight.confidence,
+                    "risk_level": insight.risk_level,
+                    "supporting_data": insight.supporting_data,
+                    "recommended_actions": insight.recommended_actions,
+                    "created_at": insight.created_at.isoformat()
+                } for insight in insights
+            ],
+            "total_insights": len(insights),
+            "filters_applied": {"categories": category_list, "limit": limit}
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get AI insights: {e}")
+        raise HTTPException(status_code=500, detail=f"AI insights error: {str(e)}")
+
+@app.get("/api/v1/ai/analytics")
+async def get_ai_analytics():
+    """Get analytics about AI conversations and performance"""
+    try:
+        eliza_service = registry.get_service("eliza_ai_integration_service")
+        if not eliza_service:
+            # Return mock AI analytics
+            return {
+                "conversation_metrics": {
+                    "total_sessions": 156,
+                    "active_sessions": 23,
+                    "total_messages": 2847,
+                    "user_messages": 1456,
+                    "ai_messages": 1391,
+                    "average_confidence": 0.867
+                },
+                "mode_distribution": {
+                    "trading_assistant": 89,
+                    "market_analysis": 34,
+                    "strategy_advisor": 18,
+                    "risk_counselor": 12,
+                    "education_tutor": 3
+                },
+                "personality_distribution": {
+                    "professional": 78,
+                    "friendly": 45,
+                    "analytical": 23,
+                    "cautious": 7,
+                    "educational": 3
+                },
+                "engagement_metrics": {
+                    "avg_messages_per_session": 18.2,
+                    "avg_session_duration_minutes": 45.7,
+                    "user_satisfaction_score": 4.2,
+                    "response_time_ms": 1247
+                },
+                "ai_performance": {
+                    "response_accuracy": 0.89,
+                    "user_feedback_positive": 0.86,
+                    "knowledge_coverage": 0.92,
+                    "conversation_completion_rate": 0.78
+                },
+                "popular_topics": [
+                    {"topic": "Bitcoin Analysis", "frequency": 45},
+                    {"topic": "Portfolio Review", "frequency": 38},
+                    {"topic": "Risk Assessment", "frequency": 29},
+                    {"topic": "Strategy Optimization", "frequency": 22},
+                    {"topic": "Market Outlook", "frequency": 18}
+                ],
+                "model_usage": {
+                    "gpt-4-turbo": {"requests": 1247, "avg_response_time": 1.2},
+                    "claude-3-opus": {"requests": 892, "avg_response_time": 1.8},
+                    "gpt-4": {"requests": 567, "avg_response_time": 1.1}
+                },
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        analytics = await eliza_service.get_conversation_analytics()
+        return analytics
+        
+    except Exception as e:
+        logger.error(f"Failed to get AI analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"AI analytics error: {str(e)}")
+
+@app.get("/api/v1/ai/service/status")
+async def get_ai_service_status():
+    """Get Eliza AI service status and metrics"""
+    try:
+        eliza_service = registry.get_service("eliza_ai_integration_service")
+        if not eliza_service:
+            return {
+                "service": "eliza_ai_integration_service",
+                "status": "mock_mode",
+                "active_sessions": 23,
+                "total_sessions": 156,
+                "ai_models": {
+                    "conversation": "gpt-4-turbo",
+                    "analysis": "claude-3-opus",
+                    "strategy": "gpt-4",
+                    "risk": "claude-3-sonnet"
+                },
+                "personality_types": 6,
+                "conversation_modes": 6,
+                "last_update": datetime.now(timezone.utc).isoformat(),
+                "mode": "mock_data"
+            }
+        
+        status = await eliza_service.get_service_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get AI service status: {e}")
+        raise HTTPException(status_code=500, detail=f"AI service status error: {str(e)}")
+
+# ============================================================================
+# MCP SERVER INTEGRATION API ENDPOINTS - Phase 17
+# ============================================================================
+
+@app.get("/api/v1/mcp/servers")
+async def get_mcp_servers():
+    """Get all MCP servers status and information"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            return {"servers": [], "error": "MCP service not available"}
+        
+        servers = list(mcp_service.servers.values())
+        return {
+            "servers": [
+                {
+                    "server_id": server.server_id,
+                    "name": server.name,
+                    "type": server.server_type.value,
+                    "status": server.status.value,
+                    "capabilities": [cap.value for cap in server.capabilities],
+                    "pid": server.pid,
+                    "port": server.port,
+                    "last_health_check": server.last_health_check.isoformat() if server.last_health_check else None,
+                    "metadata": server.metadata
+                } for server in servers
+            ],
+            "total_count": len(servers),
+            "connected_count": len([s for s in servers if s.status.value == "connected"]),
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get MCP servers: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP servers error: {str(e)}")
+
+@app.post("/api/v1/mcp/servers/{server_id}/start")
+async def start_mcp_server(server_id: str):
+    """Start an MCP server"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            raise HTTPException(status_code=503, detail="MCP service not available")
+        
+        result = await mcp_service.start_mcp_server(server_id)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to start MCP server {server_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP server start error: {str(e)}")
+
+@app.post("/api/v1/mcp/servers/{server_id}/stop")
+async def stop_mcp_server(server_id: str):
+    """Stop an MCP server"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            raise HTTPException(status_code=503, detail="MCP service not available")
+        
+        result = await mcp_service.stop_mcp_server(server_id)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to stop MCP server {server_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP server stop error: {str(e)}")
+
+@app.get("/api/v1/mcp/servers/{server_id}/status")
+async def get_mcp_server_status(server_id: str):
+    """Get detailed status for a specific MCP server"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            raise HTTPException(status_code=503, detail="MCP service not available")
+        
+        status = await mcp_service.get_server_status(server_id)
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get MCP server status {server_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP server status error: {str(e)}")
+
+@app.get("/api/v1/mcp/tools")
+async def get_mcp_tools(server_id: Optional[str] = None):
+    """Get available MCP tools"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            return {"tools": [], "error": "MCP service not available"}
+        
+        tools = await mcp_service.get_available_tools(server_id)
+        return {
+            "tools": [
+                {
+                    "tool_id": tool.tool_id,
+                    "server_id": tool.server_id,
+                    "name": tool.name,
+                    "description": tool.description,
+                    "category": tool.category,
+                    "input_schema": tool.input_schema,
+                    "usage_count": tool.metadata.get("usage_count", 0) if tool.metadata else 0
+                } for tool in tools
+            ],
+            "total_count": len(tools),
+            "server_filter": server_id,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get MCP tools: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP tools error: {str(e)}")
+
+@app.post("/api/v1/mcp/tools/{tool_id}/call")
+async def call_mcp_tool(tool_id: str, parameters: Dict[str, Any]):
+    """Call an MCP tool with parameters"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            raise HTTPException(status_code=503, detail="MCP service not available")
+        
+        response = await mcp_service.call_mcp_tool(tool_id, parameters)
+        return {
+            "request_id": response.request_id,
+            "server_id": response.server_id,
+            "success": response.success,
+            "result": response.result,
+            "error": response.error,
+            "timestamp": response.timestamp.isoformat() if response.timestamp else None,
+            "duration_ms": response.duration_ms
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to call MCP tool {tool_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP tool call error: {str(e)}")
+
+@app.get("/api/v1/mcp/analytics")
+async def get_mcp_analytics():
+    """Get comprehensive MCP analytics"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            return {"error": "MCP service not available"}
+        
+        analytics = await mcp_service.get_mcp_analytics()
+        return analytics
+        
+    except Exception as e:
+        logger.error(f"Failed to get MCP analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP analytics error: {str(e)}")
+
+@app.get("/api/v1/mcp/service/status")
+async def get_mcp_service_status():
+    """Get MCP service status"""
+    try:
+        mcp_service = registry.get_service("mcp_server_integration_service")
+        if not mcp_service:
+            return {"service": "mcp_server_integration_service", "status": "not_available"}
+        
+        status = await mcp_service.get_service_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get MCP service status: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP service status error: {str(e)}")
+
+# ============================================================================
+# PYTHON ANALYSIS PIPELINE API ENDPOINTS - Phase 18
+# ============================================================================
+
+@app.post("/api/v1/python/scripts")
+async def submit_python_script(script_data: Dict[str, Any]):
+    """Submit a Python script for analysis"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            raise HTTPException(status_code=503, detail="Python analysis service not available")
+        
+        script = await pipeline_service.submit_script(script_data)
+        return {
+            "script_id": script.script_id,
+            "name": script.name,
+            "language": script.language,
+            "version": script.version,
+            "dependencies": script.dependencies,
+            "status": "submitted",
+            "submitted_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to submit Python script: {e}")
+        raise HTTPException(status_code=500, detail=f"Script submission error: {str(e)}")
+
+@app.get("/api/v1/python/scripts")
+async def get_python_scripts():
+    """Get all Python scripts"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            return {"scripts": [], "error": "Python analysis service not available"}
+        
+        scripts = list(pipeline_service.scripts.values())
+        return {
+            "scripts": [
+                {
+                    "script_id": script.script_id,
+                    "name": script.name,
+                    "language": script.language,
+                    "version": script.version,
+                    "dependencies": script.dependencies,
+                    "lines_of_code": len(script.code.split('\n')),
+                    "character_count": len(script.code),
+                    "metadata": script.metadata
+                } for script in scripts
+            ],
+            "total_count": len(scripts),
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get Python scripts: {e}")
+        raise HTTPException(status_code=500, detail=f"Scripts retrieval error: {str(e)}")
+
+@app.get("/api/v1/python/scripts/{script_id}")
+async def get_python_script(script_id: str):
+    """Get a specific Python script"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            raise HTTPException(status_code=503, detail="Python analysis service not available")
+        
+        script = pipeline_service.scripts.get(script_id)
+        if not script:
+            raise HTTPException(status_code=404, detail=f"Script {script_id} not found")
+        
+        return {
+            "script_id": script.script_id,
+            "name": script.name,
+            "code": script.code,
+            "language": script.language,
+            "version": script.version,
+            "dependencies": script.dependencies,
+            "metadata": script.metadata,
+            "lines_of_code": len(script.code.split('\n')),
+            "character_count": len(script.code)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get Python script {script_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Script retrieval error: {str(e)}")
+
+@app.post("/api/v1/python/scripts/{script_id}/analyze")
+async def analyze_python_script(script_id: str, analysis_request: Dict[str, Any]):
+    """Run analysis on a Python script"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            raise HTTPException(status_code=503, detail="Python analysis service not available")
+        
+        from services.python_analysis_pipeline_service import AnalysisType, ExecutionMode
+        
+        # Parse analysis types
+        analysis_types = []
+        for analysis_type_str in analysis_request.get("analysis_types", ["syntax_check"]):
+            try:
+                analysis_types.append(AnalysisType(analysis_type_str))
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid analysis type: {analysis_type_str}")
+        
+        # Parse execution mode
+        execution_mode_str = analysis_request.get("execution_mode", "sandbox")
+        try:
+            execution_mode = ExecutionMode(execution_mode_str)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid execution mode: {execution_mode_str}")
+        
+        timeout = analysis_request.get("timeout", 60)
+        
+        request_id = await pipeline_service.run_analysis(
+            script_id=script_id,
+            analysis_types=analysis_types,
+            execution_mode=execution_mode,
+            timeout=timeout
+        )
+        
+        return {
+            "request_id": request_id,
+            "script_id": script_id,
+            "analysis_types": [at.value for at in analysis_types],
+            "execution_mode": execution_mode.value,
+            "timeout": timeout,
+            "status": "started",
+            "started_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to analyze Python script {script_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+
+@app.post("/api/v1/python/scripts/{script_id}/execute")
+async def execute_python_script(script_id: str, execution_request: Dict[str, Any]):
+    """Execute a Python script"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            raise HTTPException(status_code=503, detail="Python analysis service not available")
+        
+        from services.python_analysis_pipeline_service import ExecutionMode
+        
+        # Parse execution mode
+        execution_mode_str = execution_request.get("execution_mode", "sandbox")
+        try:
+            execution_mode = ExecutionMode(execution_mode_str)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid execution mode: {execution_mode_str}")
+        
+        parameters = execution_request.get("parameters", {})
+        
+        result = await pipeline_service.execute_script(
+            script_id=script_id,
+            execution_mode=execution_mode,
+            parameters=parameters
+        )
+        
+        return {
+            "execution_id": result.execution_id,
+            "script_id": result.script_id,
+            "success": result.success,
+            "output": result.output,
+            "error_output": result.error_output,
+            "return_value": result.return_value,
+            "execution_time_ms": result.execution_time_ms,
+            "memory_peak_mb": result.memory_peak_mb,
+            "cpu_usage_percent": result.cpu_usage_percent,
+            "timestamp": result.timestamp.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to execute Python script {script_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Execution error: {str(e)}")
+
+@app.get("/api/v1/python/scripts/{script_id}/results")
+async def get_analysis_results(script_id: str):
+    """Get analysis results for a script"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            raise HTTPException(status_code=503, detail="Python analysis service not available")
+        
+        results = await pipeline_service.get_analysis_results(script_id)
+        return {
+            "script_id": script_id,
+            "results": [
+                {
+                    "request_id": result.request_id,
+                    "analysis_type": result.analysis_type.value,
+                    "status": result.status.value,
+                    "result": result.result,
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                    "execution_time_ms": result.execution_time_ms,
+                    "memory_usage_mb": result.memory_usage_mb,
+                    "timestamp": result.timestamp.isoformat()
+                } for result in results
+            ],
+            "total_results": len(results),
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get analysis results for {script_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Results retrieval error: {str(e)}")
+
+@app.get("/api/v1/python/analytics")
+async def get_python_analytics(script_id: Optional[str] = None):
+    """Get comprehensive Python analysis analytics"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            return {"error": "Python analysis service not available"}
+        
+        analytics = await pipeline_service.get_script_analytics(script_id)
+        return analytics
+        
+    except Exception as e:
+        logger.error(f"Failed to get Python analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
+
+@app.get("/api/v1/python/pipeline/status")
+async def get_pipeline_status():
+    """Get Python analysis pipeline status"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            return {"service": "python_analysis_pipeline_service", "status": "not_available"}
+        
+        status = await pipeline_service.get_pipeline_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get pipeline status: {e}")
+        raise HTTPException(status_code=500, detail=f"Pipeline status error: {str(e)}")
+
+@app.get("/api/v1/python/service/status")
+async def get_python_service_status():
+    """Get Python analysis service status"""
+    try:
+        pipeline_service = registry.get_service("python_analysis_pipeline_service")
+        if not pipeline_service:
+            return {"service": "python_analysis_pipeline_service", "status": "not_available"}
+        
+        status = await pipeline_service.get_service_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get Python service status: {e}")
+        raise HTTPException(status_code=500, detail=f"Python service status error: {str(e)}")
 
 # Mount dashboard and static files
 if os.path.exists("dashboard/static"):
