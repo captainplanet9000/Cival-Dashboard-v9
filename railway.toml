@@ -1,13 +1,40 @@
-# Railway Configuration - Next.js Frontend Only
+# Railway Configuration - Full Stack Autonomous Trading Platform
 [build]
 builder = "nixpacks"
+buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npm start"
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 10
+startCommand = "npm run start:production"
+restartPolicyType = "always"
+restartPolicyMaxRetries = -1
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
 
 [env]
 NODE_ENV = "production"
 PORT = "${PORT}"
 NIXPACKS_NODE_VERSION = "18"
+
+# Database Configuration
+DATABASE_URL = "${DATABASE_URL}"
+REDIS_URL = "${REDIS_URL}"
+
+# Autonomous Agent Configuration
+ENABLE_AUTONOMOUS_TRADING = "true"
+AGENT_SCHEDULER_INTERVAL = "60000"
+MAX_CONCURRENT_AGENTS = "10"
+ENABLE_AUTO_REBALANCING = "true"
+
+# Persistence Configuration
+ENABLE_DATA_PERSISTENCE = "true"
+BACKUP_INTERVAL_HOURS = "6"
+DATA_RETENTION_DAYS = "90"
+
+# WebSocket Configuration
+ENABLE_WEBSOCKET = "true"
+WS_HEARTBEAT_INTERVAL = "30000"
+
+# Monitoring & Alerts
+ENABLE_MONITORING = "true"
+ALERT_WEBHOOK_URL = "${ALERT_WEBHOOK_URL}"
+LOG_LEVEL = "info"

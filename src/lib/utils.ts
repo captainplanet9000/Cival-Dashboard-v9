@@ -65,3 +65,17 @@ export function truncateString(str: string, maxLength: number = 50): string {
   if (str.length <= maxLength) return str
   return str.substring(0, maxLength) + '...'
 }
+
+// Additional formatting functions for trading components
+export function formatCurrency(amount: number, currency: string = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount)
+}
+
+export function formatPercent(value: number, decimalPlaces: number = 2): string {
+  return `${value.toFixed(decimalPlaces)}%`
+}

@@ -49,6 +49,7 @@ import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 import LiveTradingWithMarketData from '@/components/dashboard/LiveTradingWithMarketData'
 import VaultBankingWithMultiChain from '@/components/dashboard/VaultBankingWithMultiChain'
 import AdvancedConsolidatedTab from '@/components/dashboard/AdvancedConsolidatedTab'
+import AdvancedDashboardTab from '@/components/dashboard/AdvancedDashboardTab'
 import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 // Import existing page components

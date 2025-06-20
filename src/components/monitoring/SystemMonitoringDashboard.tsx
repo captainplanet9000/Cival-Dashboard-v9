@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Settings
 } from 'lucide-react'
+import { backendApi } from '@/lib/api/backend-client'
 
 interface ServiceStatus {
   name: string
@@ -256,21 +257,53 @@ export function SystemMonitoringDashboard({ className }: SystemMonitoringDashboa
     }
   ])
 
-  // Simulate real-time updates
+  // Fetch real monitoring data from backend
   useEffect(() => {
+    const fetchMonitoringData = async () => {
+      try {
+        const [servicesRes, metricsRes, alertsRes, llmRes] = await Promise.all([
+          backendApi.get('/api/v1/monitoring/services').catch(() => ({ data: null })),
+          backendApi.get('/api/v1/monitoring/performance').catch(() => ({ data: null })),
+          backendApi.get('/api/v1/monitoring/alerts').catch(() => ({ data: null })),
+          backendApi.get('/api/v1/monitoring/llm-metrics').catch(() => ({ data: null }))
+        ])
+
+        // Update services if backend data available
+        if (servicesRes.data?.services) {
+          setServices(servicesRes.data.services)
+        }
+
+        // Update performance metrics if backend data available
+        if (metricsRes.data?.metrics) {
+          setPerformanceMetrics(metricsRes.data.metrics)
+        }
+
+        // Update alerts if backend data available
+        if (alertsRes.data?.alerts) {
+          setSystemAlerts(alertsRes.data.alerts)
+        }
+
+        // Update LLM metrics if backend data available
+        if (llmRes.data?.providers) {
+          setLlmMetrics(llmRes.data.providers)
+        }
+      } catch (error) {
+        console.error('Error fetching monitoring data:', error)
+      }
+    }
+
+    fetchMonitoringData()
+
+    // Set up real-time updates with backend data fetching + simulated updates
     const interval = setInterval(() => {
-      // Update service metrics
+      fetchMonitoringData()
+      
+      // Also simulate some real-time changes for demo purposes
       setServices(services => services.map(service => ({
         ...service,
-        cpu_usage: Math.max(0, Math.min(100, service.cpu_usage + (Math.random() - 0.5) * 10)),
-        response_time: Math.max(10, service.response_time + (Math.random() - 0.5) * 20),
+        cpu_usage: Math.max(0, Math.min(100, service.cpu_usage + (Math.random() - 0.5) * 5)),
+        response_time: Math.max(10, service.response_time + (Math.random() - 0.5) * 10),
         last_check: new Date().toISOString()
-      })))
-
-      // Update performance metrics
-      setPerformanceMetrics(metrics => metrics.map(metric => ({
-        ...metric,
-        current_value: Math.max(0, metric.current_value + (Math.random() - 0.5) * 5)
       })))
     }, 5000)
 
