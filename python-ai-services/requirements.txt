@@ -19,6 +19,7 @@ psycopg2-binary>=2.9.0
 
 # Cache and Message Queue
 redis[hiredis]==5.2.1
+aioredis>=2.0.0
 
 # AI and Machine Learning - Production Optimized
 openai>=1.0.0
@@ -90,3 +91,6 @@ cryptography>=41.0.0
 
 # JSON Schema and Validation
 jsonschema>=4.17.0
+
+# Memory and AI Agent System
+letta>=0.4.0

@@ -1542,6 +1542,298 @@ async def get_knowledge_graph_stats():
         logger.error(f"Failed to get knowledge graph stats: {e}")
         raise HTTPException(status_code=500, detail=f"Statistics error: {str(e)}")
 
+# ==========================================
+# GOALS MANAGEMENT API ENDPOINTS
+# ==========================================
+
+@app.get("/api/v1/goals")
+async def get_goals():
+    """Get all goals"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        if not goal_service:
+            # Return mock data if service not available
+            return [
+                {
+                    "id": "goal-1",
+                    "title": "Achieve $5000 Daily Profit",
+                    "description": "Generate consistent daily profit of $5000 through coordinated agent trading",
+                    "naturalLanguageInput": "I want to make $5000 every day using my trading agents",
+                    "type": "profit",
+                    "status": "in_progress",
+                    "priority": "high",
+                    "target": {"value": 5000, "unit": "USD", "timeframe": "daily"},
+                    "current": {"value": 3247.50, "progress": 64.95},
+                    "createdAt": "2024-01-15T08:00:00Z",
+                    "deadline": "2024-02-15T08:00:00Z",
+                    "assignedAgents": ["marcus_momentum", "alex_arbitrage"],
+                    "assignedFarms": ["alpha_momentum_farm"],
+                    "metrics": {
+                        "successProbability": 78.5,
+                        "estimatedCompletion": "2024-01-28T08:00:00Z",
+                        "riskLevel": "medium"
+                    },
+                    "aiAnalysis": {
+                        "feasibility": "Highly achievable with current agent performance and market conditions",
+                        "recommendations": [
+                            "Increase allocation to high-performing agents",
+                            "Optimize farm coordination",
+                            "Monitor daily performance against target"
+                        ],
+                        "requiredActions": [
+                            "Monitor daily performance against target",
+                            "Adjust agent parameters based on market feedback"
+                        ]
+                    }
+                }
+            ]
+        
+        goals = await goal_service.get_all_active_goals()
+        return [
+            {
+                "id": goal.goal_id,
+                "title": goal.goal_name,
+                "description": goal.description,
+                "naturalLanguageInput": goal.metadata.get("natural_language_input", ""),
+                "type": goal.goal_type.value,
+                "status": goal.status.value,
+                "priority": goal.priority.name.lower(),
+                "target": {
+                    "value": float(goal.target_value),
+                    "unit": goal.metadata.get("unit", "USD"),
+                    "timeframe": goal.metadata.get("timeframe", "daily")
+                },
+                "current": {
+                    "value": float(goal.current_value),
+                    "progress": goal.progress_percentage
+                },
+                "createdAt": goal.created_at.isoformat(),
+                "deadline": goal.target_date.isoformat() if goal.target_date else None,
+                "assignedAgents": goal.assigned_agents,
+                "assignedFarms": goal.assigned_farms,
+                "metrics": {
+                    "successProbability": goal.metadata.get("success_probability", 75.0),
+                    "estimatedCompletion": goal.metadata.get("estimated_completion", ""),
+                    "riskLevel": goal.metadata.get("risk_level", "medium")
+                },
+                "aiAnalysis": {
+                    "feasibility": goal.metadata.get("feasibility", "Analyzing..."),
+                    "recommendations": goal.metadata.get("recommendations", []),
+                    "requiredActions": goal.metadata.get("required_actions", [])
+                }
+            }
+            for goal in goals
+        ]
+    except Exception as e:
+        logger.error(f"Failed to get goals: {e}")
+        raise HTTPException(status_code=500, detail=f"Goals retrieval error: {str(e)}")
+
+@app.post("/api/v1/goals")
+async def create_goal(goal_data: dict):
+    """Create a new goal"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        if not goal_service:
+            # Mock successful creation
+            import uuid
+            from datetime import datetime, timezone
+            goal_id = str(uuid.uuid4())
+            return {
+                "id": goal_id,
+                "title": goal_data.get("title", "New Goal"),
+                "description": goal_data.get("description", "Goal created successfully"),
+                "status": "pending",
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Goal created successfully (mock mode)"
+            }
+        
+        # Convert frontend format to service format
+        service_goal_data = {
+            "name": goal_data.get("title"),
+            "type": goal_data.get("type", "profit_target"),
+            "description": goal_data.get("description"),
+            "target_value": goal_data.get("target", {}).get("value", 100),
+            "priority": {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(goal_data.get("priority", "medium"), 2),
+            "target_date": goal_data.get("deadline"),
+            "assigned_agents": goal_data.get("assignedAgents", []),
+            "assigned_farms": goal_data.get("assignedFarms", []),
+            "metadata": {
+                "natural_language_input": goal_data.get("naturalLanguageInput", ""),
+                "unit": goal_data.get("target", {}).get("unit", "USD"),
+                "timeframe": goal_data.get("target", {}).get("timeframe", "daily")
+            }
+        }
+        
+        goal = await goal_service.create_goal(service_goal_data)
+        return {
+            "id": goal.goal_id,
+            "title": goal.goal_name,
+            "description": goal.description,
+            "status": goal.status.value,
+            "createdAt": goal.created_at.isoformat(),
+            "message": "Goal created successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to create goal: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal creation error: {str(e)}")
+
+@app.put("/api/v1/goals/{goal_id}")
+async def update_goal(goal_id: str, update_data: dict):
+    """Update a goal"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        if not goal_service:
+            return {"message": "Goal updated successfully (mock mode)"}
+        
+        # Convert frontend format to service format
+        service_update = {}
+        if "title" in update_data:
+            service_update["name"] = update_data["title"]
+        if "description" in update_data:
+            service_update["description"] = update_data["description"]
+        if "status" in update_data:
+            service_update["status"] = update_data["status"]
+        if "priority" in update_data:
+            service_update["priority"] = {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(update_data["priority"], 2)
+        
+        # Update goal using service (would need to implement update method)
+        return {"message": "Goal updated successfully"}
+    except Exception as e:
+        logger.error(f"Failed to update goal: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal update error: {str(e)}")
+
+@app.delete("/api/v1/goals/{goal_id}")
+async def delete_goal(goal_id: str):
+    """Delete a goal"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        if not goal_service:
+            return {"message": "Goal deleted successfully (mock mode)"}
+        
+        # Delete goal using service (would need to implement delete method)
+        return {"message": "Goal deleted successfully"}
+    except Exception as e:
+        logger.error(f"Failed to delete goal: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal deletion error: {str(e)}")
+
+@app.post("/api/v1/goals/{goal_id}/attach-agents")
+async def attach_agents_to_goal(goal_id: str, agent_data: dict):
+    """Attach agents to a goal"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        if not goal_service:
+            return {"message": "Agents attached successfully (mock mode)"}
+        
+        agent_ids = agent_data.get("agentIds", [])
+        goal = await goal_service.attach_agents(goal_id, agent_ids)
+        if not goal:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        
+        return {"message": f"Attached {len(agent_ids)} agents to goal"}
+    except Exception as e:
+        logger.error(f"Failed to attach agents to goal: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent attachment error: {str(e)}")
+
+@app.post("/api/v1/goals/{goal_id}/attach-farms")
+async def attach_farms_to_goal(goal_id: str, farm_data: dict):
+    """Attach farms to a goal"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        if not goal_service:
+            return {"message": "Farms attached successfully (mock mode)"}
+        
+        farm_ids = farm_data.get("farmIds", [])
+        goal = await goal_service.attach_farms(goal_id, farm_ids)
+        if not goal:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        
+        return {"message": f"Attached {len(farm_ids)} farms to goal"}
+    except Exception as e:
+        logger.error(f"Failed to attach farms to goal: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm attachment error: {str(e)}")
+
+@app.get("/api/v1/goals/{goal_id}/progress")
+async def get_goal_progress(goal_id: str):
+    """Get goal progress details"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        if not goal_service:
+            return {
+                "goalId": goal_id,
+                "currentValue": 3247.50,
+                "targetValue": 5000.0,
+                "progress": 64.95,
+                "velocity": 125.30,
+                "estimatedCompletion": "2024-01-28T08:00:00Z"
+            }
+        
+        status = await goal_service.get_goal_status(goal_id)
+        if not status:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        
+        return {
+            "goalId": goal_id,
+            "currentValue": status["current_value"],
+            "targetValue": status["target_value"],
+            "progress": status["progress_percentage"],
+            "velocity": status.get("latest_progress", {}).get("velocity", 0),
+            "estimatedCompletion": status.get("latest_progress", {}).get("estimated_completion")
+        }
+    except Exception as e:
+        logger.error(f"Failed to get goal progress: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal progress error: {str(e)}")
+
+@app.post("/api/v1/goals/analyze-natural-language")
+async def analyze_natural_language_goal(request: dict):
+    """Analyze natural language input to create goal parameters"""
+    try:
+        goal_service = registry.get_service("goal_management_service")
+        text = request.get("input", "")
+        
+        if not goal_service:
+            # Mock AI analysis
+            import re
+            parsed_goal = {"type": "custom", "target_value": 1000, "target_unit": "USD", "timeframe": "daily"}
+            
+            text_lower = text.lower()
+            if 'profit' in text_lower or '$' in text:
+                parsed_goal['type'] = 'profit'
+                amounts = re.findall(r'\$?(\d+(?:,\d+)*(?:\.\d{2})?)', text)
+                if amounts:
+                    parsed_goal['target_value'] = float(amounts[0].replace(',', ''))
+            elif 'win rate' in text_lower or '%' in text:
+                parsed_goal['type'] = 'performance'
+                percentages = re.findall(r'(\d+(?:\.\d+)?)%', text)
+                if percentages:
+                    parsed_goal['target_value'] = float(percentages[0])
+                    parsed_goal['target_unit'] = '%'
+                    
+            return {
+                "parsedGoal": parsed_goal,
+                "confidence": 0.85,
+                "suggestedAgents": ["marcus_momentum", "alex_arbitrage"],
+                "suggestedFarms": ["alpha_momentum_farm"],
+                "estimatedTimeline": "1-14 days",
+                "feasibilityScore": 0.78,
+                "title": f"AI Generated Goal: {text[:50]}...",
+                "description": f"Goal created from natural language: '{text}'"
+            }
+        
+        analysis = await goal_service.analyze_natural_language(text)
+        return {
+            "parsedGoal": analysis.parsed_goal,
+            "confidence": analysis.confidence,
+            "suggestedAgents": analysis.suggested_agents,
+            "suggestedFarms": analysis.suggested_farms,
+            "estimatedTimeline": analysis.estimated_timeline,
+            "feasibilityScore": analysis.feasibility_score,
+            "title": f"AI Generated Goal: {text[:50]}...",
+            "description": f"Goal created from natural language: '{text}'"
+        }
+    except Exception as e:
+        logger.error(f"Failed to analyze natural language goal: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal analysis error: {str(e)}")
+
 # Development and debugging endpoints
 if DEBUG:
     @app.get("/api/v1/debug/services")

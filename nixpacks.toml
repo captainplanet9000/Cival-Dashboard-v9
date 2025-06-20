@@ -1,11 +1,18 @@
+# Nixpacks configuration for Cival Dashboard Railway deployment
+# Supports both Node.js frontend and Python backend
+
 [phases.setup]
-nixPkgs = ["nodejs_18", "npm-9_x"]
+nixPkgs = ["nodejs_18", "npm-9_x", "python311", "python311Packages.pip"]
 
 [phases.install]
-cmd = "npm ci"
+cmd = "npm ci && pip install -r requirements.txt"
 
 [phases.build]
 cmd = "npm run build"
 
 [start]
-cmd = "npm start"
+cmd = "npm run railway:start"
+
+[variables]
+NODE_ENV = "production"
+PYTHONPATH = "/app/python-ai-services"

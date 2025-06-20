@@ -26,20 +26,31 @@ const nextConfig = {
     TRADING_API_URL: process.env.TRADING_API_URL || 'http://localhost:3001',
     MCP_API_URL: process.env.MCP_API_URL || 'http://localhost:3000',
     VAULT_API_URL: process.env.VAULT_API_URL || 'http://localhost:3002',
+    // Railway deployment variables
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000',
   },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
+                   process.env.TRADING_API_URL || 
+                   'http://localhost:8000';
+    
     return [
       {
+        source: '/api/backend/:path*',
+        destination: `${apiUrl}/:path*`,
+      },
+      {
         source: '/api/trading/:path*',
-        destination: `${process.env.TRADING_API_URL || 'http://localhost:3001'}/api/:path*`,
+        destination: `${process.env.TRADING_API_URL || apiUrl}/api/:path*`,
       },
       {
         source: '/api/agents/:path*',
-        destination: `${process.env.AGENTS_API_URL || 'http://localhost:3000'}/api/agents/:path*`,
+        destination: `${process.env.AGENTS_API_URL || apiUrl}/api/agents/:path*`,
       },
       {
         source: '/api/vault/:path*',
-        destination: `${process.env.VAULT_API_URL || 'http://localhost:3002'}/api/:path*`,
+        destination: `${process.env.VAULT_API_URL || apiUrl}/api/:path*`,
       },
     ];
   },

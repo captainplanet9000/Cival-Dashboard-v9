@@ -1,56 +1,104 @@
-FROM node:18-alpine AS base
+# Multi-stage Dockerfile for Cival Dashboard
+# Supports both Next.js frontend and Python AI services
 
-# Install dependencies only when needed
-FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+# Stage 1: Python base with system dependencies
+FROM python:3.11-slim AS python-base
+
+# Install system dependencies for Python packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libpq-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Node.js base  
+FROM node:18-alpine AS node-base
+RUN apk add --no-cache libc6-compat python3 py3-pip build-base
+
+# Stage 3: Dependencies installation
+FROM node-base AS deps
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json ./
-RUN npm install
+# Copy package files
+COPY package.json package-lock.json ./
+COPY requirements.txt ./
 
-# Rebuild the source code only when needed
-FROM base AS builder
+# Install Node.js dependencies
+RUN npm ci --only=production
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Stage 4: Build Next.js application
+FROM node-base AS builder
 WORKDIR /app
+
+# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+
+# Copy source code
 COPY . .
 
-# Environment variables for build
+# Set build environment
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
+# Build Next.js application
 RUN npm run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Stage 5: Production runtime
+FROM python:3.11-slim AS runner
 WORKDIR /app
 
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    libpq-dev \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set production environment
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV PYTHONPATH /app/python-ai-services
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create application user
+RUN addgroup --system --gid 1001 appgroup
+RUN adduser --system --uid 1001 appuser
 
-COPY --from=builder /app/public ./public
+# Copy Python dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Copy built Next.js application
+COPY --from=builder --chown=appuser:appgroup /app/.next/standalone ./
+COPY --from=builder --chown=appuser:appgroup /app/.next/static ./.next/static
+COPY --from=builder --chown=appuser:appgroup /app/public ./public
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy Python AI services
+COPY --from=builder --chown=appuser:appgroup /app/python-ai-services ./python-ai-services
 
-USER nextjs
+# Copy package.json for npm scripts
+COPY --from=builder --chown=appuser:appgroup /app/package.json ./
 
-EXPOSE 3000
+# Install concurrently for running multiple processes
+RUN npm install -g concurrently
 
-ENV PORT 3000
-# set hostname to localhost
-ENV HOSTNAME "0.0.0.0"
+# Set permissions
+RUN chown -R appuser:appgroup /app
 
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["node", "server.js"] 
+USER appuser
+
+# Expose ports
+EXPOSE 3000 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Start both services
+CMD ["npx", "concurrently", "\"node server.js\"", "\"cd python-ai-services && python main_consolidated.py\""] 
