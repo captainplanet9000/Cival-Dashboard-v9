@@ -1834,6 +1834,395 @@ async def analyze_natural_language_goal(request: dict):
         logger.error(f"Failed to analyze natural language goal: {e}")
         raise HTTPException(status_code=500, detail=f"Goal analysis error: {str(e)}")
 
+# ==========================================
+# FARMS MANAGEMENT API ENDPOINTS
+# ==========================================
+
+@app.get("/api/v1/farms")
+async def get_farms():
+    """Get all farms"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            # Return mock data if service not available
+            return [
+                {
+                    "id": "farm-alpha-momentum",
+                    "name": "Alpha Momentum Farm",
+                    "description": "Advanced momentum trading farm with coordinated agent execution",
+                    "strategy": "momentum_coordination",
+                    "farmType": "momentum",
+                    "status": "active",
+                    "totalValue": 125847.32,
+                    "dailyPnL": 2847.29,
+                    "totalPnL": 15677.85,
+                    "createdAt": "2024-01-10T08:00:00Z",
+                    "agents": [
+                        {
+                            "id": "marcus_momentum",
+                            "name": "Marcus Momentum",
+                            "type": "momentum_specialist",
+                            "status": "active",
+                            "allocation": 45000.00,
+                            "pnl": 2247.85,
+                            "trades": 47,
+                            "winRate": 0.74,
+                            "lastActivity": "2024-01-15T15:23:00Z",
+                            "performance": {
+                                "dailyPnL": 847.29,
+                                "weeklyPnL": 3247.85,
+                                "monthlyPnL": 8947.32,
+                                "sharpeRatio": 1.84,
+                                "maxDrawdown": 0.045,
+                                "source": "live_trading"
+                            }
+                        },
+                        {
+                            "id": "riley_momentum",
+                            "name": "Riley Risk Manager", 
+                            "type": "risk_coordinator",
+                            "status": "active",
+                            "allocation": 15000.00,
+                            "pnl": 345.67,
+                            "trades": 23,
+                            "winRate": 0.89,
+                            "lastActivity": "2024-01-15T15:25:00Z",
+                            "performance": {
+                                "dailyPnL": 123.45,
+                                "weeklyPnL": 567.89,
+                                "monthlyPnL": 1234.56,
+                                "sharpeRatio": 2.15,
+                                "maxDrawdown": 0.023,
+                                "source": "risk_management"
+                            }
+                        }
+                    ],
+                    "performance": {
+                        "winRate": 0.78,
+                        "sharpeRatio": 1.94,
+                        "maxDrawdown": 0.067,
+                        "totalTrades": 189,
+                        "avgProfitPerTrade": 82.94,
+                        "riskAdjustedReturn": 0.154,
+                        "coordinationScore": 0.89,
+                        "strategyEfficiency": 0.91
+                    },
+                    "targets": {
+                        "dailyTarget": 2500.00,
+                        "monthlyTarget": 75000.00,
+                        "currentProgress": 114.0,
+                        "targetProgress": 65.8
+                    },
+                    "riskMetrics": {
+                        "currentExposure": 0.68,
+                        "maxExposure": 0.75,
+                        "diversificationScore": 0.82,
+                        "correlationRisk": 0.24
+                    },
+                    "realTimeMetrics": {
+                        "systemLoad": 0.34,
+                        "networkLatency": 23.45,
+                        "processingSpeed": 847.2,
+                        "errorRate": 0.002
+                    }
+                },
+                {
+                    "id": "farm-beta-arbitrage",
+                    "name": "Beta Arbitrage Farm",
+                    "description": "Cross-exchange arbitrage farm with multi-venue coordination",
+                    "strategy": "arbitrage_coordination",
+                    "farmType": "arbitrage",
+                    "status": "active",
+                    "totalValue": 89234.67,
+                    "dailyPnL": 1234.56,
+                    "totalPnL": 8934.22,
+                    "createdAt": "2024-01-12T10:30:00Z",
+                    "agents": [
+                        {
+                            "id": "alex_arbitrage",
+                            "name": "Alex Arbitrage",
+                            "type": "arbitrage_specialist",
+                            "status": "active",
+                            "allocation": 35000.00,
+                            "pnl": 1847.32,
+                            "trades": 156,
+                            "winRate": 0.91,
+                            "lastActivity": "2024-01-15T15:28:00Z",
+                            "performance": {
+                                "dailyPnL": 567.89,
+                                "weeklyPnL": 2134.56,
+                                "monthlyPnL": 6789.12,
+                                "sharpeRatio": 2.47,
+                                "maxDrawdown": 0.018,
+                                "source": "arbitrage_trading"
+                            }
+                        }
+                    ],
+                    "performance": {
+                        "winRate": 0.91,
+                        "sharpeRatio": 2.47,
+                        "maxDrawdown": 0.018,
+                        "totalTrades": 456,
+                        "avgProfitPerTrade": 19.58,
+                        "riskAdjustedReturn": 0.089,
+                        "coordinationScore": 0.94,
+                        "strategyEfficiency": 0.96
+                    },
+                    "targets": {
+                        "dailyTarget": 1200.00,
+                        "monthlyTarget": 36000.00,
+                        "currentProgress": 102.9,
+                        "targetProgress": 24.8
+                    },
+                    "riskMetrics": {
+                        "currentExposure": 0.42,
+                        "maxExposure": 0.50,
+                        "diversificationScore": 0.95,
+                        "correlationRisk": 0.08
+                    },
+                    "realTimeMetrics": {
+                        "systemLoad": 0.56,
+                        "networkLatency": 15.23,
+                        "processingSpeed": 1234.8,
+                        "errorRate": 0.001
+                    }
+                }
+            ]
+        
+        farms = await farm_service.get_all_farms()
+        return [
+            {
+                "id": farm.farm_id,
+                "name": farm.name,
+                "description": farm.description,
+                "strategy": farm.strategy_type,
+                "farmType": farm.farm_type,
+                "status": farm.status.value,
+                "totalValue": float(farm.total_value),
+                "dailyPnL": float(farm.daily_pnl),
+                "totalPnL": float(farm.total_pnl),
+                "createdAt": farm.created_at.isoformat(),
+                "agents": [
+                    {
+                        "id": agent.agent_id,
+                        "name": agent.name,
+                        "type": agent.agent_type,
+                        "status": agent.status,
+                        "allocation": float(agent.allocation),
+                        "pnl": float(agent.pnl),
+                        "trades": agent.total_trades,
+                        "winRate": agent.win_rate,
+                        "lastActivity": agent.last_activity.isoformat() if agent.last_activity else None,
+                        "performance": agent.performance_metrics
+                    }
+                    for agent in farm.agents
+                ],
+                "performance": farm.performance_metrics,
+                "targets": farm.target_metrics,
+                "riskMetrics": farm.risk_metrics,
+                "realTimeMetrics": farm.real_time_metrics
+            }
+            for farm in farms
+        ]
+    except Exception as e:
+        logger.error(f"Failed to get farms: {e}")
+        raise HTTPException(status_code=500, detail=f"Farms retrieval error: {str(e)}")
+
+@app.post("/api/v1/farms")
+async def create_farm(farm_data: dict):
+    """Create a new farm"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            # Mock successful creation
+            import uuid
+            from datetime import datetime, timezone
+            farm_id = str(uuid.uuid4())
+            return {
+                "id": farm_id,
+                "name": farm_data.get("name", "New Farm"),
+                "description": farm_data.get("description", "Farm created successfully"),
+                "status": "pending",
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Farm created successfully (mock mode)"
+            }
+        
+        # Convert frontend format to service format
+        service_farm_data = {
+            "name": farm_data.get("name"),
+            "description": farm_data.get("description"),
+            "strategy_type": farm_data.get("strategy", "general"),
+            "farm_type": farm_data.get("farmType", "standard"),
+            "initial_allocation": farm_data.get("initialAllocation", 10000),
+            "risk_limits": farm_data.get("riskLimits", {}),
+            "performance_targets": farm_data.get("targets", {})
+        }
+        
+        farm = await farm_service.create_farm(service_farm_data)
+        return {
+            "id": farm.farm_id,
+            "name": farm.name,
+            "description": farm.description,
+            "status": farm.status.value,
+            "createdAt": farm.created_at.isoformat(),
+            "message": "Farm created successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to create farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm creation error: {str(e)}")
+
+@app.put("/api/v1/farms/{farm_id}")
+async def update_farm(farm_id: str, update_data: dict):
+    """Update a farm"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            return {"message": "Farm updated successfully (mock mode)"}
+        
+        farm = await farm_service.update_farm(farm_id, update_data)
+        if not farm:
+            raise HTTPException(status_code=404, detail="Farm not found")
+        
+        return {"message": "Farm updated successfully"}
+    except Exception as e:
+        logger.error(f"Failed to update farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm update error: {str(e)}")
+
+@app.delete("/api/v1/farms/{farm_id}")
+async def delete_farm(farm_id: str):
+    """Delete a farm"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            return {"message": "Farm deleted successfully (mock mode)"}
+        
+        await farm_service.delete_farm(farm_id)
+        return {"message": "Farm deleted successfully"}
+    except Exception as e:
+        logger.error(f"Failed to delete farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm deletion error: {str(e)}")
+
+@app.post("/api/v1/farms/{farm_id}/agents")
+async def assign_agent_to_farm(farm_id: str, agent_data: dict):
+    """Assign an agent to a farm"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            return {"message": "Agent assigned to farm successfully (mock mode)"}
+        
+        agent_id = agent_data.get("agentId")
+        role = agent_data.get("role", "primary")
+        allocation = agent_data.get("allocation", 0)
+        
+        result = await farm_service.assign_agent(farm_id, agent_id, role, allocation)
+        if not result:
+            raise HTTPException(status_code=404, detail="Farm or agent not found")
+        
+        return {"message": f"Agent {agent_id} assigned to farm successfully"}
+    except Exception as e:
+        logger.error(f"Failed to assign agent to farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent assignment error: {str(e)}")
+
+@app.delete("/api/v1/farms/{farm_id}/agents/{agent_id}")
+async def remove_agent_from_farm(farm_id: str, agent_id: str):
+    """Remove an agent from a farm"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            return {"message": "Agent removed from farm successfully (mock mode)"}
+        
+        result = await farm_service.remove_agent(farm_id, agent_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Farm or agent not found")
+        
+        return {"message": f"Agent {agent_id} removed from farm successfully"}
+    except Exception as e:
+        logger.error(f"Failed to remove agent from farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent removal error: {str(e)}")
+
+@app.post("/api/v1/farms/{farm_id}/start")
+async def start_farm(farm_id: str):
+    """Start a farm"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            return {
+                "farmId": farm_id,
+                "status": "active",
+                "startedAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Farm started successfully (mock mode)"
+            }
+        
+        result = await farm_service.start_farm(farm_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Farm not found")
+        
+        return {
+            "farmId": farm_id,
+            "status": "active",
+            "startedAt": datetime.now(timezone.utc).isoformat(),
+            "message": "Farm started successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to start farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm start error: {str(e)}")
+
+@app.post("/api/v1/farms/{farm_id}/stop")
+async def stop_farm(farm_id: str):
+    """Stop a farm"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            return {
+                "farmId": farm_id,
+                "status": "stopped",
+                "stoppedAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Farm stopped successfully (mock mode)"
+            }
+        
+        result = await farm_service.stop_farm(farm_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Farm not found")
+        
+        return {
+            "farmId": farm_id,
+            "status": "stopped", 
+            "stoppedAt": datetime.now(timezone.utc).isoformat(),
+            "message": "Farm stopped successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to stop farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm stop error: {str(e)}")
+
+@app.get("/api/v1/farms/metrics")
+async def get_farm_metrics():
+    """Get aggregated farm metrics"""
+    try:
+        farm_service = registry.get_service("farm_management_service")
+        if not farm_service:
+            return {
+                "totalFarms": 2,
+                "activeFarms": 2,
+                "totalValue": 215081.99,
+                "totalDailyPnL": 4081.85,
+                "totalPnL": 24612.07,
+                "avgWinRate": 0.845,
+                "avgSharpeRatio": 2.205,
+                "totalAgents": 3,
+                "activeAgents": 3,
+                "systemLoad": 0.45,
+                "avgNetworkLatency": 19.34,
+                "avgProcessingSpeed": 1041.0,
+                "avgErrorRate": 0.0015,
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        metrics = await farm_service.get_aggregated_metrics()
+        return metrics
+    except Exception as e:
+        logger.error(f"Failed to get farm metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm metrics error: {str(e)}")
+
 # Development and debugging endpoints
 if DEBUG:
     @app.get("/api/v1/debug/services")

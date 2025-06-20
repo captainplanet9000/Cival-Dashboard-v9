@@ -3,9 +3,10 @@
 
 [build]
 builder = "nixpacks"
+buildCommand = "npm ci && python3 -m venv venv && source venv/bin/activate && pip install --no-cache-dir -r requirements.txt && npm run build"
 
 [deploy]
-startCommand = "npm run railway:start"
+startCommand = "source venv/bin/activate && npm run railway:start"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
