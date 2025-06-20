@@ -45,12 +45,10 @@ import { MemoryAnalyticsDashboard } from '@/components/memory/MemoryAnalyticsDas
 // Import AG-UI components
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
-// Import the comprehensive Advanced Dashboard Tab
-import AdvancedDashboardTab from '@/components/dashboard/AdvancedDashboardTab'
-
-// Import wallet system components
-import ComprehensiveWalletDashboard from '@/components/wallet/ComprehensiveWalletDashboard'
-import VaultBankingDashboard from '@/components/vault/VaultBankingDashboard'
+// Import consolidated dashboard components
+import LiveTradingWithMarketData from '@/components/dashboard/LiveTradingWithMarketData'
+import VaultBankingWithMultiChain from '@/components/dashboard/VaultBankingWithMultiChain'
+import AdvancedConsolidatedTab from '@/components/dashboard/AdvancedConsolidatedTab'
 import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 // Import existing page components
@@ -201,47 +199,29 @@ export function EnhancedDashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  // Enhanced navigation with professional trading interface
+  // Reorganized navigation with consolidated features based on user feedback
   const tabs: DashboardTab[] = [
     {
       id: 'overview',
-      label: 'Trading Overview',
-      icon: <BarChart3 className="h-4 w-4" />,
+      label: 'Dashboard',
+      icon: <Home className="h-4 w-4" />,
       component: <TradingOverviewTab metrics={metrics} systemStatus={systemStatus} onNavigate={setActiveTab} />
     },
     {
       id: 'live-trading',
-      label: 'Live Trading',
-      icon: <Zap className="h-4 w-4" />,
-      component: <LiveTradingDashboard />
-    },
-    {
-      id: 'market-data',
-      label: 'Live Market Data',
+      label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
-      component: <LiveMarketDataPanel />
+      component: <LiveTradingWithMarketData />
     },
     {
       id: 'agents',
-      label: 'AI Agents',
+      label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
       component: <EnhancedAgentsTab />
     },
     {
-      id: 'monitoring',
-      label: 'System Monitor',
-      icon: <Activity className="h-4 w-4" />,
-      component: <SystemMonitoringDashboard />
-    },
-    {
-      id: 'memory',
-      label: 'Memory Analytics',
-      icon: <Brain className="h-4 w-4" />,
-      component: <MemoryAnalyticsDashboard />
-    },
-    {
       id: 'farms',
-      label: 'Agent Farms',
+      label: 'Farms',
       icon: <Target className="h-4 w-4" />,
       component: <EnhancedFarmDashboard />
     },
@@ -252,34 +232,22 @@ export function EnhancedDashboard() {
       component: <GoalsPage />
     },
     {
-      id: 'wallets',
-      label: 'Multi-Chain Wallets',
-      icon: <Wallet className="h-4 w-4" />,
-      component: <ComprehensiveWalletDashboard />
-    },
-    {
       id: 'vault-banking',
-      label: 'Vault Banking',
-      icon: <Home className="h-4 w-4" />,
-      component: <VaultBankingDashboard />
+      label: 'Vault',
+      icon: <Wallet className="h-4 w-4" />,
+      component: <VaultBankingWithMultiChain />
     },
     {
       id: 'defi',
-      label: 'DeFi Hub',
+      label: 'DeFi',
       icon: <Zap className="h-4 w-4" />,
       component: <DeFiIntegrationHub />
     },
     {
-      id: 'vault',
-      label: 'Legacy Vault',
-      icon: <PieChart className="h-4 w-4" />,
-      component: <VaultPage />
-    },
-    {
       id: 'advanced',
       label: 'Advanced',
-      icon: <Settings className="h-4 w-4" />,
-      component: <AdvancedTab />
+      icon: <Brain className="h-4 w-4" />,
+      component: <AdvancedConsolidatedTab />
     }
   ]
 
