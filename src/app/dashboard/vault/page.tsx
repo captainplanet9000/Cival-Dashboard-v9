@@ -35,7 +35,12 @@ import {
   Loader2,
   RefreshCw
 } from "lucide-react";
-import { formatPrice, formatPercentage } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+
+// Helper function for formatting percentages
+const formatPercentage = (value: number) => {
+  return `${(value * 100).toFixed(1)}%`;
+};
 import { backendApi } from '@/lib/api/backend-client';
 import { toast } from 'react-hot-toast';
 
@@ -336,6 +341,50 @@ export default function VaultPage() {
   const totalAllocated = subVaults.reduce((sum, vault) => sum + vault.reserved_balance, 0);
   const totalBalance = masterVault?.total_balance || 0;
 
+  // Generate mock DeFi protocols data
+  const defiProtocols = [
+    {
+      name: "Uniswap V3",
+      status: "active",
+      tvl: 287954,
+      apy: 12.5,
+      positions: 3,
+      lastYield: 234.56,
+      riskScore: 6
+    },
+    {
+      name: "Aave V3",
+      status: "active", 
+      tvl: 150000,
+      apy: 8.2,
+      positions: 2,
+      lastYield: 156.78,
+      riskScore: 4
+    },
+    {
+      name: "Compound",
+      status: "active",
+      tvl: 89000,
+      apy: 6.8,
+      positions: 1,
+      lastYield: 89.32,
+      riskScore: 3
+    }
+  ];
+
+  // Generate mock compliance metrics
+  const complianceMetrics = {
+    overallScore: 98,
+    kycCompliance: 100,
+    amlCompliance: 97,
+    regulatoryCompliance: 95,
+    riskAssessment: 88,
+    pendingActions: 0,
+    lastAudit: "Dec 1, 2024",
+    auditScore: 96,
+    nextAudit: "March 15, 2025"
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -375,103 +424,258 @@ export default function VaultPage() {
         </div>
       </div>
 
-                  {/* Master Vault Overview */}      <Card className="border-primary/20 bg-primary/5">        <CardHeader>          <div className="flex items-center justify-between">            <div className="flex items-center space-x-3">              <Vault className="h-6 w-6 text-primary" />              <CardTitle className="text-xl">{vaultHierarchy.masterVault.name}</CardTitle>              <Badge variant="default">{vaultHierarchy.masterVault.status.toUpperCase()}</Badge>            </div>            <div className="flex items-center space-x-3">              <Badge variant="secondary" className="flex items-center gap-1">                <Shield className="h-3 w-3" />                {vaultHierarchy.masterVault.complianceScore}% Compliant              </Badge>            </div>          </div>        </CardHeader>        <CardContent>          <div className="grid gap-4 md:grid-cols-4">            <StatCard              title="Total Balance"              value={formatPrice(vaultHierarchy.masterVault.balance)}              icon={<DollarSign className="h-4 w-4" />}              variant="info"            />            <StatCard              title="Allocated"              value={formatPrice(vaultHierarchy.masterVault.totalAllocated)}              description={`${formatPercentage((vaultHierarchy.masterVault.totalAllocated / vaultHierarchy.masterVault.balance))} of total`}              icon={<Target className="h-4 w-4" />}              variant="warning"            />            <StatCard              title="Available"              value={formatPrice(vaultHierarchy.masterVault.available)}              description="Ready to allocate"              icon={<Wallet className="h-4 w-4" />}              variant="profit"            />            <StatCard              title="Sub-Vaults"              value={vaultHierarchy.masterVault.subVaults}              description="Active portfolios"              icon={<PieChart className="h-4 w-4" />}              variant="default"            />          </div>                    {/* Allocation Progress */}          <div className="mt-6 space-y-2">            <div className="flex justify-between text-sm">              <span className="text-muted-foreground">Capital Allocation</span>              <span className="font-medium">                {formatPercentage((vaultHierarchy.masterVault.totalAllocated / vaultHierarchy.masterVault.balance))}              </span>            </div>            <Progress               value={(vaultHierarchy.masterVault.totalAllocated / vaultHierarchy.masterVault.balance) * 100}              className="h-3"            />          </div>        </CardContent>      </Card>
+      {/* Master Vault Overview */}
+      {masterVault && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Vault className="h-6 w-6 text-primary" />
+                <CardTitle className="text-xl">{masterVault.vault_name}</CardTitle>
+                <Badge variant="default">{masterVault.status.toUpperCase()}</Badge>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Shield className="h-3 w-3" />
+                  {masterVault.metadata?.complianceScore || 98}% Compliant
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-4">
+              <StatCard
+                title="Total Balance"
+                value={formatPrice(masterVault.total_balance)}
+                icon={<DollarSign className="h-4 w-4" />}
+                variant="info"
+              />
+              <StatCard
+                title="Allocated"
+                value={formatPrice(totalAllocated)}
+                description={`${formatPercentage((totalAllocated / masterVault.total_balance))} of total`}
+                icon={<Target className="h-4 w-4" />}
+                variant="warning"
+              />
+              <StatCard
+                title="Available"
+                value={formatPrice(masterVault.available_balance)}
+                description="Ready to allocate"
+                icon={<Wallet className="h-4 w-4" />}
+                variant="profit"
+              />
+              <StatCard
+                title="Sub-Vaults"
+                value={subVaults.length}
+                description="Active portfolios"
+                icon={<PieChart className="h-4 w-4" />}
+                variant="default"
+              />
+            </div>
+                      
+            {/* Allocation Progress */}
+            <div className="mt-6 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Capital Allocation</span>
+                <span className="font-medium">
+                  {formatPercentage(totalBalance > 0 ? (totalAllocated / totalBalance) : 0)}
+                </span>
+              </div>
+              <Progress 
+                value={totalBalance > 0 ? (totalAllocated / totalBalance) * 100 : 0}
+                className="h-3"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                  {/* Important Alerts */}      {complianceMetrics.pendingActions > 0 && (        <Alert variant="destructive">          <AlertCircle className="h-4 w-4" />          <AlertTitle>Compliance Action Required</AlertTitle>          <AlertDescription>            {complianceMetrics.pendingActions} compliance actions require immediate attention.             Review your vault settings and ensure all requirements are met.          </AlertDescription>        </Alert>      )}      {/* Sub-Vaults Grid */}      <div>        <div className="flex items-center justify-between mb-4">          <h2 className="text-xl font-semibold">Sub-Vault Portfolio</h2>          <Badge variant="secondary" className="flex items-center gap-1">            <Activity className="h-3 w-3" />            {vaultHierarchy.subVaults.filter(v => v.status === 'active').length} Active          </Badge>        </div>        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {vaultHierarchy.subVaults.map((vault) => (
-            <Card key={vault.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Wallet className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-base">{vault.name}</CardTitle>
-                  </div>
-                                                      <div className="flex items-center space-x-2">                    {vault.status === 'locked' ?                       <Lock className="h-4 w-4 text-status-warning" /> :                       <Unlock className="h-4 w-4 text-status-online" />                    }                    <Badge variant={vault.status === 'active' ? 'default' : vault.status === 'locked' ? 'destructive' : 'secondary'}>                      {vault.type}                    </Badge>                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Balance</span>
-                    <span className="font-semibold">{formatPrice(vault.balance)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Available</span>
-                    <span className="text-status-online">{formatPrice(vault.available)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Allocation</span>
-                    <span>{formatPercentage(vault.allocation / 100)}</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Performance</span>
-                    <span className={`font-semibold ${vault.performance > 0 ? 'text-trading-profit' : 'text-trading-loss'}`}>
-                      {vault.performance > 0 ? '+' : ''}{formatPercentage(vault.performance / 100)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Risk Level</span>
-                    <span className={`text-sm font-medium ${getRiskColor(vault.riskLevel)}`}>
-                      {vault.riskLevel}
-                    </span>
-                  </div>
-                </div>
-
-                {vault.strategies && (
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground mb-1">Active Strategies:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {vault.strategies.slice(0, 2).map((strategy, index) => (
-                        <span key={index} className="text-xs px-2 py-1 bg-muted rounded">
-                          {strategy}
-                        </span>
-                      ))}
-                      {vault.strategies.length > 2 && (
-                        <span className="text-xs px-2 py-1 bg-muted rounded">
-                          +{vault.strategies.length - 2} more
-                        </span>
-                      )}
+      {/* Sub-Vaults Grid */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Sub-Vault Portfolio</h2>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Activity className="h-3 w-3" />
+            {subVaults.filter(v => v.status === 'active').length} Active
+          </Badge>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {subVaults.map((vault) => {
+            const vaultPerformance = performance[vault.vault_id];
+            const allocationPercentage = totalBalance > 0 ? (vault.reserved_balance / totalBalance) * 100 : 0;
+            
+            return (
+              <Card key={vault.vault_id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Wallet className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-base">{vault.vault_name}</CardTitle>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {vault.status === 'locked' ? 
+                        <Lock className="h-4 w-4 text-status-warning" /> :
+                        <Unlock className="h-4 w-4 text-status-online" />
+                      }
+                      <Badge variant={vault.status === 'active' ? 'default' : vault.status === 'locked' ? 'destructive' : 'secondary'}>
+                        {vault.vault_type}
+                      </Badge>
                     </div>
                   </div>
-                )}
-
-                {vault.protocols && (
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground mb-1">DeFi Protocols:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {vault.protocols.map((protocol, index) => (
-                        <span key={index} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                          {protocol}
-                        </span>
-                      ))}
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Balance</span>
+                      <span className="font-semibold">{formatPrice(vault.total_balance)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Available</span>
+                      <span className="text-status-online">{formatPrice(vault.available_balance)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Allocation</span>
+                      <span>{formatPercentage(allocationPercentage / 100)}</span>
                     </div>
                   </div>
-                )}
 
-                {vault.purpose && (
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground mb-1">Purpose:</p>
-                    <p className="text-xs">{vault.purpose}</p>
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Performance</span>
+                      <span className={`font-semibold ${
+                        vaultPerformance?.daily_pnl >= 0 ? 'text-trading-profit' : 'text-trading-loss'
+                      }`}>
+                        {vaultPerformance ? (
+                          vaultPerformance.daily_pnl >= 0 ? '+' : ''
+                        ) : ''}
+                        {vaultPerformance ? 
+                          formatPercentage(vaultPerformance.daily_return_pct / 100) : 
+                          formatPercentage((vault.metadata?.performance || 0) / 100)
+                        }
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Risk Level</span>
+                      <span className={`text-sm font-medium ${getRiskColor(vault.metadata?.riskLevel || 'medium')}`}>
+                        {vault.metadata?.riskLevel || 'Medium'}
+                      </span>
+                    </div>
                   </div>
-                )}
 
-                {vault.focus && (
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground mb-1">Focus:</p>
-                    <p className="text-xs">{vault.focus}</p>
+                  {vault.metadata?.strategies && (
+                    <div className="pt-2">
+                      <p className="text-xs text-muted-foreground mb-1">Active Strategies:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {vault.metadata.strategies.slice(0, 2).map((strategy: string, index: number) => (
+                          <span key={index} className="text-xs px-2 py-1 bg-muted rounded">
+                            {strategy}
+                          </span>
+                        ))}
+                        {vault.metadata.strategies.length > 2 && (
+                          <span className="text-xs px-2 py-1 bg-muted rounded">
+                            +{vault.metadata.strategies.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {vault.metadata?.protocols && (
+                    <div className="pt-2">
+                      <p className="text-xs text-muted-foreground mb-1">DeFi Protocols:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {vault.metadata.protocols.map((protocol: string, index: number) => (
+                          <span key={index} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                            {protocol}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-muted-foreground">
+                    Created: {new Date(vault.created_at).toLocaleDateString()}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-                {/* Recent Transactions */}        <Card>          <CardHeader>            <CardTitle>Recent Transactions</CardTitle>            <CardDescription>              Cross-vault transfers and operations            </CardDescription>          </CardHeader>          <CardContent className="p-0">            <Table>              <TableHeader>                <TableRow>                  <TableHead>Type</TableHead>                  <TableHead>From/To</TableHead>                  <TableHead>Amount</TableHead>                  <TableHead>Status</TableHead>                  <TableHead>Time</TableHead>                </TableRow>              </TableHeader>              <TableBody>                {recentTransactions.map((tx) => (                  <TableRow key={tx.id}>                    <TableCell>                      <div className="flex items-center space-x-2">                        {getTransactionIcon(tx.type)}                        <span className="font-medium capitalize">{tx.type}</span>                      </div>                    </TableCell>                    <TableCell>                      <div className="space-y-1">                        <div className="text-sm font-medium">{tx.from} → {tx.to}</div>                        <div className="text-xs text-muted-foreground">{tx.purpose}</div>                      </div>                    </TableCell>                    <TableCell>                      <div className="font-semibold">{formatPrice(tx.amount)}</div>                    </TableCell>                    <TableCell>                      <Badge variant={                        tx.status === 'completed' ? 'success' :                         tx.status === 'pending' ? 'outline' :                         tx.status === 'failed' ? 'destructive' : 'secondary'                      }>                        {tx.status}                      </Badge>                    </TableCell>                    <TableCell>                      <div className="text-sm">                        {new Date(tx.timestamp).toLocaleTimeString()}                      </div>                      <div className="text-xs text-muted-foreground">                        {tx.reference}                      </div>                    </TableCell>                  </TableRow>                ))}              </TableBody>            </Table>          </CardContent>        </Card>
+        {/* Recent Transactions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Transactions</CardTitle>
+            <CardDescription>
+              Cross-vault transfers and operations
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>From/To</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.length > 0 ? (
+                  transactions.map((tx) => (
+                    <TableRow key={tx.transaction_id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {getTransactionIcon(tx.transaction_type)}
+                          <span className="font-medium capitalize">{tx.transaction_type.replace('_', ' ')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium">
+                            {tx.from_vault_id || 'External'} → {tx.to_vault_id || tx.vault_id}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {tx.metadata?.purpose || 'Standard transaction'}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold">{formatPrice(tx.amount)} {tx.asset_symbol}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          tx.status === 'completed' ? 'success' :
+                          tx.status === 'pending' ? 'outline' :
+                          tx.status === 'failed' ? 'destructive' : 'secondary'
+                        }>
+                          {tx.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {new Date(tx.created_at).toLocaleTimeString()}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {tx.transaction_id.slice(0, 8)}...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No recent transactions
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         {/* DeFi Protocol Integration */}
         <Card>

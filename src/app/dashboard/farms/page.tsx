@@ -23,9 +23,17 @@ import {
   RefreshCw,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { backendApi } from '@/lib/api/backend-client';
+import { formatPrice } from '@/lib/utils';
+
+// Helper function for formatting percentages
+const formatPercentage = (value: number) => {
+  return `${(value * 100).toFixed(1)}%`;
+};
 
 interface Farm {
   id: string;

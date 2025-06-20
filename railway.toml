@@ -9,5 +9,5 @@ restartPolicyMaxRetries = 10
 
 [env]
 NODE_ENV = "production"
-PORT = "3000"
+PORT = "${PORT}"
 NIXPACKS_NODE_VERSION = "18"
