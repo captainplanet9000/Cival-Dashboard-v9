@@ -6,7 +6,7 @@ buildCommand = "npm run build"
 [deploy]
 startCommand = "npm run start:production"
 restartPolicyType = "always"
-restartPolicyMaxRetries = -1
+restartPolicyMaxRetries = 3
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
 
