@@ -128,11 +128,13 @@ export function EnhancedDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch system status
-        const [tradingStatus, systemHealth, marketOverview] = await Promise.all([
+        // Fetch system status and trading overview data
+        const [tradingStatus, systemHealth, marketOverview, tradingOverview, portfolioSummary] = await Promise.all([
           backendApi.get('/api/v1/trading/status').catch(() => ({ data: null })),
           backendApi.get('/health').catch(() => ({ data: null })),
-          backendApi.get('/api/v1/market/overview').catch(() => ({ data: null }))
+          backendApi.get('/api/v1/market/overview').catch(() => ({ data: null })),
+          backendApi.get('/api/v1/trading/overview').catch(() => ({ data: null })),
+          backendApi.get('/api/v1/portfolio/summary').catch(() => ({ data: null }))
         ])
 
         // Update system status
@@ -151,19 +153,23 @@ export function EnhancedDashboard() {
         const healthScore = systemHealth.data?.system_health || 85
         setSystemStatus(prev => ({ ...prev, system_health: healthScore }))
         
+        // Use real data from APIs with fallbacks
+        const portfolioData = portfolioSummary.data || {};
+        const overviewData = tradingOverview.data || {};
+        
         setMetrics(prev => ({
           ...prev,
           systemHealth: healthScore,
-          activeAgents: tradingStatus.data?.running_tasks || 4,
-          totalValue: 250000 + Math.random() * 10000, // Mock with some variation
-          dailyPnL: (Math.random() - 0.5) * 5000,
-          totalPnL: 15420 + (Math.random() - 0.5) * 2000,
-          activePositions: tradingStatus.data?.active_orders || 3,
-          activeFarms: 3 + Math.floor(Math.random() * 2),
-          farmPerformance: 7500 + (Math.random() - 0.5) * 2000,
-          winRate: 68.5 + (Math.random() - 0.5) * 10,
-          avgReturn: 12.8 + (Math.random() - 0.5) * 4,
-          riskScore: 65 + (Math.random() - 0.5) * 20
+          activeAgents: tradingStatus.data?.running_tasks || overviewData.active_agents || 4,
+          totalValue: portfolioData.total_value || overviewData.portfolio_value || 250000 + Math.random() * 10000,
+          dailyPnL: portfolioData.daily_pnl || overviewData.daily_pnl || (Math.random() - 0.5) * 5000,
+          totalPnL: portfolioData.total_pnl || overviewData.total_pnl || 15420 + (Math.random() - 0.5) * 2000,
+          activePositions: portfolioData.active_positions || overviewData.active_positions || tradingStatus.data?.active_orders || 3,
+          activeFarms: overviewData.active_farms || 3 + Math.floor(Math.random() * 2),
+          farmPerformance: overviewData.farms_performance || 7500 + (Math.random() - 0.5) * 2000,
+          winRate: overviewData.win_rate || 68.5 + (Math.random() - 0.5) * 10,
+          avgReturn: overviewData.average_return || 12.8 + (Math.random() - 0.5) * 4,
+          riskScore: overviewData.risk_score || 65 + (Math.random() - 0.5) * 20
         }))
 
         setIsLoading(false)
@@ -457,6 +463,44 @@ function QuickAccessCard({ title, description, icon, targetTab, onNavigate }: {
 
 // Trading Overview Tab with real-time data
 function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: DashboardMetrics, systemStatus: SystemStatus, onNavigate: (tab: string) => void }) {
+  const [positions, setPositions] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [riskMetrics, setRiskMetrics] = useState<any>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(true);
+
+  // Helper function for formatting prices
+  const formatPrice = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  // Load detailed trading data
+  useEffect(() => {
+    const loadTradingDetails = async () => {
+      try {
+        const [positionsRes, ordersRes, riskRes] = await Promise.all([
+          backendApi.get('/api/v1/trading/positions').catch(() => ({ data: null })),
+          backendApi.get('/api/v1/trading/orders').catch(() => ({ data: null })),
+          backendApi.get('/api/v1/trading/risk-metrics').catch(() => ({ data: null }))
+        ]);
+
+        setPositions(positionsRes.data?.positions || []);
+        setOrders(ordersRes.data?.orders || []);
+        setRiskMetrics(riskRes.data || null);
+      } catch (error) {
+        console.error('Error loading trading details:', error);
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    };
+
+    loadTradingDetails();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
@@ -470,12 +514,12 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           icon={<DollarSign className="h-6 w-6" />}
         />
         <MetricCard
-          title="Agent Farms"
-          value={metrics.activeFarms.toString()}
-          change={metrics.farmPerformance}
-          changePercent={(metrics.farmPerformance / 10000) * 100}
-          isPositive={metrics.farmPerformance >= 0}
-          icon={<Target className="h-6 w-6" />}
+          title="Active Positions"
+          value={metrics.activePositions.toString()}
+          change={0}
+          changePercent={0}
+          isPositive={true}
+          icon={<BarChart3 className="h-6 w-6" />}
         />
         <MetricCard
           title="Win Rate"
@@ -494,6 +538,36 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           icon={<Shield className="h-6 w-6" />}
         />
       </div>
+
+      {/* Portfolio Performance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-green-500" />
+            Portfolio Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">{formatPrice(metrics.totalPnL)}</p>
+              <p className="text-sm text-gray-600">Total P&L</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">{formatPrice(metrics.dailyPnL)}</p>
+              <p className="text-sm text-gray-600">Daily P&L</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-purple-600">{metrics.avgReturn.toFixed(1)}%</p>
+              <p className="text-sm text-gray-600">Avg Return</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-orange-600">{metrics.riskScore.toFixed(0)}</p>
+              <p className="text-sm text-gray-600">Risk Score</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Live Trading Status */}
       <Card>

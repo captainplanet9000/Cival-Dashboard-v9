@@ -729,6 +729,203 @@ class GoalManagementService:
         except Exception:
             return 0.0
 
+    async def analyze_natural_language_goal(self, input_text: str) -> Dict[str, Any]:
+        """Analyze natural language input and extract goal parameters"""
+        try:
+            # Basic NLP analysis - in production, you'd use LLM integration
+            analysis = {
+                "input": input_text,
+                "suggested_name": "",
+                "description": f"Goal created from: \"{input_text}\"",
+                "goal_type": "custom",
+                "target_value": 1000,
+                "priority": 2,
+                "unit": "USD",
+                "timeframe": "daily",
+                "feasibility": "High",
+                "risk_level": "medium",
+                "success_probability": 75,
+                "suggested_agents": [],
+                "suggested_farms": []
+            }
+            
+            input_lower = input_text.lower()
+            
+            # Extract monetary amounts
+            import re
+            money_patterns = [
+                r'\$(\d+(?:,\d{3})*(?:\.\d{2})?)',
+                r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:dollars?|usd|\$)',
+                r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:per|daily|day)',
+            ]
+            
+            for pattern in money_patterns:
+                match = re.search(pattern, input_lower)
+                if match:
+                    amount_str = match.group(1).replace(',', '')
+                    try:
+                        analysis["target_value"] = float(amount_str)
+                        analysis["unit"] = "USD"
+                        break
+                    except ValueError:
+                        continue
+            
+            # Extract percentages
+            percent_pattern = r'(\d+(?:\.\d+)?)\s*(?:%|percent)'
+            percent_match = re.search(percent_pattern, input_lower)
+            if percent_match:
+                percentage = float(percent_match.group(1))
+                if 'win' in input_lower or 'success' in input_lower:
+                    analysis["goal_type"] = "win_rate"
+                    analysis["target_value"] = percentage
+                    analysis["unit"] = "%"
+            
+            # Determine goal type and timeframe
+            if any(word in input_lower for word in ['profit', 'money', 'earn', 'make', '$']):
+                analysis["goal_type"] = "profit_target"
+                analysis["suggested_name"] = f"Profit Target: ${analysis['target_value']}"
+                
+            if any(word in input_lower for word in ['win rate', 'success rate', 'accuracy']):
+                analysis["goal_type"] = "win_rate"
+                analysis["suggested_name"] = f"Win Rate: {analysis['target_value']}%"
+                
+            if any(word in input_lower for word in ['trade', 'trades', 'transaction']):
+                analysis["goal_type"] = "trade_count"
+                analysis["unit"] = "trades"
+                analysis["suggested_name"] = f"Trade Count: {analysis['target_value']}"
+            
+            # Determine timeframe
+            if any(word in input_lower for word in ['daily', 'day', 'per day']):
+                analysis["timeframe"] = "daily"
+            elif any(word in input_lower for word in ['weekly', 'week', 'per week']):
+                analysis["timeframe"] = "weekly"
+            elif any(word in input_lower for word in ['monthly', 'month', 'per month']):
+                analysis["timeframe"] = "monthly"
+            
+            # Determine priority based on keywords
+            if any(word in input_lower for word in ['urgent', 'critical', 'immediately', 'asap']):
+                analysis["priority"] = 4
+            elif any(word in input_lower for word in ['important', 'high priority', 'soon']):
+                analysis["priority"] = 3
+            elif any(word in input_lower for word in ['low priority', 'when possible', 'eventually']):
+                analysis["priority"] = 1
+            
+            # Risk assessment
+            if analysis["target_value"] > 10000:
+                analysis["risk_level"] = "high"
+                analysis["success_probability"] = 60
+            elif analysis["target_value"] > 1000:
+                analysis["risk_level"] = "medium"
+                analysis["success_probability"] = 75
+            else:
+                analysis["risk_level"] = "low"
+                analysis["success_probability"] = 85
+            
+            # Suggest agents based on goal type
+            if analysis["goal_type"] == "profit_target":
+                analysis["suggested_agents"] = ["marcus_momentum", "alex_arbitrage"]
+            elif analysis["goal_type"] == "win_rate":
+                analysis["suggested_agents"] = ["sophia_reversion", "riley_risk"]
+            elif analysis["goal_type"] == "trade_count":
+                analysis["suggested_agents"] = ["marcus_momentum", "trading_bot_1"]
+            
+            # Suggest farms
+            if analysis["target_value"] > 5000:
+                analysis["suggested_farms"] = ["darvas_box_farm", "elliott_wave_farm"]
+            else:
+                analysis["suggested_farms"] = ["multi_strategy_farm"]
+            
+            # Set default name if not set
+            if not analysis["suggested_name"]:
+                analysis["suggested_name"] = f"Custom Goal: {input_text[:50]}..."
+            
+            logger.info(f"Analyzed natural language goal: {input_text}")
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Failed to analyze natural language goal: {e}")
+            # Return basic fallback analysis
+            return {
+                "input": input_text,
+                "suggested_name": f"Goal: {input_text[:50]}...",
+                "description": f"Goal created from: \"{input_text}\"",
+                "goal_type": "custom",
+                "target_value": 1000,
+                "priority": 2,
+                "unit": "USD",
+                "timeframe": "daily",
+                "feasibility": "Medium",
+                "risk_level": "medium",
+                "success_probability": 70,
+                "suggested_agents": [],
+                "suggested_farms": []
+            }
+
+    async def get_goal_metrics(self) -> Dict[str, Any]:
+        """Get comprehensive goal metrics for dashboard"""
+        try:
+            total_goals = len(self.active_goals) + len(self.completed_goals)
+            active_goals = [g for g in self.active_goals.values() if g.status == GoalStatus.ACTIVE]
+            
+            # Calculate average progress
+            avg_progress = 0.0
+            if self.active_goals:
+                total_progress = sum(goal.progress_percentage for goal in self.active_goals.values())
+                avg_progress = total_progress / len(self.active_goals)
+            
+            # Calculate completion rate
+            completion_rate = await self._calculate_goal_completion_rate()
+            
+            # Get total profit from completed goals
+            total_profit = sum(
+                float(completion.total_profit) 
+                for completion in self.completed_goals.values()
+            )
+            
+            return {
+                "total_goals": total_goals,
+                "active_goals": len(active_goals),
+                "completed_goals": len(self.completed_goals),
+                "pending_goals": len([g for g in self.active_goals.values() if g.status == GoalStatus.PENDING]),
+                "average_progress": avg_progress,
+                "completion_rate": completion_rate * 100,
+                "total_profit": total_profit,
+                "goals_by_type": self._get_goals_by_type(),
+                "goals_by_priority": self._get_goals_by_priority(),
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get goal metrics: {e}")
+            return {
+                "total_goals": 0,
+                "active_goals": 0,
+                "completed_goals": 0,
+                "pending_goals": 0,
+                "average_progress": 0.0,
+                "completion_rate": 0.0,
+                "total_profit": 0.0,
+                "goals_by_type": {},
+                "goals_by_priority": {},
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+
+    def _get_goals_by_type(self) -> Dict[str, int]:
+        """Get goal counts by type"""
+        type_counts = {}
+        for goal in self.active_goals.values():
+            goal_type = goal.goal_type.value
+            type_counts[goal_type] = type_counts.get(goal_type, 0) + 1
+        return type_counts
+
+    def _get_goals_by_priority(self) -> Dict[str, int]:
+        """Get goal counts by priority"""
+        priority_counts = {}
+        for goal in self.active_goals.values():
+            priority = goal.priority.value
+            priority_counts[str(priority)] = priority_counts.get(str(priority), 0) + 1
+        return priority_counts
+
 # Factory function for service registry
 def create_goal_management_service():
     """Factory function to create GoalManagementService instance"""

@@ -246,7 +246,7 @@ let defaultClient: TradingWebSocketClient | null = null;
 
 export function createWebSocketClient(config?: Partial<WebSocketConfig>): TradingWebSocketClient {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-  const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
+  const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/dashboard';
   
   return new TradingWebSocketClient({
     url: wsUrl,

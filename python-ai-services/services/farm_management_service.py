@@ -809,6 +809,158 @@ class FarmManagementService:
         """Get all active farms"""
         return [farm for farm in self.active_farms.values() if farm.status in [FarmStatus.ACTIVE, FarmStatus.PAUSED]]
     
+    async def start_farm(self, farm_id: str) -> bool:
+        """Start a farm (same as activate)"""
+        return await self.activate_farm(farm_id)
+
+    async def stop_farm(self, farm_id: str) -> bool:
+        """Stop a farm by setting it to inactive"""
+        try:
+            farm = self.active_farms.get(farm_id)
+            if not farm:
+                logger.error(f"Farm {farm_id} not found")
+                return False
+
+            # Update status
+            farm.status = FarmStatus.INACTIVE
+            
+            # Update in database
+            if self.supabase:
+                self.supabase.table('farms').update({
+                    'status': farm.status.value
+                }).eq('farm_id', farm_id).execute()
+
+            # Update cache
+            if self.redis:
+                await self.redis.setex(
+                    f"farm:{farm_id}",
+                    3600,
+                    json.dumps(asdict(farm), default=str)
+                )
+
+            logger.info(f"Stopped farm: {farm.farm_name} ({farm_id})")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to stop farm {farm_id}: {e}")
+            return False
+
+    async def get_farm_agents(self, farm_id: str) -> List[Dict[str, Any]]:
+        """Get all agents assigned to a farm"""
+        try:
+            farm = self.active_farms.get(farm_id)
+            if not farm:
+                return []
+
+            agent_assignments = []
+            for agent_id in farm.assigned_agents:
+                assignment = self.agent_assignments.get(f"{farm_id}_{agent_id}")
+                if assignment:
+                    agent_assignments.append({
+                        "agent_id": assignment.agent_id,
+                        "farm_id": assignment.farm_id,
+                        "agent_name": f"Agent {agent_id.split('_')[-1]}",
+                        "allocation_percentage": float(assignment.allocation_percentage),
+                        "role": assignment.role,
+                        "status": assignment.status.value,
+                        "assigned_at": assignment.assigned_at.isoformat()
+                    })
+
+            return agent_assignments
+
+        except Exception as e:
+            logger.error(f"Failed to get farm agents for {farm_id}: {e}")
+            return []
+
+    async def get_farm_performance(self, farm_id: str) -> Optional[Dict[str, Any]]:
+        """Get farm performance metrics"""
+        try:
+            performance = await self.calculate_farm_performance(farm_id)
+            if not performance:
+                return None
+
+            return {
+                "farm_id": performance.farm_id,
+                "total_profit_loss": float(performance.total_profit),
+                "daily_profit_loss": float(performance.daily_profit),
+                "win_rate": performance.win_rate,
+                "total_trades": performance.total_trades,
+                "successful_trades": performance.successful_trades,
+                "average_trade_duration": performance.avg_trade_duration,
+                "sharpe_ratio": performance.sharpe_ratio,
+                "max_drawdown": performance.max_drawdown,
+                "last_updated": performance.last_updated.isoformat()
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get farm performance for {farm_id}: {e}")
+            return None
+
+    async def get_farm_metrics(self) -> Dict[str, Any]:
+        """Get comprehensive farm metrics for dashboard"""
+        try:
+            active_farms = [f for f in self.active_farms.values() if f.status == FarmStatus.ACTIVE]
+            total_agents = sum(farm.current_agents for farm in self.active_farms.values())
+            
+            # Calculate total profit across all farms
+            total_profit = Decimal("0")
+            total_trades = 0
+            avg_performance = 0.0
+            
+            performance_count = 0
+            for farm in self.active_farms.values():
+                perf = await self.calculate_farm_performance(farm.farm_id)
+                if perf:
+                    total_profit += perf.total_profit
+                    total_trades += perf.total_trades
+                    avg_performance += perf.sharpe_ratio or 0.0
+                    performance_count += 1
+
+            if performance_count > 0:
+                avg_performance = avg_performance / performance_count
+
+            return {
+                "total_farms": len(self.active_farms),
+                "active_farms": len(active_farms),
+                "total_profit_loss": float(total_profit),
+                "total_agents": total_agents,
+                "average_performance": avg_performance,
+                "total_trades": total_trades,
+                "farms_by_type": self._get_farms_by_type(),
+                "farms_by_status": self._get_farms_by_status(),
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get farm metrics: {e}")
+            return {
+                "total_farms": 0,
+                "active_farms": 0,
+                "total_profit_loss": 0.0,
+                "total_agents": 0,
+                "average_performance": 0.0,
+                "total_trades": 0,
+                "farms_by_type": {},
+                "farms_by_status": {},
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+
+    def _get_farms_by_type(self) -> Dict[str, int]:
+        """Get farm counts by type"""
+        type_counts = {}
+        for farm in self.active_farms.values():
+            farm_type = farm.farm_type.value
+            type_counts[farm_type] = type_counts.get(farm_type, 0) + 1
+        return type_counts
+
+    def _get_farms_by_status(self) -> Dict[str, int]:
+        """Get farm counts by status"""
+        status_counts = {}
+        for farm in self.active_farms.values():
+            status = farm.status.value
+            status_counts[status] = status_counts.get(status, 0) + 1
+        return status_counts
+
     async def get_service_status(self) -> Dict[str, Any]:
         """Get service status and metrics"""
         active_farms = sum(1 for farm in self.active_farms.values() if farm.status == FarmStatus.ACTIVE)
