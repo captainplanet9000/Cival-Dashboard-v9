@@ -38,9 +38,9 @@
     "ai:test": "cd python-ai-services && python -m pytest",
     "dev:full": "concurrently \"npm run ai:dev\" \"npm run dev\"",
     "setup:ai": "cd python-ai-services && python -m venv venv && venv/Scripts/activate && pip install -r requirements.txt",
-    "railway:install": "npm ci && pip install -r requirements.txt",
+    "railway:install": "npm ci",
     "railway:build": "npm run build",
-    "railway:start": "concurrently \"npm start\" \"cd python-ai-services && python main_consolidated.py\"",
+    "railway:start": "npm start",
     "railway:start:safe": "npm start",
     "railway:start:frontend": "npm start",
     "railway:start:backend": "cd python-ai-services && python main_consolidated.py"

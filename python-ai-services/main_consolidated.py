@@ -2729,6 +2729,417 @@ async def get_vaults_summary():
         logger.error(f"Failed to get vaults summary: {e}")
         raise HTTPException(status_code=500, detail=f"Vaults summary error: {str(e)}")
 
+# ==========================================
+# ENHANCED MARKET DATA API ENDPOINTS
+# ==========================================
+
+@app.get("/api/v1/market/live-data/{symbol}")
+async def get_live_market_data(symbol: str):
+    """Get real-time market data for a specific symbol"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            # Return comprehensive mock live data
+            import random
+            base_prices = {
+                "BTC": 67234.85, "ETH": 3847.92, "SOL": 142.73, "ADA": 0.4567,
+                "MATIC": 0.8934, "DOT": 6.234, "LINK": 14.567, "UNI": 7.891
+            }
+            base_price = base_prices.get(symbol.upper(), random.uniform(1, 100))
+            
+            return {
+                "symbol": symbol.upper(),
+                "price": round(base_price * random.uniform(0.98, 1.02), 4),
+                "change24h": round(random.uniform(-10, 10), 2),
+                "changePercent24h": round(random.uniform(-15, 15), 2),
+                "volume24h": random.randint(1000000, 100000000),
+                "marketCap": base_price * random.randint(1000000, 100000000),
+                "high24h": round(base_price * random.uniform(1.01, 1.08), 4),
+                "low24h": round(base_price * random.uniform(0.92, 0.99), 4),
+                "open24h": round(base_price * random.uniform(0.95, 1.05), 4),
+                "volatility": round(random.uniform(0.15, 0.45), 3),
+                "bid": round(base_price * 0.999, 4),
+                "ask": round(base_price * 1.001, 4),
+                "spread": round(base_price * 0.002, 4),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source": "aggregated_feed",
+                "exchanges": [
+                    {"name": "Binance", "price": round(base_price * random.uniform(0.999, 1.001), 4)},
+                    {"name": "Coinbase", "price": round(base_price * random.uniform(0.999, 1.001), 4)},
+                    {"name": "Kraken", "price": round(base_price * random.uniform(0.999, 1.001), 4)}
+                ]
+            }
+        
+        live_data = await market_data_service.get_live_data(symbol)
+        return live_data
+    except Exception as e:
+        logger.error(f"Failed to get live market data for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Live market data error: {str(e)}")
+
+@app.get("/api/v1/market/watchlist")
+async def get_market_watchlist():
+    """Get watchlist with real-time data for all tracked symbols"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            # Return comprehensive watchlist
+            symbols = ["BTC", "ETH", "SOL", "ADA", "MATIC", "DOT", "LINK", "UNI", "AVAX", "ATOM"]
+            watchlist = []
+            
+            for symbol in symbols:
+                import random
+                base_prices = {
+                    "BTC": 67234.85, "ETH": 3847.92, "SOL": 142.73, "ADA": 0.4567,
+                    "MATIC": 0.8934, "DOT": 6.234, "LINK": 14.567, "UNI": 7.891,
+                    "AVAX": 23.456, "ATOM": 8.912
+                }
+                base_price = base_prices.get(symbol, random.uniform(1, 100))
+                change_pct = random.uniform(-8, 8)
+                
+                watchlist.append({
+                    "symbol": symbol,
+                    "name": f"{symbol} Token",
+                    "price": round(base_price * random.uniform(0.99, 1.01), 4),
+                    "change24h": round(base_price * change_pct / 100, 4),
+                    "changePercent24h": round(change_pct, 2),
+                    "volume24h": random.randint(5000000, 200000000),
+                    "marketCap": base_price * random.randint(5000000, 500000000),
+                    "rank": symbols.index(symbol) + 1,
+                    "isWatched": True,
+                    "alerts": {
+                        "priceAlert": base_price * 1.05,
+                        "volumeAlert": None,
+                        "hasActiveAlerts": random.choice([True, False])
+                    },
+                    "technicalIndicators": {
+                        "rsi": round(random.uniform(30, 70), 1),
+                        "macd": "bullish" if change_pct > 0 else "bearish",
+                        "movingAverage": round(base_price * random.uniform(0.98, 1.02), 4),
+                        "support": round(base_price * 0.95, 4),
+                        "resistance": round(base_price * 1.05, 4)
+                    },
+                    "sentiment": {
+                        "score": round(random.uniform(0.3, 0.8), 2),
+                        "trend": "bullish" if change_pct > 2 else "bearish" if change_pct < -2 else "neutral"
+                    },
+                    "lastUpdated": datetime.now(timezone.utc).isoformat()
+                })
+            
+            return {
+                "watchlist": watchlist,
+                "totalSymbols": len(watchlist),
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        watchlist = await market_data_service.get_watchlist()
+        return watchlist
+    except Exception as e:
+        logger.error(f"Failed to get market watchlist: {e}")
+        raise HTTPException(status_code=500, detail=f"Market watchlist error: {str(e)}")
+
+@app.post("/api/v1/market/watchlist/{symbol}")
+async def add_to_watchlist(symbol: str, alert_data: dict = None):
+    """Add symbol to watchlist with optional alerts"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            return {
+                "symbol": symbol.upper(),
+                "status": "added",
+                "alerts": alert_data or {},
+                "addedAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Symbol added to watchlist successfully (mock mode)"
+            }
+        
+        result = await market_data_service.add_to_watchlist(symbol, alert_data)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to add {symbol} to watchlist: {e}")
+        raise HTTPException(status_code=500, detail=f"Watchlist addition error: {str(e)}")
+
+@app.delete("/api/v1/market/watchlist/{symbol}")
+async def remove_from_watchlist(symbol: str):
+    """Remove symbol from watchlist"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            return {
+                "symbol": symbol.upper(),
+                "status": "removed",
+                "removedAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Symbol removed from watchlist successfully (mock mode)"
+            }
+        
+        result = await market_data_service.remove_from_watchlist(symbol)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to remove {symbol} from watchlist: {e}")
+        raise HTTPException(status_code=500, detail=f"Watchlist removal error: {str(e)}")
+
+@app.get("/api/v1/market/historical/{symbol}")
+async def get_historical_market_data(
+    symbol: str, 
+    timeframe: str = "1h", 
+    period: str = "30d",
+    limit: int = 100
+):
+    """Get historical market data with flexible timeframes"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            # Generate mock historical data
+            import random
+            from datetime import timedelta
+            
+            base_price = 67234.85 if symbol.upper() == "BTC" else 3847.92 if symbol.upper() == "ETH" else 142.73
+            data_points = []
+            current_time = datetime.now(timezone.utc)
+            
+            # Generate data points based on timeframe
+            time_delta = timedelta(hours=1) if timeframe == "1h" else timedelta(days=1) if timeframe == "1d" else timedelta(minutes=15)
+            
+            for i in range(limit):
+                timestamp = current_time - (time_delta * i)
+                price_variation = random.uniform(0.95, 1.05)
+                
+                open_price = base_price * price_variation
+                close_price = open_price * random.uniform(0.98, 1.02)
+                high_price = max(open_price, close_price) * random.uniform(1.0, 1.02)
+                low_price = min(open_price, close_price) * random.uniform(0.98, 1.0)
+                volume = random.randint(1000000, 50000000)
+                
+                data_points.append({
+                    "timestamp": timestamp.isoformat(),
+                    "open": round(open_price, 4),
+                    "high": round(high_price, 4),
+                    "low": round(low_price, 4),
+                    "close": round(close_price, 4),
+                    "volume": volume,
+                    "trades": random.randint(1000, 10000)
+                })
+            
+            data_points.reverse()  # Chronological order
+            
+            return {
+                "symbol": symbol.upper(),
+                "timeframe": timeframe,
+                "period": period,
+                "data": data_points,
+                "count": len(data_points),
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        historical_data = await market_data_service.get_historical_data(symbol, timeframe, period, limit)
+        return historical_data
+    except Exception as e:
+        logger.error(f"Failed to get historical data for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Historical data error: {str(e)}")
+
+@app.get("/api/v1/market/technical-analysis/{symbol}")
+async def get_technical_analysis(symbol: str, timeframe: str = "1h"):
+    """Get comprehensive technical analysis for a symbol"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            import random
+            return {
+                "symbol": symbol.upper(),
+                "timeframe": timeframe,
+                "indicators": {
+                    "rsi": {
+                        "value": round(random.uniform(25, 75), 1),
+                        "signal": "neutral",
+                        "interpretation": "Neither overbought nor oversold"
+                    },
+                    "macd": {
+                        "macd": round(random.uniform(-100, 100), 2),
+                        "signal": round(random.uniform(-100, 100), 2),
+                        "histogram": round(random.uniform(-50, 50), 2),
+                        "crossover": "bullish" if random.choice([True, False]) else "bearish"
+                    },
+                    "movingAverages": {
+                        "sma20": round(random.uniform(60000, 70000), 2),
+                        "sma50": round(random.uniform(58000, 72000), 2),
+                        "ema12": round(random.uniform(62000, 68000), 2),
+                        "ema26": round(random.uniform(61000, 69000), 2)
+                    },
+                    "bollingerBands": {
+                        "upper": round(random.uniform(68000, 72000), 2),
+                        "middle": round(random.uniform(65000, 68000), 2),
+                        "lower": round(random.uniform(62000, 65000), 2),
+                        "bandwidth": round(random.uniform(0.05, 0.15), 3)
+                    },
+                    "stochastic": {
+                        "k": round(random.uniform(20, 80), 1),
+                        "d": round(random.uniform(20, 80), 1),
+                        "signal": "neutral"
+                    }
+                },
+                "patterns": [
+                    {
+                        "name": "Bull Flag",
+                        "confidence": round(random.uniform(0.6, 0.9), 2),
+                        "status": "forming"
+                    },
+                    {
+                        "name": "Support Level",
+                        "level": round(random.uniform(65000, 67000), 2),
+                        "confidence": round(random.uniform(0.7, 0.95), 2)
+                    }
+                ],
+                "sentiment": {
+                    "overall": random.choice(["bullish", "bearish", "neutral"]),
+                    "score": round(random.uniform(0.3, 0.8), 2),
+                    "confidence": round(random.uniform(0.6, 0.9), 2)
+                },
+                "recommendation": {
+                    "action": random.choice(["buy", "sell", "hold"]),
+                    "strength": random.choice(["weak", "moderate", "strong"]),
+                    "reasoning": "Based on current technical indicators and market conditions"
+                },
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        technical_analysis = await market_data_service.get_technical_analysis(symbol, timeframe)
+        return technical_analysis
+    except Exception as e:
+        logger.error(f"Failed to get technical analysis for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Technical analysis error: {str(e)}")
+
+@app.get("/api/v1/market/sentiment")
+async def get_market_sentiment():
+    """Get overall market sentiment and fear/greed index"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            import random
+            return {
+                "overall": {
+                    "sentiment": random.choice(["bullish", "bearish", "neutral"]),
+                    "score": round(random.uniform(0.3, 0.8), 2),
+                    "fearGreedIndex": random.randint(20, 80),
+                    "marketCondition": random.choice(["bull_market", "bear_market", "sideways"])
+                },
+                "sectors": [
+                    {
+                        "name": "DeFi",
+                        "sentiment": "bullish",
+                        "score": round(random.uniform(0.6, 0.8), 2),
+                        "topCoins": ["UNI", "AAVE", "COMP"]
+                    },
+                    {
+                        "name": "Layer 1",
+                        "sentiment": "neutral",
+                        "score": round(random.uniform(0.4, 0.6), 2),
+                        "topCoins": ["ETH", "SOL", "ADA"]
+                    },
+                    {
+                        "name": "Gaming",
+                        "sentiment": "bearish",
+                        "score": round(random.uniform(0.2, 0.4), 2),
+                        "topCoins": ["AXS", "SAND", "MANA"]
+                    }
+                ],
+                "socialMetrics": {
+                    "twitterMentions": random.randint(10000, 100000),
+                    "redditPosts": random.randint(1000, 10000),
+                    "newsArticles": random.randint(100, 1000),
+                    "influencerSentiment": round(random.uniform(0.3, 0.8), 2)
+                },
+                "volatilityIndex": round(random.uniform(0.15, 0.45), 2),
+                "marketDominance": {
+                    "btc": round(random.uniform(40, 50), 1),
+                    "eth": round(random.uniform(15, 25), 1),
+                    "altcoins": round(random.uniform(30, 40), 1)
+                },
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        sentiment = await market_data_service.get_market_sentiment()
+        return sentiment
+    except Exception as e:
+        logger.error(f"Failed to get market sentiment: {e}")
+        raise HTTPException(status_code=500, detail=f"Market sentiment error: {str(e)}")
+
+@app.get("/api/v1/market/alerts")
+async def get_market_alerts():
+    """Get active market alerts and notifications"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            return {
+                "alerts": [
+                    {
+                        "id": "alert_001",
+                        "type": "price_alert",
+                        "symbol": "BTC",
+                        "condition": "price_above",
+                        "threshold": 68000.0,
+                        "currentValue": 67234.85,
+                        "status": "active",
+                        "triggered": False,
+                        "createdAt": "2024-01-15T10:00:00Z"
+                    },
+                    {
+                        "id": "alert_002",
+                        "type": "volume_alert",
+                        "symbol": "ETH",
+                        "condition": "volume_spike",
+                        "threshold": 50000000,
+                        "currentValue": 45678912,
+                        "status": "active",
+                        "triggered": False,
+                        "createdAt": "2024-01-15T11:30:00Z"
+                    },
+                    {
+                        "id": "alert_003",
+                        "type": "technical_alert",
+                        "symbol": "SOL",
+                        "condition": "rsi_oversold",
+                        "threshold": 30,
+                        "currentValue": 28.5,
+                        "status": "triggered",
+                        "triggered": True,
+                        "triggeredAt": "2024-01-15T14:45:00Z",
+                        "createdAt": "2024-01-15T09:15:00Z"
+                    }
+                ],
+                "totalAlerts": 3,
+                "activeAlerts": 2,
+                "triggeredAlerts": 1,
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        alerts = await market_data_service.get_market_alerts()
+        return alerts
+    except Exception as e:
+        logger.error(f"Failed to get market alerts: {e}")
+        raise HTTPException(status_code=500, detail=f"Market alerts error: {str(e)}")
+
+@app.post("/api/v1/market/alerts")
+async def create_market_alert(alert_data: dict):
+    """Create a new market alert"""
+    try:
+        market_data_service = registry.get_service("market_data_service")
+        if not market_data_service:
+            import uuid
+            return {
+                "alertId": str(uuid.uuid4()),
+                "symbol": alert_data.get("symbol"),
+                "type": alert_data.get("type"),
+                "condition": alert_data.get("condition"),
+                "threshold": alert_data.get("threshold"),
+                "status": "active",
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Market alert created successfully (mock mode)"
+            }
+        
+        alert = await market_data_service.create_alert(alert_data)
+        return alert
+    except Exception as e:
+        logger.error(f"Failed to create market alert: {e}")
+        raise HTTPException(status_code=500, detail=f"Alert creation error: {str(e)}")
+
 # Development and debugging endpoints
 if DEBUG:
     @app.get("/api/v1/debug/services")

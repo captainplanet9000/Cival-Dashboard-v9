@@ -1,12 +1,16 @@
-# Nixpacks Configuration - Frontend Only for Initial Deployment
+# Nixpacks Configuration - Node.js Only
 [phases.setup]
 nixPkgs = ['nodejs-18_x']
 
 [phases.install]
 cmds = ['npm ci']
 
-[phases.build]
+[phases.build] 
 cmds = ['npm run build']
 
 [start]
 cmd = 'npm start'
+
+[variables]
+NODE_ENV = 'production'
+NIXPACKS_NODE_VERSION = '18'
