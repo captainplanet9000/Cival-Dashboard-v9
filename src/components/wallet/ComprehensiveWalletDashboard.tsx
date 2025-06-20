@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Wallet, 
-  Building, 
+  Home, 
   Shield, 
   Activity, 
   TrendingUp, 
@@ -179,7 +179,7 @@ export function ComprehensiveWalletDashboard() {
                 </p>
               </div>
               <div className="p-3 bg-emerald-500 rounded-full">
-                <Building className="h-6 w-6 text-white" />
+                <Home className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>
@@ -305,7 +305,7 @@ export function ComprehensiveWalletDashboard() {
             
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardContent className="p-6 text-center">
-                <Building className="h-12 w-12 mx-auto mb-4 text-emerald-500" />
+                <Home className="h-12 w-12 mx-auto mb-4 text-emerald-500" />
                 <h3 className="font-semibold mb-2">Banking Services</h3>
                 <p className="text-sm text-muted-foreground">Enterprise vault operations</p>
               </CardContent>
@@ -345,7 +345,7 @@ export function ComprehensiveWalletDashboard() {
                         {activity.type === 'swap' && <RefreshCw className="h-4 w-4" />}
                         {activity.type === 'bridge' && <Globe className="h-4 w-4" />}
                         {activity.type === 'stake' && <Zap className="h-4 w-4" />}
-                        {activity.type === 'vault' && <Building className="h-4 w-4" />}
+                        {activity.type === 'vault' && <Home className="h-4 w-4" />}
                       </div>
                       <div>
                         <div className="font-medium">
@@ -378,7 +378,7 @@ export function ComprehensiveWalletDashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5 text-emerald-500" />
+                <Home className="h-5 w-5 text-emerald-500" />
                 Vault Banking System
               </CardTitle>
               <CardDescription>

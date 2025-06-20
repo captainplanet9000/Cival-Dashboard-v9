@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import { 
-  Building, 
+  Home, 
   DollarSign, 
   TrendingUp, 
   TrendingDown, 
@@ -243,7 +243,7 @@ export function VaultBankingDashboard() {
                 <p className="text-sm text-blue-600 mt-1">All verified</p>
               </div>
               <div className="p-3 bg-blue-500 rounded-full">
-                <Building className="h-6 w-6 text-white" />
+                <Home className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>

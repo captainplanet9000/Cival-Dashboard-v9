@@ -25,168 +25,108 @@ import {
   Edit,
   Trash2,
   RefreshCw,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { backendApi } from '@/lib/api/backend-client';
 
 interface Goal {
-  id: string;
-  title: string;
+  goal_id: string;
+  goal_name: string;
   description: string;
-  naturalLanguageInput: string;
-  type: 'profit' | 'performance' | 'risk' | 'custom';
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'paused';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  target: {
-    value: number;
-    unit: string;
-    timeframe: string;
-  };
-  current: {
-    value: number;
-    progress: number;
-  };
-  createdAt: string;
-  deadline: string;
-  assignedAgents: string[];
-  metrics: {
+  goal_type: string;
+  status: string;
+  priority: number;
+  target_value: number;
+  current_value: number;
+  progress_percentage: number;
+  created_at: string;
+  target_date?: string;
+  completed_at?: string;
+  assigned_agents: string[];
+  assigned_farms: string[];
+  metadata?: any;
+  // Additional fields for display
+  naturalLanguageInput?: string;
+  unit?: string;
+  timeframe?: string;
+  metrics?: {
     successProbability: number;
     estimatedCompletion: string;
     riskLevel: string;
   };
-  aiAnalysis: {
+  aiAnalysis?: {
     feasibility: string;
     recommendations: string[];
     requiredActions: string[];
   };
 }
 
-// Mock goals data
-const mockGoals: Goal[] = [
-  {
-    id: 'goal-1',
-    title: 'Achieve $5000 Daily Profit',
-    description: 'Generate consistent daily profit of $5000 through coordinated agent trading',
-    naturalLanguageInput: 'I want to make $5000 every day using my trading agents',
-    type: 'profit',
-    status: 'in_progress',
-    priority: 'high',
-    target: {
-      value: 5000,
-      unit: 'USD',
-      timeframe: 'daily'
-    },
-    current: {
-      value: 3247.50,
-      progress: 64.95
-    },
-    createdAt: '2024-01-15',
-    deadline: '2024-02-15',
-    assignedAgents: ['Darvas Farm', 'Elliott Wave Farm', 'Multi-Strategy Farm'],
-    metrics: {
-      successProbability: 78.5,
-      estimatedCompletion: '2024-01-28',
-      riskLevel: 'medium'
-    },
-    aiAnalysis: {
-      feasibility: 'Highly achievable with current agent performance and market conditions',
-      recommendations: [
-        'Increase allocation to high-performing Darvas Box agents',
-        'Optimize Elliott Wave farm for current market volatility',
-        'Implement dynamic position sizing based on market conditions'
-      ],
-      requiredActions: [
-        'Monitor daily performance against target',
-        'Adjust agent parameters based on market feedback',
-        'Implement risk controls to protect gains'
-      ]
-    }
-  },
-  {
-    id: 'goal-2',
-    title: 'Improve Overall Win Rate to 75%',
-    description: 'Optimize agent performance to achieve 75% win rate across all strategies',
-    naturalLanguageInput: 'Help me get my trading win rate up to 75% or higher',
-    type: 'performance',
-    status: 'in_progress',
-    priority: 'medium',
-    target: {
-      value: 75,
-      unit: '%',
-      timeframe: 'monthly'
-    },
-    current: {
-      value: 68.2,
-      progress: 90.93
-    },
-    createdAt: '2024-01-10',
-    deadline: '2024-02-10',
-    assignedAgents: ['All Active Agents'],
-    metrics: {
-      successProbability: 85.2,
-      estimatedCompletion: '2024-01-25',
-      riskLevel: 'low'
-    },
-    aiAnalysis: {
-      feasibility: 'Very achievable through strategy optimization and better market timing',
-      recommendations: [
-        'Focus on high-probability setups during optimal market hours',
-        'Implement stricter entry criteria for lower-performing strategies',
-        'Enhance risk management to reduce losing trades'
-      ],
-      requiredActions: [
-        'Analyze losing trades to identify patterns',
-        'Optimize agent parameters for current market regime',
-        'Implement dynamic strategy switching based on market conditions'
-      ]
-    }
-  },
-  {
-    id: 'goal-3',
-    title: 'Reduce Maximum Drawdown Below 5%',
-    description: 'Implement risk controls to keep maximum drawdown under 5%',
-    naturalLanguageInput: 'Keep my maximum losses under 5% of my trading capital',
-    type: 'risk',
-    status: 'completed',
-    priority: 'critical',
-    target: {
-      value: 5,
-      unit: '%',
-      timeframe: 'ongoing'
-    },
-    current: {
-      value: 3.2,
-      progress: 100
-    },
-    createdAt: '2024-01-05',
-    deadline: '2024-01-20',
-    assignedAgents: ['Risk Management System'],
-    metrics: {
-      successProbability: 95.8,
-      estimatedCompletion: '2024-01-18',
-      riskLevel: 'low'
-    },
-    aiAnalysis: {
-      feasibility: 'Successfully achieved through improved position sizing and stop-loss implementation',
-      recommendations: [
-        'Maintain current risk management protocols',
-        'Continue monitoring correlation between strategies',
-        'Implement dynamic position sizing based on volatility'
-      ],
-      requiredActions: [
-        'Regular review of risk metrics',
-        'Continuous monitoring of portfolio exposure',
-        'Adjust position sizes based on market volatility'
-      ]
-    }
-  }
-];
+interface CreateGoalRequest {
+  name: string;
+  description: string;
+  type: string;
+  target_value: number;
+  priority?: number;
+  target_date?: string;
+  assigned_agents?: string[];
+  assigned_farms?: string[];
+  metadata?: any;
+}
+
 
 export default function GoalsPage() {
-  const [goals, setGoals] = useState<Goal[]>(mockGoals);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [newGoalInput, setNewGoalInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [goalMetrics, setGoalMetrics] = useState<any>(null);
+
+  // Load goals on component mount
+  useEffect(() => {
+    loadGoals();
+    loadGoalMetrics();
+  }, []);
+
+  const loadGoals = async () => {
+    try {
+      setIsLoading(true);
+      const response = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/goals`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data.goals || []);
+      } else {
+        console.warn('Failed to load goals, using fallback data');
+        // Fallback to mock data when API is not available
+        setGoals([]);
+      }
+    } catch (error) {
+      console.warn('Failed to load goals:', error);
+      setGoals([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadGoalMetrics = async () => {
+    try {
+      const response = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/goals/metrics`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGoalMetrics(data);
+      }
+    } catch (error) {
+      console.warn('Failed to load goal metrics:', error);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -226,50 +166,117 @@ export default function GoalsPage() {
 
     setIsProcessing(true);
     
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock AI analysis of natural language input
-    const newGoal: Goal = {
-      id: `goal-${Date.now()}`,
-      title: 'AI Generated Goal',
-      description: `Goal created from: "${newGoalInput}"`,
-      naturalLanguageInput: newGoalInput,
-      type: 'custom',
-      status: 'pending',
-      priority: 'medium',
-      target: {
-        value: 1000,
-        unit: 'USD',
-        timeframe: 'daily'
-      },
-      current: {
-        value: 0,
-        progress: 0
-      },
-      createdAt: new Date().toISOString().split('T')[0],
-      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      assignedAgents: ['To be assigned'],
-      metrics: {
-        successProbability: 75.0,
-        estimatedCompletion: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        riskLevel: 'medium'
-      },
-      aiAnalysis: {
-        feasibility: 'AI analysis in progress...',
-        recommendations: ['Analyzing requirements...'],
-        requiredActions: ['Setting up goal parameters...']
+    try {
+      // First, analyze the natural language input
+      const analysisResponse = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/goals/analyze-natural-language`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: newGoalInput })
+        }
+      );
+      
+      let analysisData = null;
+      if (analysisResponse.ok) {
+        analysisData = await analysisResponse.json();
       }
-    };
-
-    setGoals([newGoal, ...goals]);
-    setNewGoalInput('');
-    setIsProcessing(false);
-    toast.success('Goal created successfully! AI analysis complete.');
+      
+      // Create the goal with analyzed data or fallback
+      const goalData: CreateGoalRequest = {
+        name: analysisData?.suggested_name || `Goal: ${newGoalInput.slice(0, 50)}...`,
+        description: analysisData?.description || `Goal created from: "${newGoalInput}"`,
+        type: analysisData?.goal_type || 'custom',
+        target_value: analysisData?.target_value || 1000,
+        priority: analysisData?.priority || 2,
+        target_date: analysisData?.target_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        assigned_agents: analysisData?.suggested_agents || [],
+        assigned_farms: analysisData?.suggested_farms || [],
+        metadata: {
+          natural_language_input: newGoalInput,
+          ai_analysis: analysisData,
+          unit: analysisData?.unit || 'USD',
+          timeframe: analysisData?.timeframe || 'daily'
+        }
+      };
+      
+      // Create the goal
+      const createResponse = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/goals`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(goalData)
+        }
+      );
+      
+      if (createResponse.ok) {
+        const newGoal = await createResponse.json();
+        setGoals([newGoal, ...goals]);
+        setNewGoalInput('');
+        toast.success('Goal created successfully! AI analysis complete.');
+        
+        // Reload metrics
+        loadGoalMetrics();
+      } else {
+        toast.error('Failed to create goal');
+      }
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      toast.error('Failed to create goal. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const formatValue = (value: number, unit: string) => {
-    if (unit === 'USD') {
+  const updateGoal = async (goalId: string, updates: Partial<Goal>) => {
+    try {
+      const response = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/goals/${goalId}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        }
+      );
+      
+      if (response.ok) {
+        const updatedGoal = await response.json();
+        setGoals(goals.map(goal => 
+          goal.goal_id === goalId ? updatedGoal : goal
+        ));
+        toast.success('Goal updated successfully');
+      } else {
+        toast.error('Failed to update goal');
+      }
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      toast.error('Failed to update goal');
+    }
+  };
+
+  const deleteGoal = async (goalId: string) => {
+    try {
+      const response = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/goals/${goalId}`,
+        { method: 'DELETE' }
+      );
+      
+      if (response.ok) {
+        setGoals(goals.filter(goal => goal.goal_id !== goalId));
+        toast.success('Goal deleted successfully');
+        loadGoalMetrics();
+      } else {
+        toast.error('Failed to delete goal');
+      }
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      toast.error('Failed to delete goal');
+    }
+  };
+
+  const formatValue = (value: number, unit?: string) => {
+    if (unit === 'USD' || (!unit && value > 10)) {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
@@ -277,12 +284,14 @@ export default function GoalsPage() {
     } else if (unit === '%') {
       return `${value}%`;
     }
-    return `${value} ${unit}`;
+    return `${value} ${unit || ''}`;
   };
 
   const completedGoals = goals.filter(goal => goal.status === 'completed').length;
   const inProgressGoals = goals.filter(goal => goal.status === 'in_progress').length;
-  const totalProgress = goals.reduce((sum, goal) => sum + goal.current.progress, 0) / goals.length;
+  const totalProgress = goals.length > 0 
+    ? goals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goals.length 
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -295,7 +304,7 @@ export default function GoalsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={loadGoals}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh Analysis
           </Button>
@@ -314,7 +323,13 @@ export default function GoalsPage() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{goals.length}</div>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                goals.length
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               {completedGoals} completed
             </p>
@@ -327,7 +342,13 @@ export default function GoalsPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inProgressGoals}</div>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                inProgressGoals
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               Active objectives
             </p>
@@ -340,7 +361,13 @@ export default function GoalsPage() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalProgress.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                `${totalProgress.toFixed(1)}%`
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               Overall completion
             </p>
@@ -354,7 +381,11 @@ export default function GoalsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {goals.length > 0 ? ((completedGoals / goals.length) * 100).toFixed(1) : 0}%
+              {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                `${goals.length > 0 ? ((completedGoals / goals.length) * 100).toFixed(1) : 0}%`
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               Goal completion rate
@@ -420,103 +451,148 @@ export default function GoalsPage() {
 
       {/* Goals List */}
       <div className="space-y-4">
-        {goals.map((goal) => (
-          <Card key={goal.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <CardTitle>{goal.title}</CardTitle>
-                    <Badge className={getStatusColor(goal.status)}>
-                      {goal.status.replace('_', ' ')}
-                    </Badge>
-                    <Badge className={getPriorityColor(goal.priority)}>
-                      {goal.priority}
-                    </Badge>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading goals...</p>
+          </div>
+        ) : goals.length === 0 ? (
+          <div className="text-center py-8">
+            <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">No goals yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Create your first trading goal using natural language above
+            </p>
+          </div>
+        ) : (
+          goals.map((goal) => (
+            <Card key={goal.goal_id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CardTitle>{goal.goal_name}</CardTitle>
+                      <Badge className={getStatusColor(goal.status)}>
+                        {goal.status.replace('_', ' ')}
+                      </Badge>
+                      <Badge className={getPriorityColor(
+                        goal.priority === 1 ? 'low' :
+                        goal.priority === 2 ? 'medium' :
+                        goal.priority === 3 ? 'high' : 'critical'
+                      )}>
+                        {goal.priority === 1 ? 'low' :
+                         goal.priority === 2 ? 'medium' :
+                         goal.priority === 3 ? 'high' : 'critical'}
+                      </Badge>
+                    </div>
+                    <CardDescription>{goal.description}</CardDescription>
+                    {goal.metadata?.natural_language_input && (
+                      <div className="text-xs text-muted-foreground italic">
+                        "{goal.metadata.natural_language_input}"
+                      </div>
+                    )}
                   </div>
-                  <CardDescription>{goal.description}</CardDescription>
-                  {goal.naturalLanguageInput && (
-                    <div className="text-xs text-muted-foreground italic">
-                      "{goal.naturalLanguageInput}"
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => deleteGoal(goal.goal_id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Target</div>
+                    <div className="font-medium text-lg">
+                      {formatValue(goal.target_value, goal.metadata?.unit)}
+                      {goal.metadata?.timeframe && (
+                        <span className="text-sm text-muted-foreground ml-1">
+                          / {goal.metadata.timeframe}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Current</div>
+                    <div className="font-medium text-lg">
+                      {formatValue(goal.current_value, goal.metadata?.unit)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Success Probability</div>
+                    <div className="font-medium text-lg text-blue-600">
+                      {goal.metrics?.successProbability || goal.metadata?.ai_analysis?.success_probability || 'TBD'}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span>Progress</span>
+                    <span className="font-medium">{goal.progress_percentage.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={goal.progress_percentage} className="h-2" />
+                </div>
+
+                {/* AI Analysis Summary */}
+                {(goal.aiAnalysis || goal.metadata?.ai_analysis) && (
+                  <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Brain className="h-4 w-4" />
+                      AI Analysis
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <strong>Feasibility:</strong> {goal.aiAnalysis?.feasibility || goal.metadata?.ai_analysis?.feasibility || 'Analysis pending...'}
+                    </div>
+                    <div className="text-sm">
+                      <strong>Risk Level:</strong> 
+                      <span className={`ml-1 ${getRiskColor(goal.metrics?.riskLevel || goal.metadata?.ai_analysis?.risk_level || 'medium')}`}>
+                        {goal.metrics?.riskLevel || goal.metadata?.ai_analysis?.risk_level || 'medium'}
+                      </span>
+                    </div>
+                    {goal.target_date && (
+                      <div className="text-sm">
+                        <strong>Target Date:</strong> {new Date(goal.target_date).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Assigned Agents and Farms */}
+                <div className="mt-3 space-y-2">
+                  {goal.assigned_agents.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Agents:</span>
+                      {goal.assigned_agents.map((agent, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {agent}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {goal.assigned_farms.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Farms:</span>
+                      {goal.assigned_farms.map((farm, index) => (
+                        <Badge key={index} variant="outline" className="text-xs bg-blue-50">
+                          {farm}
+                        </Badge>
+                      ))}
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Target</div>
-                  <div className="font-medium text-lg">
-                    {formatValue(goal.target.value, goal.target.unit)}
-                    <span className="text-sm text-muted-foreground ml-1">
-                      / {goal.target.timeframe}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Current</div>
-                  <div className="font-medium text-lg">
-                    {formatValue(goal.current.value, goal.target.unit)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Success Probability</div>
-                  <div className="font-medium text-lg text-blue-600">
-                    {goal.metrics.successProbability}%
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span>Progress</span>
-                  <span className="font-medium">{goal.current.progress.toFixed(1)}%</span>
-                </div>
-                <Progress value={goal.current.progress} className="h-2" />
-              </div>
-
-              {/* AI Analysis Summary */}
-              <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Brain className="h-4 w-4" />
-                  AI Analysis
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  <strong>Feasibility:</strong> {goal.aiAnalysis.feasibility}
-                </div>
-                <div className="text-sm">
-                  <strong>Risk Level:</strong> 
-                  <span className={`ml-1 ${getRiskColor(goal.metrics.riskLevel)}`}>
-                    {goal.metrics.riskLevel}
-                  </span>
-                </div>
-                <div className="text-sm">
-                  <strong>Est. Completion:</strong> {goal.metrics.estimatedCompletion}
-                </div>
-              </div>
-
-              {/* Assigned Agents */}
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Assigned to:</span>
-                {goal.assignedAgents.map((agent, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {agent}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

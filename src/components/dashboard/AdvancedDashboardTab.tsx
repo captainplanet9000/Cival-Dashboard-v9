@@ -35,7 +35,8 @@ import {
   Cpu,
   Network,
   Server,
-  Cloud
+  Cloud,
+  Home
 } from 'lucide-react'
 import { DynamicComponentLoader, ComponentKey } from '@/components/dashboard-library/DynamicComponentLoader'
 
@@ -248,7 +249,7 @@ const dashboardFeatures: FeatureCard[] = [
     id: 'vault-banking-dashboard',
     title: 'Vault Banking System',
     description: 'Enterprise-grade banking with compliance and risk management',
-    icon: <Building className="h-6 w-6" />,
+    icon: <Home className="h-6 w-6" />,
     componentKey: 'vault-banking-dashboard',
     category: 'Financial',
     status: 'available',

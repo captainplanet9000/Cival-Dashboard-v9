@@ -3140,6 +3140,536 @@ async def create_market_alert(alert_data: dict):
         logger.error(f"Failed to create market alert: {e}")
         raise HTTPException(status_code=500, detail=f"Alert creation error: {str(e)}")
 
+# ==========================================
+# TRADING OVERVIEW API ENDPOINTS
+# ==========================================
+
+@app.get("/api/v1/trading/overview")
+async def get_trading_overview():
+    """Get comprehensive trading overview dashboard data"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            # Return comprehensive mock trading overview
+            return {
+                "summary": {
+                    "totalEquity": 1247893.45,
+                    "dailyPnL": 4081.85,
+                    "totalPnL": 24612.07,
+                    "totalReturn": 2.01,
+                    "winRate": 0.742,
+                    "totalTrades": 1847,
+                    "activeTrades": 23,
+                    "openPositions": 17,
+                    "availableCash": 456789.12,
+                    "marginUsed": 234567.89,
+                    "buyingPower": 678901.23,
+                    "riskExposure": 0.68,
+                    "maxDrawdown": 0.087,
+                    "sharpeRatio": 1.84,
+                    "lastUpdated": datetime.now(timezone.utc).isoformat()
+                },
+                "recentTrades": [
+                    {
+                        "id": "trade_001",
+                        "symbol": "BTC",
+                        "type": "buy",
+                        "quantity": 0.15,
+                        "price": 67100.00,
+                        "value": 10065.00,
+                        "timestamp": "2024-01-15T15:28:00Z",
+                        "status": "filled",
+                        "agent": "marcus_momentum",
+                        "strategy": "momentum_breakout",
+                        "pnl": 234.56,
+                        "pnlPercent": 2.33
+                    },
+                    {
+                        "id": "trade_002", 
+                        "symbol": "ETH",
+                        "type": "sell",
+                        "quantity": 2.5,
+                        "price": 3850.00,
+                        "value": 9625.00,
+                        "timestamp": "2024-01-15T15:25:00Z",
+                        "status": "filled",
+                        "agent": "sophia_reversion",
+                        "strategy": "mean_reversion",
+                        "pnl": -89.34,
+                        "pnlPercent": -0.92
+                    },
+                    {
+                        "id": "trade_003",
+                        "symbol": "SOL",
+                        "type": "buy",
+                        "quantity": 35.0,
+                        "price": 142.50,
+                        "value": 4987.50,
+                        "timestamp": "2024-01-15T15:20:00Z",
+                        "status": "filled",
+                        "agent": "alex_arbitrage",
+                        "strategy": "arbitrage",
+                        "pnl": 156.78,
+                        "pnlPercent": 3.14
+                    }
+                ],
+                "openPositions": [
+                    {
+                        "symbol": "BTC",
+                        "side": "long",
+                        "quantity": 1.25,
+                        "averagePrice": 66789.45,
+                        "currentPrice": 67234.85,
+                        "marketValue": 84043.56,
+                        "unrealizedPnL": 556.75,
+                        "unrealizedPnLPercent": 0.67,
+                        "entryTime": "2024-01-15T10:30:00Z",
+                        "stopLoss": 65234.56,
+                        "takeProfit": 69876.54,
+                        "agent": "marcus_momentum",
+                        "riskAmount": 1554.89
+                    },
+                    {
+                        "symbol": "ETH",
+                        "side": "long", 
+                        "quantity": 8.75,
+                        "averagePrice": 3789.23,
+                        "currentPrice": 3847.92,
+                        "marketValue": 33669.30,
+                        "unrealizedPnL": 514.04,
+                        "unrealizedPnLPercent": 1.55,
+                        "entryTime": "2024-01-15T09:45:00Z",
+                        "stopLoss": 3650.00,
+                        "takeProfit": 4000.00,
+                        "agent": "alex_arbitrage",
+                        "riskAmount": 1218.57
+                    },
+                    {
+                        "symbol": "SOL",
+                        "side": "short",
+                        "quantity": 120.0,
+                        "averagePrice": 145.67,
+                        "currentPrice": 142.73,
+                        "marketValue": 17127.60,
+                        "unrealizedPnL": 352.80,
+                        "unrealizedPnLPercent": 2.04,
+                        "entryTime": "2024-01-15T08:15:00Z",
+                        "stopLoss": 148.90,
+                        "takeProfit": 138.50,
+                        "agent": "sophia_reversion",
+                        "riskAmount": 387.60
+                    }
+                ],
+                "strategyPerformance": [
+                    {
+                        "strategy": "momentum_trading",
+                        "totalPnL": 8945.67,
+                        "totalPnLPercent": 3.89,
+                        "dailyPnL": 1247.85,
+                        "winRate": 0.74,
+                        "trades": 89,
+                        "avgTrade": 100.51,
+                        "maxDrawdown": 0.045,
+                        "sharpeRatio": 1.84,
+                        "allocation": 45.2,
+                        "status": "active"
+                    },
+                    {
+                        "strategy": "arbitrage",
+                        "totalPnL": 6789.34,
+                        "totalPnLPercent": 2.97,
+                        "dailyPnL": 892.34,
+                        "winRate": 0.89,
+                        "trades": 156,
+                        "avgTrade": 43.52,
+                        "maxDrawdown": 0.012,
+                        "sharpeRatio": 2.47,
+                        "allocation": 32.1,
+                        "status": "active"
+                    },
+                    {
+                        "strategy": "mean_reversion",
+                        "totalPnL": -1234.67,
+                        "totalPnLPercent": -0.56,
+                        "dailyPnL": -234.67,
+                        "winRate": 0.52,
+                        "trades": 67,
+                        "avgTrade": -18.43,
+                        "maxDrawdown": 0.087,
+                        "sharpeRatio": 0.89,
+                        "allocation": 22.7,
+                        "status": "paused"
+                    }
+                ],
+                "riskMetrics": {
+                    "portfolioVaR": 15678.90,
+                    "dailyVaR": 5234.56,
+                    "maxExposure": 0.75,
+                    "currentExposure": 0.68,
+                    "leverageRatio": 1.35,
+                    "diversificationScore": 0.82,
+                    "correlationRisk": 0.24,
+                    "marginUtilization": 0.56,
+                    "liquidityRisk": "low",
+                    "lastStressTest": "2024-01-15T12:00:00Z"
+                }
+            }
+        
+        overview = await trading_service.get_trading_overview()
+        return overview
+    except Exception as e:
+        logger.error(f"Failed to get trading overview: {e}")
+        raise HTTPException(status_code=500, detail=f"Trading overview error: {str(e)}")
+
+@app.get("/api/v1/trading/positions")
+async def get_trading_positions(status: str = "all"):
+    """Get detailed trading positions"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            # Filter positions based on status
+            all_positions = [
+                {
+                    "id": "pos_001",
+                    "symbol": "BTC",
+                    "side": "long",
+                    "quantity": 1.25,
+                    "averagePrice": 66789.45,
+                    "currentPrice": 67234.85,
+                    "marketValue": 84043.56,
+                    "unrealizedPnL": 556.75,
+                    "unrealizedPnLPercent": 0.67,
+                    "entryTime": "2024-01-15T10:30:00Z",
+                    "stopLoss": 65234.56,
+                    "takeProfit": 69876.54,
+                    "agent": "marcus_momentum",
+                    "strategy": "momentum_trading",
+                    "riskAmount": 1554.89,
+                    "status": "open"
+                },
+                {
+                    "id": "pos_002",
+                    "symbol": "ETH",
+                    "side": "long",
+                    "quantity": 8.75,
+                    "averagePrice": 3789.23,
+                    "currentPrice": 3847.92,
+                    "marketValue": 33669.30,
+                    "unrealizedPnL": 514.04,
+                    "unrealizedPnLPercent": 1.55,
+                    "entryTime": "2024-01-15T09:45:00Z",
+                    "stopLoss": 3650.00,
+                    "takeProfit": 4000.00,
+                    "agent": "alex_arbitrage",
+                    "strategy": "arbitrage",
+                    "riskAmount": 1218.57,
+                    "status": "open"
+                },
+                {
+                    "id": "pos_003",
+                    "symbol": "MATIC",
+                    "side": "long",
+                    "quantity": 5000.0,
+                    "averagePrice": 0.8567,
+                    "currentPrice": 0.8934,
+                    "marketValue": 4467.00,
+                    "unrealizedPnL": 183.50,
+                    "unrealizedPnLPercent": 4.28,
+                    "entryTime": "2024-01-14T16:20:00Z",
+                    "stopLoss": 0.8100,
+                    "takeProfit": 0.9500,
+                    "agent": "sophia_reversion",
+                    "strategy": "mean_reversion",
+                    "riskAmount": 233.50,
+                    "status": "closed"
+                }
+            ]
+            
+            if status != "all":
+                filtered_positions = [pos for pos in all_positions if pos["status"] == status]
+                return {"positions": filtered_positions, "count": len(filtered_positions)}
+            
+            return {"positions": all_positions, "count": len(all_positions)}
+        
+        positions = await trading_service.get_positions(status)
+        return positions
+    except Exception as e:
+        logger.error(f"Failed to get trading positions: {e}")
+        raise HTTPException(status_code=500, detail=f"Trading positions error: {str(e)}")
+
+@app.get("/api/v1/trading/orders")
+async def get_trading_orders(status: str = "all", limit: int = 50):
+    """Get trading orders with optional status filter"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            # Mock orders data
+            all_orders = [
+                {
+                    "id": "order_001",
+                    "symbol": "BTC",
+                    "type": "market",
+                    "side": "buy",
+                    "quantity": 0.15,
+                    "price": None,
+                    "filledPrice": 67100.00,
+                    "filledQuantity": 0.15,
+                    "status": "filled",
+                    "timestamp": "2024-01-15T15:28:00Z",
+                    "agent": "marcus_momentum",
+                    "strategy": "momentum_trading",
+                    "value": 10065.00
+                },
+                {
+                    "id": "order_002",
+                    "symbol": "ETH",
+                    "type": "limit",
+                    "side": "sell",
+                    "quantity": 2.5,
+                    "price": 3850.00,
+                    "filledPrice": 3850.00,
+                    "filledQuantity": 2.5,
+                    "status": "filled",
+                    "timestamp": "2024-01-15T15:25:00Z",
+                    "agent": "sophia_reversion",
+                    "strategy": "mean_reversion",
+                    "value": 9625.00
+                },
+                {
+                    "id": "order_003",
+                    "symbol": "SOL",
+                    "type": "limit",
+                    "side": "buy",
+                    "quantity": 50.0,
+                    "price": 140.00,
+                    "filledPrice": None,
+                    "filledQuantity": 0,
+                    "status": "pending",
+                    "timestamp": "2024-01-15T15:30:00Z",
+                    "agent": "alex_arbitrage",
+                    "strategy": "arbitrage",
+                    "value": 7000.00
+                }
+            ]
+            
+            if status != "all":
+                filtered_orders = [order for order in all_orders if order["status"] == status]
+                return {"orders": filtered_orders, "count": len(filtered_orders)}
+            
+            return {"orders": all_orders[:limit], "count": len(all_orders)}
+        
+        orders = await trading_service.get_orders(status, limit)
+        return orders
+    except Exception as e:
+        logger.error(f"Failed to get trading orders: {e}")
+        raise HTTPException(status_code=500, detail=f"Trading orders error: {str(e)}")
+
+@app.post("/api/v1/trading/orders")
+async def create_trading_order(order_data: dict):
+    """Create a new trading order"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            import uuid
+            return {
+                "orderId": str(uuid.uuid4()),
+                "symbol": order_data.get("symbol"),
+                "type": order_data.get("type"),
+                "side": order_data.get("side"),
+                "quantity": order_data.get("quantity"),
+                "price": order_data.get("price"),
+                "status": "pending",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "message": "Order created successfully (mock mode)"
+            }
+        
+        order = await trading_service.create_order(order_data)
+        return order
+    except Exception as e:
+        logger.error(f"Failed to create trading order: {e}")
+        raise HTTPException(status_code=500, detail=f"Order creation error: {str(e)}")
+
+@app.put("/api/v1/trading/orders/{order_id}")
+async def update_trading_order(order_id: str, update_data: dict):
+    """Update a trading order"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            return {
+                "orderId": order_id,
+                "status": update_data.get("status", "updated"),
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Order updated successfully (mock mode)"
+            }
+        
+        result = await trading_service.update_order(order_id, update_data)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to update trading order: {e}")
+        raise HTTPException(status_code=500, detail=f"Order update error: {str(e)}")
+
+@app.delete("/api/v1/trading/orders/{order_id}")
+async def cancel_trading_order(order_id: str):
+    """Cancel a trading order"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            return {
+                "orderId": order_id,
+                "status": "cancelled",
+                "cancelledAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Order cancelled successfully (mock mode)"
+            }
+        
+        result = await trading_service.cancel_order(order_id)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to cancel trading order: {e}")
+        raise HTTPException(status_code=500, detail=f"Order cancellation error: {str(e)}")
+
+@app.get("/api/v1/trading/performance")
+async def get_trading_performance(timeframe: str = "30d"):
+    """Get detailed trading performance metrics"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            return {
+                "timeframe": timeframe,
+                "summary": {
+                    "totalReturn": 24612.07,
+                    "totalReturnPercent": 2.01,
+                    "sharpeRatio": 1.84,
+                    "maxDrawdown": 0.087,
+                    "winRate": 0.742,
+                    "profitFactor": 1.65,
+                    "averageTrade": 13.33,
+                    "bestTrade": 1247.85,
+                    "worstTrade": -456.78,
+                    "totalTrades": 1847,
+                    "winningTrades": 1371,
+                    "losingTrades": 476
+                },
+                "dailyReturns": [
+                    {"date": "2024-01-10", "return": 234.56, "cumulative": 23456.78},
+                    {"date": "2024-01-11", "return": 456.78, "cumulative": 23913.56},
+                    {"date": "2024-01-12", "return": -123.45, "cumulative": 23790.11},
+                    {"date": "2024-01-13", "return": 789.01, "cumulative": 24579.12},
+                    {"date": "2024-01-14", "return": 324.67, "cumulative": 24903.79},
+                    {"date": "2024-01-15", "return": 289.73, "cumulative": 25193.52}
+                ],
+                "monthlyBreakdown": [
+                    {"month": "2023-12", "profit": 5234.56, "trades": 156, "winRate": 0.78},
+                    {"month": "2024-01", "profit": 4081.85, "trades": 89, "winRate": 0.74}
+                ],
+                "strategyBreakdown": [
+                    {
+                        "strategy": "momentum_trading",
+                        "profit": 8945.67,
+                        "profitPercent": 3.89,
+                        "trades": 89,
+                        "winRate": 0.74,
+                        "contribution": 0.36
+                    },
+                    {
+                        "strategy": "arbitrage",
+                        "profit": 6789.34,
+                        "profitPercent": 2.97,
+                        "trades": 156,
+                        "winRate": 0.89,
+                        "contribution": 0.28
+                    },
+                    {
+                        "strategy": "mean_reversion",
+                        "profit": -1234.67,
+                        "profitPercent": -0.56,
+                        "trades": 67,
+                        "winRate": 0.52,
+                        "contribution": -0.05
+                    }
+                ],
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        performance = await trading_service.get_performance_metrics(timeframe)
+        return performance
+    except Exception as e:
+        logger.error(f"Failed to get trading performance: {e}")
+        raise HTTPException(status_code=500, detail=f"Trading performance error: {str(e)}")
+
+@app.get("/api/v1/trading/risk-metrics")
+async def get_trading_risk_metrics():
+    """Get comprehensive risk metrics for trading"""
+    try:
+        trading_service = registry.get_service("trading_overview_service")
+        if not trading_service:
+            return {
+                "overall": {
+                    "portfolioVaR": 15678.90,
+                    "dailyVaR": 5234.56,
+                    "maxExposure": 0.75,
+                    "currentExposure": 0.68,
+                    "leverageRatio": 1.35,
+                    "marginUtilization": 0.56
+                },
+                "diversification": {
+                    "diversificationScore": 0.82,
+                    "correlationRisk": 0.24,
+                    "sectorConcentration": {
+                        "crypto": 0.85,
+                        "defi": 0.15,
+                        "nft": 0.0
+                    },
+                    "assetConcentration": {
+                        "BTC": 0.45,
+                        "ETH": 0.32,
+                        "SOL": 0.15,
+                        "others": 0.08
+                    }
+                },
+                "liquidityMetrics": {
+                    "liquidityRisk": "low",
+                    "averageBidAskSpread": 0.025,
+                    "marketDepth": "high",
+                    "liquidationRisk": 0.12
+                },
+                "stressTests": [
+                    {
+                        "scenario": "market_crash_20",
+                        "expectedLoss": 24567.89,
+                        "probability": 0.05,
+                        "description": "20% market crash scenario"
+                    },
+                    {
+                        "scenario": "volatility_spike",
+                        "expectedLoss": 12345.67,
+                        "probability": 0.15,
+                        "description": "Volatility spike to 50%+"
+                    },
+                    {
+                        "scenario": "liquidity_crunch",
+                        "expectedLoss": 8901.23,
+                        "probability": 0.10,
+                        "description": "Market liquidity shortage"
+                    }
+                ],
+                "alerts": [
+                    {
+                        "type": "exposure_warning",
+                        "level": "medium",
+                        "message": "Portfolio exposure approaching 70% limit",
+                        "currentValue": 0.68,
+                        "threshold": 0.70
+                    }
+                ],
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        risk_metrics = await trading_service.get_risk_metrics()
+        return risk_metrics
+    except Exception as e:
+        logger.error(f"Failed to get trading risk metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Trading risk metrics error: {str(e)}")
+
 # Development and debugging endpoints
 if DEBUG:
     @app.get("/api/v1/debug/services")

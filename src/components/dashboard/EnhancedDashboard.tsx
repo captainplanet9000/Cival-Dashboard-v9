@@ -11,7 +11,7 @@ import {
   Activity, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Zap,
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
   Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search,
-  Building, Brain
+  Home, Brain
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -254,7 +254,7 @@ export function EnhancedDashboard() {
     {
       id: 'vault-banking',
       label: 'Vault Banking',
-      icon: <Building className="h-4 w-4" />,
+      icon: <Home className="h-4 w-4" />,
       component: <VaultBankingDashboard />
     },
     {

@@ -15,9 +15,10 @@ export const metadata: Metadata = {
   description: "Advanced algorithmic trading dashboard with AI-powered strategies, real-time analytics, and comprehensive risk management",
   keywords: ["algorithmic trading", "trading dashboard", "AI trading", "financial analytics", "risk management"],
   authors: [{ name: "Cival Trading Team" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "noindex, nofollow", // Private trading platform
 };
+
+export const viewport = "width=device-width, initial-scale=1";
 
 export default function RootLayout({
   children,
