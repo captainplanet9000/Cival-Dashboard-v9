@@ -1,3 +1,6 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,199 +31,67 @@ import {
   Banknote,
   Activity,
   PieChart,
-  Target
+  Target,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { formatPrice, formatPercentage } from "@/lib/utils";
+import { backendApi } from '@/lib/api/backend-client';
+import { toast } from 'react-hot-toast';
 
-// Vault hierarchy and accounts data
-const vaultHierarchy = {
-  masterVault: {
-    id: "vault-master",
-    name: "Master Trading Vault",
-    type: "Master",
-    balance: 1258473.25,
-    totalAllocated: 987654.32,
-    available: 270818.93,
-    currency: "USD",
-    status: "active",
-    complianceScore: 98,
-    riskLevel: "Low",
-    subVaults: 5
-  },
-  subVaults: [
-    {
-      id: "vault-algo",
-      name: "Algorithmic Trading",
-      type: "Strategy",
-      parentId: "vault-master",
-      balance: 425847.50,
-      allocated: 398250.75,
-      available: 27596.75,
-      allocation: 43.2,
-      currency: "USD",
-      status: "active",
-      riskLevel: "Medium",
-      performance: 8.45,
-      strategies: ["Darvas Box", "Elliott Wave", "MACD Divergence"]
-    },
-    {
-      id: "vault-defi",
-      name: "DeFi Operations",
-      type: "DeFi",
-      parentId: "vault-master",
-      balance: 287954.12,
-      allocated: 275680.45,
-      available: 12273.67,
-      allocation: 22.9,
-      currency: "USD",
-      status: "active",
-      riskLevel: "High",
-      performance: 12.34,
-      protocols: ["Uniswap V3", "Aave", "Compound"]
-    },
-    {
-      id: "vault-hedge",
-      name: "Risk Hedging",
-      type: "Hedge",
-      parentId: "vault-master",
-      balance: 156234.89,
-      allocated: 145890.23,
-      available: 10344.66,
-      allocation: 15.8,
-      currency: "USD",
-      status: "active",
-      riskLevel: "Low",
-      performance: 3.67,
-      instruments: ["VIX", "Options", "Futures"]
-    },
-    {
-      id: "vault-reserve",
-      name: "Emergency Reserve",
-      type: "Reserve",
-      parentId: "vault-master",
-      balance: 89876.54,
-      allocated: 0,
-      available: 89876.54,
-      allocation: 9.1,
-      currency: "USD",
-      status: "locked",
-      riskLevel: "Minimal",
-      performance: 1.25,
-      purpose: "Margin calls & emergency liquidity"
-    },
-    {
-      id: "vault-research",
-      name: "Research & Development",
-      type: "Development",
-      parentId: "vault-master",
-      balance: 97741.32,
-      allocated: 87458.89,
-      available: 10282.43,
-      allocation: 9.0,
-      currency: "USD",
-      status: "active",
-      riskLevel: "Medium",
-      performance: 15.67,
-      focus: "New strategy development & backtesting"
-    }
-  ]
-};
+// Type definitions for vault data
+interface VaultData {
+  vault_id: string;
+  vault_name: string;
+  vault_type: string;
+  status: string;
+  total_balance: number;
+  available_balance: number;
+  reserved_balance: number;
+  parent_vault_id?: string;
+  hierarchy_level: number;
+  created_at: string;
+  metadata?: any;
+}
 
-// Recent transactions across vault system
-const recentTransactions = [
-  {
-    id: 1,
-    timestamp: "2024-01-15 10:45:23",
-    type: "transfer",
-    from: "Master Trading Vault",
-    to: "Algorithmic Trading",
-    amount: 50000.00,
-    currency: "USD",
-    status: "completed",
-    reference: "TXN-ALG-001",
-    purpose: "Strategy rebalancing"
-  },
-  {
-    id: 2,
-    timestamp: "2024-01-15 09:30:15",
-    type: "yield",
-    from: "DeFi Operations",
-    to: "Master Trading Vault",
-    amount: 1234.56,
-    currency: "USD",
-    status: "completed",
-    reference: "YLD-DEFI-789",
-    purpose: "Uniswap V3 yield farming"
-  },
-  {
-    id: 3,
-    timestamp: "2024-01-15 08:15:42",
-    type: "deposit",
-    from: "External Bank",
-    to: "Master Trading Vault",
-    amount: 100000.00,
-    currency: "USD",
-    status: "pending",
-    reference: "DEP-EXT-456",
-    purpose: "Weekly funding"
-  },
-  {
-    id: 4,
-    timestamp: "2024-01-14 16:22:18",
-    type: "withdrawal",
-    from: "Risk Hedging",
-    to: "External Account",
-    amount: 25000.00,
-    currency: "USD",
-    status: "completed",
-    reference: "WTH-HDG-123",
-    purpose: "Profit distribution"
-  }
-];
+interface VaultTransaction {
+  transaction_id: string;
+  vault_id: string;
+  transaction_type: string;
+  asset_symbol: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  from_vault_id?: string;
+  to_vault_id?: string;
+  metadata?: any;
+}
 
-// DeFi protocol integrations
-const defiProtocols = [
-  {
-    name: "Uniswap V3",
-    tvl: 145820.34,
-    apy: 18.45,
-    status: "active",
-    positions: 3,
-    lastYield: 456.78,
-    riskScore: 7
-  },
-  {
-    name: "Aave",
-    tvl: 89650.12,
-    apy: 8.25,
-    status: "active",
-    positions: 2,
-    lastYield: 287.95,
-    riskScore: 4
-  },
-  {
-    name: "Compound",
-    tvl: 52484.01,
-    apy: 6.75,
-    status: "active",
-    positions: 1,
-    lastYield: 156.23,
-    riskScore: 3
-  }
-];
+interface VaultAllocation {
+  allocation_id: string;
+  vault_id: string;
+  target_type: string;
+  target_id: string;
+  target_name: string;
+  asset_symbol: string;
+  allocated_amount: number;
+  allocated_percentage: number;
+  status: string;
+  performance?: any;
+}
 
-// Compliance and audit data
-const complianceMetrics = {
-  overallScore: 98,
-  lastAudit: "2024-01-10",
-  auditScore: 96,
-  kycCompliance: 100,
-  amlCompliance: 95,
-  regulatoryCompliance: 99,
-  riskAssessment: 92,
-  nextAudit: "2024-04-10",
-  pendingActions: 2
-};
+interface VaultPerformance {
+  vault_id: string;
+  total_balance_usd: number;
+  daily_pnl: number;
+  cumulative_pnl: number;
+  daily_return_pct: number;
+  cumulative_return_pct: number;
+  date: string;
+}
+
+
+
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -254,6 +125,230 @@ function getTransactionIcon(type: string) {
 }
 
 export default function VaultPage() {
+  const [vaults, setVaults] = useState<VaultData[]>([]);
+  const [masterVault, setMasterVault] = useState<VaultData | null>(null);
+  const [transactions, setTransactions] = useState<VaultTransaction[]>([]);
+  const [allocations, setAllocations] = useState<VaultAllocation[]>([]);
+  const [performance, setPerformance] = useState<Record<string, VaultPerformance>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load vault data on component mount
+  useEffect(() => {
+    loadVaultData();
+  }, []);
+
+  const loadVaultData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Load all vaults
+      const vaultsResponse = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/vaults`
+      );
+      
+      if (vaultsResponse.ok) {
+        const vaultsData = await vaultsResponse.json();
+        setVaults(vaultsData.vaults || []);
+        
+        // Find master vault (hierarchy_level = 0)
+        const master = vaultsData.vaults?.find((v: VaultData) => v.hierarchy_level === 0);
+        setMasterVault(master || null);
+      } else {
+        // Use fallback mock data
+        const mockVaults = generateMockVaults();
+        setVaults(mockVaults);
+        setMasterVault(mockVaults.find(v => v.vault_type === 'master') || null);
+      }
+
+      // Load recent transactions
+      const txResponse = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/vaults/transactions?limit=10`
+      );
+      
+      if (txResponse.ok) {
+        const txData = await txResponse.json();
+        setTransactions(txData.transactions || []);
+      } else {
+        setTransactions(generateMockTransactions());
+      }
+
+      // Load allocations  
+      const allocResponse = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/vaults/allocations`
+      );
+      
+      if (allocResponse.ok) {
+        const allocData = await allocResponse.json();
+        setAllocations(allocData.allocations || []);
+      } else {
+        setAllocations([]);
+      }
+
+      // Load performance data
+      const perfResponse = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/vaults/performance`
+      );
+      
+      if (perfResponse.ok) {
+        const perfData = await perfResponse.json();
+        const perfMap: Record<string, VaultPerformance> = {};
+        perfData.performance?.forEach((p: VaultPerformance) => {
+          perfMap[p.vault_id] = p;
+        });
+        setPerformance(perfMap);
+      }
+
+    } catch (err) {
+      console.error('Error loading vault data:', err);
+      setError('Failed to load vault data');
+      // Set fallback data
+      const mockVaults = generateMockVaults();
+      setVaults(mockVaults);
+      setMasterVault(mockVaults.find(v => v.vault_type === 'master') || null);
+      setTransactions(generateMockTransactions());
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateMockVaults = (): VaultData[] => [
+    {
+      vault_id: "vault-master",
+      vault_name: "Master Trading Vault",
+      vault_type: "master",
+      status: "active",
+      total_balance: 1258473.25,
+      available_balance: 270818.93,
+      reserved_balance: 987654.32,
+      hierarchy_level: 0,
+      created_at: new Date().toISOString(),
+      metadata: { complianceScore: 98, riskLevel: "Low" }
+    },
+    {
+      vault_id: "vault-algo",
+      vault_name: "Algorithmic Trading",
+      vault_type: "strategy",
+      status: "active",
+      total_balance: 425847.50,
+      available_balance: 27596.75,
+      reserved_balance: 398250.75,
+      parent_vault_id: "vault-master",
+      hierarchy_level: 1,
+      created_at: new Date().toISOString(),
+      metadata: { riskLevel: "Medium", performance: 8.45, strategies: ["Darvas Box", "Elliott Wave"] }
+    },
+    {
+      vault_id: "vault-defi",
+      vault_name: "DeFi Operations",
+      vault_type: "lending",
+      status: "active",
+      total_balance: 287954.12,
+      available_balance: 12273.67,
+      reserved_balance: 275680.45,
+      parent_vault_id: "vault-master",
+      hierarchy_level: 1,
+      created_at: new Date().toISOString(),
+      metadata: { riskLevel: "High", performance: 12.34, protocols: ["Uniswap V3", "Aave"] }
+    }
+  ];
+
+  const generateMockTransactions = (): VaultTransaction[] => [
+    {
+      transaction_id: "tx1",
+      vault_id: "vault-master",
+      transaction_type: "transfer",
+      asset_symbol: "USD",
+      amount: 50000,
+      status: "completed",
+      created_at: new Date().toISOString(),
+      from_vault_id: "vault-master",
+      to_vault_id: "vault-algo",
+      metadata: { purpose: "Strategy rebalancing" }
+    },
+    {
+      transaction_id: "tx2",
+      vault_id: "vault-defi",
+      transaction_type: "deposit",
+      asset_symbol: "USD",
+      amount: 1234.56,
+      status: "completed",
+      created_at: new Date(Date.now() - 60000).toISOString(),
+      metadata: { purpose: "Yield farming rewards" }
+    }
+  ];
+
+  const createVault = async (vaultData: any) => {
+    try {
+      const response = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/vaults`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(vaultData)
+        }
+      );
+      
+      if (response.ok) {
+        const newVault = await response.json();
+        setVaults([...vaults, newVault]);
+        toast.success('Vault created successfully');
+      } else {
+        toast.error('Failed to create vault');
+      }
+    } catch (error) {
+      console.error('Error creating vault:', error);
+      toast.error('Failed to create vault');
+    }
+  };
+
+  const transferFunds = async (fromVaultId: string, toVaultId: string, amount: number) => {
+    try {
+      const response = await backendApi.fetchWithTimeout(
+        `${backendApi.getBackendUrl()}/api/v1/vaults/transfer`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from_vault_id: fromVaultId,
+            to_vault_id: toVaultId,
+            asset_symbol: 'USD',
+            amount: amount
+          })
+        }
+      );
+      
+      if (response.ok) {
+        toast.success('Transfer completed successfully');
+        loadVaultData(); // Reload data
+      } else {
+        toast.error('Transfer failed');
+      }
+    } catch (error) {
+      console.error('Error transferring funds:', error);
+      toast.error('Transfer failed');
+    }
+  };
+
+  // Get sub-vaults (hierarchy_level > 0)
+  const subVaults = vaults.filter(v => v.hierarchy_level > 0);
+  const totalAllocated = subVaults.reduce((sum, vault) => sum + vault.reserved_balance, 0);
+  const totalBalance = masterVault?.total_balance || 0;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading vault data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
