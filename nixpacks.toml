@@ -1,17 +1,12 @@
-# Nixpacks Configuration for Railway Deployment
+# Nixpacks Configuration - Frontend Only for Initial Deployment
 [phases.setup]
-nixPkgs = ['nodejs-18_x', 'python311', 'python311Packages.pip', 'python311Packages.virtualenv']
+nixPkgs = ['nodejs-18_x']
 
 [phases.install]
-cmds = [
-    'npm ci',
-    'python3 -m venv .venv',
-    '. .venv/bin/activate && pip install --upgrade pip',
-    '. .venv/bin/activate && pip install -r requirements.txt'
-]
+cmds = ['npm ci']
 
 [phases.build]
 cmds = ['npm run build']
 
 [start]
-cmd = '. .venv/bin/activate && npm run railway:start'
+cmd = 'npm start'

@@ -2223,6 +2223,512 @@ async def get_farm_metrics():
         logger.error(f"Failed to get farm metrics: {e}")
         raise HTTPException(status_code=500, detail=f"Farm metrics error: {str(e)}")
 
+# ==========================================
+# VAULT/WALLET MANAGEMENT API ENDPOINTS
+# ==========================================
+
+@app.get("/api/v1/vaults")
+async def get_vaults():
+    """Get all vaults/wallets"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Return mock vault hierarchy data
+            return [
+                {
+                    "id": "master-vault-treasury",
+                    "name": "Master Treasury Vault",
+                    "type": "master",
+                    "description": "Central treasury managing all trading operations",
+                    "totalBalance": 1247893.45,
+                    "availableBalance": 456789.12,
+                    "allocatedBalance": 791104.33,
+                    "currency": "USD",
+                    "parentId": None,
+                    "children": [
+                        {
+                            "id": "strategy-vault-momentum",
+                            "name": "Momentum Strategy Vault",
+                            "type": "strategy",
+                            "description": "Dedicated vault for momentum trading strategies",
+                            "totalBalance": 289456.78,
+                            "availableBalance": 67890.23,
+                            "allocatedBalance": 221566.55,
+                            "currency": "USD",
+                            "parentId": "master-vault-treasury",
+                            "allocation": 0.35,
+                            "performance": {
+                                "dailyPnL": 2847.29,
+                                "totalReturn": 15677.85,
+                                "returnPercent": 5.71,
+                                "maxDrawdown": 0.045,
+                                "sharpeRatio": 1.84
+                            },
+                            "children": [
+                                {
+                                    "id": "agent-wallet-marcus",
+                                    "name": "Marcus Momentum Agent",
+                                    "type": "agent",
+                                    "description": "Individual wallet for Marcus momentum trading agent",
+                                    "totalBalance": 145623.34,
+                                    "availableBalance": 23456.78,
+                                    "allocatedBalance": 122166.56,
+                                    "currency": "USD",
+                                    "parentId": "strategy-vault-momentum",
+                                    "allocation": 0.65,
+                                    "agentId": "marcus_momentum",
+                                    "performance": {
+                                        "dailyPnL": 1847.29,
+                                        "totalReturn": 9847.85,
+                                        "returnPercent": 7.24,
+                                        "tradesCount": 47,
+                                        "winRate": 0.74
+                                    },
+                                    "riskMetrics": {
+                                        "exposure": 0.68,
+                                        "leverage": 1.2,
+                                        "varDaily": 2847.45
+                                    }
+                                },
+                                {
+                                    "id": "agent-wallet-riley",
+                                    "name": "Riley Risk Manager",
+                                    "type": "agent",
+                                    "description": "Risk management agent wallet",
+                                    "totalBalance": 67890.44,
+                                    "availableBalance": 12345.67,
+                                    "allocatedBalance": 55544.77,
+                                    "currency": "USD",
+                                    "parentId": "strategy-vault-momentum",
+                                    "allocation": 0.35,
+                                    "agentId": "riley_risk",
+                                    "performance": {
+                                        "dailyPnL": 456.78,
+                                        "totalReturn": 2847.32,
+                                        "returnPercent": 4.37,
+                                        "tradesCount": 23,
+                                        "winRate": 0.89
+                                    },
+                                    "riskMetrics": {
+                                        "exposure": 0.42,
+                                        "leverage": 0.8,
+                                        "varDaily": 1234.56
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "strategy-vault-arbitrage",
+                            "name": "Arbitrage Strategy Vault",
+                            "type": "strategy",
+                            "description": "Cross-exchange arbitrage operations vault",
+                            "totalBalance": 189234.67,
+                            "availableBalance": 45678.90,
+                            "allocatedBalance": 143555.77,
+                            "currency": "USD",
+                            "parentId": "master-vault-treasury",
+                            "allocation": 0.25,
+                            "performance": {
+                                "dailyPnL": 1234.56,
+                                "totalReturn": 8934.22,
+                                "returnPercent": 4.95,
+                                "maxDrawdown": 0.018,
+                                "sharpeRatio": 2.47
+                            },
+                            "children": [
+                                {
+                                    "id": "agent-wallet-alex",
+                                    "name": "Alex Arbitrage Agent",
+                                    "type": "agent",
+                                    "description": "Cross-exchange arbitrage specialist",
+                                    "totalBalance": 189234.67,
+                                    "availableBalance": 45678.90,
+                                    "allocatedBalance": 143555.77,
+                                    "currency": "USD",
+                                    "parentId": "strategy-vault-arbitrage",
+                                    "allocation": 1.0,
+                                    "agentId": "alex_arbitrage",
+                                    "performance": {
+                                        "dailyPnL": 1234.56,
+                                        "totalReturn": 8934.22,
+                                        "returnPercent": 4.95,
+                                        "tradesCount": 156,
+                                        "winRate": 0.91
+                                    },
+                                    "riskMetrics": {
+                                        "exposure": 0.32,
+                                        "leverage": 0.6,
+                                        "varDaily": 987.65
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "reserve-vault",
+                            "name": "Emergency Reserve Vault",
+                            "type": "reserve",
+                            "description": "Emergency funds and risk management reserves",
+                            "totalBalance": 456789.12,
+                            "availableBalance": 456789.12,
+                            "allocatedBalance": 0.0,
+                            "currency": "USD",
+                            "parentId": "master-vault-treasury",
+                            "allocation": 0.40,
+                            "performance": {
+                                "dailyPnL": 0.0,
+                                "totalReturn": 0.0,
+                                "returnPercent": 0.0,
+                                "maxDrawdown": 0.0,
+                                "sharpeRatio": 0.0
+                            }
+                        }
+                    ],
+                    "permissions": {
+                        "canAllocate": True,
+                        "canWithdraw": True,
+                        "canRebalance": True,
+                        "canCreateSubVaults": True
+                    },
+                    "riskControls": {
+                        "maxAllocation": 0.80,
+                        "maxLeverage": 2.0,
+                        "stopLossThreshold": 0.15,
+                        "dailyLossLimit": 50000.0
+                    },
+                    "createdAt": "2024-01-01T00:00:00Z",
+                    "lastUpdated": "2024-01-15T15:30:00Z"
+                }
+            ]
+        
+        vaults = await vault_service.get_all_vaults()
+        return [
+            {
+                "id": vault.vault_id,
+                "name": vault.name,
+                "type": vault.vault_type,
+                "description": vault.description,
+                "totalBalance": float(vault.total_balance),
+                "availableBalance": float(vault.available_balance),
+                "allocatedBalance": float(vault.allocated_balance),
+                "currency": vault.currency,
+                "parentId": vault.parent_vault_id,
+                "children": vault.child_vaults,
+                "permissions": vault.permissions,
+                "riskControls": vault.risk_controls,
+                "performance": vault.performance_metrics,
+                "createdAt": vault.created_at.isoformat(),
+                "lastUpdated": vault.last_updated.isoformat()
+            }
+            for vault in vaults
+        ]
+    except Exception as e:
+        logger.error(f"Failed to get vaults: {e}")
+        raise HTTPException(status_code=500, detail=f"Vaults retrieval error: {str(e)}")
+
+@app.post("/api/v1/vaults")
+async def create_vault(vault_data: dict):
+    """Create a new vault"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Mock successful creation
+            import uuid
+            from datetime import datetime, timezone
+            vault_id = str(uuid.uuid4())
+            return {
+                "id": vault_id,
+                "name": vault_data.get("name", "New Vault"),
+                "type": vault_data.get("type", "standard"),
+                "description": vault_data.get("description", "Vault created successfully"),
+                "status": "active",
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Vault created successfully (mock mode)"
+            }
+        
+        # Convert frontend format to service format
+        service_vault_data = {
+            "name": vault_data.get("name"),
+            "vault_type": vault_data.get("type", "standard"),
+            "description": vault_data.get("description"),
+            "initial_balance": vault_data.get("initialBalance", 0),
+            "currency": vault_data.get("currency", "USD"),
+            "parent_vault_id": vault_data.get("parentId"),
+            "risk_controls": vault_data.get("riskControls", {}),
+            "permissions": vault_data.get("permissions", {})
+        }
+        
+        vault = await vault_service.create_vault(service_vault_data)
+        return {
+            "id": vault.vault_id,
+            "name": vault.name,
+            "type": vault.vault_type,
+            "description": vault.description,
+            "status": vault.status.value,
+            "createdAt": vault.created_at.isoformat(),
+            "message": "Vault created successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to create vault: {e}")
+        raise HTTPException(status_code=500, detail=f"Vault creation error: {str(e)}")
+
+@app.put("/api/v1/vaults/{vault_id}")
+async def update_vault(vault_id: str, update_data: dict):
+    """Update a vault"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            return {"message": "Vault updated successfully (mock mode)"}
+        
+        vault = await vault_service.update_vault(vault_id, update_data)
+        if not vault:
+            raise HTTPException(status_code=404, detail="Vault not found")
+        
+        return {"message": "Vault updated successfully"}
+    except Exception as e:
+        logger.error(f"Failed to update vault: {e}")
+        raise HTTPException(status_code=500, detail=f"Vault update error: {str(e)}")
+
+@app.delete("/api/v1/vaults/{vault_id}")
+async def delete_vault(vault_id: str):
+    """Delete a vault"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            return {"message": "Vault deleted successfully (mock mode)"}
+        
+        await vault_service.delete_vault(vault_id)
+        return {"message": "Vault deleted successfully"}
+    except Exception as e:
+        logger.error(f"Failed to delete vault: {e}")
+        raise HTTPException(status_code=500, detail=f"Vault deletion error: {str(e)}")
+
+@app.post("/api/v1/vaults/{vault_id}/allocate")
+async def allocate_funds(vault_id: str, allocation_data: dict):
+    """Allocate funds from vault"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            return {
+                "transactionId": f"tx_{int(datetime.now().timestamp())}",
+                "fromVault": vault_id,
+                "toTarget": allocation_data.get("target"),
+                "amount": allocation_data.get("amount"),
+                "status": "completed",
+                "executedAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Funds allocated successfully (mock mode)"
+            }
+        
+        target = allocation_data.get("target")
+        amount = allocation_data.get("amount")
+        allocation_type = allocation_data.get("type", "manual")
+        
+        result = await vault_service.allocate_funds(vault_id, target, amount, allocation_type)
+        return {
+            "transactionId": result["transaction_id"],
+            "fromVault": vault_id,
+            "toTarget": target,
+            "amount": amount,
+            "status": result["status"],
+            "executedAt": result["executed_at"],
+            "message": "Funds allocated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to allocate funds: {e}")
+        raise HTTPException(status_code=500, detail=f"Fund allocation error: {str(e)}")
+
+@app.post("/api/v1/vaults/{vault_id}/withdraw")
+async def withdraw_funds(vault_id: str, withdrawal_data: dict):
+    """Withdraw funds from vault"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            return {
+                "transactionId": f"tx_{int(datetime.now().timestamp())}",
+                "fromVault": vault_id,
+                "amount": withdrawal_data.get("amount"),
+                "destination": withdrawal_data.get("destination"),
+                "status": "completed",
+                "executedAt": datetime.now(timezone.utc).isoformat(),
+                "message": "Funds withdrawn successfully (mock mode)"
+            }
+        
+        amount = withdrawal_data.get("amount")
+        destination = withdrawal_data.get("destination")
+        withdrawal_type = withdrawal_data.get("type", "manual")
+        
+        result = await vault_service.withdraw_funds(vault_id, amount, destination, withdrawal_type)
+        return {
+            "transactionId": result["transaction_id"],
+            "fromVault": vault_id,
+            "amount": amount,
+            "destination": destination,
+            "status": result["status"],
+            "executedAt": result["executed_at"],
+            "message": "Funds withdrawn successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to withdraw funds: {e}")
+        raise HTTPException(status_code=500, detail=f"Fund withdrawal error: {str(e)}")
+
+@app.post("/api/v1/vaults/{vault_id}/rebalance")
+async def rebalance_vault(vault_id: str, rebalance_data: dict):
+    """Rebalance vault allocations"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            return {
+                "rebalanceId": f"rebal_{int(datetime.now().timestamp())}",
+                "vaultId": vault_id,
+                "targetAllocations": rebalance_data.get("targetAllocations"),
+                "status": "completed",
+                "executedAt": datetime.now(timezone.utc).isoformat(),
+                "changes": [
+                    {
+                        "target": "marcus_momentum",
+                        "oldAllocation": 0.60,
+                        "newAllocation": 0.65,
+                        "amountMoved": 5000.0
+                    },
+                    {
+                        "target": "alex_arbitrage",
+                        "oldAllocation": 0.40,
+                        "newAllocation": 0.35,
+                        "amountMoved": -5000.0
+                    }
+                ],
+                "message": "Vault rebalanced successfully (mock mode)"
+            }
+        
+        target_allocations = rebalance_data.get("targetAllocations")
+        rebalance_strategy = rebalance_data.get("strategy", "proportional")
+        
+        result = await vault_service.rebalance_vault(vault_id, target_allocations, rebalance_strategy)
+        return {
+            "rebalanceId": result["rebalance_id"],
+            "vaultId": vault_id,
+            "targetAllocations": target_allocations,
+            "status": result["status"],
+            "executedAt": result["executed_at"],
+            "changes": result["changes"],
+            "message": "Vault rebalanced successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to rebalance vault: {e}")
+        raise HTTPException(status_code=500, detail=f"Vault rebalance error: {str(e)}")
+
+@app.get("/api/v1/vaults/{vault_id}/transactions")
+async def get_vault_transactions(vault_id: str, limit: int = 50, offset: int = 0):
+    """Get vault transaction history"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            # Mock transaction history
+            return {
+                "transactions": [
+                    {
+                        "id": f"tx_001_{vault_id}",
+                        "type": "allocation",
+                        "amount": 25000.0,
+                        "from": vault_id,
+                        "to": "marcus_momentum",
+                        "status": "completed",
+                        "timestamp": "2024-01-15T14:30:00Z",
+                        "description": "Allocated funds to Marcus Momentum agent"
+                    },
+                    {
+                        "id": f"tx_002_{vault_id}",
+                        "type": "withdrawal",
+                        "amount": 5000.0,
+                        "from": vault_id,
+                        "to": "external_wallet",
+                        "status": "completed", 
+                        "timestamp": "2024-01-15T12:15:00Z",
+                        "description": "Withdrawal to external wallet"
+                    },
+                    {
+                        "id": f"tx_003_{vault_id}",
+                        "type": "rebalance",
+                        "amount": 10000.0,
+                        "from": "alex_arbitrage",
+                        "to": "marcus_momentum",
+                        "status": "completed",
+                        "timestamp": "2024-01-15T10:45:00Z",
+                        "description": "Rebalancing between agents"
+                    }
+                ],
+                "pagination": {
+                    "total": 3,
+                    "limit": limit,
+                    "offset": offset,
+                    "hasMore": False
+                }
+            }
+        
+        transactions = await vault_service.get_transaction_history(vault_id, limit, offset)
+        return {
+            "transactions": transactions["transactions"],
+            "pagination": transactions["pagination"]
+        }
+    except Exception as e:
+        logger.error(f"Failed to get vault transactions: {e}")
+        raise HTTPException(status_code=500, detail=f"Transaction history error: {str(e)}")
+
+@app.get("/api/v1/vaults/{vault_id}/performance")
+async def get_vault_performance(vault_id: str, timeframe: str = "1M"):
+    """Get vault performance metrics"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            return {
+                "vaultId": vault_id,
+                "timeframe": timeframe,
+                "totalReturn": 15677.85,
+                "returnPercent": 5.71,
+                "dailyPnL": 2847.29,
+                "maxDrawdown": 0.045,
+                "sharpeRatio": 1.84,
+                "volatility": 0.125,
+                "winRate": 0.78,
+                "bestDay": 4567.89,
+                "worstDay": -1234.56,
+                "tradingDays": 30,
+                "profitableDays": 23,
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        performance = await vault_service.get_performance_metrics(vault_id, timeframe)
+        return performance
+    except Exception as e:
+        logger.error(f"Failed to get vault performance: {e}")
+        raise HTTPException(status_code=500, detail=f"Vault performance error: {str(e)}")
+
+@app.get("/api/v1/vaults/summary")
+async def get_vaults_summary():
+    """Get summary of all vaults"""
+    try:
+        vault_service = registry.get_service("vault_management_service")
+        if not vault_service:
+            return {
+                "totalVaults": 4,
+                "totalBalance": 1247893.45,
+                "totalAllocated": 791104.33,
+                "totalAvailable": 456789.12,
+                "totalReturn": 24612.07,
+                "totalReturnPercent": 2.01,
+                "dailyPnL": 4081.85,
+                "activeAgents": 3,
+                "activeFarms": 2,
+                "riskExposure": 0.63,
+                "systemHealth": "optimal",
+                "lastUpdated": datetime.now(timezone.utc).isoformat()
+            }
+        
+        summary = await vault_service.get_vaults_summary()
+        return summary
+    except Exception as e:
+        logger.error(f"Failed to get vaults summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Vaults summary error: {str(e)}")
+
 # Development and debugging endpoints
 if DEBUG:
     @app.get("/api/v1/debug/services")
