@@ -8,18 +8,23 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-blue-600 text-white hover:bg-blue-700 border border-blue-700 shadow-md",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-md",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border-2 border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400 shadow-sm",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        // Trading-specific variants
-        buy: "bg-trading-buy text-white hover:bg-trading-buy/90 focus:ring-trading-buy",
-        sell: "bg-trading-sell text-white hover:bg-trading-sell/90 focus:ring-trading-sell",
+          "bg-gray-600 text-white hover:bg-gray-700 border border-gray-700 shadow-md",
+        ghost: "text-gray-900 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200",
+        link: "text-blue-600 underline-offset-4 hover:underline hover:text-blue-700",
+        // Trading-specific variants with high contrast
+        buy: "bg-green-600 text-white hover:bg-green-700 border border-green-700 shadow-md focus:ring-green-500",
+        sell: "bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-md focus:ring-red-500",
+        // Agent-specific variants
+        agent: "bg-purple-600 text-white hover:bg-purple-700 border border-purple-700 shadow-md",
+        warning: "bg-orange-600 text-white hover:bg-orange-700 border border-orange-700 shadow-md",
+        success: "bg-green-600 text-white hover:bg-green-700 border border-green-700 shadow-md",
+        info: "bg-cyan-600 text-white hover:bg-cyan-700 border border-cyan-700 shadow-md",
       },
       size: {
         default: "h-10 px-4 py-2",

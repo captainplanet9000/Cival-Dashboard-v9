@@ -52,6 +52,9 @@ import AdvancedConsolidatedTab from '@/components/dashboard/AdvancedConsolidated
 import AdvancedDashboardTab from '@/components/dashboard/AdvancedDashboardTab'
 import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
+// Import calendar component
+import { CalendarView } from '@/components/calendar/CalendarView'
+
 // Import existing page components
 import dynamic from 'next/dynamic'
 
@@ -243,6 +246,12 @@ export function EnhancedDashboard() {
       label: 'DeFi',
       icon: <Zap className="h-4 w-4" />,
       component: <DeFiIntegrationHub />
+    },
+    {
+      id: 'calendar',
+      label: 'Calendar',
+      icon: <Calendar className="h-4 w-4" />,
+      component: <CalendarView />
     },
     {
       id: 'advanced',
