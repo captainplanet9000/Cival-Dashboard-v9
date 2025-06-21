@@ -34,6 +34,7 @@ import {
 
 // AG-UI Protocol integration - Mock implementation
 import { subscribe, emit, type TradingEvents } from '@/lib/ag-ui-protocol-v2'
+import { PaperTradingPnL } from './PaperTradingPnL'
 
 // Trading Types
 interface TradingPair {
@@ -119,6 +120,14 @@ export function TradingInterface() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const [orderError, setOrderError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  
+  // Paper Trading Summary State
+  const [paperTradingSummary, setPaperTradingSummary] = useState({
+    totalPnl: 2791.57,
+    dailyPnl: 263.58,
+    totalValue: 502791.57,
+    activeAgents: 4
+  })
 
   // AG-UI Event Subscriptions
   useEffect(() => {
@@ -207,6 +216,15 @@ export function TradingInterface() {
       if (balancesResponse.ok) {
         const balancesData = await balancesResponse.json()
         setBalances(balancesData.balances || [])
+      }
+
+      // Fetch paper trading summary
+      const paperResponse = await fetch('/api/trading/paper/summary')
+      if (paperResponse.ok) {
+        const paperData = await paperResponse.json()
+        if (paperData.success && paperData.summary) {
+          setPaperTradingSummary(paperData.summary)
+        }
       }
 
       setLastUpdate(new Date())
@@ -423,7 +441,31 @@ export function TradingInterface() {
           <h2 className="text-2xl font-bold">Trading Interface</h2>
           <p className="text-muted-foreground">Professional trading tools and order management</p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
+          {/* Paper Trading Summary */}
+          <div className="hidden md:flex items-center space-x-4 px-4 py-2 bg-muted rounded-lg">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Portfolio</div>
+              <div className="font-semibold">{formatCurrency(paperTradingSummary.totalValue)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Total P&L</div>
+              <div className={`font-semibold ${paperTradingSummary.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {paperTradingSummary.totalPnl >= 0 ? '+' : ''}{formatCurrency(paperTradingSummary.totalPnl)}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Daily P&L</div>
+              <div className={`font-semibold ${paperTradingSummary.dailyPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {paperTradingSummary.dailyPnl >= 0 ? '+' : ''}{formatCurrency(paperTradingSummary.dailyPnl)}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Agents</div>
+              <div className="font-semibold">{paperTradingSummary.activeAgents}</div>
+            </div>
+          </div>
+          
           <Button variant="outline" size="sm" onClick={fetchTradingData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -655,12 +697,17 @@ export function TradingInterface() {
 
         {/* Market Data and Order Management */}
         <div className="lg:col-span-2 space-y-4">
-          <Tabs defaultValue="market" className="space-y-4">
+          <Tabs defaultValue="pnl" className="space-y-4">
             <TabsList>
+              <TabsTrigger value="pnl">Paper Trading P&L</TabsTrigger>
               <TabsTrigger value="market">Market Data</TabsTrigger>
               <TabsTrigger value="orders">Open Orders</TabsTrigger>
               <TabsTrigger value="history">Order History</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="pnl" className="space-y-4">
+              <PaperTradingPnL />
+            </TabsContent>
 
             <TabsContent value="market" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
