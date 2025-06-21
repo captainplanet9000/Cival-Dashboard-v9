@@ -9,6 +9,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Scrollbar utilities for mobile tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none;  /* Safari and Chrome */
+}
+
 /* @import './globals-modern.css'; */
 
 @layer base {

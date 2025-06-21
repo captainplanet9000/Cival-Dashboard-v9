@@ -435,7 +435,7 @@ export function DeFiIntegrationHub() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-emerald-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold text-foreground">
             DeFi Integration Hub
           </h1>
           <p className="text-muted-foreground">Decentralized finance protocols and yield optimization</p>

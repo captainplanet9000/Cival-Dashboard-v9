@@ -420,7 +420,7 @@ export function EnhancedDashboard() {
   )
 }
 
-// Quick Access Card Component
+// Quick Access Card Component - Enhanced for all devices
 function QuickAccessCard({ title, description, icon, targetTab, onNavigate }: { 
   title: string, 
   description: string, 
@@ -429,11 +429,17 @@ function QuickAccessCard({ title, description, icon, targetTab, onNavigate }: {
   onNavigate: (tab: string) => void
 }) {
   return (
-    <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => onNavigate(targetTab)}>
-      <CardContent className="p-6 text-center">
-        {icon}
-        <h3 className="font-semibold mb-2">{title}</h3>
-        <p className="text-sm text-gray-600">{description}</p>
+    <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 h-full" onClick={() => onNavigate(targetTab)}>
+      <CardContent className="p-4 sm:p-6 text-center h-full flex flex-col justify-center">
+        <div className="mb-3 sm:mb-4">
+          {icon}
+        </div>
+        <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 text-foreground leading-tight">
+          {title}
+        </h3>
+        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+          {description}
+        </p>
       </CardContent>
     </Card>
   )
@@ -583,11 +589,11 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
       </Card>
 
       {/* Quick Access to Professional Tools */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
         <QuickAccessCard
           title="Live Market Data"
           description="Real-time prices & technical analysis"
-          icon={<TrendingUp className="h-12 w-12 mx-auto mb-4 text-emerald-500" />}
+          icon={<TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-emerald-500" />}
           targetTab="market-data"
           onNavigate={onNavigate}
         />
@@ -595,7 +601,7 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         <QuickAccessCard
           title="Live Trading Dashboard"
           description="Real-time autonomous trading interface"
-          icon={<Zap className="h-12 w-12 mx-auto mb-4 text-blue-500" />}
+          icon={<Zap className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-blue-500" />}
           targetTab="live-trading"
           onNavigate={onNavigate}
         />
@@ -603,7 +609,7 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         <QuickAccessCard
           title="Multi-Chain Wallets"
           description="Cross-chain wallet management"
-          icon={<Wallet className="h-12 w-12 mx-auto mb-4 text-purple-500" />}
+          icon={<Wallet className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-purple-500" />}
           targetTab="wallets"
           onNavigate={onNavigate}
         />
@@ -611,7 +617,7 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         <QuickAccessCard
           title="DeFi Integration"
           description="Yield farming & protocol management"
-          icon={<Zap className="h-12 w-12 mx-auto mb-4 text-violet-500" />}
+          icon={<Zap className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-violet-500" />}
           targetTab="defi"
           onNavigate={onNavigate}
         />
@@ -619,7 +625,7 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         <QuickAccessCard
           title="AI Agent Control"
           description="Monitor and control trading agents"
-          icon={<Bot className="h-12 w-12 mx-auto mb-4 text-indigo-500" />}
+          icon={<Bot className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-indigo-500" />}
           targetTab="agents"
           onNavigate={onNavigate}
         />
@@ -627,7 +633,7 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         <QuickAccessCard
           title="System Monitoring"
           description="Comprehensive system health monitoring"
-          icon={<Activity className="h-12 w-12 mx-auto mb-4 text-green-500" />}
+          icon={<Activity className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-green-500" />}
           targetTab="monitoring"
           onNavigate={onNavigate}
         />
@@ -659,12 +665,12 @@ function EnhancedAgentsTab() {
       </CardHeader>
       <CardContent>
         <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          <TabsList className="w-full flex-wrap sm:flex-nowrap">
             {agentSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white font-medium text-xs sm:text-sm p-2 truncate transition-all"
+                className="flex-shrink-0 min-w-fit data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:border-purple-600"
               >
                 {tab.label}
               </TabsTrigger>
