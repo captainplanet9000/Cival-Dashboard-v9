@@ -104,6 +104,7 @@ app.prepare().then(() => {
     
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`> Railway Deployment: ${new Date().toISOString()}`);
     
     // Initialize persistence layer
     await initializePersistence();
