@@ -372,10 +372,10 @@ export function EnhancedDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap border-2 ${
                     activeTab === tab.id
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-foreground hover:bg-muted'
+                      ? 'bg-primary text-primary-foreground shadow-sm border-primary/50'
+                      : 'text-foreground hover:bg-muted border-transparent hover:border-muted-foreground/30'
                   }`}
                 >
                   {tab.icon}

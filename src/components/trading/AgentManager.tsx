@@ -530,34 +530,35 @@ export function AgentManager() {
         </TabsList>
 
         <TabsContent value="agents" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {agents.map((agent) => (
-              <Card key={agent.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
+              <Card key={agent.id} className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+                <CardHeader className="pb-4 border-b">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className={AGENT_COLORS[agent.type]}>
+                      <Avatar className="h-12 w-12 border-2 border-muted">
+                        <AvatarFallback className={`${AGENT_COLORS[agent.type]} text-lg font-bold`}>
                           {AGENT_AVATARS[agent.type]}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-lg">{agent.name}</CardTitle>
-                        <CardDescription className="flex items-center space-x-2">
-                          <Badge variant="outline">{agent.type}</Badge>
+                        <CardTitle className="text-lg font-bold">{agent.name}</CardTitle>
+                        <CardDescription className="flex items-center space-x-2 mt-1">
+                          <Badge variant="outline" className="font-medium">{agent.type}</Badge>
                           <div className={`flex items-center space-x-1 ${getStatusColor(agent.status)}`}>
                             {getStatusIcon(agent.status)}
-                            <span className="text-sm">{agent.status}</span>
+                            <span className="text-sm font-medium capitalize">{agent.status}</span>
                           </div>
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex space-x-1">
+                    <div className="flex space-x-2">
                       {agent.status === 'active' ? (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleStopAgent(agent.id)}
+                          className="border-2 hover:bg-destructive/10 hover:border-destructive"
                         >
                           <Pause className="h-4 w-4" />
                         </Button>
@@ -566,6 +567,7 @@ export function AgentManager() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleStartAgent(agent.id)}
+                          className="border-2 hover:bg-green-500/10 hover:border-green-500"
                         >
                           <Play className="h-4 w-4" />
                         </Button>
@@ -574,63 +576,84 @@ export function AgentManager() {
                         variant="outline"
                         size="sm"
                         onClick={() => setSelectedAgent(agent)}
+                        className="border-2 hover:bg-primary/10 hover:border-primary"
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5 pt-4">
                   {/* Performance Metrics */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="text-muted-foreground">Win Rate</div>
-                      <div className="font-medium">{agent.performance.winRate.toFixed(1)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Total Return</div>
-                      <div className={`font-medium ${agent.performance.totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(agent.performance.totalReturn)}
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Performance Metrics</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Win Rate</div>
+                        <div className="font-bold text-lg">{agent.performance.winRate.toFixed(1)}%</div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Trades</div>
-                      <div className="font-medium">{agent.performance.totalTrades}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Allocation</div>
-                      <div className="font-medium">{formatCurrency(agent.allocatedFunds)}</div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Total Return</div>
+                        <div className={`font-bold text-lg ${agent.performance.totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(agent.performance.totalReturn)}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Total Trades</div>
+                        <div className="font-bold text-lg">{agent.performance.totalTrades}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Allocation</div>
+                        <div className="font-bold text-lg">{formatCurrency(agent.allocatedFunds)}</div>
+                      </div>
                     </div>
                   </div>
 
                   {/* Current Activity */}
                   {agent.currentDecision && (
-                    <div className="p-3 bg-muted rounded">
-                      <div className="text-sm font-medium">Latest Decision:</div>
-                      <div className="text-sm text-muted-foreground">{agent.currentDecision}</div>
+                    <div className="border-l-4 border-blue-500 bg-blue-50/50 p-4 rounded-r-lg">
+                      <div className="text-sm font-bold text-blue-700 mb-2">Latest Decision</div>
+                      <div className="text-sm text-blue-600 mb-2">{agent.currentDecision}</div>
                       {agent.confidence && (
-                        <div className="text-xs mt-1">
-                          Confidence: {(agent.confidence * 100).toFixed(1)}%
+                        <div className="flex items-center space-x-2">
+                          <Progress value={agent.confidence * 100} className="flex-1 h-2" />
+                          <span className="text-xs font-medium text-blue-700">
+                            {(agent.confidence * 100).toFixed(1)}%
+                          </span>
                         </div>
                       )}
                     </div>
                   )}
 
                   {/* Quick Stats */}
-                  <div className="flex justify-between text-sm">
-                    <span>Active Positions: {agent.activePositions}</span>
-                    <span>Pending Orders: {agent.pendingOrders}</span>
+                  <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Current Status</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground text-xs">Active Positions</span>
+                        <div className="font-bold">{agent.activePositions}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground text-xs">Pending Orders</span>
+                        <div className="font-bold">{agent.pendingOrders}</div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Configuration Toggle */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Auto Trading</span>
-                    <Switch
-                      checked={agent.config.enabled}
-                      onCheckedChange={(enabled) => 
-                        handleUpdateAgentConfig(agent.id, { ...agent.config, enabled })
-                      }
-                    />
+                  <div className="border rounded-lg p-3 bg-gradient-to-r from-muted/50 to-muted/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-semibold">Auto Trading</span>
+                        <div className="text-xs text-muted-foreground">Enable autonomous trading decisions</div>
+                      </div>
+                      <Switch
+                        checked={agent.config.enabled}
+                        onCheckedChange={(enabled) => 
+                          handleUpdateAgentConfig(agent.id, { ...agent.config, enabled })
+                        }
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

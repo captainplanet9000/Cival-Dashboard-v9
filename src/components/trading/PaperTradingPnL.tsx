@@ -10,8 +10,12 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   DollarSign, TrendingUp, TrendingDown, Activity, Users, Bot,
   ArrowUpRight, ArrowDownRight, RefreshCw, PieChart, Target,
-  Zap, CheckCircle, AlertTriangle, BarChart3
+  Zap, CheckCircle, AlertTriangle, BarChart3, Play, Pause
 } from 'lucide-react'
+
+// AG-UI Protocol integration
+import { useAGUI } from '@/lib/hooks/useAGUI'
+import { emit } from '@/lib/ag-ui-protocol-v2'
 
 // Types
 interface AgentPnL {
@@ -65,6 +69,13 @@ export function PaperTradingPnL() {
   const [summary, setSummary] = useState<TradingSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [realTimeUpdates, setRealTimeUpdates] = useState(true)
+
+  // AG-UI Protocol integration for real-time updates
+  const agui = useAGUI({
+    autoConnect: true,
+    reconnectOnFailure: true
+  })
 
   // Generate realistic mock data
   const generateMockData = useCallback(() => {
@@ -284,11 +295,72 @@ export function PaperTradingPnL() {
     }
   }, [generateMockData])
 
+  // AG-UI Event Listeners for real-time updates
+  useEffect(() => {
+    if (!agui.isConnected) return
+
+    // Listen for paper trading events
+    const unsubscribeTrade = agui.subscribe('paper_trading.trade_executed', (data) => {
+      console.log('AG-UI: Trade executed', data)
+      // Update positions and agent P&L in real-time
+      fetchPaperTradingData()
+      
+      // Emit notification for successful trade
+      emit('notification.show', {
+        type: 'success',
+        title: 'Trade Executed',
+        message: `${data.agentName} executed ${data.side} order for ${data.symbol}`,
+        duration: 5000
+      })
+    })
+
+    const unsubscribePosition = agui.subscribe('paper_trading.position_updated', (data) => {
+      console.log('AG-UI: Position updated', data)
+      setPositions(prev => prev.map(pos => 
+        pos.agentId === data.agentId && pos.symbol === data.symbol 
+          ? { ...pos, ...data.position }
+          : pos
+      ))
+    })
+
+    const unsubscribePnL = agui.subscribe('paper_trading.pnl_updated', (data) => {
+      console.log('AG-UI: P&L updated', data)
+      setAgentPnLs(prev => prev.map(agent =>
+        agent.agentId === data.agentId
+          ? { 
+              ...agent, 
+              totalPnl: data.totalPnl,
+              unrealizedPnl: data.unrealizedPnl,
+              dailyPnl: data.dailyPnl
+            }
+          : agent
+      ))
+    })
+
+    const unsubscribeAgent = agui.subscribe('agent.status_changed', (data) => {
+      console.log('AG-UI: Agent status changed', data)
+      setAgentPnLs(prev => prev.map(agent =>
+        agent.agentId === data.agentId
+          ? { ...agent, status: data.status }
+          : agent
+      ))
+    })
+
+    return () => {
+      unsubscribeTrade()
+      unsubscribePosition()
+      unsubscribePnL()
+      unsubscribeAgent()
+    }
+  }, [agui.isConnected, fetchPaperTradingData])
+
   useEffect(() => {
     fetchPaperTradingData()
-    const interval = setInterval(fetchPaperTradingData, 30000) // Update every 30 seconds
+    
+    // Set up periodic updates (longer interval when real-time is enabled)
+    const interval = setInterval(fetchPaperTradingData, realTimeUpdates ? 60000 : 30000)
     return () => clearInterval(interval)
-  }, [fetchPaperTradingData])
+  }, [fetchPaperTradingData, realTimeUpdates])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -309,6 +381,65 @@ export function PaperTradingPnL() {
       case 'paused': return <Activity className="h-4 w-4 text-yellow-600" />
       case 'inactive': return <AlertTriangle className="h-4 w-4 text-red-600" />
       default: return <Activity className="h-4 w-4 text-gray-600" />
+    }
+  }
+
+  // AG-UI Control Functions
+  const handleAgentAction = (agentId: string, action: 'start' | 'pause' | 'stop') => {
+    emit('agent.control', {
+      agentId,
+      action,
+      timestamp: new Date().toISOString()
+    })
+
+    // Optimistically update UI
+    setAgentPnLs(prev => prev.map(agent =>
+      agent.agentId === agentId
+        ? { ...agent, status: action === 'start' ? 'active' : action === 'pause' ? 'paused' : 'inactive' }
+        : agent
+    ))
+  }
+
+  const handleRefreshData = () => {
+    emit('paper_trading.refresh_request', {
+      timestamp: new Date().toISOString()
+    })
+    fetchPaperTradingData()
+  }
+
+  const handleToggleRealTime = () => {
+    setRealTimeUpdates(!realTimeUpdates)
+    emit('paper_trading.realtime_toggle', {
+      enabled: !realTimeUpdates,
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  const handleSimulateTrade = async () => {
+    try {
+      const response = await fetch('/api/trading/paper/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: 1 })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.trades.length > 0) {
+          const trade = result.trades[0]
+          
+          // Emit AG-UI event for immediate UI update
+          emit('paper_trading.trade_executed', {
+            ...trade,
+            type: 'simulated'
+          })
+          
+          // Refresh data to get updated totals
+          setTimeout(() => fetchPaperTradingData(), 1000)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to simulate trade:', error)
     }
   }
 
@@ -347,7 +478,25 @@ export function PaperTradingPnL() {
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={fetchPaperTradingData}>
+                {/* AG-UI Status Indicator */}
+                <div className="flex items-center gap-2 px-2 py-1 bg-muted rounded">
+                  <div className={`w-2 h-2 rounded-full ${agui.isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-xs text-muted-foreground">
+                    {agui.isConnected ? 'Live' : 'Offline'}
+                  </span>
+                </div>
+                
+                {/* Real-time Toggle */}
+                <Button 
+                  variant={realTimeUpdates ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={handleToggleRealTime}
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Real-time
+                </Button>
+                
+                <Button variant="outline" size="sm" onClick={handleRefreshData}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
@@ -445,9 +594,30 @@ export function PaperTradingPnL() {
                             </div>
                           </div>
                         </div>
-                        <Badge variant={agent.totalPnl >= 0 ? "default" : "destructive"}>
-                          {agent.totalPnl >= 0 ? '+' : ''}{formatCurrency(agent.totalPnl)}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={agent.totalPnl >= 0 ? "default" : "destructive"}>
+                            {agent.totalPnl >= 0 ? '+' : ''}{formatCurrency(agent.totalPnl)}
+                          </Badge>
+                          
+                          {/* AG-UI Agent Control Buttons */}
+                          {agent.status === 'active' ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleAgentAction(agent.agentId, 'pause')}
+                            >
+                              <Activity className="h-3 w-3" />
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleAgentAction(agent.agentId, 'start')}
+                            >
+                              <Play className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
