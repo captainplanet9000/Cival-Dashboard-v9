@@ -40,6 +40,15 @@ import {
 
 import { backendApi } from '@/lib/api/backend-client'
 
+// Import integrated services for complete agent lifecycle
+import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
+import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
+import { vaultIntegrationService } from '@/lib/vault/VaultIntegrationService'
+import { mcpIntegrationService } from '@/lib/mcp/MCPIntegrationService'
+
+// Import agent creation wizard
+import { AgentCreationWizard } from '@/components/modals/AgentCreationWizard'
+
 interface FarmAgent {
   id: string
   name: string
@@ -116,8 +125,10 @@ export function EnhancedFarmDashboard() {
   const [farms, setFarms] = useState<Farm[]>([])
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null)
   const [showCreateFarm, setShowCreateFarm] = useState(false)
+  const [showAgentWizard, setShowAgentWizard] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [systemHealth, setSystemHealth] = useState<any>(null)
   const [farmMetrics, setFarmMetrics] = useState<FarmPerformanceMetrics>({
     totalFarmValue: 0,
     totalDailyPnL: 0,
@@ -139,10 +150,17 @@ export function EnhancedFarmDashboard() {
     description: ''
   })
 
-  // Real-time data fetching
+  // Initialize integrated services and fetch farm data
   useEffect(() => {
     const fetchFarmData = async () => {
       try {
+        // Initialize all integrated services for complete agent lifecycle
+        await systemLifecycleService.initializeAllServices()
+        
+        // Get real-time system health from integrated services
+        const healthData = await systemLifecycleService.getSystemHealth()
+        setSystemHealth(healthData)
+        
         // Try backend APIs with proper error handling
         const farmsResponse = await backendApi.get('/api/v1/farm-management/farms').catch(() => 
           backendApi.get('/api/v1/farms').catch(() => ({ data: null }))
@@ -1180,6 +1198,14 @@ export function EnhancedFarmDashboard() {
                   Create Farm
                 </Button>
                 <Button 
+                  variant="secondary" 
+                  onClick={() => setShowAgentWizard(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Bot className="h-4 w-4" />
+                  Create Agent
+                </Button>
+                <Button 
                   variant="outline" 
                   onClick={() => {
                     setShowCreateFarm(false)
@@ -1195,6 +1221,116 @@ export function EnhancedFarmDashboard() {
                 >
                   Cancel
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
+      {/* Enhanced Agent Creation Wizard with Complete Lifecycle Integration */}
+      <AgentCreationWizard
+        open={showAgentWizard}
+        onClose={() => setShowAgentWizard(false)}
+        onCreateAgent={async (agentConfig) => {
+          try {
+            // Use SystemLifecycleService for complete agent creation with all integrations
+            const result = await systemLifecycleService.createCompleteAgent({
+              // Basic Configuration
+              name: agentConfig.name,
+              type: agentConfig.type,
+              description: agentConfig.description,
+              initialCapital: agentConfig.initialCapital,
+              
+              // DeFi Integration
+              enableDeFi: true,
+              defiNetworks: ['sepolia', 'polygon-mumbai'],
+              defiProtocols: agentConfig.defiProtocols || ['Uniswap V3', 'Aave'],
+              
+              // AI Configuration
+              llmProvider: 'gemini',
+              enableLearning: true,
+              
+              // MCP Tools
+              enabledTools: ['trading', 'defi', 'analysis', 'communication'],
+              
+              // Auto-Management
+              autoRebalance: agentConfig.autoRebalance || true,
+              autoCompound: agentConfig.compoundReturns || true,
+              liquidityMining: true,
+              
+              // Risk Management
+              maxDrawdown: agentConfig.maxDrawdown || 0.1,
+              riskTolerance: agentConfig.riskTolerance || 0.5,
+              maxPositionSize: agentConfig.maxPositionSize || 0.2
+            })
+            
+            console.log('Complete agent created with full system integration:', result)
+            
+            // Refresh farm data to show the new agent
+            const refreshFarms = async () => {
+              try {
+                const farmsResponse = await backendApi.get('/api/v1/farm-management/farms').catch(() => ({ data: null }))
+                if (farmsResponse.data?.farms) {
+                  const transformedFarms = farmsResponse.data.farms.map((farm: any) => ({
+                    // ... transform farm data
+                    id: farm.farm_id || farm.id,
+                    name: farm.name,
+                    agents: farm.agents || []
+                  }))
+                  setFarms(transformedFarms)
+                }
+              } catch (error) {
+                console.error('Error refreshing farms:', error)
+              }
+            }
+            
+            await refreshFarms()
+            
+          } catch (error) {
+            console.error('Error creating agent with complete lifecycle:', error)
+          }
+        }}
+        existingAgents={farms.flatMap(farm => farm.agents)}
+      />
+      
+      {/* System Health Status Display */}
+      {systemHealth && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Card className="w-80 bg-background/95 backdrop-blur-sm border shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                System Integration Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Overall Health</span>
+                  <Badge variant={systemHealth.overall === 'healthy' ? 'default' : 'destructive'}>
+                    {systemHealth.overall}
+                  </Badge>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Active Agents</span>
+                  <span className="font-medium">{systemHealth.metrics?.activeAgents || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Active Vaults</span>
+                  <span className="font-medium">{systemHealth.metrics?.totalVaults || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>MCP Tools</span>
+                  <span className="font-medium">{systemHealth.metrics?.totalTools || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Success Rate</span>
+                  <span className="font-medium">{((systemHealth.metrics?.successRate || 0) * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Uptime</span>
+                  <span className="font-medium">{systemHealth.metrics?.uptime || '0s'}</span>
+                </div>
               </div>
             </CardContent>
           </Card>

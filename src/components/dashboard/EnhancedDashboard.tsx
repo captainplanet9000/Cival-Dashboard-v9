@@ -33,6 +33,20 @@ import { AgentManager } from '@/components/trading/AgentManager'
 import { RiskDashboard } from '@/components/trading/RiskDashboard'
 import { TradingInterface } from '@/components/trading/TradingInterface'
 
+// Import new integrated services
+import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
+import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
+import { mcpIntegrationService } from '@/lib/mcp/MCPIntegrationService'
+import { vaultIntegrationService } from '@/lib/vault/VaultIntegrationService'
+
+// Import system health components
+import { SystemHealthDashboard } from '@/components/system/SystemHealthDashboard'
+import { MCPToolsPanel } from '@/components/mcp/MCPToolsPanel'
+import { VaultIntegrationPanel } from '@/components/vault/VaultIntegrationPanel'
+
+// Import enhanced components
+import EnhancedAgentsTab from '@/components/dashboard/EnhancedAgentsTab'
+
 // Import enhanced farm dashboard
 import EnhancedFarmDashboard from '@/components/farm/EnhancedFarmDashboard'
 
@@ -150,6 +164,12 @@ export function EnhancedDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // Initialize all integrated services
+        await systemLifecycleService.initializeAllServices()
+        
+        // Get real-time system health from integrated services
+        const systemHealthData = await systemLifecycleService.getSystemHealth()
+        
         // Fetch system status and trading overview data
         const [tradingStatus, systemHealth, marketOverview, tradingOverview, portfolioSummary] = await Promise.all([
           backendApi.get('/api/v1/trading/status').catch(() => ({ data: null })),
@@ -171,9 +191,16 @@ export function EnhancedDashboard() {
           }))
         }
 
-        // Update metrics from various sources
-        const healthScore = systemHealth.data?.system_health || 85
+        // Update metrics from various sources including integrated services
+        const healthScore = systemHealthData?.metrics?.successRate * 100 || systemHealth.data?.system_health || 85
         setSystemStatus(prev => ({ ...prev, system_health: healthScore }))
+        
+        // Update metrics with integrated service data
+        const integratedMetrics = {
+          activeAgents: systemHealthData?.metrics?.activeAgents || tradingStatus.data?.running_tasks || 4,
+          activeFarms: systemHealthData?.metrics?.totalVaults || 3,
+          systemHealth: healthScore
+        }
         
         // Use real data from APIs with fallbacks
         const portfolioData = portfolioSummary.data || {};
@@ -181,13 +208,11 @@ export function EnhancedDashboard() {
         
         setMetrics(prev => ({
           ...prev,
-          systemHealth: healthScore,
-          activeAgents: tradingStatus.data?.running_tasks || overviewData.active_agents || 4,
+          ...integratedMetrics,
           totalValue: portfolioData.total_value || overviewData.portfolio_value || 250000 + Math.random() * 10000,
           dailyPnL: portfolioData.daily_pnl || overviewData.daily_pnl || (Math.random() - 0.5) * 5000,
           totalPnL: portfolioData.total_pnl || overviewData.total_pnl || 15420 + (Math.random() - 0.5) * 2000,
           activePositions: portfolioData.active_positions || overviewData.active_positions || tradingStatus.data?.active_orders || 3,
-          activeFarms: overviewData.active_farms || 3 + Math.floor(Math.random() * 2),
           farmPerformance: overviewData.farms_performance || 7500 + (Math.random() - 0.5) * 2000,
           winRate: overviewData.win_rate || 68.5 + (Math.random() - 0.5) * 10,
           avgReturn: overviewData.average_return || 12.8 + (Math.random() - 0.5) * 4,
@@ -272,6 +297,24 @@ export function EnhancedDashboard() {
       label: 'Calendar',
       icon: <Calendar className="h-4 w-4" />,
       component: <CalendarWrapper />
+    },
+    {
+      id: 'system-health',
+      label: 'System',
+      icon: <Activity className="h-4 w-4" />,
+      component: <SystemHealthDashboard />
+    },
+    {
+      id: 'mcp-tools',
+      label: 'MCP Tools',
+      icon: <Zap className="h-4 w-4" />,
+      component: <MCPToolsPanel />
+    },
+    {
+      id: 'vault-integration',
+      label: 'Vaults',
+      icon: <Shield className="h-4 w-4" />,
+      component: <VaultIntegrationPanel />
     },
     {
       id: 'advanced',
