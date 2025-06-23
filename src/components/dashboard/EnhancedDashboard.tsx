@@ -56,7 +56,7 @@ import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 import { CalendarView } from '@/components/calendar/CalendarView'
 
 // Import chart components
-import { PortfolioPerformanceChart } from '@/components/charts/portfolio-performance-chart'
+import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'
 
 // Import existing page components
 import dynamic from 'next/dynamic'
@@ -673,17 +673,11 @@ function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
     ssr: false,
     loading: () => <div className="p-6 text-center">Loading Paper Trading...</div>
   });
-  
-  const AgentConfigManager = dynamic(() => import('@/components/agent/AgentConfigManager'), {
-    ssr: false,
-    loading: () => <div className="p-6 text-center">Loading Config Manager...</div>
-  });
 
   const agentSubTabs = [
     { id: 'overview', label: 'Overview', component: <AgentOverviewPanel metrics={metrics} /> },
     { id: 'control-panel', label: 'Control', component: <AgentControlPanel /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <AgentPaperTradingDashboard /> },
-    { id: 'config', label: 'Configuration', component: <AgentConfigManager /> },
     { id: 'decisions', label: 'Decisions', component: <AgentDecisionLog /> },
     { id: 'llm-manager', label: 'LLM Provider', component: <LLMProviderManager /> },
     { id: 'performance', label: 'Performance', component: <ExpertAgentsPanel /> }
@@ -718,7 +712,7 @@ function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
       <Card>
         <CardContent className="p-6">
           <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
               {agentSubTabs.map((tab) => (
                 <TabsTrigger
                   key={tab.id}

@@ -15,6 +15,9 @@ import ElizaAIHub from '@/components/advanced/ElizaAIHub';
 import MCPServerManager from '@/components/advanced/MCPServerManager';
 import PythonAnalysisPipeline from '@/components/advanced/PythonAnalysisPipeline';
 
+// Import theme selector
+import { ThemeSelector } from '@/components/theme/theme-selector';
+
 export default function AdvancedConsolidatedTab() {
   return (
     <div className="space-y-6">
@@ -24,10 +27,14 @@ export default function AdvancedConsolidatedTab() {
       </div>
       
       <Tabs defaultValue="analytics" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="themes" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Themes
           </TabsTrigger>
           <TabsTrigger value="data-pipeline" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
@@ -57,6 +64,10 @@ export default function AdvancedConsolidatedTab() {
 
         <TabsContent value="analytics" className="mt-6">
           <AdvancedDashboardTab />
+        </TabsContent>
+
+        <TabsContent value="themes" className="mt-6">
+          <ThemeSelector />
         </TabsContent>
 
         <TabsContent value="data-pipeline" className="mt-6">

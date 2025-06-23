@@ -9,7 +9,7 @@ import LiveTradingDashboard from '@/components/trading/LiveTradingDashboard';
 import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel';
 import { TradingInterface } from '@/components/trading/TradingInterface';
 import { PortfolioMonitor } from '@/components/trading/PortfolioMonitor';
-import { TradingCharts } from '@/components/charts/TradingCharts';
+import { TradingCharts } from '@/components/trading/TradingCharts';
 import { PaperTradingPnL } from '@/components/trading/PaperTradingPnL';
 
 export default function LiveTradingWithMarketData() {
