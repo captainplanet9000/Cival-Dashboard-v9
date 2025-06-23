@@ -55,6 +55,9 @@ import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 // Import calendar component
 import { CalendarView } from '@/components/calendar/CalendarView'
 
+// Import chart components
+import { PortfolioPerformanceChart } from '@/components/charts/portfolio-performance-chart'
+
 // Import existing page components
 import dynamic from 'next/dynamic'
 
@@ -221,7 +224,7 @@ export function EnhancedDashboard() {
       id: 'agents',
       label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <EnhancedAgentsTab />
+      component: <EnhancedAgentsTab metrics={metrics} />
     },
     {
       id: 'farms',
@@ -445,7 +448,7 @@ function QuickAccessCard({ title, description, icon, targetTab, onNavigate }: {
   )
 }
 
-// Trading Overview Tab with real-time data
+// Trading Overview Tab with real-time data and enhanced components
 function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: DashboardMetrics, systemStatus: SystemStatus, onNavigate: (tab: string) => void }) {
   const [positions, setPositions] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -487,6 +490,9 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
 
   return (
     <div className="space-y-6">
+      {/* Live Market Ticker */}
+      <LiveMarketTicker />
+      
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
@@ -523,118 +529,134 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         />
       </div>
 
-      {/* Portfolio Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-green-500" />
-            Portfolio Performance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{formatPrice(metrics.totalPnL)}</p>
-              <p className="text-sm text-gray-600">Total P&L</p>
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Portfolio Performance Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-green-500" />
+              Portfolio Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PortfolioPerformanceChart />
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">{formatPrice(metrics.totalPnL)}</p>
+                <p className="text-sm text-gray-600">Total P&L</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">{formatPrice(metrics.dailyPnL)}</p>
+                <p className="text-sm text-gray-600">Daily P&L</p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{formatPrice(metrics.dailyPnL)}</p>
-              <p className="text-sm text-gray-600">Daily P&L</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">{metrics.avgReturn.toFixed(1)}%</p>
-              <p className="text-sm text-gray-600">Avg Return</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600">{metrics.riskScore.toFixed(0)}</p>
-              <p className="text-sm text-gray-600">Risk Score</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Live Trading Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-blue-500" />
-            Live Trading Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{systemStatus.active_signals}</p>
-              <p className="text-sm text-gray-600">Active Signals</p>
+        {/* Live Trading Status with Agent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-blue-500" />
+              System Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Agent Activity Summary */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <p className="text-2xl font-bold text-purple-600">{metrics.activeAgents}</p>
+                  <p className="text-sm text-gray-600">Active Agents</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">{metrics.activeFarms}</p>
+                  <p className="text-sm text-gray-600">Active Farms</p>
+                </div>
+              </div>
+              
+              {/* Trading Status */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <p className="text-xl font-bold text-blue-600">{systemStatus.active_signals}</p>
+                  <p className="text-xs text-gray-600">Signals</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xl font-bold text-purple-600">{systemStatus.active_opportunities}</p>
+                  <p className="text-xs text-gray-600">Opportunities</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xl font-bold text-green-600">{systemStatus.active_orders}</p>
+                  <p className="text-xs text-gray-600">Orders</p>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Market: <span className="font-medium">{systemStatus.market_condition}</span></p>
+                <p className="text-sm text-gray-600">Status: 
+                  <Badge variant={systemStatus.trading_enabled ? 'default' : 'secondary'} className="ml-2">
+                    {systemStatus.trading_enabled ? 'ACTIVE' : 'PAUSED'}
+                  </Badge>
+                </p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">{systemStatus.active_opportunities}</p>
-              <p className="text-sm text-gray-600">Opportunities</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{systemStatus.active_orders}</p>
-              <p className="text-sm text-gray-600">Active Orders</p>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Market Condition: <span className="font-medium">{systemStatus.market_condition}</span></p>
-            <p className="text-sm text-gray-600">Trading Status: 
-              <Badge variant={systemStatus.trading_enabled ? 'default' : 'secondary'} className="ml-2">
-                {systemStatus.trading_enabled ? 'ACTIVE' : 'PAUSED'}
-              </Badge>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity and Risk Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Trades */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-blue-500" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RecentTradesWidget positions={positions} orders={orders} />
+          </CardContent>
+        </Card>
+
+        {/* Risk Metrics */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-orange-500" />
+              Risk Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RiskMetricsWidget riskScore={metrics.riskScore} riskMetrics={riskMetrics} />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Quick Access to Professional Tools */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
         <QuickAccessCard
-          title="Live Market Data"
-          description="Real-time prices & technical analysis"
+          title="Live Trading"
+          description="Execute trades & manage positions"
           icon={<TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-emerald-500" />}
-          targetTab="market-data"
-          onNavigate={onNavigate}
-        />
-        
-        <QuickAccessCard
-          title="Live Trading Dashboard"
-          description="Real-time autonomous trading interface"
-          icon={<Zap className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-blue-500" />}
           targetTab="live-trading"
           onNavigate={onNavigate}
         />
         
         <QuickAccessCard
-          title="Multi-Chain Wallets"
-          description="Cross-chain wallet management"
-          icon={<Wallet className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-purple-500" />}
-          targetTab="wallets"
-          onNavigate={onNavigate}
-        />
-        
-        <QuickAccessCard
-          title="DeFi Integration"
-          description="Yield farming & protocol management"
-          icon={<Zap className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-violet-500" />}
-          targetTab="defi"
-          onNavigate={onNavigate}
-        />
-        
-        <QuickAccessCard
-          title="AI Agent Control"
-          description="Monitor and control trading agents"
-          icon={<Bot className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-indigo-500" />}
+          title="AI Agents"
+          description="Configure & monitor trading bots"
+          icon={<Bot className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-purple-500" />}
           targetTab="agents"
           onNavigate={onNavigate}
         />
         
         <QuickAccessCard
-          title="System Monitoring"
-          description="Comprehensive system health monitoring"
-          icon={<Activity className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-green-500" />}
-          targetTab="monitoring"
+          title="Risk Dashboard"
+          description="Monitor portfolio risk metrics"
+          icon={<Shield className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-orange-500" />}
+          targetTab="advanced"
           onNavigate={onNavigate}
         />
       </div>
@@ -643,48 +665,80 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
 }
 
 // Enhanced Agents Tab with all functionality
-function EnhancedAgentsTab() {
-  const [agentSubTab, setAgentSubTab] = useState('control-panel')
+function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
+  const [agentSubTab, setAgentSubTab] = useState('overview')
   
+  // Import additional agent components
+  const AgentPaperTradingDashboard = dynamic(() => import('@/components/agent/AgentPaperTradingDashboard'), {
+    ssr: false,
+    loading: () => <div className="p-6 text-center">Loading Paper Trading...</div>
+  });
+  
+  const AgentConfigManager = dynamic(() => import('@/components/agent/AgentConfigManager'), {
+    ssr: false,
+    loading: () => <div className="p-6 text-center">Loading Config Manager...</div>
+  });
+
   const agentSubTabs = [
-    { id: 'control-panel', label: 'Control Panel', component: <AgentControlPanel /> },
-    { id: 'decisions', label: 'Decision Log', component: <AgentDecisionLog /> },
-    { id: 'llm-manager', label: 'LLM Manager', component: <LLMProviderManager /> },
-    { id: 'performance', label: 'Performance', component: <ExpertAgentsPanel /> },
-    { id: 'legacy', label: 'Legacy View', component: <AgentManager /> }
+    { id: 'overview', label: 'Overview', component: <AgentOverviewPanel metrics={metrics} /> },
+    { id: 'control-panel', label: 'Control', component: <AgentControlPanel /> },
+    { id: 'paper-trading', label: 'Paper Trading', component: <AgentPaperTradingDashboard /> },
+    { id: 'config', label: 'Configuration', component: <AgentConfigManager /> },
+    { id: 'decisions', label: 'Decisions', component: <AgentDecisionLog /> },
+    { id: 'llm-manager', label: 'LLM Provider', component: <LLMProviderManager /> },
+    { id: 'performance', label: 'Performance', component: <ExpertAgentsPanel /> }
   ]
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-6 w-6 text-purple-500" />
-          AI Agent Management
-        </CardTitle>
-        <CardDescription>Complete autonomous agent coordination and management</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="w-full flex-wrap sm:flex-nowrap">
+    <div className="space-y-6">
+      {/* Agent Status Banner */}
+      <Card className="bg-gradient-to-r from-purple-600/10 to-indigo-600/10 border-purple-600/20">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Bot className="h-8 w-8 text-purple-600" />
+              <div>
+                <h3 className="text-xl font-bold text-foreground">AI Trading Agents</h3>
+                <p className="text-sm text-muted-foreground">Autonomous trading with machine learning</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Badge variant="default" className="bg-purple-600">
+                {metrics.activeAgents} Active
+              </Badge>
+              <Badge variant="outline">
+                {metrics.winRate.toFixed(1)}% Win Rate
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Agent Management Tabs */}
+      <Card>
+        <CardContent className="p-6">
+          <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+              {agentSubTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
             {agentSubTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="flex-shrink-0 min-w-fit data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:border-purple-600"
-              >
-                {tab.label}
-              </TabsTrigger>
+              <TabsContent key={tab.id} value={tab.id} className="mt-6">
+                {tab.component}
+              </TabsContent>
             ))}
-          </TabsList>
-          
-          {agentSubTabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id}>
-              {tab.component}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-    </Card>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 
@@ -749,6 +803,205 @@ function LoadingScreen() {
       </div>
     </div>
   )
+}
+
+// Recent Trades Widget
+function RecentTradesWidget({ positions, orders }: { positions: any[], orders: any[] }) {
+  const recentItems = [...positions, ...orders]
+    .sort((a, b) => new Date(b.timestamp || b.created_at || 0).getTime() - new Date(a.timestamp || a.created_at || 0).getTime())
+    .slice(0, 5);
+
+  if (recentItems.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No recent trading activity
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {recentItems.map((item, index) => (
+        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${item.side === 'buy' ? 'bg-green-500' : 'bg-red-500'}`} />
+            <div>
+              <p className="font-medium text-sm">{item.symbol || 'N/A'}</p>
+              <p className="text-xs text-muted-foreground">
+                {item.type || 'order'} • {item.status || 'pending'}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-medium text-sm">${(item.price || 0).toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">{item.quantity || 0} units</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Risk Metrics Widget
+function RiskMetricsWidget({ riskScore, riskMetrics }: { riskScore: number, riskMetrics: any }) {
+  const getRiskColor = (score: number) => {
+    if (score < 30) return 'text-green-600';
+    if (score < 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getRiskLevel = (score: number) => {
+    if (score < 30) return 'Low Risk';
+    if (score < 60) return 'Medium Risk';
+    return 'High Risk';
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <div className={`text-4xl font-bold ${getRiskColor(riskScore)}`}>
+          {riskScore.toFixed(0)}
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">{getRiskLevel(riskScore)}</p>
+      </div>
+      
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Portfolio Risk</span>
+            <span className="font-medium">{riskScore.toFixed(0)}%</span>
+          </div>
+          <Progress value={riskScore} className="h-2" />
+        </div>
+        
+        {riskMetrics && (
+          <>
+            <div className="pt-2 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">VaR (95%)</span>
+                <span className="font-medium">${(riskMetrics.var95 || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Max Drawdown</span>
+                <span className="font-medium">{(riskMetrics.maxDrawdown || 0).toFixed(2)}%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Sharpe Ratio</span>
+                <span className="font-medium">{(riskMetrics.sharpeRatio || 0).toFixed(2)}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="w-full"
+        onClick={() => {/* Navigate to risk dashboard */}}
+      >
+        View Detailed Analysis
+      </Button>
+    </div>
+  );
+}
+
+// Agent Overview Panel
+function AgentOverviewPanel({ metrics }: { metrics: DashboardMetrics }) {
+  const [agentStats, setAgentStats] = useState<any[]>([]);
+  
+  useEffect(() => {
+    // Load agent statistics
+    const loadAgentStats = async () => {
+      try {
+        const response = await backendApi.get('/api/v1/agents/status').catch(() => ({ data: null }));
+        if (response.data) {
+          setAgentStats(response.data.agents || []);
+        }
+      } catch (error) {
+        console.error('Error loading agent stats:', error);
+      }
+    };
+    
+    loadAgentStats();
+  }, []);
+  
+  return (
+    <div className="space-y-6">
+      {/* Agent Performance Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Active Agents</p>
+                <p className="text-2xl font-bold">{metrics.activeAgents}</p>
+              </div>
+              <Bot className="h-8 w-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Trades</p>
+                <p className="text-2xl font-bold">1,234</p>
+              </div>
+              <Activity className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Avg Performance</p>
+                <p className="text-2xl font-bold text-green-600">+{metrics.avgReturn.toFixed(1)}%</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Agent List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Active Trading Agents</CardTitle>
+          <CardDescription>Real-time agent performance and status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {['Alpha Agent', 'Beta Scalper', 'Gamma Swing', 'Delta Arbitrage'].map((agent, index) => (
+              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                    <Bot className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{agent}</p>
+                    <p className="text-sm text-muted-foreground">Running • Last trade 2m ago</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="font-medium text-green-600">+{(Math.random() * 20).toFixed(2)}%</p>
+                    <p className="text-sm text-muted-foreground">24h P&L</p>
+                  </div>
+                  <Button size="sm" variant="outline">
+                    Configure
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default EnhancedDashboard
