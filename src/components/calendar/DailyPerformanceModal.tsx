@@ -401,11 +401,11 @@ export function DailyPerformanceModal({ date, isOpen, onClose }: DailyPerformanc
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center space-x-2">
-                    <DollarSign className={`h-4 w-4 ${data.summary?.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                    <DollarSign className={`h-4 w-4 ${(data.summary?.total_pnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`} />
                     <div className="text-sm font-medium text-muted-foreground">Total P&L</div>
                   </div>
-                  <div className={`text-2xl font-bold ${data.summary?.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {data.summary?.total_pnl >= 0 ? '+' : ''}${data.summary?.total_pnl?.toFixed(2) || '0.00'}
+                  <div className={`text-2xl font-bold ${(data.summary?.total_pnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(data.summary?.total_pnl ?? 0) >= 0 ? '+' : ''}${(data.summary?.total_pnl ?? 0).toFixed(2)}
                   </div>
                 </CardContent>
               </Card>
@@ -427,8 +427,8 @@ export function DailyPerformanceModal({ date, isOpen, onClose }: DailyPerformanc
                     <div className="text-sm font-medium text-muted-foreground">Win Rate</div>
                   </div>
                   <div className="text-2xl font-bold text-green-600">
-                    {data.summary?.total_trades > 0 
-                      ? ((data.summary.winning_trades / data.summary.total_trades) * 100).toFixed(1)
+                    {(data.summary?.total_trades ?? 0) > 0 
+                      ? (((data.summary?.winning_trades ?? 0) / (data.summary?.total_trades ?? 1)) * 100).toFixed(1)
                       : '0'
                     }%
                   </div>

@@ -104,6 +104,23 @@ interface DashboardTab {
   component: React.ReactNode
 }
 
+// Calendar wrapper component with default props
+const CalendarWrapper = () => {
+  const [currentDate] = useState(new Date())
+  const [calendarData] = useState({})
+  const handleDateSelect = (date: Date) => {
+    console.log('Date selected:', date)
+  }
+
+  return (
+    <CalendarView
+      currentDate={currentDate}
+      calendarData={calendarData}
+      onDateSelect={handleDateSelect}
+    />
+  )
+}
+
 export function EnhancedDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -254,7 +271,7 @@ export function EnhancedDashboard() {
       id: 'calendar',
       label: 'Calendar',
       icon: <Calendar className="h-4 w-4" />,
-      component: <CalendarView />
+      component: <CalendarWrapper />
     },
     {
       id: 'advanced',
@@ -278,7 +295,7 @@ export function EnhancedDashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black bg-opacity-50 lg:hidden"
+              className="fixed inset-0 z-50 bg-black/80 lg:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <motion.div
@@ -325,7 +342,7 @@ export function EnhancedDashboard() {
         </AnimatePresence>
 
         {/* Header */}
-        <header className="bg-background/80 backdrop-blur-sm shadow-lg border-b border-border sticky top-0 z-40">
+        <header className="bg-background shadow-lg border-b border-border sticky top-0 z-40">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -369,7 +386,7 @@ export function EnhancedDashboard() {
 
         {/* Navigation Tabs */}
         <div className="container mx-auto px-4 py-4">
-          <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2 shadow-lg border border-border">
+          <div className="bg-card rounded-xl p-2 shadow-lg border border-border">
             <div className="hidden lg:flex space-x-1 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
@@ -664,35 +681,42 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
   )
 }
 
-// Enhanced Trading Tab with live trading and paper trading
+// Enhanced Trading Tab with consolidated single-level navigation
 function EnhancedTradingTab() {
   const [tradingSubTab, setTradingSubTab] = useState('live-trading')
   
-  // Import paper trading components
+  // Import trading components
   const PaperTradingDashboard = dynamic(() => import('@/components/paper-trading/PaperTradingDashboard'), {
     ssr: false,
     loading: () => <div className="p-6 text-center">Loading Paper Trading Dashboard...</div>
   });
 
+  const LiveMarketDataPanel = dynamic(() => import('@/components/market/LiveMarketDataPanel'), {
+    ssr: false,
+    loading: () => <div className="p-6 text-center">Loading Market Data...</div>
+  });
+
+  // Consolidated single-level navigation - removing nested tabs
   const tradingSubTabs = [
-    { id: 'live-trading', label: 'Live Trading', component: <LiveTradingWithMarketData /> },
+    { id: 'live-trading', label: 'Live Trading', component: <LiveTradingDashboard /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingDashboard /> },
+    { id: 'market-data', label: 'Market Data', component: <LiveMarketDataPanel /> },
     { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
-    { id: 'risk', label: 'Risk Management', component: <RiskDashboard /> },
-    { id: 'interface', label: 'Trading Interface', component: <TradingInterface /> }
+    { id: 'orders', label: 'Orders', component: <TradingInterface /> },
+    { id: 'risk', label: 'Risk Management', component: <RiskDashboard /> }
   ]
 
   return (
     <div className="space-y-6">
       {/* Trading Status Banner */}
-      <Card className="bg-gradient-to-r from-green-600/10 to-blue-600/10 border-green-600/20">
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-700">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div>
                 <h3 className="text-xl font-bold text-foreground">Trading Center</h3>
-                <p className="text-sm text-muted-foreground">Live trading and paper trading simulation</p>
+                <p className="text-sm text-muted-foreground">Comprehensive trading platform with real-time market data</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -700,29 +724,37 @@ function EnhancedTradingTab() {
                 Market Open
               </Badge>
               <Badge variant="outline">
-                Paper Trading Active
+                Systems Active
               </Badge>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Trading Sub-tabs */}
-      <Tabs value={tradingSubTab} onValueChange={setTradingSubTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          {tradingSubTabs.map(tab => (
-            <TabsTrigger key={tab.id} value={tab.id}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {tradingSubTabs.map(tab => (
-          <TabsContent key={tab.id} value={tab.id} className="mt-6">
-            {tab.component}
-          </TabsContent>
-        ))}
-      </Tabs>
+      {/* Single-Level Trading Navigation */}
+      <Card>
+        <CardContent className="p-6">
+          <Tabs value={tradingSubTab} onValueChange={setTradingSubTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+              {tradingSubTabs.map(tab => (
+                <TabsTrigger 
+                  key={tab.id} 
+                  value={tab.id}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            {tradingSubTabs.map(tab => (
+              <TabsContent key={tab.id} value={tab.id} className="mt-6">
+                {tab.component}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -755,7 +787,7 @@ function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
   return (
     <div className="space-y-6">
       {/* Agent Status Banner */}
-      <Card className="bg-gradient-to-r from-purple-600/10 to-indigo-600/10 border-purple-600/20">
+      <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-700">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

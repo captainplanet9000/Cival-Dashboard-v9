@@ -84,6 +84,19 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend,
+  Filler
+} from 'chart.js'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
   useAgentFarm,
@@ -91,6 +104,20 @@ import {
   useFilteredAgents,
   usePendingGraduationAgents
 } from '@/stores/useAgentFarm'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  ChartTooltip,
+  Legend,
+  Filler
+)
 import { usePaperTrading } from '@/stores/usePaperTrading'
 import {
   PaperTradingAgent,
@@ -101,6 +128,30 @@ import {
   GoalType,
   DeFiProtocol
 } from '@/types/paper-trading.types'
+
+const agentTypeColors = {
+  [AgentType.SCALPER]: 'bg-red-500',
+  [AgentType.SWING_TRADER]: 'bg-blue-500',
+  [AgentType.MOMENTUM]: 'bg-green-500',
+  [AgentType.MEAN_REVERSION]: 'bg-purple-500',
+  [AgentType.ARBITRAGE]: 'bg-yellow-500',
+  [AgentType.MARKET_MAKER]: 'bg-pink-500',
+  [AgentType.YIELD_FARMER]: 'bg-emerald-500',
+  [AgentType.LIQUIDATION_BOT]: 'bg-orange-500',
+  [AgentType.MEV_SEARCHER]: 'bg-cyan-500',
+  [AgentType.PORTFOLIO_MANAGER]: 'bg-indigo-500'
+}
+
+const statusColors = {
+  [AgentStatus.INITIALIZING]: 'bg-gray-500',
+  [AgentStatus.TRAINING]: 'bg-blue-500',
+  [AgentStatus.PAPER_TRADING]: 'bg-green-500',
+  [AgentStatus.READY_FOR_GRADUATION]: 'bg-amber-500',
+  [AgentStatus.GRADUATED]: 'bg-emerald-500',
+  [AgentStatus.PAUSED]: 'bg-orange-500',
+  [AgentStatus.ERROR]: 'bg-red-500',
+  [AgentStatus.ARCHIVED]: 'bg-gray-400'
+}
 
 export function AgentFarmDashboard() {
   const {
@@ -132,30 +183,6 @@ export function AgentFarmDashboard() {
     const interval = setInterval(refreshData, 10000) // Refresh every 10 seconds
     return () => clearInterval(interval)
   }, [refreshData])
-
-  const agentTypeColors = {
-    [AgentType.SCALPER]: 'bg-red-500',
-    [AgentType.SWING_TRADER]: 'bg-blue-500',
-    [AgentType.MOMENTUM]: 'bg-green-500',
-    [AgentType.MEAN_REVERSION]: 'bg-purple-500',
-    [AgentType.ARBITRAGE]: 'bg-yellow-500',
-    [AgentType.MARKET_MAKER]: 'bg-pink-500',
-    [AgentType.YIELD_FARMER]: 'bg-emerald-500',
-    [AgentType.LIQUIDATION_BOT]: 'bg-orange-500',
-    [AgentType.MEV_SEARCHER]: 'bg-cyan-500',
-    [AgentType.PORTFOLIO_MANAGER]: 'bg-indigo-500'
-  }
-
-  const statusColors = {
-    [AgentStatus.INITIALIZING]: 'bg-gray-500',
-    [AgentStatus.TRAINING]: 'bg-blue-500',
-    [AgentStatus.PAPER_TRADING]: 'bg-green-500',
-    [AgentStatus.READY_FOR_GRADUATION]: 'bg-amber-500',
-    [AgentStatus.GRADUATED]: 'bg-emerald-500',
-    [AgentStatus.PAUSED]: 'bg-orange-500',
-    [AgentStatus.ERROR]: 'bg-red-500',
-    [AgentStatus.ARCHIVED]: 'bg-gray-400'
-  }
 
   const filteredAgentsList = useMemo(() => {
     return filteredAgents.filter(agent =>
@@ -455,7 +482,9 @@ export function AgentFarmDashboard() {
                         legend: {
                           position: 'bottom',
                           labels: {
-                            fontSize: 10,
+                            font: {
+                              size: 10
+                            },
                             usePointStyle: true
                           }
                         }

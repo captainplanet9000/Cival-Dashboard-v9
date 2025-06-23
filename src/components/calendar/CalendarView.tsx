@@ -1,6 +1,7 @@
 "use client"
 
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, startOfWeek, endOfWeek } from 'date-fns'
+import { Calendar } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -113,7 +114,7 @@ function CalendarDay({ date, data, isCurrentMonth, isToday, onClick }: CalendarD
   )
 }
 
-export function CalendarView({ currentDate, calendarData, onDateSelect }: CalendarViewProps) {
+function CalendarView({ currentDate, calendarData, onDateSelect }: CalendarViewProps) {
   // Get the calendar grid (6 weeks)
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -202,3 +203,6 @@ export function CalendarView({ currentDate, calendarData, onDateSelect }: Calend
     </Card>
   )
 }
+
+export { CalendarView }
+export default CalendarView
