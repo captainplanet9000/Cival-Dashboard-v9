@@ -44,10 +44,18 @@ import { AgentControlPanel } from '@/components/agent/AgentControlPanel'
 import { AgentDecisionLog } from '@/components/agent/AgentDecisionLog'
 import { AgentPaperTradingDashboard } from '@/components/agent/AgentPaperTradingDashboard'
 
+// Import new modals
+import { AgentCreationWizard } from '@/components/modals/AgentCreationWizard'
+import { AgentManagementSuite } from '@/components/modals/AgentManagementSuite'
+
 // Import utilities and API
 import { backendApi } from '@/lib/api/backend-client'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { agentTradingDb, type AgentTradingPermission } from '@/utils/agent-trading-db'
+
+// Import Agent Persistence Service and System Lifecycle
+import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
+import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
 
 // Use existing TradingAgent interface from AgentManager
 interface TradingAgent {
@@ -110,6 +118,9 @@ export default function EnhancedAgentsTab() {
   const [selectedAgent, setSelectedAgent] = useState<TradingAgent | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showCreateAgent, setShowCreateAgent] = useState(false)
+  const [showManageAgent, setShowManageAgent] = useState(false)
+  const [managementAgentId, setManagementAgentId] = useState<string | null>(null)
 
   // Load data from existing systems
   const fetchAgents = useCallback(async () => {
@@ -157,7 +168,66 @@ export default function EnhancedAgentsTab() {
         }))
         setAgents(backendAgents)
       } else {
-        // Fallback to mock data that matches our interface
+        // Load from persistence service
+        const persistedAgents = agentPersistenceService.getAllAgents()
+        
+        if (persistedAgents.length > 0) {
+          // Transform persisted agents to dashboard format with enhanced system data
+          const transformedAgents = persistedAgents.map(agent => {
+            // Get comprehensive agent stats from all integrated systems
+            const mcpStats = agentPersistenceService.getAgentMCPStats(agent.id)
+            const availableTools = agentPersistenceService.getAvailableMCPTools(agent.id)
+            
+            return {
+              id: agent.id,
+              name: agent.config.name,
+              type: agent.config.type,
+              status: agent.status,
+              avatar: agent.config.avatar,
+              description: agent.config.description,
+            performance: {
+              totalTrades: agent.performance.totalTrades,
+              winningTrades: Math.floor(agent.performance.totalTrades * agent.performance.winRate),
+              losingTrades: agent.performance.totalTrades - Math.floor(agent.performance.totalTrades * agent.performance.winRate),
+              winRate: agent.performance.winRate,
+              totalReturn: agent.performance.totalReturn,
+              totalReturnPercent: agent.performance.totalReturnPercent,
+              avgTradeReturn: agent.performance.totalTrades > 0 ? agent.performance.totalReturn / agent.performance.totalTrades : 0,
+              maxDrawdown: agent.performance.maxDrawdown,
+              sharpeRatio: agent.performance.sharpeRatio,
+              profitFactor: agent.performance.winRate > 0 ? 1 + agent.performance.totalReturnPercent / 100 : 0
+            },
+            config: {
+              enabled: agent.status === 'active',
+              maxPositions: Math.floor(agent.config.maxPositionSize * 100) || 5,
+              maxAllocation: agent.config.maxPositionSize,
+              riskLevel: agent.config.riskTolerance > 0.7 ? 'high' : agent.config.riskTolerance > 0.4 ? 'medium' : 'low',
+              strategies: agent.config.strategies,
+              symbols: agent.config.tradingPairs,
+              timeframes: ['5m', '15m', '1h'] // Default timeframes
+            },
+            currentDecision: 'Analyzing market conditions',
+            confidence: 0.75,
+            lastActivity: agent.lastActivity,
+            allocatedFunds: agent.config.initialCapital,
+            activePositions: agent.performance.totalTrades > 0 ? Math.floor(Math.random() * 3) : 0,
+            pendingOrders: agent.status === 'active' ? Math.floor(Math.random() * 2) : 0,
+            isListening: agent.status === 'active',
+            lastMessage: `Agent ${agent.config.name} operational`,
+            conversationCount: agent.memoryEntries || 0,
+            // Enhanced system integration info
+            systemIntegrations: {
+              mcpTools: mcpStats.availableTools || 0,
+              totalCalls: mcpStats.totalCalls || 0,
+              successRate: mcpStats.successRate || 0,
+              integrationHealth: agent.integrations
+            }
+          }
+          })
+          
+          setAgents(transformedAgents)
+        } else {
+          // Fallback to mock data that matches our interface
         setAgents([
           {
             id: 'agent_001',
@@ -295,20 +365,37 @@ export default function EnhancedAgentsTab() {
   // Load agent stats
   const fetchAgentStats = useCallback(async () => {
     try {
-      const response = await backendApi.get('/api/v1/agents/analytics').catch(() => ({
-        data: {
-          total_agents: agents.length,
-          active_agents: agents.filter(a => a.status === 'active').length,
-          total_trades_today: agents.reduce((sum, a) => sum + (a.performance.totalTrades * 0.1), 0),
+      const response = await backendApi.get('/api/v1/agents/analytics').catch(() => null)
+      
+      if (response?.data) {
+        setAgentStats(response.data)
+      } else {
+        // Get comprehensive stats from system lifecycle service
+        const systemStats = systemLifecycleService.getSystemStats()
+        const systemHealth = systemLifecycleService.getSystemHealth()
+        
+        setAgentStats({
+          total_agents: systemStats.totalAgents,
+          active_agents: systemStats.activeAgents,
+          total_trades_today: Math.floor(agents.reduce((sum, a) => sum + (a.performance.totalTrades * 0.1), 0)),
           total_pnl_today: agents.reduce((sum, a) => sum + (a.performance.totalReturn * 0.05), 0),
           avg_performance: agents.reduce((sum, a) => sum + a.performance.winRate, 0) / Math.max(agents.length, 1),
-          system_health: 0.95
-        }
-      }))
-      
-      setAgentStats(response.data)
+          system_health: systemHealth?.overall === 'healthy' ? 0.95 : 
+                        systemHealth?.overall === 'degraded' ? 0.75 : 
+                        systemHealth?.overall === 'critical' ? 0.5 : 0.85
+        })
+      }
     } catch (error) {
       console.error('Failed to fetch agent stats:', error)
+      // Set fallback stats based on current agents
+      setAgentStats({
+        total_agents: agents.length,
+        active_agents: agents.filter(a => a.status === 'active').length,
+        total_trades_today: agents.reduce((sum, a) => sum + (a.performance.totalTrades * 0.1), 0),
+        total_pnl_today: agents.reduce((sum, a) => sum + (a.performance.totalReturn * 0.05), 0),
+        avg_performance: agents.reduce((sum, a) => sum + a.performance.winRate, 0) / Math.max(agents.length, 1),
+        system_health: 0.85
+      })
     }
   }, [agents])
 
@@ -334,6 +421,120 @@ export default function EnhancedAgentsTab() {
       console.error('Failed to toggle agent:', error)
       toast.error('Failed to toggle agent')
     }
+  }
+
+  // Handle agent creation
+  const handleCreateAgent = async (config: any) => {
+    try {
+      // Refresh the agents list from persistence service
+      // The wizard already created the agent via AgentPersistenceService
+      await fetchAgents()
+      
+      toast.success(`Agent "${config.name}" created successfully!`)
+      
+      // Refresh stats
+      fetchAgentStats()
+    } catch (error) {
+      console.error('Failed to refresh agents after creation:', error)
+      toast.error('Failed to refresh agent list')
+    }
+  }
+
+  // Legacy backend creation method (keeping for compatibility)
+  const handleCreateAgentLegacy = async (config: any) => {
+    try {
+      // Transform config to backend format
+      const agentData = {
+        name: config.name,
+        description: config.description,
+        type: config.type,
+        configuration: {
+          initial_capital: config.initialCapital,
+          max_drawdown: config.maxDrawdown / 100,
+          risk_tolerance: config.riskTolerance / 100,
+          time_horizon: parseInt(config.timeHorizon),
+          trading_pairs: config.tradingPairs,
+          strategies: config.strategies,
+          indicators: config.indicators,
+          max_position_size: config.maxPositionSize,
+          stop_loss_percent: config.stopLossPercent / 100,
+          take_profit_percent: config.takeProfitPercent / 100,
+          max_daily_loss: config.maxDailyLoss,
+          defi_protocols: config.defiProtocols,
+          yield_farming: config.yieldFarming,
+          liquidity_provision: config.liquidityProvision,
+          auto_rebalance: config.autoRebalance,
+          compound_returns: config.compoundReturns,
+          notifications: config.notifications,
+          paper_trading_duration: config.paperTradingDuration
+        },
+        enabled: true
+      }
+
+      // Create agent via backend API
+      const response = await backendApi.post('/api/v1/agents', agentData).catch(() => ({ 
+        data: { 
+          agent_id: `agent_${Date.now()}`,
+          ...agentData,
+          created_at: new Date().toISOString()
+        } 
+      }))
+
+      // Transform response back to our agent format
+      const newAgent: TradingAgent = {
+        id: response.data.agent_id,
+        name: agentData.name,
+        type: agentData.type as any,
+        status: 'active',
+        description: agentData.description,
+        performance: {
+          totalTrades: 0,
+          winningTrades: 0,
+          losingTrades: 0,
+          winRate: 0,
+          totalReturn: 0,
+          totalReturnPercent: 0,
+          avgTradeReturn: 0,
+          maxDrawdown: 0,
+          sharpeRatio: 0,
+          profitFactor: 0
+        },
+        config: {
+          enabled: true,
+          maxPositions: 5,
+          maxAllocation: 0.2,
+          riskLevel: config.riskTolerance > 70 ? 'high' : config.riskTolerance > 30 ? 'medium' : 'low',
+          strategies: config.strategies,
+          symbols: config.tradingPairs,
+          timeframes: ['5m', '15m', '1h']
+        },
+        currentDecision: 'Agent initialized - waiting for market opportunities',
+        confidence: 0.5,
+        lastActivity: Date.now(),
+        allocatedFunds: config.initialCapital,
+        activePositions: 0,
+        pendingOrders: 0,
+        isListening: true,
+        conversationCount: 0
+      }
+
+      // Add to local state
+      setAgents(prev => [...prev, newAgent])
+
+      toast.success(`Agent "${config.name}" created successfully!`)
+      
+      // Refresh stats
+      fetchAgentStats()
+    } catch (error) {
+      console.error('Failed to create agent:', error)
+      toast.error('Failed to create agent')
+    }
+  }
+
+  // Handle agent management
+  const handleManageAgent = (agentId: string) => {
+    setManagementAgentId(agentId)
+    setShowManageAgent(true)
   }
 
   // Initial data load
@@ -472,6 +673,13 @@ export default function EnhancedAgentsTab() {
           </TabsList>
           
           <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setShowCreateAgent(true)}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Agent
+            </Button>
             <div className="flex items-center gap-2">
               <Label htmlFor="auto-refresh">Auto Refresh</Label>
               <Switch
@@ -592,7 +800,7 @@ export default function EnhancedAgentsTab() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setActiveTab('control')}
+                      onClick={() => handleManageAgent(agent.id)}
                     >
                       <Settings className="h-3 w-3" />
                     </Button>
@@ -636,8 +844,8 @@ export default function EnhancedAgentsTab() {
 
       {/* Agent Detail Modal */}
       {selectedAgent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-background border-border">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -770,6 +978,30 @@ export default function EnhancedAgentsTab() {
           </Card>
         </div>
       )}
+
+      {/* Agent Creation Wizard */}
+      <AgentCreationWizard
+        open={showCreateAgent}
+        onClose={() => setShowCreateAgent(false)}
+        onCreateAgent={handleCreateAgent}
+        existingAgents={agents}
+      />
+
+      {/* Agent Management Suite */}
+      <AgentManagementSuite
+        open={showManageAgent}
+        onClose={() => {
+          setShowManageAgent(false)
+          setManagementAgentId(null)
+        }}
+        agentId={managementAgentId}
+        onAgentUpdate={(updatedAgent) => {
+          setAgents(prev => prev.map(agent => 
+            agent.id === updatedAgent.id ? updatedAgent : agent
+          ))
+          fetchAgents() // Refresh from backend
+        }}
+      />
     </div>
   )
 }

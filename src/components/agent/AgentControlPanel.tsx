@@ -25,8 +25,13 @@ import {
   Brain,
   Target,
   BarChart3,
-  Settings
+  Settings,
+  CheckCircle2
 } from 'lucide-react'
+
+// Import Todo System
+import { AgentTodoSystem } from '@/components/agents/AgentTodoSystem'
+import { agentTodoService } from '@/lib/agents/AgentTodoService'
 
 interface TradingAgent {
   id: string
@@ -630,6 +635,57 @@ export function AgentControlPanel({ className }: AgentControlPanelProps) {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Agent Goals & Tasks Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                <CardTitle>Agent Goals & Task Management</CardTitle>
+              </div>
+              <CardDescription>
+                Manage tasks, goals, and coordination for your trading agents
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Show todo system for each agent */}
+              <Tabs defaultValue={agents[0]?.id || 'all'} className="w-full">
+                <TabsList className="grid w-full grid-cols-auto max-w-fit">
+                  <TabsTrigger value="all">All Agents</TabsTrigger>
+                  {agents.slice(0, 4).map((agent) => (
+                    <TabsTrigger key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                <TabsContent value="all" className="mt-4">
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Select an agent to view and manage their tasks</p>
+                  </div>
+                </TabsContent>
+
+                {agents.map((agent) => (
+                  <TabsContent key={agent.id} value={agent.id} className="mt-4">
+                    <AgentTodoSystem
+                      agentId={agent.id}
+                      agentHierarchy={[]} // TODO: Get from agent configuration
+                      className="min-h-96"
+                      onTodoUpdate={(todo) => {
+                        console.log(`Todo updated for ${agent.name}:`, todo)
+                        // Optionally emit events for real-time updates
+                      }}
+                      onSystemUpdate={(stats) => {
+                        console.log(`Todo stats updated for ${agent.name}:`, stats)
+                        // Update agent performance metrics
+                      }}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
