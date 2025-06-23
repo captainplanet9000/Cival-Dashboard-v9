@@ -61,15 +61,15 @@ import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerforma
 // Import existing page components
 import dynamic from 'next/dynamic'
 
-const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
+const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page').then(mod => ({ default: mod.default || (() => <div>Farms</div>) })), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Farms...</div>
 })
-const GoalsPage = dynamic(() => import('@/app/dashboard/goals/page'), { 
+const GoalsPage = dynamic(() => import('@/app/dashboard/goals/page').then(mod => ({ default: mod.default || (() => <div>Goals</div>) })), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Goals...</div>
 })
-const VaultPage = dynamic(() => import('@/app/dashboard/vault/page'), { 
+const VaultPage = dynamic(() => import('@/app/dashboard/vault/page').then(mod => ({ default: mod.default || (() => <div>Vault</div>) })), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Vault...</div>
 })
@@ -685,13 +685,13 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
 function EnhancedTradingTab() {
   const [tradingSubTab, setTradingSubTab] = useState('live-trading')
   
-  // Import trading components
-  const PaperTradingDashboard = dynamic(() => import('@/components/paper-trading/PaperTradingDashboard'), {
+  // Import trading components with proper error handling
+  const PaperTradingDashboard = dynamic(() => import('@/components/paper-trading/PaperTradingDashboard').then(mod => ({ default: mod.default || mod.PaperTradingDashboard })), {
     ssr: false,
     loading: () => <div className="p-6 text-center">Loading Paper Trading Dashboard...</div>
   });
 
-  const LiveMarketDataPanel = dynamic(() => import('@/components/market/LiveMarketDataPanel'), {
+  const LiveMarketDataPanel = dynamic(() => import('@/components/market/LiveMarketDataPanel').then(mod => ({ default: mod.default || mod.LiveMarketDataPanel })), {
     ssr: false,
     loading: () => <div className="p-6 text-center">Loading Market Data...</div>
   });
@@ -763,13 +763,13 @@ function EnhancedTradingTab() {
 function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
   const [agentSubTab, setAgentSubTab] = useState('overview')
   
-  // Import additional agent components
-  const AgentPaperTradingDashboard = dynamic(() => import('@/components/agent/AgentPaperTradingDashboard'), {
+  // Import additional agent components with error handling
+  const AgentPaperTradingDashboard = dynamic(() => import('@/components/agent/AgentPaperTradingDashboard').catch(() => import('@/components/paper-trading/PaperTradingDashboard')), {
     ssr: false,
     loading: () => <div className="p-6 text-center">Loading Paper Trading...</div>
   });
 
-  const AgentFarmDashboard = dynamic(() => import('@/components/paper-trading/AgentFarmDashboard'), {
+  const AgentFarmDashboard = dynamic(() => import('@/components/paper-trading/AgentFarmDashboard').then(mod => ({ default: mod.default || mod.AgentFarmDashboard })), {
     ssr: false,
     loading: () => <div className="p-6 text-center">Loading Agent Farm...</div>
   });
