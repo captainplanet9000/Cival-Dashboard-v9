@@ -135,6 +135,36 @@ const dashboardFeatures: FeatureCard[] = [
     status: 'available',
     tags: ['agents', 'simulation', 'testing']
   },
+  {
+    id: 'paper-trading-dashboard',
+    title: 'Complete Paper Trading Dashboard',
+    description: 'Full-featured paper trading platform with DeFi integration and premium components',
+    icon: <Database className="h-6 w-6" />,
+    componentKey: 'paper-trading-dashboard',
+    category: 'AI Agents',
+    status: 'available',
+    tags: ['paper-trading', 'defi', 'premium', 'simulation', 'agents']
+  },
+  {
+    id: 'agent-farm-dashboard',
+    title: 'Agent Farm Management',
+    description: 'Complete agent farm with goal tracking, performance monitoring, and graduation system',
+    icon: <Bot className="h-6 w-6" />,
+    componentKey: 'agent-farm-dashboard',
+    category: 'AI Agents',
+    status: 'available',
+    tags: ['agent-farm', 'goals', 'graduation', 'management', 'performance']
+  },
+  {
+    id: 'complete-paper-trading-system',
+    title: 'Complete Paper Trading System',
+    description: 'Integrated paper trading & agent farm system with $100K+ premium components',
+    icon: <Zap className="h-6 w-6" />,
+    componentKey: 'complete-paper-trading-system',
+    category: 'AI Agents',
+    status: 'available',
+    tags: ['complete-system', 'paper-trading', 'agent-farm', 'premium', 'integration']
+  },
 
   // Analytics & Charts
   {

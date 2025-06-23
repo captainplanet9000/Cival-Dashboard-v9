@@ -1,10 +1,15 @@
 /**
- * AI Agents Management Page
- * Multi-agent coordination and management interface
+ * AI Agent Farm Management Page
+ * Complete agent farm with paper trading, goals, and graduation system
  */
 
-import { AgentManager } from '@/components/trading/AgentManager'
+import AgentFarmDashboard from '@/components/paper-trading/AgentFarmDashboard'
 
 export default function AgentsPage() {
-  return <AgentManager />
+  return <AgentFarmDashboard />
+}
+
+export const metadata = {
+  title: 'Agent Farm Dashboard | AI Trading Agents',
+  description: 'Manage and monitor your AI trading agents, track performance, and handle graduations to real capital.',
 }

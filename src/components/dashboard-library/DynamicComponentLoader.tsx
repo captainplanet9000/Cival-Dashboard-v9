@@ -66,6 +66,9 @@ const components = {
 
   // Paper Trading & Simulation
   'agent-paper-trading': lazy(() => import('@/components/agent/AgentPaperTradingDashboard')),
+  'paper-trading-dashboard': lazy(() => import('@/components/paper-trading/PaperTradingDashboard')),
+  'agent-farm-dashboard': lazy(() => import('@/components/paper-trading/AgentFarmDashboard')),
+  'complete-paper-trading-system': lazy(() => import('@/components/paper-trading/CompletePaperTradingSystem')),
 
   // Python Analysis
   'python-analysis': lazy(() => import('@/app/dashboard/python-analysis/page')),
