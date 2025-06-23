@@ -102,6 +102,9 @@ import {
   DeFiProtocol
 } from '@/types/paper-trading.types'
 
+// Import Chainlink components
+import ChainlinkMarketData from './ChainlinkMarketData'
+
 export function PaperTradingDashboard() {
   const {
     portfolios,
@@ -129,6 +132,17 @@ export function PaperTradingDashboard() {
   const [layout, setLayout] = useState('default')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null)
+  const [chainlinkData, setChainlinkData] = useState<MarketData[]>([])
+
+  // Handle Chainlink price updates
+  const handleChainlinkPriceUpdate = (marketDataArray: MarketData[]) => {
+    setChainlinkData(marketDataArray)
+    // Update the paper trading engine with real price data
+    marketDataArray.forEach(data => {
+      // You can emit this to the paper trading store if needed
+      console.log('📈 Chainlink price update:', data.symbol, data.price, 'Source:', data.source)
+    })
+  }
 
   useEffect(() => {
     if (!portfolio) {
@@ -187,40 +201,54 @@ export function PaperTradingDashboard() {
   // Dashboard layout configuration
   const dashboardLayouts = {
     default: [
-      { i: 'chart', x: 0, y: 0, w: 8, h: 8, component: 'chart' },
-      { i: 'orderbook', x: 8, y: 0, w: 4, h: 8, component: 'orderbook' },
-      { i: 'orderentry', x: 12, y: 0, w: 4, h: 8, component: 'orderentry' },
+      { i: 'chainlink-prices', x: 0, y: 0, w: 4, h: 4, component: 'chainlink-prices' },
+      { i: 'chart', x: 4, y: 0, w: 8, h: 8, component: 'chart' },
+      { i: 'orderbook', x: 12, y: 0, w: 4, h: 8, component: 'orderbook' },
+      { i: 'orderentry', x: 0, y: 4, w: 4, h: 4, component: 'orderentry' },
       { i: 'portfolio', x: 0, y: 8, w: 8, h: 6, component: 'portfolio' },
       { i: 'agents', x: 8, y: 8, w: 8, h: 6, component: 'agents' },
       { i: 'risk', x: 0, y: 14, w: 16, h: 6, component: 'risk' }
     ],
     trading: [
-      { i: 'chart', x: 0, y: 0, w: 10, h: 10, component: 'chart' },
-      { i: 'orderbook', x: 10, y: 0, w: 3, h: 10, component: 'orderbook' },
-      { i: 'orderentry', x: 13, y: 0, w: 3, h: 10, component: 'orderentry' },
+      { i: 'chainlink-prices', x: 0, y: 0, w: 3, h: 5, component: 'chainlink-prices' },
+      { i: 'chart', x: 3, y: 0, w: 10, h: 10, component: 'chart' },
+      { i: 'orderbook', x: 13, y: 0, w: 3, h: 10, component: 'orderbook' },
+      { i: 'orderentry', x: 0, y: 5, w: 3, h: 5, component: 'orderentry' },
       { i: 'portfolio', x: 0, y: 10, w: 16, h: 6, component: 'portfolio' }
     ],
     analytics: [
-      { i: 'portfolio', x: 0, y: 0, w: 8, h: 10, component: 'portfolio' },
-      { i: 'risk', x: 8, y: 0, w: 8, h: 10, component: 'risk' },
+      { i: 'chainlink-prices', x: 0, y: 0, w: 4, h: 5, component: 'chainlink-prices' },
+      { i: 'portfolio', x: 4, y: 0, w: 8, h: 10, component: 'portfolio' },
+      { i: 'risk', x: 12, y: 0, w: 4, h: 10, component: 'risk' },
       { i: 'agents', x: 0, y: 10, w: 16, h: 8, component: 'agents' }
     ],
     agents: [
-      { i: 'agents', x: 0, y: 0, w: 16, h: 12, component: 'agents' },
-      { i: 'portfolio', x: 0, y: 12, w: 8, h: 6, component: 'portfolio' },
-      { i: 'chart', x: 8, y: 12, w: 8, h: 6, component: 'chart' }
+      { i: 'chainlink-prices', x: 0, y: 0, w: 4, h: 6, component: 'chainlink-prices' },
+      { i: 'agents', x: 4, y: 0, w: 12, h: 12, component: 'agents' },
+      { i: 'portfolio', x: 0, y: 6, w: 4, h: 6, component: 'portfolio' },
+      { i: 'chart', x: 0, y: 12, w: 16, h: 6, component: 'chart' }
     ]
   }
 
   const renderWidget = (componentType: string) => {
     switch (componentType) {
+      case 'chainlink-prices':
+        return (
+          <div className="h-full">
+            <ChainlinkMarketData 
+              onPriceUpdate={handleChainlinkPriceUpdate}
+              className="h-full"
+            />
+          </div>
+        )
+
       case 'chart':
         return (
           <div className="h-full">
             <PremiumTradingCharts
               symbol={selectedSymbol}
               timeframe={selectedTimeframe}
-              data={[]} // Would be populated with real data
+              data={chainlinkData} // Now using real Chainlink data
               height={400}
               indicators={['sma', 'rsi', 'macd']}
               onSymbolChange={setSelectedSymbol}

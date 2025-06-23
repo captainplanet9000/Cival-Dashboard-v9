@@ -12,11 +12,13 @@ import {
   SupplySimulation,
   BorrowSimulation
 } from '@/types/paper-trading.types'
+import { chainlinkService, ChainlinkPriceData } from '@/lib/chainlink/price-feeds'
 
 export class PaperTradingEngineImpl implements PaperTradingEngine {
   private portfolios: Map<string, PaperPortfolio> = new Map()
   private marketDataCache: Map<string, MarketData> = new Map()
   private eventHandlers: Map<string, Function[]> = new Map()
+  private chainlinkSubscription: (() => void) | null = null
   
   portfolio: PaperPortfolio = {} as PaperPortfolio
   orderManager: PaperOrderManager
@@ -31,6 +33,9 @@ export class PaperTradingEngineImpl implements PaperTradingEngine {
     this.performanceTracker = new PaperPerformanceTracker(this)
     this.defiProtocols = new DeFiProtocolManager(this)
     this.agentFarm = new AgentFarmManager(this)
+    
+    // Start Chainlink price feeds
+    this.initializeChainlinkFeeds()
   }
 
   // Portfolio Management
@@ -90,6 +95,78 @@ export class PaperTradingEngineImpl implements PaperTradingEngine {
 
   getMarketData(symbol: string): MarketData | null {
     return this.marketDataCache.get(symbol) || null
+  }
+
+  // Chainlink Integration Methods
+  private initializeChainlinkFeeds(): void {
+    const tradingSymbols = ['ETH/USD', 'BTC/USD', 'LINK/USD', 'UNI/USD', 'AAVE/USD']
+    
+    // Subscribe to real-time price updates from Chainlink
+    this.chainlinkSubscription = chainlinkService.subscribeToPriceUpdates(
+      tradingSymbols,
+      (chainlinkPrices: ChainlinkPriceData[]) => {
+        chainlinkPrices.forEach(priceData => {
+          const marketData: MarketData = {
+            symbol: priceData.symbol,
+            price: priceData.price,
+            volume: 1000000 + Math.random() * 5000000, // Simulated volume
+            change24h: (Math.random() - 0.5) * 0.1 * priceData.price,
+            changePercent24h: (Math.random() - 0.5) * 10,
+            high24h: priceData.price * (1 + Math.random() * 0.05),
+            low24h: priceData.price * (1 - Math.random() * 0.05),
+            marketCap: priceData.price * (10000000 + Math.random() * 90000000),
+            timestamp: priceData.updatedAt,
+            source: priceData.source,
+            chainlinkData: {
+              roundId: priceData.roundId,
+              decimals: priceData.decimals,
+              updatedAt: priceData.updatedAt
+            }
+          }
+          
+          this.updateMarketData(priceData.symbol, marketData)
+        })
+      }
+    )
+    
+    console.log('✅ Chainlink price feeds initialized for paper trading engine')
+  }
+
+  async refreshChainlinkPrices(symbols: string[]): Promise<void> {
+    try {
+      const chainlinkPrices = await chainlinkService.getMultiplePrices(symbols)
+      
+      chainlinkPrices.forEach(priceData => {
+        const marketData: MarketData = {
+          symbol: priceData.symbol,
+          price: priceData.price,
+          volume: 1000000 + Math.random() * 5000000,
+          change24h: (Math.random() - 0.5) * 0.1 * priceData.price,
+          changePercent24h: (Math.random() - 0.5) * 10,
+          high24h: priceData.price * (1 + Math.random() * 0.05),
+          low24h: priceData.price * (1 - Math.random() * 0.05),
+          marketCap: priceData.price * (10000000 + Math.random() * 90000000),
+          timestamp: priceData.updatedAt,
+          source: priceData.source,
+          chainlinkData: {
+            roundId: priceData.roundId,
+            decimals: priceData.decimals,
+            updatedAt: priceData.updatedAt
+          }
+        }
+        
+        this.updateMarketData(priceData.symbol, marketData)
+      })
+      
+      this.emit('chainlink:prices:updated', { symbols, count: chainlinkPrices.length })
+    } catch (error) {
+      console.error('Error refreshing Chainlink prices:', error)
+    }
+  }
+
+  switchChainlinkNetwork(useTestnet: boolean): void {
+    chainlinkService.switchNetwork(useTestnet)
+    console.log(`🔄 Switched Chainlink to ${useTestnet ? 'testnet' : 'mainnet'}`)
   }
 
   // Private Methods

@@ -749,8 +749,8 @@ export interface GraduatedAgent {
 export interface MarketData {
   symbol: string
   price: number
-  bid: number
-  ask: number
+  bid?: number
+  ask?: number
   volume: number
   change24h: number
   changePercent24h: number
@@ -758,6 +758,12 @@ export interface MarketData {
   low24h: number
   marketCap: number
   timestamp: Date
+  source?: 'chainlink-mainnet' | 'chainlink-testnet' | 'fallback' | 'simulation'
+  chainlinkData?: {
+    roundId: string
+    decimals: number
+    updatedAt: Date
+  }
 }
 
 export interface OrderBookData {
