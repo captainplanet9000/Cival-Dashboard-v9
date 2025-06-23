@@ -218,7 +218,7 @@ export function EnhancedDashboard() {
       id: 'live-trading',
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
-      component: <LiveTradingWithMarketData />
+      component: <EnhancedTradingTab />
     },
     {
       id: 'agents',
@@ -260,7 +260,7 @@ export function EnhancedDashboard() {
       id: 'advanced',
       label: 'Advanced',
       icon: <Brain className="h-4 w-4" />,
-      component: <AdvancedConsolidatedTab />
+      component: <AdvancedDashboardTab />
     }
   ]
 
@@ -664,6 +664,69 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
   )
 }
 
+// Enhanced Trading Tab with live trading and paper trading
+function EnhancedTradingTab() {
+  const [tradingSubTab, setTradingSubTab] = useState('live-trading')
+  
+  // Import paper trading components
+  const PaperTradingDashboard = dynamic(() => import('@/components/paper-trading/PaperTradingDashboard'), {
+    ssr: false,
+    loading: () => <div className="p-6 text-center">Loading Paper Trading Dashboard...</div>
+  });
+
+  const tradingSubTabs = [
+    { id: 'live-trading', label: 'Live Trading', component: <LiveTradingWithMarketData /> },
+    { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingDashboard /> },
+    { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
+    { id: 'risk', label: 'Risk Management', component: <RiskDashboard /> },
+    { id: 'interface', label: 'Trading Interface', component: <TradingInterface /> }
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* Trading Status Banner */}
+      <Card className="bg-gradient-to-r from-green-600/10 to-blue-600/10 border-green-600/20">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <TrendingUp className="h-8 w-8 text-green-600" />
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Trading Center</h3>
+                <p className="text-sm text-muted-foreground">Live trading and paper trading simulation</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Badge variant="default" className="bg-green-600">
+                Market Open
+              </Badge>
+              <Badge variant="outline">
+                Paper Trading Active
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Trading Sub-tabs */}
+      <Tabs value={tradingSubTab} onValueChange={setTradingSubTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          {tradingSubTabs.map(tab => (
+            <TabsTrigger key={tab.id} value={tab.id}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {tradingSubTabs.map(tab => (
+          <TabsContent key={tab.id} value={tab.id} className="mt-6">
+            {tab.component}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  )
+}
+
 // Enhanced Agents Tab with all functionality
 function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
   const [agentSubTab, setAgentSubTab] = useState('overview')
@@ -674,8 +737,14 @@ function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
     loading: () => <div className="p-6 text-center">Loading Paper Trading...</div>
   });
 
+  const AgentFarmDashboard = dynamic(() => import('@/components/paper-trading/AgentFarmDashboard'), {
+    ssr: false,
+    loading: () => <div className="p-6 text-center">Loading Agent Farm...</div>
+  });
+
   const agentSubTabs = [
     { id: 'overview', label: 'Overview', component: <AgentOverviewPanel metrics={metrics} /> },
+    { id: 'agent-farm', label: 'Agent Farm', component: <AgentFarmDashboard /> },
     { id: 'control-panel', label: 'Control', component: <AgentControlPanel /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <AgentPaperTradingDashboard /> },
     { id: 'decisions', label: 'Decisions', component: <AgentDecisionLog /> },
