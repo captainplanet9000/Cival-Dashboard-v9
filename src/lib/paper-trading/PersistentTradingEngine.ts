@@ -483,6 +483,11 @@ class PersistentTradingEngine extends EventEmitter {
   // Persistence methods
   private loadPersistedData(): void {
     try {
+      // Check if running in browser
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const stored = localStorage.getItem('persistent_trading_engine')
       if (stored) {
         const data = JSON.parse(stored)
@@ -511,6 +516,11 @@ class PersistentTradingEngine extends EventEmitter {
 
   private persistData(): void {
     try {
+      // Check if running in browser
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const data = {
         portfolios: Object.fromEntries(this.portfolios),
         marketData: Object.fromEntries(this.marketData),

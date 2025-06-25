@@ -580,6 +580,11 @@ class AgentPersistenceService extends EventEmitter {
 
   private persistData(): void {
     try {
+      // Check if running in browser
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const data = {
         agents: Object.fromEntries(this.agents),
         agentConfigs: Object.fromEntries(this.agentConfigs),
@@ -595,6 +600,11 @@ class AgentPersistenceService extends EventEmitter {
 
   private loadPersistedData(): void {
     try {
+      // Check if running in browser
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const stored = localStorage.getItem('agent_persistence_service')
       if (stored) {
         const data = JSON.parse(stored)

@@ -462,6 +462,11 @@ class TestnetDeFiService {
   // Persistence
   private persistData(): void {
     try {
+      // Check if running in browser
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const data = {
         wallets: Object.fromEntries(this.wallets),
         positions: Object.fromEntries(this.positions),
@@ -475,6 +480,11 @@ class TestnetDeFiService {
 
   private loadPersistedData(): void {
     try {
+      // Check if running in browser
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const stored = localStorage.getItem('testnet_defi_data')
       if (stored) {
         const data = JSON.parse(stored)
