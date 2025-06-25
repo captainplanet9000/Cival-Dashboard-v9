@@ -73,8 +73,7 @@ import CalendarWrapper from '@/components/calendar/CalendarWrapper'
 // Import chart components
 import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'
 
-// Import autonomous trading components
-import AutonomousTradingDashboard from '@/components/autonomous/AutonomousTradingDashboard'
+// Lazy import autonomous trading components to prevent initialization issues
 
 // Import existing page components
 import dynamic from 'next/dynamic'
@@ -112,6 +111,11 @@ const AgentPaperTradingDashboard = dynamic(() => import('@/components/agent/Agen
 const AgentFarmDashboard = dynamic(() => import('@/components/paper-trading/AgentFarmDashboard').then(mod => ({ default: mod.default || mod.AgentFarmDashboard })), {
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Agent Farm...</div>
+})
+
+const AutonomousTradingDashboard = dynamic(() => import('@/components/autonomous/AutonomousTradingDashboard'), {
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Autonomous Trading...</div>
 })
 
 interface DashboardMetrics {
