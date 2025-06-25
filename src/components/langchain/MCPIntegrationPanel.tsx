@@ -16,7 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { 
   Activity, 
   Settings, 
-  Tool, 
+  Wrench, 
   CheckCircle, 
   AlertTriangle, 
   Clock,
@@ -128,7 +128,7 @@ export function MCPIntegrationPanel({
       <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Tool className="h-5 w-5" />
+            <Wrench className="h-5 w-5" />
             MCP Integration
           </CardTitle>
         </CardHeader>
@@ -150,7 +150,7 @@ export function MCPIntegrationPanel({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Tool className="h-5 w-5" />
+                <Wrench className="h-5 w-5" />
                 MCP Integration
               </CardTitle>
               <CardDescription>
@@ -204,10 +204,10 @@ export function MCPIntegrationPanel({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Tool className="h-5 w-5 text-green-500" />
+              <Wrench className="h-5 w-5 text-green-500" />
               <div>
-                <div className="text-2xl font-bold">{integrationStats.totalTools || 0}</div>
-                <div className="text-sm text-gray-500">Tools Available</div>
+                <div className="text-2xl font-bold">{integrationStats.totalWrenchs || 0}</div>
+                <div className="text-sm text-gray-500">Wrenchs Available</div>
               </div>
             </div>
           </CardContent>
@@ -219,7 +219,7 @@ export function MCPIntegrationPanel({
               <Activity className="h-5 w-5 text-purple-500" />
               <div>
                 <div className="text-2xl font-bold">{integrationStats.totalCalls || 0}</div>
-                <div className="text-sm text-gray-500">Tool Calls</div>
+                <div className="text-sm text-gray-500">Wrench Calls</div>
               </div>
             </div>
           </CardContent>
@@ -244,7 +244,7 @@ export function MCPIntegrationPanel({
       <Tabs defaultValue="agents" className="w-full">
         <TabsList>
           <TabsTrigger value="agents">Agent Status</TabsTrigger>
-          <TabsTrigger value="tools">Available Tools</TabsTrigger>
+          <TabsTrigger value="tools">Available Wrenchs</TabsTrigger>
           <TabsTrigger value="calls">Recent Calls</TabsTrigger>
           <TabsTrigger value="health">Health Check</TabsTrigger>
         </TabsList>
@@ -273,7 +273,7 @@ export function MCPIntegrationPanel({
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <div className="font-medium">{stats.toolsAvailable}</div>
-                          <div className="text-gray-500">Tools Available</div>
+                          <div className="text-gray-500">Wrenchs Available</div>
                         </div>
                         <div>
                           <div className="font-medium">{stats.totalCalls}</div>
@@ -313,13 +313,13 @@ export function MCPIntegrationPanel({
           </Card>
         </TabsContent>
 
-        {/* Tools Tab */}
+        {/* Wrenchs Tab */}
         <TabsContent value="tools">
           <Card>
             <CardHeader>
-              <CardTitle>Available MCP Tools</CardTitle>
+              <CardTitle>Available MCP Wrenchs</CardTitle>
               <CardDescription>
-                Tools available for LangChain agent integration
+                Wrenchs available for LangChain agent integration
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -367,7 +367,7 @@ export function MCPIntegrationPanel({
         <TabsContent value="calls">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Tool Calls</CardTitle>
+              <CardTitle>Recent Wrench Calls</CardTitle>
               <CardDescription>
                 Latest MCP tool executions from LangChain agents
               </CardDescription>
@@ -420,7 +420,7 @@ export function MCPIntegrationPanel({
                       </div>
                       <div className="space-y-1 text-sm">
                         <div>Active Agents: {healthStatus.agentsRegistered || 0}</div>
-                        <div>Tools Available: {healthStatus.toolsAvailable || 0}</div>
+                        <div>Wrenchs Available: {healthStatus.toolsAvailable || 0}</div>
                         <div>Success Rate: {((integrationStats.successRate || 0) * 100).toFixed(1)}%</div>
                       </div>
                     </CardContent>

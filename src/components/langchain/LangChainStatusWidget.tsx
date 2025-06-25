@@ -15,13 +15,13 @@ import {
   Activity, 
   CheckCircle, 
   AlertTriangle, 
-  Tool,
+  Wrench,
   TrendingUp,
   Zap
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { langChainService } from '@/lib/langchain/LangChainService'
-import { langGraphOrchestrator } from '@/lib/langchain/LangGraphOrchestrator'
+import { langGraphOrchestrator } from '@/lib/langchain/LangGraphOrchestratorClient'
 import { langChainMCPIntegration } from '@/lib/langchain/MCPIntegration'
 
 interface LangChainStatusWidgetProps {
@@ -194,14 +194,14 @@ export function LangChainStatusWidget({
               </div>
             )}
 
-            {/* MCP Tools */}
+            {/* MCP Wrenchs */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                  <Tool className="h-3 w-3 text-gray-500" />
-                  <span className="text-sm text-gray-600">MCP Tools</span>
+                  <Wrench className="h-3 w-3 text-gray-500" />
+                  <span className="text-sm text-gray-600">MCP Wrenchs</span>
                 </div>
-                <span className="text-sm font-medium">{mcpStats.totalTools || 0}</span>
+                <span className="text-sm font-medium">{mcpStats.totalWrenchs || 0}</span>
               </div>
               
               {mcpStats.totalCalls > 0 && (

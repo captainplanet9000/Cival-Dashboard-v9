@@ -11,17 +11,26 @@ const nextConfig = {
     // Temporarily ignore ESLint errors for deployment
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    // Force dynamic rendering for pages that use browser APIs
-    missingSuspenseWithCSRBailout: false,
-  },
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-    };
+  experimental: {},
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        child_process: false,
+        'async_hooks': false,
+      };
+      
+      // Replace LangGraph imports with empty modules on client
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@langchain/langgraph': false,
+        '@langchain/langgraph/web': false,
+      };
+    }
+    
     return config;
   },
   env: {

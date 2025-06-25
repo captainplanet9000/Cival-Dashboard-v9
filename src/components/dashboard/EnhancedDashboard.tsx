@@ -638,18 +638,6 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         <LangChainStatusWidget
           onViewDetails={() => setActiveTab('langchain-agui')}
         />
-              
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Market: <span className="font-medium">{systemStatus.market_condition}</span></p>
-                <p className="text-sm text-gray-600">Status: 
-                  <Badge variant={systemStatus.trading_enabled ? 'default' : 'secondary'} className="ml-2">
-                    {systemStatus.trading_enabled ? 'ACTIVE' : 'PAUSED'}
-                  </Badge>
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Recent Activity and Risk Metrics */}

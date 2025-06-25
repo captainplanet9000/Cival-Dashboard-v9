@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress'
 import { 
   Brain, 
   Activity, 
-  Tool, 
+  Wrench, 
   MessageSquare, 
   BarChart3,
   Settings,
@@ -33,7 +33,7 @@ import LangSmithObservabilityDashboard from '@/components/langchain/LangSmithObs
 import AdvancedLearningDashboard from '@/components/langchain/AdvancedLearningDashboard'
 
 // Import services
-import { langGraphOrchestrator } from '@/lib/langchain/LangGraphOrchestrator'
+import { langGraphOrchestrator } from '@/lib/langchain/LangGraphOrchestratorClient'
 import { langChainService } from '@/lib/langchain/LangChainService'
 import { langChainMCPIntegration } from '@/lib/langchain/MCPIntegration'
 
@@ -92,7 +92,7 @@ export function LangChainDashboardTab({ className }: LangChainDashboardTabProps)
             {orchestratorStatus.totalAgents || 0} Agents
           </Badge>
           <Badge variant="outline" className="text-sm">
-            {mcpStats.totalTools || 0} Tools
+            {mcpStats.totalWrenchs || 0} Wrenchs
           </Badge>
         </div>
       </div>
@@ -143,11 +143,11 @@ export function LangChainDashboardTab({ className }: LangChainDashboardTabProps)
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <Tool className="h-6 w-6 text-purple-600" />
+                <Wrench className="h-6 w-6 text-purple-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{mcpStats.totalCalls || 0}</div>
-                <div className="text-sm text-gray-500">MCP Tool Calls</div>
+                <div className="text-sm text-gray-500">MCP Wrench Calls</div>
               </div>
             </div>
             <div className="mt-2">
@@ -182,7 +182,7 @@ export function LangChainDashboardTab({ className }: LangChainDashboardTabProps)
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="chat">AI Chat</TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-          <TabsTrigger value="tools">MCP Tools</TabsTrigger>
+          <TabsTrigger value="tools">MCP Wrenchs</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="observability">Observability</TabsTrigger>
           <TabsTrigger value="learning">Learning</TabsTrigger>
@@ -343,7 +343,7 @@ export function LangChainDashboardTab({ className }: LangChainDashboardTabProps)
           <AgentRecommendations symbol={selectedSymbol} />
         </TabsContent>
 
-        {/* MCP Tools Tab */}
+        {/* MCP Wrenchs Tab */}
         <TabsContent value="tools">
           <MCPIntegrationPanel />
         </TabsContent>

@@ -5,7 +5,10 @@
  */
 
 import { EventEmitter } from 'events'
-import { StateGraph, END } from '@langchain/langgraph'
+// import { StateGraph, END } from '@langchain/langgraph'
+// Temporarily disabled for client build compatibility
+const StateGraph: any = null
+const END: any = null
 import { langChainService } from './LangChainService'
 import { tradingWorkflowEngine, TradingState, TradingDecision } from './TradingWorkflow'
 import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
@@ -74,7 +77,9 @@ export class LangGraphTradingOrchestrator extends EventEmitter {
   constructor() {
     super()
     this.multiAgentWorkflow = this.createMultiAgentWorkflow()
-    this.initializeDefaultAgents()
+    this.initializeDefaultAgents().catch(error => 
+      console.error('Failed to initialize default agents:', error)
+    )
     console.log('🧠 LangGraph Trading Orchestrator initialized')
   }
 
@@ -128,7 +133,7 @@ export class LangGraphTradingOrchestrator extends EventEmitter {
   /**
    * Initialize default LangGraph agents
    */
-  private initializeDefaultAgents(): void {
+  private async initializeDefaultAgents(): Promise<void> {
     const defaultAgents = [
       {
         id: 'momentum_agent_llm',

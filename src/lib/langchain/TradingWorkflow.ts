@@ -4,7 +4,10 @@
  * Integrates with paper trading engine and provides advanced agent coordination
  */
 
-import { StateGraph, END } from '@langchain/langgraph'
+// import { StateGraph, END } from '@langchain/langgraph'
+// Temporarily disabled for client build compatibility
+const StateGraph: any = null
+const END: any = null
 import { BaseMessage } from '@langchain/core/messages'
 import { langChainService } from './LangChainService'
 import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
