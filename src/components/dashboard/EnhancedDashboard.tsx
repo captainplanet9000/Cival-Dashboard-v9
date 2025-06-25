@@ -58,6 +58,7 @@ import { MemoryAnalyticsDashboard } from '@/components/memory/MemoryAnalyticsDas
 
 // Import AG-UI components
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
+import dynamic from 'next/dynamic'
 
 // Import LangChain AG-UI Interface
 const LangChainAGUIInterface = dynamic(() => import('@/components/langchain/LangChainAGUIInterface'), {
@@ -88,7 +89,6 @@ import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerforma
 // Lazy import autonomous trading components to prevent initialization issues
 
 // Import existing page components
-import dynamic from 'next/dynamic'
 
 // Static dynamic imports to prevent initialization issues
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page').then(mod => ({ default: mod.default || (() => <div>Farms</div>) })), { 
@@ -177,7 +177,7 @@ const CalendarWrapper = () => {
   )
 }
 
-export function EnhancedDashboard() {
+export default function EnhancedDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -603,38 +603,10 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
       
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title="Portfolio Value"
-          value={`$${metrics.totalValue.toLocaleString()}`}
-          change={metrics.dailyPnL}
-          changePercent={(metrics.dailyPnL / metrics.totalValue) * 100}
-          isPositive={metrics.dailyPnL >= 0}
-          icon={<DollarSign className="h-6 w-6" />}
-        />
-        <MetricCard
-          title="Active Positions"
-          value={metrics.activePositions.toString()}
-          change={0}
-          changePercent={0}
-          isPositive={true}
-          icon={<BarChart3 className="h-6 w-6" />}
-        />
-        <MetricCard
-          title="Win Rate"
-          value={`${metrics.winRate.toFixed(1)}%`}
-          change={0}
-          changePercent={0}
-          isPositive={metrics.winRate > 60}
-          icon={<Target className="h-6 w-6" />}
-        />
-        <MetricCard
-          title="System Health"
-          value={`${systemStatus.system_health}%`}
-          change={0}
-          changePercent={0}
-          isPositive={systemStatus.system_health > 80}
-          icon={<Shield className="h-6 w-6" />}
-        />
+        <div>Portfolio Value: ${metrics.totalValue.toLocaleString()}</div>
+        <div>Active Positions: {metrics.activePositions}</div>
+        <div>Win Rate: {metrics.winRate.toFixed(1)}%</div>
+        <div>System Health: {systemStatus.system_health}%</div>
       </div>
 
       {/* Main Dashboard Grid */}
@@ -1136,4 +1108,3 @@ function AgentOverviewPanel({ metrics }: { metrics: DashboardMetrics }) {
   );
 }
 
-export default EnhancedDashboard
