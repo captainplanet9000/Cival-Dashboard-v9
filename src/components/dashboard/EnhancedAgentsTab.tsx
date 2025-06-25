@@ -56,9 +56,12 @@ import { backendApi } from '@/lib/api/backend-client'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { agentTradingDb, type AgentTradingPermission } from '@/utils/agent-trading-db'
 
-// Import Agent Persistence Service and System Lifecycle
-import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
-import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
+// Import Agent Persistence Service and System Lifecycle - using lazy loading
+import { lazy } from 'react'
+
+// Lazy load services to avoid circular dependencies
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
+const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService)
 
 // Use existing TradingAgent interface from AgentManager
 interface TradingAgent {
@@ -374,20 +377,34 @@ export default function EnhancedAgentsTab() {
       if (response?.data) {
         setAgentStats(response.data)
       } else {
-        // Get comprehensive stats from system lifecycle service
-        const systemStats = systemLifecycleService.getSystemStats()
-        const systemHealth = systemLifecycleService.getSystemHealth()
-        
-        setAgentStats({
-          total_agents: systemStats.totalAgents,
-          active_agents: systemStats.activeAgents,
-          total_trades_today: Math.floor(agents.reduce((sum, a) => sum + (a.performance.totalTrades * 0.1), 0)),
-          total_pnl_today: agents.reduce((sum, a) => sum + (a.performance.totalReturn * 0.05), 0),
-          avg_performance: agents.reduce((sum, a) => sum + a.performance.winRate, 0) / Math.max(agents.length, 1),
-          system_health: systemHealth?.overall === 'healthy' ? 0.95 : 
-                        systemHealth?.overall === 'degraded' ? 0.75 : 
-                        systemHealth?.overall === 'critical' ? 0.5 : 0.85
-        })
+        // Get comprehensive stats from system lifecycle service (lazy loaded)
+        try {
+          const systemLifecycleService = await getSystemLifecycleService()
+          const systemStats = systemLifecycleService.getSystemStats()
+          const systemHealth = systemLifecycleService.getSystemHealth()
+          
+          setAgentStats({
+            total_agents: systemStats.totalAgents,
+            active_agents: systemStats.activeAgents,
+            total_trades_today: Math.floor(agents.reduce((sum, a) => sum + (a.performance.totalTrades * 0.1), 0)),
+            total_pnl_today: agents.reduce((sum, a) => sum + (a.performance.totalReturn * 0.05), 0),
+            avg_performance: agents.reduce((sum, a) => sum + a.performance.winRate, 0) / Math.max(agents.length, 1),
+            system_health: systemHealth?.overall === 'healthy' ? 0.95 : 
+                          systemHealth?.overall === 'degraded' ? 0.75 : 
+                          systemHealth?.overall === 'critical' ? 0.5 : 0.85
+          })
+        } catch (error) {
+          console.error('Failed to load system lifecycle service:', error)
+          // Fallback to calculated stats
+          setAgentStats({
+            total_agents: agents.length,
+            active_agents: agents.filter(a => a.status === 'active').length,
+            total_trades_today: Math.floor(agents.reduce((sum, a) => sum + (a.performance.totalTrades * 0.1), 0)),
+            total_pnl_today: agents.reduce((sum, a) => sum + (a.performance.totalReturn * 0.05), 0),
+            avg_performance: agents.reduce((sum, a) => sum + a.performance.winRate, 0) / Math.max(agents.length, 1),
+            system_health: 0.85
+          })
+        }
       }
     } catch (error) {
       console.error('Failed to fetch agent stats:', error)

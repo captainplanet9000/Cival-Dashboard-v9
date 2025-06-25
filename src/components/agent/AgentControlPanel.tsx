@@ -31,7 +31,8 @@ import {
 
 // Import Todo System
 import { AgentTodoSystem } from '@/components/agents/AgentTodoSystem'
-import { agentTodoService } from '@/lib/agents/AgentTodoService'
+// Lazy load services to avoid circular dependencies
+const getAgentTodoService = () => import('@/lib/agents/AgentTodoService').then(m => m.agentTodoService)
 
 interface TradingAgent {
   id: string

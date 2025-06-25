@@ -668,7 +668,22 @@ class AgentPersistenceService extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const agentPersistenceService = new AgentPersistenceService()
+// Singleton instance - lazy initialization to avoid circular dependencies
+// Export lazy singleton to prevent circular dependencies
+let _agentPersistenceService: AgentPersistenceService | null = null
+
+export function getAgentPersistenceService(): AgentPersistenceService {
+  if (!_agentPersistenceService) {
+    _agentPersistenceService = new AgentPersistenceService()
+  }
+  return _agentPersistenceService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const agentPersistenceService = new Proxy({} as AgentPersistenceService, {
+  get(target, prop) {
+    return getAgentPersistenceService()[prop as keyof AgentPersistenceService]
+  }
+})
 
 export default AgentPersistenceService

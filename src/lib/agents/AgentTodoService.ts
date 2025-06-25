@@ -589,7 +589,14 @@ Generate 3-5 specific, actionable todos. Respond in JSON format:
   }
 }
 
-// Singleton instance
-export const agentTodoService = new AgentTodoService()
+// Singleton instance - lazy initialization to avoid circular dependencies
+let _agentTodoService: AgentTodoService | null = null
+
+export const agentTodoService = (() => {
+  if (!_agentTodoService) {
+    _agentTodoService = new AgentTodoService()
+  }
+  return _agentTodoService
+})()
 
 export default AgentTodoService

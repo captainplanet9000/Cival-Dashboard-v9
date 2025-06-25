@@ -858,7 +858,21 @@ class MCPIntegrationService extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const mcpIntegrationService = new MCPIntegrationService()
+// Export lazy singleton to prevent circular dependencies
+let _mcpIntegrationService: MCPIntegrationService | null = null
+
+export function getMcpIntegrationService(): MCPIntegrationService {
+  if (!_mcpIntegrationService) {
+    _mcpIntegrationService = new MCPIntegrationService()
+  }
+  return _mcpIntegrationService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const mcpIntegrationService = new Proxy({} as MCPIntegrationService, {
+  get(target, prop) {
+    return getMcpIntegrationService()[prop as keyof MCPIntegrationService]
+  }
+})
 
 export default MCPIntegrationService

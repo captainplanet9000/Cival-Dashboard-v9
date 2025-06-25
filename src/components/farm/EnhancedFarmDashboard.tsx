@@ -40,11 +40,12 @@ import {
 
 import { backendApi } from '@/lib/api/backend-client'
 
-// Import integrated services for complete agent lifecycle
-import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
-import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
-import { vaultIntegrationService } from '@/lib/vault/VaultIntegrationService'
-import { mcpIntegrationService } from '@/lib/mcp/MCPIntegrationService'
+// Import integrated services for complete agent lifecycle - using lazy loading
+// Lazy load services to avoid circular dependencies
+const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService)
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
+const getVaultIntegrationService = () => import('@/lib/vault/VaultIntegrationService').then(m => m.vaultIntegrationService)
+const getMcpIntegrationService = () => import('@/lib/mcp/MCPIntegrationService').then(m => m.mcpIntegrationService)
 
 // Import agent creation wizard
 import { AgentCreationWizard } from '@/components/modals/AgentCreationWizard'

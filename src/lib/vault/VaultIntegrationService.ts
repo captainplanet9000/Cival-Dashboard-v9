@@ -943,7 +943,21 @@ class VaultIntegrationService extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const vaultIntegrationService = new VaultIntegrationService()
+// Export lazy singleton to prevent circular dependencies
+let _vaultIntegrationService: VaultIntegrationService | null = null
+
+export function getVaultIntegrationService(): VaultIntegrationService {
+  if (!_vaultIntegrationService) {
+    _vaultIntegrationService = new VaultIntegrationService()
+  }
+  return _vaultIntegrationService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const vaultIntegrationService = new Proxy({} as VaultIntegrationService, {
+  get(target, prop) {
+    return getVaultIntegrationService()[prop as keyof VaultIntegrationService]
+  }
+})
 
 export default VaultIntegrationService

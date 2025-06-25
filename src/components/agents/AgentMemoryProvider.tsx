@@ -6,7 +6,8 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { persistenceManager } from '@/lib/persistence/persistence-manager'
+// Lazy load persistence manager to avoid circular dependencies
+const getPersistenceManager = () => import('@/lib/persistence/persistence-manager').then(m => m.persistenceManager)
 import { backendApi } from '@/lib/api/backend-client'
 
 interface AgentMemory {
@@ -51,7 +52,8 @@ export function AgentMemoryProvider({ children }: { children: React.ReactNode })
     // Initialize the memory system
     const initialize = async () => {
       try {
-        // Check if persistence manager is available
+        // Check if persistence manager is available (lazy loaded)
+        const persistenceManager = await getPersistenceManager()
         if (persistenceManager.isInitialized()) {
           console.log('✅ Agent Memory System initialized')
           setIsInitialized(true)
@@ -93,7 +95,8 @@ export function AgentMemoryProvider({ children }: { children: React.ReactNode })
         throw new Error(response.error)
       }
 
-      // Cache locally for performance
+      // Cache locally for performance (lazy loaded)
+      const persistenceManager = await getPersistenceManager()
       const memoryKey = `agent_memory_${agentId}_${memoryType}_${key}`
       persistenceManager.saveSessionData(memoryKey, {
         agent_id: agentId,
@@ -157,11 +160,13 @@ export function AgentMemoryProvider({ children }: { children: React.ReactNode })
 
   // Save agent configuration
   const saveAgentConfig = useCallback(async (agentId: string, config: any): Promise<boolean> => {
+    const persistenceManager = await getPersistenceManager()
     return await persistenceManager.saveAgentConfig(agentId, config)
   }, [])
 
   // Get agent configuration
   const getAgentConfig = useCallback(async (agentId: string): Promise<any> => {
+    const persistenceManager = await getPersistenceManager()
     return await persistenceManager.getAgentConfig(agentId)
   }, [])
 

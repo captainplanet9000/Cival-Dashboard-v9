@@ -50,8 +50,10 @@ import {
 } from 'lucide-react'
 
 // Import Agent Persistence Service and System Lifecycle
-import { agentPersistenceService, type AgentConfig as PersistenceAgentConfig } from '@/lib/agents/AgentPersistenceService'
-import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
+// Lazy load services to avoid circular dependencies
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
+import { type AgentConfig as PersistenceAgentConfig } from '@/lib/agents/AgentPersistenceService'
+const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService)
 
 interface AgentConfig {
   // Basic Info
@@ -312,7 +314,8 @@ export function AgentCreationWizard({
         version: '1.0.0'
       }
 
-      // Create agent through complete system lifecycle
+      // Create agent through complete system lifecycle (lazy loaded)
+      const systemLifecycleService = await getSystemLifecycleService()
       const result = await systemLifecycleService.createCompleteAgent(persistenceConfig)
       
       if (result.success) {

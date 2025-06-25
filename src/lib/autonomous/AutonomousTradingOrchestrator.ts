@@ -6,7 +6,8 @@
 
 import { EventEmitter } from 'events'
 import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
-import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
+// Lazy load services to avoid circular dependencies
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
 import { testnetDeFiService } from '@/lib/defi/TestnetDeFiService'
 
 export interface AutonomousAgent {

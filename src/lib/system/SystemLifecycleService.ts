@@ -695,7 +695,21 @@ class SystemLifecycleService extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const systemLifecycleService = new SystemLifecycleService()
+// Export lazy singleton to prevent circular dependencies
+let _systemLifecycleService: SystemLifecycleService | null = null
+
+export function getSystemLifecycleService(): SystemLifecycleService {
+  if (!_systemLifecycleService) {
+    _systemLifecycleService = new SystemLifecycleService()
+  }
+  return _systemLifecycleService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const systemLifecycleService = new Proxy({} as SystemLifecycleService, {
+  get(target, prop) {
+    return getSystemLifecycleService()[prop as keyof SystemLifecycleService]
+  }
+})
 
 export default SystemLifecycleService

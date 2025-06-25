@@ -501,7 +501,15 @@ class PersistenceManager {
 }
 
 // Export singleton instance
-export const persistenceManager = new PersistenceManager()
+// Singleton instance - lazy initialization to avoid circular dependencies
+let _persistenceManager: PersistenceManager | null = null
+
+export const persistenceManager = (() => {
+  if (!_persistenceManager) {
+    _persistenceManager = new PersistenceManager()
+  }
+  return _persistenceManager
+})()
 
 // Export class for testing
 export { PersistenceManager }
