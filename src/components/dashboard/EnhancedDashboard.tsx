@@ -33,11 +33,7 @@ import { AgentManager } from '@/components/trading/AgentManager'
 import { RiskDashboard } from '@/components/trading/RiskDashboard'
 import { TradingInterface } from '@/components/trading/TradingInterface'
 
-// Import new integrated services
-import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
-import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
-import { mcpIntegrationService } from '@/lib/mcp/MCPIntegrationService'
-import { vaultIntegrationService } from '@/lib/vault/VaultIntegrationService'
+// Services will be lazy loaded to prevent circular dependencies
 
 // Import system health components
 import { SystemHealthDashboard } from '@/components/system/SystemHealthDashboard'
@@ -213,6 +209,14 @@ export default function EnhancedDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // Only run on client side to prevent SSR issues
+        if (typeof window === 'undefined') {
+          return
+        }
+
+        // Lazy load services to prevent circular dependencies
+        const { systemLifecycleService } = await import('@/lib/system/SystemLifecycleService')
+        
         // Initialize all integrated services
         await systemLifecycleService.initializeAllServices()
         
