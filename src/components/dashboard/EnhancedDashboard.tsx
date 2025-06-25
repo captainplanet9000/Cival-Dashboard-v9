@@ -69,6 +69,10 @@ const LangChainAGUIInterface = dynamic(() => import('@/components/langchain/Lang
 // Import LangChain Status Widget
 import LangChainStatusWidget from '@/components/langchain/LangChainStatusWidget'
 
+// Import simplified AI components
+import SimpleAIStatusWidget from '@/components/ai/SimpleAIStatusWidget'
+import SimpleAIRecommendations from '@/components/ai/SimpleAIRecommendations'
+
 // Import LangChain Dashboard Tab
 import LangChainDashboardTab from '@/components/dashboard/LangChainDashboardTab'
 
@@ -637,31 +641,28 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           </CardContent>
         </Card>
 
-        {/* LangChain AI Status */}
+        {/* AI Status - Simplified */}
         <ErrorBoundary 
-          componentName="LangChain Status Widget"
-          fallback={<ComponentFallback componentName="LangChain Status" />}
+          componentName="AI Status Widget"
+          fallback={<ComponentFallback componentName="AI Status" />}
         >
-          <LangChainStatusWidget
+          <SimpleAIStatusWidget
             onViewDetails={() => setActiveTab('langchain-agui')}
           />
         </ErrorBoundary>
       </div>
 
-      {/* Recent Activity and Risk Metrics */}
+      {/* AI Recommendations and Risk Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Trades */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-blue-500" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentTradesWidget positions={positions} orders={orders} />
-          </CardContent>
-        </Card>
+        {/* AI Trading Recommendations */}
+        <div className="lg:col-span-2">
+          <ErrorBoundary 
+            componentName="AI Recommendations"
+            fallback={<ComponentFallback componentName="AI Recommendations" />}
+          >
+            <SimpleAIRecommendations symbols={['BTC/USDT', 'ETH/USDT', 'SOL/USDT']} />
+          </ErrorBoundary>
+        </div>
 
         {/* Risk Metrics */}
         <Card>
