@@ -49,8 +49,11 @@ export function ThemeProvider({ children, ...props }: React.ComponentProps<'div'
   ]
 
   useEffect(() => {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return
+    
     const root = window.document.documentElement
-    const savedTheme = localStorage.getItem('theme') as Theme || 'default'
+    const savedTheme = (typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null) as Theme || 'default'
     setTheme(savedTheme)
     
     // Remove all theme classes
@@ -78,7 +81,9 @@ export function ThemeProvider({ children, ...props }: React.ComponentProps<'div'
     }
     
     setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('theme', newTheme)
+    }
   }
 
   const value = {

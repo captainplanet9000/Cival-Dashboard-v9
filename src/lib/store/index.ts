@@ -726,7 +726,18 @@ export const useAppStore = create<AppStore>()(
       })),
       {
         name: 'cival-dashboard-store',
-        storage: createJSONStorage(() => localStorage),
+        storage: createJSONStorage(() => {
+          // Check if running in browser environment
+          if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage
+          }
+          // Return a no-op storage for server-side rendering
+          return {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+          }
+        }),
         partialize: (state) => ({
           // Only persist user preferences and some UI state
           preferences: state.preferences,

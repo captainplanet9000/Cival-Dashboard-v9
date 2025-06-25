@@ -11,6 +11,10 @@ const nextConfig = {
     // Temporarily ignore ESLint errors for deployment
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    // Force dynamic rendering for pages that use browser APIs
+    missingSuspenseWithCSRBailout: false,
+  },
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
