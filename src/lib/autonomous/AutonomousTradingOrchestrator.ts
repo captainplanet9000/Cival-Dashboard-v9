@@ -1263,6 +1263,10 @@ export function getAutonomousTradingOrchestrator(): AutonomousTradingOrchestrato
   return _autonomousTradingOrchestrator
 }
 
-// For backwards compatibility
-export const autonomousTradingOrchestrator = getAutonomousTradingOrchestrator()
-export default autonomousTradingOrchestrator
+// For backwards compatibility - lazy export to prevent initialization issues
+export function getAutonomousTradingOrchestratorInstance() {
+  return getAutonomousTradingOrchestrator()
+}
+
+// Default export as function to prevent immediate initialization
+export default getAutonomousTradingOrchestrator
