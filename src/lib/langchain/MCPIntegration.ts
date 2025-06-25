@@ -8,7 +8,7 @@ import { EventEmitter } from 'events'
 import { langGraphOrchestrator, LangGraphAgent } from './LangGraphOrchestrator'
 import { langChainService } from './LangChainService'
 import { mcpIntegrationService, MCPTool, MCPCallLog } from '@/lib/mcp/MCPIntegrationService'
-import { BaseTool } from '@langchain/core/tools'
+import { Tool } from '@langchain/core/tools'
 import { z } from 'zod'
 
 export interface LangChainMCPConfig {
@@ -43,7 +43,7 @@ export interface AgentMCPSession {
  * LangChain Tool wrapper for MCP tools
  * Allows LangChain agents to call MCP tools seamlessly
  */
-class LangChainMCPTool extends BaseTool {
+class LangChainMCPTool extends Tool {
   name: string
   description: string
   private mcpTool: MCPTool
