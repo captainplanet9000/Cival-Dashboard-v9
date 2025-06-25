@@ -43,9 +43,9 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 import { useAppStore, MultiChainWallet, MultiChainBalance } from '@/lib/stores/app-store'
-import { solanaWalletService, SolanaWalletAdapter } from '@/lib/services/solana-wallet-service'
-import { suiWalletService, SuiWalletAdapter } from '@/lib/services/sui-wallet-service'
-import { sonicWalletService, SonicWalletAdapter } from '@/lib/services/sonic-wallet-service'
+import { SolanaWalletAdapter } from '@/lib/services/solana-wallet-service'
+import { SuiWalletAdapter } from '@/lib/services/sui-wallet-service'
+import { SonicWalletAdapter } from '@/lib/services/sonic-wallet-service'
 
 interface NetworkInfo {
   id: string
@@ -116,7 +116,7 @@ export function MultiChainWalletView() {
       color: 'from-purple-500 to-purple-600',
       rpcUrl: 'https://api.mainnet-beta.solana.com',
       explorerUrl: 'https://explorer.solana.com',
-      service: solanaWalletService
+      service: null
     },
     {
       id: 'sui',
@@ -126,7 +126,7 @@ export function MultiChainWalletView() {
       color: 'from-cyan-500 to-cyan-600',
       rpcUrl: 'https://fullnode.mainnet.sui.io',
       explorerUrl: 'https://explorer.sui.io',
-      service: suiWalletService
+      service: null
     },
     {
       id: 'sonic',
@@ -136,14 +136,14 @@ export function MultiChainWalletView() {
       color: 'from-green-500 to-green-600',
       rpcUrl: 'https://rpc.sonic.network',
       explorerUrl: 'https://explorer.sonic.network',
-      service: sonicWalletService
+      service: null
     }
   ]
 
   // Connect to wallet for specific network
   const connectToNetwork = async (networkId: string, walletName: string) => {
     const network = networks.find(n => n.id === networkId)
-    if (!network?.service) return
+    if (!network) return
 
     setConnections(prev => ({
       ...prev,
@@ -151,7 +151,21 @@ export function MultiChainWalletView() {
     }))
 
     try {
-      const adapter = await network.service.connectWallet(walletName)
+      let service
+      if (networkId === 'solana') {
+        const { solanaWalletService } = await import('@/lib/services/solana-wallet-service')
+        service = solanaWalletService
+      } else if (networkId === 'sui') {
+        const { suiWalletService } = await import('@/lib/services/sui-wallet-service')
+        service = suiWalletService
+      } else if (networkId === 'sonic') {
+        const { sonicWalletService } = await import('@/lib/services/sonic-wallet-service')
+        service = sonicWalletService
+      }
+      
+      if (!service) return
+      
+      const adapter = await service.connectWallet(walletName)
       if (adapter) {
         setConnections(prev => ({
           ...prev,
@@ -191,7 +205,7 @@ export function MultiChainWalletView() {
   // Sync wallet balances for a network
   const syncWalletBalances = async (networkId: string, address: string) => {
     const network = networks.find(n => n.id === networkId)
-    if (!network?.service) return
+    if (!network) return
 
     setConnections(prev => ({
       ...prev,
@@ -199,7 +213,21 @@ export function MultiChainWalletView() {
     }))
 
     try {
-      const balances = await network.service.getWalletBalances(address)
+      let service
+      if (networkId === 'solana') {
+        const { solanaWalletService } = await import('@/lib/services/solana-wallet-service')
+        service = solanaWalletService
+      } else if (networkId === 'sui') {
+        const { suiWalletService } = await import('@/lib/services/sui-wallet-service')
+        service = suiWalletService
+      } else if (networkId === 'sonic') {
+        const { sonicWalletService } = await import('@/lib/services/sonic-wallet-service')
+        service = sonicWalletService
+      }
+      
+      if (!service) return
+      
+      const balances = await service.getWalletBalances(address)
       setConnections(prev => ({
         ...prev,
         [networkId]: { 
@@ -221,8 +249,22 @@ export function MultiChainWalletView() {
   // Disconnect from network
   const disconnectFromNetwork = async (networkId: string) => {
     const network = networks.find(n => n.id === networkId)
-    if (network?.service) {
-      await network.service.disconnectWallet()
+    if (network) {
+      let service
+      if (networkId === 'solana') {
+        const { solanaWalletService } = await import('@/lib/services/solana-wallet-service')
+        service = solanaWalletService
+      } else if (networkId === 'sui') {
+        const { suiWalletService } = await import('@/lib/services/sui-wallet-service')
+        service = suiWalletService
+      } else if (networkId === 'sonic') {
+        const { sonicWalletService } = await import('@/lib/services/sonic-wallet-service')
+        service = sonicWalletService
+      }
+      
+      if (service) {
+        await service.disconnectWallet()
+      }
     }
     
     setConnections(prev => ({

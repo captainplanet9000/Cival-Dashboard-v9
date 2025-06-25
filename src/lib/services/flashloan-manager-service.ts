@@ -702,6 +702,26 @@ export class FlashLoanManagerService {
   }
 }
 
-// Create and export singleton instance
-export const flashLoanManagerService = new FlashLoanManagerService();
+// Create and export singleton instance with lazy initialization
+let _flashLoanManagerServiceInstance: FlashLoanManagerService | null = null;
+
+export const flashLoanManagerService = {
+  get instance(): FlashLoanManagerService {
+    if (!_flashLoanManagerServiceInstance) {
+      _flashLoanManagerServiceInstance = new FlashLoanManagerService();
+    }
+    return _flashLoanManagerServiceInstance;
+  },
+  
+  // Proxy all methods
+  start: () => flashLoanManagerService.instance.start(),
+  stop: () => flashLoanManagerService.instance.stop(),
+  getCurrentOpportunities: () => flashLoanManagerService.instance.getCurrentOpportunities(),
+  getExecutionHistory: (limit: number) => flashLoanManagerService.instance.getExecutionHistory(limit),
+  getProtocols: () => flashLoanManagerService.instance.getProtocols(),
+  getStrategies: () => flashLoanManagerService.instance.getStrategies(),
+  getPerformanceStats: () => flashLoanManagerService.instance.getPerformanceStats(),
+  executeFlashLoanArbitrage: (opportunity: ArbitrageOpportunity, strategy: string) => 
+    flashLoanManagerService.instance.executeFlashLoanArbitrage(opportunity, strategy)
+};
 export default flashLoanManagerService;

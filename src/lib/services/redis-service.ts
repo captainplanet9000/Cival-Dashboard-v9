@@ -323,5 +323,26 @@ class RedisService {
 }
 
 // Singleton instance
-export const redisService = new RedisService();
+// Create and export singleton instance with lazy initialization
+let _redisServiceInstance: RedisService | null = null;
+
+export const redisService = {
+  get instance(): RedisService {
+    if (!_redisServiceInstance) {
+      _redisServiceInstance = new RedisService();
+    }
+    return _redisServiceInstance;
+  },
+  
+  // Proxy all methods
+  connect: () => redisService.instance.connect(),
+  disconnect: () => redisService.instance.disconnect(),
+  get: (key: string) => redisService.instance.get(key),
+  set: (key: string, value: string, ttl?: number) => redisService.instance.set(key, value, ttl),
+  del: (key: string) => redisService.instance.del(key),
+  exists: (key: string) => redisService.instance.exists(key),
+  keys: (pattern: string) => redisService.instance.keys(pattern),
+  flushall: () => redisService.instance.flushall(),
+  getStatus: () => redisService.instance.getStatus()
+};
 export default redisService; 

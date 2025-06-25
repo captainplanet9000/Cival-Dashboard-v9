@@ -652,6 +652,26 @@ export class USDTDMonitorService {
   }
 }
 
-// Create and export singleton instance
-export const usdtdMonitorService = new USDTDMonitorService();
+// Create and export singleton instance with lazy initialization
+let _usdtdMonitorServiceInstance: USDTDMonitorService | null = null;
+
+export const usdtdMonitorService = {
+  get instance(): USDTDMonitorService {
+    if (!_usdtdMonitorServiceInstance) {
+      _usdtdMonitorServiceInstance = new USDTDMonitorService();
+    }
+    return _usdtdMonitorServiceInstance;
+  },
+  
+  // Proxy all methods
+  start: () => usdtdMonitorService.instance.start(),
+  stop: () => usdtdMonitorService.instance.stop(),
+  getCurrentMetrics: () => usdtdMonitorService.instance.getCurrentMetrics(),
+  getHistoricalData: (count: number) => usdtdMonitorService.instance.getHistoricalData(count),
+  getCorrelationAnalysis: () => usdtdMonitorService.instance.getCorrelationAnalysis(),
+  getMarketRegime: () => usdtdMonitorService.instance.getMarketRegime(),
+  getRecentSignals: (count: number) => usdtdMonitorService.instance.getRecentSignals(count),
+  getStatus: () => usdtdMonitorService.instance.getStatus()
+};
+
 export default usdtdMonitorService;

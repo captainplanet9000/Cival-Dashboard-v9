@@ -184,5 +184,19 @@ export class ChainlinkPriceFeedService {
   }
 }
 
-// Export singleton instance
-export const chainlinkService = new ChainlinkPriceFeedService()
+// Export lazy singleton to prevent circular dependencies
+let _chainlinkService: ChainlinkPriceFeedService | null = null
+
+export function getChainlinkService(): ChainlinkPriceFeedService {
+  if (!_chainlinkService) {
+    _chainlinkService = new ChainlinkPriceFeedService()
+  }
+  return _chainlinkService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const chainlinkService = new Proxy({} as ChainlinkPriceFeedService, {
+  get(target, prop) {
+    return getChainlinkService()[prop as keyof ChainlinkPriceFeedService]
+  }
+})

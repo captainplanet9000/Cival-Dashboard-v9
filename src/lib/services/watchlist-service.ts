@@ -501,6 +501,28 @@ export class WatchlistService {
   }
 }
 
-// Create and export singleton instance
-export const watchlistService = new WatchlistService();
+// Create and export singleton instance with lazy initialization
+let _watchlistServiceInstance: WatchlistService | null = null;
+
+export const watchlistService = {
+  get instance(): WatchlistService {
+    if (!_watchlistServiceInstance) {
+      _watchlistServiceInstance = new WatchlistService();
+    }
+    return _watchlistServiceInstance;
+  },
+  
+  // Proxy all methods
+  start: () => watchlistService.instance.start(),
+  stop: () => watchlistService.instance.stop(),
+  createWatchlist: (name: string, description?: string) => watchlistService.instance.createWatchlist(name, description),
+  addToWatchlist: (watchlistId: string, symbol: string) => watchlistService.instance.addToWatchlist(watchlistId, symbol),
+  removeFromWatchlist: (watchlistId: string, itemId: string) => watchlistService.instance.removeFromWatchlist(watchlistId, itemId),
+  subscribeToPriceUpdates: (symbol: string, callback: (data: PriceData) => void) => 
+    watchlistService.instance.subscribeToPriceUpdates(symbol, callback),
+  createPriceAlert: (symbol: string, type: 'above' | 'below', targetPrice: number) => 
+    watchlistService.instance.createPriceAlert(symbol, type, targetPrice),
+  assignAgentToSymbol: (agentId: string, watchlistId: string, symbol: string, config: any) => 
+    watchlistService.instance.assignAgentToSymbol(agentId, watchlistId, symbol, config)
+};
 export default watchlistService;

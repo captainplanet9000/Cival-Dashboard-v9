@@ -33,7 +33,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 import { useAppStore, FlashLoanOpportunity, FlashLoanTransaction } from '@/lib/stores/app-store'
 import { 
-  flashLoanManagerService, 
   ArbitrageOpportunity, 
   FlashLoanExecution,
   FlashLoanProtocol,
@@ -75,6 +74,7 @@ export function FlashLoanView() {
   const loadData = async () => {
     setIsLoading(true)
     try {
+      const { flashLoanManagerService } = await import('@/lib/services/flashloan-manager-service')
       const [opps, execs, protos, strats, stats] = await Promise.all([
         flashLoanManagerService.getCurrentOpportunities(),
         flashLoanManagerService.getExecutionHistory(20),
@@ -96,6 +96,7 @@ export function FlashLoanView() {
   }
 
   const toggleMonitoring = async () => {
+    const { flashLoanManagerService } = await import('@/lib/services/flashloan-manager-service')
     if (isRunning) {
       flashLoanManagerService.stop()
       setIsRunning(false)
@@ -187,8 +188,9 @@ export function FlashLoanView() {
           <Button 
             size="sm" 
             className="bg-gradient-to-r from-emerald-500 to-emerald-600"
-            onClick={() => {
+            onClick={async () => {
               // Execute opportunity
+              const { flashLoanManagerService } = await import('@/lib/services/flashloan-manager-service')
               flashLoanManagerService.executeFlashLoanArbitrage(opportunity, 'simple-arbitrage')
             }}
           >

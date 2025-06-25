@@ -333,7 +333,28 @@ class AuthenticationService {
 }
 
 // Create singleton instance
-export const authService = new AuthenticationService()
+// Create and export singleton instance with lazy initialization
+let _authServiceInstance: AuthenticationService | null = null;
+
+export const authService = {
+  get instance(): AuthenticationService {
+    if (!_authServiceInstance) {
+      _authServiceInstance = new AuthenticationService();
+    }
+    return _authServiceInstance;
+  },
+  
+  // Proxy all methods
+  isAuthenticated: () => authService.instance.isAuthenticated(),
+  canTrade: () => authService.instance.canTrade(),
+  hasPermission: (permission: string) => authService.instance.hasPermission(permission),
+  signIn: (email: string, password: string) => authService.instance.signIn(email, password),
+  signUp: (email: string, password: string, userData?: any) => authService.instance.signUp(email, password, userData),
+  signOut: () => authService.instance.signOut(),
+  refreshSession: () => authService.instance.refreshSession(),
+  getAccessToken: () => authService.instance.getAccessToken(),
+  getAuthHeader: () => authService.instance.getAuthHeader()
+}
 
 // Export hooks for React components
 export function useAuth() {

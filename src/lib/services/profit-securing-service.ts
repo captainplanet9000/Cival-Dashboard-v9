@@ -170,4 +170,21 @@ export class ProfitSecuringService {
   }
 }
 
-export const profitSecuringService = new ProfitSecuringService();
+// Create and export singleton instance with lazy initialization
+let _profitSecuringServiceInstance: ProfitSecuringService | null = null;
+
+export const profitSecuringService = {
+  get instance(): ProfitSecuringService {
+    if (!_profitSecuringServiceInstance) {
+      _profitSecuringServiceInstance = new ProfitSecuringService();
+    }
+    return _profitSecuringServiceInstance;
+  },
+  
+  // Proxy all methods
+  start: () => profitSecuringService.instance.start(),
+  stop: () => profitSecuringService.instance.stop(),
+  secureProfit: (amount: number, strategy: string) => profitSecuringService.instance.secureProfit(amount, strategy),
+  getSecuredProfits: () => profitSecuringService.instance.getSecuredProfits(),
+  getStatus: () => profitSecuringService.instance.getStatus()
+};

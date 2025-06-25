@@ -244,10 +244,23 @@ export class AutonomousStartupService {
   }
 }
 
-// Export singleton instance
-export const autonomousStartupService = new AutonomousStartupService()
+// Export lazy singleton to prevent circular dependencies
+let _autonomousStartupService: AutonomousStartupService | null = null
 
-// Auto-initialize when imported
-autonomousStartupService.autoStart()
+export function getAutonomousStartupService(): AutonomousStartupService {
+  if (!_autonomousStartupService) {
+    _autonomousStartupService = new AutonomousStartupService()
+    // Auto-start only when first accessed
+    _autonomousStartupService.autoStart()
+  }
+  return _autonomousStartupService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const autonomousStartupService = new Proxy({} as AutonomousStartupService, {
+  get(target, prop) {
+    return getAutonomousStartupService()[prop as keyof AutonomousStartupService]
+  }
+})
 
 export default autonomousStartupService

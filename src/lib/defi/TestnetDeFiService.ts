@@ -534,7 +534,21 @@ class TestnetDeFiService {
   }
 }
 
-// Singleton instance
-export const testnetDeFiService = new TestnetDeFiService()
+// Export lazy singleton to prevent circular dependencies
+let _testnetDeFiService: TestnetDeFiService | null = null
+
+export function getTestnetDeFiService(): TestnetDeFiService {
+  if (!_testnetDeFiService) {
+    _testnetDeFiService = new TestnetDeFiService()
+  }
+  return _testnetDeFiService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const testnetDeFiService = new Proxy({} as TestnetDeFiService, {
+  get(target, prop) {
+    return getTestnetDeFiService()[prop as keyof TestnetDeFiService]
+  }
+})
 
 export default TestnetDeFiService

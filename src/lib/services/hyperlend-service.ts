@@ -636,6 +636,28 @@ export class HyperLendService {
   }
 }
 
-// Create and export singleton instance
-export const hyperLendService = new HyperLendService();
+// Create and export singleton instance with lazy initialization
+let _hyperLendServiceInstance: HyperLendService | null = null;
+
+export const hyperLendService = {
+  get instance(): HyperLendService {
+    if (!_hyperLendServiceInstance) {
+      _hyperLendServiceInstance = new HyperLendService();
+    }
+    return _hyperLendServiceInstance;
+  },
+  
+  // Proxy all methods
+  initialize: () => hyperLendService.instance.initialize(),
+  getMarkets: () => hyperLendService.instance.getMarkets(),
+  getLendingRates: () => hyperLendService.instance.getLendingRates(),
+  getUserPositions: (userId: string) => hyperLendService.instance.getUserPositions(userId),
+  getMarketConditions: () => hyperLendService.instance.getMarketConditions(),
+  getLiquidationAlerts: (userId: string) => hyperLendService.instance.getLiquidationAlerts(userId),
+  calculateHealthFactor: (userId: string) => hyperLendService.instance.calculateHealthFactor(userId),
+  getBorrowingPower: (userId: string) => hyperLendService.instance.getBorrowingPower(userId),
+  supply: (asset: string, amount: number, useAsCollateral: boolean) => 
+    hyperLendService.instance.supply(asset, amount, useAsCollateral),
+  borrow: (asset: string, amount: number) => hyperLendService.instance.borrow(asset, amount)
+};
 export default hyperLendService;

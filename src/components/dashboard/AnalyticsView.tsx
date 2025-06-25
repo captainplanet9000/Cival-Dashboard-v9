@@ -57,7 +57,6 @@ import {
 
 import { useAppStore, USDTDData, USDTDCorrelation, USDTDSignal } from '@/lib/stores/app-store'
 import { 
-  usdtdMonitorService, 
   USDTDMetrics, 
   CorrelationAnalysis, 
   MarketRegime,
@@ -126,6 +125,7 @@ export function AnalyticsView() {
   const initializeAnalytics = async () => {
     setIsLoading(true)
     try {
+      const { usdtdMonitorService } = await import('@/lib/services/usdtd-monitor-service')
       await usdtdMonitorService.start()
       await loadAnalyticsData()
     } catch (error) {
@@ -137,6 +137,7 @@ export function AnalyticsView() {
 
   const loadAnalyticsData = async () => {
     try {
+      const { usdtdMonitorService } = await import('@/lib/services/usdtd-monitor-service')
       const [metrics, history, correlations, regime, signals] = await Promise.all([
         usdtdMonitorService.getCurrentMetrics(),
         usdtdMonitorService.getHistoricalData(100),

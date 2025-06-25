@@ -643,6 +643,20 @@ export class SuiWalletService {
   }
 }
 
-// Create and export singleton instance
-export const suiWalletService = new SuiWalletService();
+// Create and export singleton instance with lazy initialization
+let _suiWalletServiceInstance: SuiWalletService | null = null;
+
+export const suiWalletService = {
+  get instance(): SuiWalletService {
+    if (!_suiWalletServiceInstance) {
+      _suiWalletServiceInstance = new SuiWalletService();
+    }
+    return _suiWalletServiceInstance;
+  },
+  
+  // Proxy all methods
+  connectWallet: (walletName: string) => suiWalletService.instance.connectWallet(walletName),
+  disconnectWallet: () => suiWalletService.instance.disconnectWallet(),
+  getWalletBalances: (address: string) => suiWalletService.instance.getWalletBalances(address)
+};
 export default suiWalletService;

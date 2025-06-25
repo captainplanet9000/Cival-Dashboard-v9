@@ -670,4 +670,25 @@ class AnalyticsService {
   }
 }
 
-export const analyticsService = new AnalyticsService()
+// Create and export singleton instance with lazy initialization
+let _analyticsServiceInstance: AnalyticsService | null = null;
+
+export const analyticsService = {
+  get instance(): AnalyticsService {
+    if (!_analyticsServiceInstance) {
+      _analyticsServiceInstance = new AnalyticsService();
+    }
+    return _analyticsServiceInstance;
+  },
+  
+  // Proxy all methods
+  startAnalysis: () => analyticsService.instance.startAnalysis(),
+  stopAnalysis: () => analyticsService.instance.stopAnalysis(),
+  getPortfolioAnalysis: () => analyticsService.instance.getPortfolioAnalysis(),
+  getTradingAnalysis: () => analyticsService.instance.getTradingAnalysis(),
+  getRiskAnalysis: () => analyticsService.instance.getRiskAnalysis(),
+  getMarketAnalysis: () => analyticsService.instance.getMarketAnalysis(),
+  generateReport: (type: string, timeframe: string) => analyticsService.instance.generateReport(type, timeframe),
+  exportData: (format: string) => analyticsService.instance.exportData(format),
+  getStatus: () => analyticsService.instance.getStatus()
+}

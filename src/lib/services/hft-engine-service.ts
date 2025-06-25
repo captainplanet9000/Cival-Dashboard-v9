@@ -395,4 +395,20 @@ export class HFTEngineService {
   }
 }
 
-export const hftEngineService = new HFTEngineService();
+// Create and export singleton instance with lazy initialization
+let _hftEngineServiceInstance: HFTEngineService | null = null;
+
+export const hftEngineService = {
+  get instance(): HFTEngineService {
+    if (!_hftEngineServiceInstance) {
+      _hftEngineServiceInstance = new HFTEngineService();
+    }
+    return _hftEngineServiceInstance;
+  },
+  
+  // Proxy all methods
+  start: () => hftEngineService.instance.start(),
+  stop: () => hftEngineService.instance.stop(),
+  getStatus: () => hftEngineService.instance.getStatus(),
+  getPerformanceMetrics: () => hftEngineService.instance.getPerformanceMetrics()
+};

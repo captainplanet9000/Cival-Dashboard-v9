@@ -35,7 +35,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 import { useAppStore, Watchlist, WatchlistItem, PriceAlert } from '@/lib/stores/app-store'
-import { watchlistService, PriceData } from '@/lib/services/watchlist-service'
+import { PriceData } from '@/lib/services/watchlist-service'
 
 export function WatchlistView() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -61,10 +61,19 @@ export function WatchlistView() {
 
   // Start watchlist service on mount
   useEffect(() => {
-    watchlistService.start()
+    const startService = async () => {
+      const { watchlistService } = await import('@/lib/services/watchlist-service')
+      watchlistService.start()
+    }
+    
+    startService()
     
     return () => {
-      watchlistService.stop()
+      const stopService = async () => {
+        const { watchlistService } = await import('@/lib/services/watchlist-service')
+        watchlistService.stop()
+      }
+      stopService()
     }
   }, [])
 
@@ -72,22 +81,28 @@ export function WatchlistView() {
   useEffect(() => {
     const subscriptions: Array<() => void> = []
     
-    watchlists.forEach(watchlist => {
-      watchlist.items.forEach(item => {
-        const unsub = watchlistService.subscribeToPriceUpdates(item.symbol, (data) => {
-          setPriceData(prev => new Map(prev.set(item.symbol, data)))
-          
-          // Update item in store
-          updateWatchlistItem(watchlist.id, item.id, {
-            currentPrice: data.price,
-            change24h: data.change24h,
-            volume24h: data.volume24h,
-            updatedAt: new Date()
+    const setupSubscriptions = async () => {
+      const { watchlistService } = await import('@/lib/services/watchlist-service')
+      
+      watchlists.forEach(watchlist => {
+        watchlist.items.forEach(item => {
+          const unsub = watchlistService.subscribeToPriceUpdates(item.symbol, (data) => {
+            setPriceData(prev => new Map(prev.set(item.symbol, data)))
+            
+            // Update item in store
+            updateWatchlistItem(watchlist.id, item.id, {
+              currentPrice: data.price,
+              change24h: data.change24h,
+              volume24h: data.volume24h,
+              updatedAt: new Date()
+            })
           })
+          subscriptions.push(unsub)
         })
-        subscriptions.push(unsub)
       })
-    })
+    }
+    
+    setupSubscriptions()
 
     return () => {
       subscriptions.forEach(unsub => unsub())
@@ -97,6 +112,7 @@ export function WatchlistView() {
   const handleCreateWatchlist = async () => {
     if (!newWatchlistName.trim()) return
 
+    const { watchlistService } = await import('@/lib/services/watchlist-service')
     const watchlist = await watchlistService.createWatchlist(newWatchlistName)
     addWatchlist(watchlist)
     setNewWatchlistName('')
@@ -107,6 +123,7 @@ export function WatchlistView() {
   const handleAddItem = async () => {
     if (!newItemSymbol.trim() || !selectedWatchlist) return
 
+    const { watchlistService } = await import('@/lib/services/watchlist-service')
     const item = await watchlistService.addToWatchlist(selectedWatchlist, newItemSymbol)
     addWatchlistItem(selectedWatchlist, item)
     setNewItemSymbol('')
@@ -114,11 +131,13 @@ export function WatchlistView() {
   }
 
   const handleRemoveItem = async (watchlistId: string, itemId: string) => {
+    const { watchlistService } = await import('@/lib/services/watchlist-service')
     await watchlistService.removeFromWatchlist(watchlistId, itemId)
     removeWatchlistItem(watchlistId, itemId)
   }
 
   const handleCreateAlert = async (symbol: string, type: 'above' | 'below', targetPrice: number) => {
+    const { watchlistService } = await import('@/lib/services/watchlist-service')
     const alert = await watchlistService.createPriceAlert(symbol, type, targetPrice)
     addPriceAlert(alert)
   }
@@ -126,6 +145,7 @@ export function WatchlistView() {
   const handleAssignAgent = async (agentId: string, symbol: string, strategy: string) => {
     if (!selectedWatchlist) return
     
+    const { watchlistService } = await import('@/lib/services/watchlist-service')
     const assignment = await watchlistService.assignAgentToSymbol(
       agentId, 
       selectedWatchlist, 

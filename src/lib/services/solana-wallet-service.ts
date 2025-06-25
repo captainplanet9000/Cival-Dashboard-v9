@@ -604,6 +604,20 @@ export class SolanaWalletService {
   }
 }
 
-// Create and export singleton instance
-export const solanaWalletService = new SolanaWalletService();
+// Create and export singleton instance with lazy initialization
+let _solanaWalletServiceInstance: SolanaWalletService | null = null;
+
+export const solanaWalletService = {
+  get instance(): SolanaWalletService {
+    if (!_solanaWalletServiceInstance) {
+      _solanaWalletServiceInstance = new SolanaWalletService();
+    }
+    return _solanaWalletServiceInstance;
+  },
+  
+  // Proxy all methods
+  connectWallet: (walletName: string) => solanaWalletService.instance.connectWallet(walletName),
+  disconnectWallet: () => solanaWalletService.instance.disconnectWallet(),
+  getWalletBalances: (address: string) => solanaWalletService.instance.getWalletBalances(address)
+};
 export default solanaWalletService;

@@ -45,7 +45,7 @@ import {
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
 import { useAppStore, HyperLendMarket, HyperLendPosition } from '@/lib/stores/app-store'
-import { hyperLendService, LendingRate, LiquidationAlert, MarketConditions } from '@/lib/services/hyperlend-service'
+import { LendingRate, LiquidationAlert, MarketConditions } from '@/lib/services/hyperlend-service'
 
 interface PositionMetrics {
   totalSupplied: number
@@ -108,6 +108,7 @@ export function HyperLendView() {
   const initializeService = async () => {
     setIsLoading(true)
     try {
+      const { hyperLendService } = await import('@/lib/services/hyperlend-service')
       await hyperLendService.initialize()
       await loadAllData()
     } catch (error) {
@@ -119,6 +120,7 @@ export function HyperLendView() {
 
   const loadAllData = async () => {
     try {
+      const { hyperLendService } = await import('@/lib/services/hyperlend-service')
       const [marketsData, ratesData, positionsData, conditionsData, alertsData] = await Promise.all([
         hyperLendService.getMarkets(),
         hyperLendService.getLendingRates(),
@@ -163,6 +165,7 @@ export function HyperLendView() {
     const avgBorrowAPR = totalBorrowed > 0 ? weightedBorrowAPR / totalBorrowed : 0
     const netAPY = avgSupplyAPR - avgBorrowAPR
 
+    const { hyperLendService } = await import('@/lib/services/hyperlend-service')
     const healthFactor = await hyperLendService.calculateHealthFactor('user123')
     const borrowingPower = await hyperLendService.getBorrowingPower('user123')
 
@@ -186,6 +189,7 @@ export function HyperLendView() {
 
     setIsLoading(true)
     try {
+      const { hyperLendService } = await import('@/lib/services/hyperlend-service')
       const txHash = await hyperLendService.supply(
         supplyForm.asset,
         parseFloat(supplyForm.amount),
@@ -209,6 +213,7 @@ export function HyperLendView() {
 
     setIsLoading(true)
     try {
+      const { hyperLendService } = await import('@/lib/services/hyperlend-service')
       const txHash = await hyperLendService.borrow(
         borrowForm.asset,
         parseFloat(borrowForm.amount)

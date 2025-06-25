@@ -647,6 +647,20 @@ export class SonicWalletService {
   }
 }
 
-// Create and export singleton instance
-export const sonicWalletService = new SonicWalletService();
+// Create and export singleton instance with lazy initialization
+let _sonicWalletServiceInstance: SonicWalletService | null = null;
+
+export const sonicWalletService = {
+  get instance(): SonicWalletService {
+    if (!_sonicWalletServiceInstance) {
+      _sonicWalletServiceInstance = new SonicWalletService();
+    }
+    return _sonicWalletServiceInstance;
+  },
+  
+  // Proxy all methods
+  connectWallet: (walletName: string) => sonicWalletService.instance.connectWallet(walletName),
+  disconnectWallet: () => sonicWalletService.instance.disconnectWallet(),
+  getWalletBalances: (address: string) => sonicWalletService.instance.getWalletBalances(address)
+};
 export default sonicWalletService;
