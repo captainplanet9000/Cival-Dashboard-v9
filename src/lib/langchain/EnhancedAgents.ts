@@ -800,5 +800,19 @@ export class AgentFactory {
   }
 }
 
-// Export singleton factory
-export const agentFactory = new AgentFactory()
+// Export lazy singleton to prevent circular dependencies
+let _agentFactory: AgentFactory | null = null
+
+export function getAgentFactory(): AgentFactory {
+  if (!_agentFactory) {
+    _agentFactory = new AgentFactory()
+  }
+  return _agentFactory
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const agentFactory = new Proxy({} as AgentFactory, {
+  get(target, prop) {
+    return getAgentFactory()[prop as keyof AgentFactory]
+  }
+})

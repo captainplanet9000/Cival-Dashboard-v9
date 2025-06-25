@@ -823,5 +823,19 @@ export class LangChainAGUIIntegration extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const langChainAGUIIntegration = new LangChainAGUIIntegration()
+// Export lazy singleton to prevent circular dependencies
+let _langChainAGUIIntegration: LangChainAGUIIntegration | null = null
+
+export function getLangChainAGUIIntegration(): LangChainAGUIIntegration {
+  if (!_langChainAGUIIntegration) {
+    _langChainAGUIIntegration = new LangChainAGUIIntegration()
+  }
+  return _langChainAGUIIntegration
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const langChainAGUIIntegration = new Proxy({} as LangChainAGUIIntegration, {
+  get(target, prop) {
+    return getLangChainAGUIIntegration()[prop as keyof LangChainAGUIIntegration]
+  }
+})

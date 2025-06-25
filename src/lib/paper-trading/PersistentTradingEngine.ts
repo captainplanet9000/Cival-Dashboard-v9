@@ -584,7 +584,21 @@ class PersistentTradingEngine extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const persistentTradingEngine = new PersistentTradingEngine()
+// Export lazy singleton to prevent circular dependencies
+let _persistentTradingEngine: PersistentTradingEngine | null = null
+
+export function getPersistentTradingEngine(): PersistentTradingEngine {
+  if (!_persistentTradingEngine) {
+    _persistentTradingEngine = new PersistentTradingEngine()
+  }
+  return _persistentTradingEngine
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const persistentTradingEngine = new Proxy({} as PersistentTradingEngine, {
+  get(target, prop) {
+    return getPersistentTradingEngine()[prop as keyof PersistentTradingEngine]
+  }
+})
 
 export default PersistentTradingEngine

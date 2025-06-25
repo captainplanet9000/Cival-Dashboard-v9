@@ -431,5 +431,19 @@ Respond with JSON: {"decision": "option", "reasoning": "brief explanation", "con
   }
 }
 
-// Export singleton instance
-export const langChainService = new LangChainService()
+// Export lazy singleton to prevent circular dependencies
+let _langChainService: LangChainService | null = null
+
+export function getLangChainService(): LangChainService {
+  if (!_langChainService) {
+    _langChainService = new LangChainService()
+  }
+  return _langChainService
+}
+
+// Keep the old export for backward compatibility but make it lazy
+export const langChainService = new Proxy({} as LangChainService, {
+  get(target, prop) {
+    return getLangChainService()[prop as keyof LangChainService]
+  }
+})

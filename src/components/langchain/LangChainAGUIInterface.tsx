@@ -30,8 +30,7 @@ import {
   Clock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { langChainAGUIIntegration } from '@/lib/langchain/AGUIIntegration'
-import { langChainAGUIRegistry } from '@/lib/ag-ui/langchain-registry'
+// Services will be lazy loaded to prevent circular dependencies
 import { AGUIEvent, AGUITextEvent, AGUIProgressEvent } from '@/lib/ag-ui/types'
 import MCPIntegrationPanel from './MCPIntegrationPanel'
 
@@ -56,33 +55,74 @@ export function LangChainAGUIInterface({
   const [agents, setAgents] = useState<any[]>([])
   const [status, setStatus] = useState<any>({})
   const [error, setError] = useState<string | null>(null)
+  const [services, setServices] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  /**
+   * Lazy load services to prevent circular dependencies
+   */
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        // Only load on client side
+        if (typeof window === 'undefined') {
+          return
+        }
+
+        setIsLoading(true)
+        
+        const [
+          { langChainAGUIIntegration },
+          { langChainAGUIRegistry }
+        ] = await Promise.all([
+          import('@/lib/langchain/AGUIIntegration'),
+          import('@/lib/ag-ui/langchain-registry')
+        ])
+
+        setServices({
+          langChainAGUIIntegration,
+          langChainAGUIRegistry
+        })
+
+      } catch (error) {
+        console.error('Failed to load LangChain AG-UI services:', error)
+        setError('Failed to load AG-UI services')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadServices()
+  }, [])
 
   /**
    * Initialize the LangChain AG-UI integration
    */
   useEffect(() => {
+    if (!services || isLoading) return
+
     const initializeIntegration = async () => {
       try {
         // Set up event listeners
-        langChainAGUIIntegration.on('integration:started', () => {
+        services.langChainAGUIIntegration.on('integration:started', () => {
           setIsStarted(true)
           setError(null)
         })
 
-        langChainAGUIIntegration.on('integration:stopped', () => {
+        services.langChainAGUIIntegration.on('integration:stopped', () => {
           setIsStarted(false)
         })
 
-        langChainAGUIIntegration.on('agui:connected', () => {
+        services.langChainAGUIIntegration.on('agui:connected', () => {
           setIsConnected(true)
           setError(null)
         })
 
-        langChainAGUIIntegration.on('agui:disconnected', () => {
+        services.langChainAGUIIntegration.on('agui:disconnected', () => {
           setIsConnected(false)
         })
 
-        langChainAGUIIntegration.on('agui:error', (error) => {
+        services.langChainAGUIIntegration.on('agui:error', (error) => {
           setError(error.message)
         })
 
@@ -108,15 +148,17 @@ export function LangChainAGUIInterface({
     }
 
     initializeIntegration()
-  }, [autoStart])
+  }, [services, isLoading, autoStart])
 
   /**
    * Update status and agents
    */
   const updateStatus = useCallback(async () => {
+    if (!services) return
+    
     try {
-      const registeredAgents = langChainAGUIRegistry.getRegisteredAgents()
-      const integrationStatus = langChainAGUIIntegration.getStatus()
+      const registeredAgents = services.langChainAGUIRegistry.getRegisteredAgents()
+      const integrationStatus = services.langChainAGUIIntegration.getStatus()
       
       setAgents(registeredAgents)
       setStatus(integrationStatus)
@@ -136,7 +178,7 @@ export function LangChainAGUIInterface({
   const handleStart = async () => {
     try {
       setIsProcessing(true)
-      await langChainAGUIIntegration.start()
+      await services.langChainAGUIIntegration.start()
     } catch (error) {
       setError(error.toString())
     } finally {
@@ -311,6 +353,18 @@ export function LangChainAGUIInterface({
           </div>
         )
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className={cn('flex items-center justify-center min-h-96', className)}>
+        <div className="text-center">
+          <Brain className="h-12 w-12 animate-pulse text-purple-500 mx-auto mb-4" />
+          <div className="text-lg font-semibold">Loading AG-UI Services...</div>
+          <div className="text-gray-500 text-sm">Initializing LangChain integration</div>
+        </div>
+      </div>
+    )
   }
 
   return (
