@@ -86,6 +86,9 @@ import CalendarWrapper from '@/components/calendar/CalendarWrapper'
 // Import chart components
 import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'
 
+// Import error handling
+import ErrorBoundary, { ComponentFallback } from '@/components/ErrorBoundary'
+
 // Lazy import autonomous trading components to prevent initialization issues
 
 // Import existing page components
@@ -603,10 +606,10 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
       
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>Portfolio Value: ${metrics.totalValue.toLocaleString()}</div>
-        <div>Active Positions: {metrics.activePositions}</div>
-        <div>Win Rate: {metrics.winRate.toFixed(1)}%</div>
-        <div>System Health: {systemStatus.system_health}%</div>
+        <div>Portfolio Value: ${(metrics?.totalValue || 0).toLocaleString()}</div>
+        <div>Active Positions: {metrics?.activePositions || 0}</div>
+        <div>Win Rate: {(metrics?.winRate || 0).toFixed(1)}%</div>
+        <div>System Health: {(systemStatus?.system_health || 0)}%</div>
       </div>
 
       {/* Main Dashboard Grid */}
@@ -623,11 +626,11 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
             <PortfolioPerformanceChart />
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{formatPrice(metrics.totalPnL)}</p>
+                <p className="text-2xl font-bold text-green-600">{formatPrice(metrics?.totalPnL || 0)}</p>
                 <p className="text-sm text-gray-600">Total P&L</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{formatPrice(metrics.dailyPnL)}</p>
+                <p className="text-2xl font-bold text-blue-600">{formatPrice(metrics?.dailyPnL || 0)}</p>
                 <p className="text-sm text-gray-600">Daily P&L</p>
               </div>
             </div>
@@ -635,9 +638,14 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
         </Card>
 
         {/* LangChain AI Status */}
-        <LangChainStatusWidget
-          onViewDetails={() => setActiveTab('langchain-agui')}
-        />
+        <ErrorBoundary 
+          componentName="LangChain Status Widget"
+          fallback={<ComponentFallback componentName="LangChain Status" />}
+        >
+          <LangChainStatusWidget
+            onViewDetails={() => setActiveTab('langchain-agui')}
+          />
+        </ErrorBoundary>
       </div>
 
       {/* Recent Activity and Risk Metrics */}

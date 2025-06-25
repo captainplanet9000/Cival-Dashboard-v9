@@ -45,15 +45,40 @@ export function LangChainStatusWidget({
       try {
         setIsLoading(true)
 
-        // Get orchestrator status
-        const orchestratorStatus = langGraphOrchestrator.getStatus()
-        const analytics = langGraphOrchestrator.getPerformanceAnalytics()
+        // Check if services are available
+        if (!langGraphOrchestrator || !langChainService || !langChainMCPIntegration) {
+          setHealth('degraded')
+          setIsLoading(false)
+          return
+        }
+
+        // Get orchestrator status with null checks
+        const orchestratorStatus = langGraphOrchestrator.getStatus() || {
+          isRunning: false,
+          totalAgents: 0,
+          activeAgents: 0,
+          performance: { totalTrades: 0, totalPnL: 0, winRate: 0 }
+        }
         
-        // Get LangChain service health
-        const serviceHealth = await langChainService.healthCheck()
+        const analytics = langGraphOrchestrator.getPerformanceAnalytics() || {
+          overall: { totalTrades: 0, totalPnL: 0, winRate: 0 }
+        }
         
-        // Get MCP integration stats
-        const mcpIntegrationStats = langChainMCPIntegration.getIntegrationStats()
+        // Get LangChain service health with fallback
+        let serviceHealth
+        try {
+          serviceHealth = await langChainService.healthCheck()
+        } catch (error) {
+          serviceHealth = { status: 'unhealthy', errors: ['Service unavailable'] }
+        }
+        
+        // Get MCP integration stats with fallback
+        let mcpIntegrationStats
+        try {
+          mcpIntegrationStats = langChainMCPIntegration.getIntegrationStats()
+        } catch (error) {
+          mcpIntegrationStats = { connectedClients: 0, toolsRegistered: 0, activeIntegrations: 0 }
+        }
 
         setStatus({
           ...orchestratorStatus,
@@ -61,12 +86,12 @@ export function LangChainStatusWidget({
           serviceHealth
         })
         
-        setMcpStats(mcpIntegrationStats)
+        setMcpStats(mcpIntegrationStats || {})
 
         // Determine overall health
-        if (serviceHealth.status === 'healthy' && orchestratorStatus.isRunning) {
+        if (serviceHealth?.status === 'healthy' && orchestratorStatus?.isRunning) {
           setHealth('healthy')
-        } else if (serviceHealth.status === 'degraded' || !orchestratorStatus.isRunning) {
+        } else if (serviceHealth?.status === 'degraded' || !orchestratorStatus?.isRunning) {
           setHealth('degraded')
         } else {
           setHealth('unhealthy')
@@ -75,6 +100,16 @@ export function LangChainStatusWidget({
       } catch (error) {
         console.error('Failed to update LangChain status:', error)
         setHealth('unhealthy')
+        // Set safe fallback state
+        setStatus({
+          isRunning: false,
+          totalAgents: 0,
+          activeAgents: 0,
+          performance: { totalTrades: 0, totalPnL: 0, winRate: 0 },
+          analytics: { overall: { totalTrades: 0, totalPnL: 0, winRate: 0 } },
+          serviceHealth: { status: 'unhealthy', errors: ['Component error'] }
+        })
+        setMcpStats({})
       } finally {
         setIsLoading(false)
       }
