@@ -115,15 +115,27 @@ export class TradingStrategies {
       },
 
       macd: (data: number[], fastPeriod: number, slowPeriod: number, signalPeriod: number) => {
-        const fastEMA = this.indicators.ema(data, fastPeriod)
-        const slowEMA = this.indicators.ema(data, slowPeriod)
+        // Calculate EMA directly instead of using this.indicators
+        const calculateEMA = (data: number[], period: number): number[] => {
+          const result: number[] = []
+          const multiplier = 2 / (period + 1)
+          result[0] = data[0]
+
+          for (let i = 1; i < data.length; i++) {
+            result[i] = (data[i] * multiplier) + (result[i - 1] * (1 - multiplier))
+          }
+          return result
+        }
+
+        const fastEMA = calculateEMA(data, fastPeriod)
+        const slowEMA = calculateEMA(data, slowPeriod)
         const macd: number[] = []
         
         for (let i = 0; i < Math.min(fastEMA.length, slowEMA.length); i++) {
           macd.push(fastEMA[i] - slowEMA[i])
         }
 
-        const signal = this.indicators.ema(macd, signalPeriod)
+        const signal = calculateEMA(macd, signalPeriod)
         const histogram: number[] = []
         
         for (let i = 0; i < Math.min(macd.length, signal.length); i++) {
@@ -134,7 +146,6 @@ export class TradingStrategies {
       },
 
       bollingerBands: (data: number[], period: number, stdDev: number) => {
-        const sma = this.indicators.sma(data, period)
         const upper: number[] = []
         const middle: number[] = []
         const lower: number[] = []
@@ -162,7 +173,12 @@ export class TradingStrategies {
           k.push(((close[i] - lowestLow) / (highestHigh - lowestLow)) * 100)
         }
 
-        const d = this.indicators.sma(k, dPeriod)
+        // Calculate SMA of k directly instead of using this.indicators
+        const d: number[] = []
+        for (let i = dPeriod - 1; i < k.length; i++) {
+          const sum = k.slice(i - dPeriod + 1, i + 1).reduce((a, b) => a + b, 0)
+          d.push(sum / dPeriod)
+        }
         return { k, d }
       },
 
@@ -176,7 +192,13 @@ export class TradingStrategies {
           trueRanges.push(Math.max(tr1, tr2, tr3))
         }
 
-        return this.indicators.sma(trueRanges, period)
+        // Calculate SMA of true ranges directly instead of using this.indicators
+        const result: number[] = []
+        for (let i = period - 1; i < trueRanges.length; i++) {
+          const sum = trueRanges.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0)
+          result.push(sum / period)
+        }
+        return result
       },
 
       volumeProfile: (ohlcv: OHLCVData[]): {price: number, volume: number}[] => {
