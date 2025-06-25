@@ -72,6 +72,9 @@ import { CalendarView } from '@/components/calendar/CalendarView'
 // Import chart components
 import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'
 
+// Import autonomous trading components
+import AutonomousTradingDashboard from '@/components/autonomous/AutonomousTradingDashboard'
+
 // Import existing page components
 import dynamic from 'next/dynamic'
 
@@ -819,6 +822,7 @@ function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
 
   const agentSubTabs = [
     { id: 'overview', label: 'Overview', component: <AgentOverviewPanel metrics={metrics} /> },
+    { id: 'autonomous', label: 'Autonomous', component: <AutonomousTradingDashboard /> },
     { id: 'agent-farm', label: 'Agent Farm', component: <AgentFarmDashboard /> },
     { id: 'control-panel', label: 'Control', component: <AgentControlPanel /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <AgentPaperTradingDashboard /> },
@@ -856,7 +860,7 @@ function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
       <Card>
         <CardContent className="p-6">
           <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
               {agentSubTabs.map((tab) => (
                 <TabsTrigger
                   key={tab.id}
