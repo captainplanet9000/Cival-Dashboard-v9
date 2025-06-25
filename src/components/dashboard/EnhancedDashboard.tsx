@@ -68,6 +68,7 @@ import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 // Import calendar component
 import { CalendarView } from '@/components/calendar/CalendarView'
+import CalendarWrapper from '@/components/calendar/CalendarWrapper'
 
 // Import chart components
 import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'

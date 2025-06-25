@@ -105,6 +105,12 @@ import {
 // Import Chainlink components
 import ChainlinkMarketData from './ChainlinkMarketData'
 
+// Import missing premium components
+import { AdvancedOrderBook } from '@/components/premium-ui/trading/advanced-orderbook'
+import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'
+import { AdvancedPortfolioAnalytics } from '@/components/premium-ui/portfolio/advanced-portfolio-analytics'
+import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
+
 export function PaperTradingDashboard() {
   const {
     portfolios,
