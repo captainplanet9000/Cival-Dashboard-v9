@@ -48,6 +48,9 @@ import { AgentPaperTradingDashboard } from '@/components/agent/AgentPaperTrading
 import { AgentCreationWizard } from '@/components/modals/AgentCreationWizard'
 import { AgentManagementSuite } from '@/components/modals/AgentManagementSuite'
 
+// Import LangChain components
+import LangChainStatusWidget from '@/components/langchain/LangChainStatusWidget'
+
 // Import utilities and API
 import { backendApi } from '@/lib/api/backend-client'
 import { formatCurrency, formatPercent } from '@/lib/utils'
@@ -658,6 +661,8 @@ export default function EnhancedAgentsTab() {
             </p>
           </CardContent>
         </Card>
+        {/* LangChain Integration Status */}
+        <LangChainStatusWidget compact={true} />
       </div>
 
       {/* Main Agent Interface */}

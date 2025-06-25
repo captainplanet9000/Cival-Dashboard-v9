@@ -59,6 +59,18 @@ import { MemoryAnalyticsDashboard } from '@/components/memory/MemoryAnalyticsDas
 // Import AG-UI components
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
+// Import LangChain AG-UI Interface
+const LangChainAGUIInterface = dynamic(() => import('@/components/langchain/LangChainAGUIInterface'), {
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading LangChain AG-UI Interface...</div>
+})
+
+// Import LangChain Status Widget
+import LangChainStatusWidget from '@/components/langchain/LangChainStatusWidget'
+
+// Import LangChain Dashboard Tab
+import LangChainDashboardTab from '@/components/dashboard/LangChainDashboardTab'
+
 // Import consolidated dashboard components
 import LiveTradingWithMarketData from '@/components/dashboard/LiveTradingWithMarketData'
 import VaultBankingWithMultiChain from '@/components/dashboard/VaultBankingWithMultiChain'
@@ -347,9 +359,15 @@ export function EnhancedDashboard() {
       component: <VaultIntegrationPanel />
     },
     {
+      id: 'langchain-agui',
+      label: 'LangChain AI',
+      icon: <Brain className="h-4 w-4" />,
+      component: <LangChainDashboardTab />
+    },
+    {
       id: 'advanced',
       label: 'Advanced',
-      icon: <Brain className="h-4 w-4" />,
+      icon: <Settings className="h-4 w-4" />,
       component: <AdvancedDashboardTab />
     }
   ]
@@ -644,43 +662,10 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           </CardContent>
         </Card>
 
-        {/* Live Trading Status with Agent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-blue-500" />
-              System Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Agent Activity Summary */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <p className="text-2xl font-bold text-purple-600">{metrics.activeAgents}</p>
-                  <p className="text-sm text-gray-600">Active Agents</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{metrics.activeFarms}</p>
-                  <p className="text-sm text-gray-600">Active Farms</p>
-                </div>
-              </div>
-              
-              {/* Trading Status */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="text-center">
-                  <p className="text-xl font-bold text-blue-600">{systemStatus.active_signals}</p>
-                  <p className="text-xs text-gray-600">Signals</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-bold text-purple-600">{systemStatus.active_opportunities}</p>
-                  <p className="text-xs text-gray-600">Opportunities</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-bold text-green-600">{systemStatus.active_orders}</p>
-                  <p className="text-xs text-gray-600">Orders</p>
-                </div>
-              </div>
+        {/* LangChain AI Status */}
+        <LangChainStatusWidget
+          onViewDetails={() => setActiveTab('langchain-agui')}
+        />
               
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Market: <span className="font-medium">{systemStatus.market_condition}</span></p>
