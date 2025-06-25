@@ -20,9 +20,7 @@ import {
   Zap
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { langChainService } from '@/lib/langchain/LangChainService'
-import { langGraphOrchestrator } from '@/lib/langchain/LangGraphOrchestratorClient'
-import { langChainMCPIntegration } from '@/lib/langchain/MCPIntegration'
+// Services will be lazy loaded to prevent circular dependencies
 
 interface LangChainStatusWidgetProps {
   className?: string
@@ -39,35 +37,80 @@ export function LangChainStatusWidget({
   const [mcpStats, setMcpStats] = useState<any>({})
   const [health, setHealth] = useState<'healthy' | 'degraded' | 'unhealthy'>('healthy')
   const [isLoading, setIsLoading] = useState(true)
+  const [services, setServices] = useState<any>(null)
 
+  // Lazy load services to prevent circular dependencies
   useEffect(() => {
-    const updateStatus = async () => {
+    const loadServices = async () => {
       try {
-        setIsLoading(true)
-
-        // Check if services are available
-        if (!langGraphOrchestrator || !langChainService || !langChainMCPIntegration) {
-          setHealth('degraded')
-          setIsLoading(false)
+        // Only load on client side
+        if (typeof window === 'undefined') {
           return
         }
 
+        setIsLoading(true)
+        
+        const [
+          { langGraphOrchestrator },
+          { langChainService },
+          { langChainMCPIntegration }
+        ] = await Promise.all([
+          import('@/lib/langchain/LangGraphOrchestratorClient'),
+          import('@/lib/langchain/LangChainService'),
+          import('@/lib/langchain/MCPIntegration')
+        ])
+
+        setServices({
+          langGraphOrchestrator,
+          langChainService,
+          langChainMCPIntegration
+        })
+
+      } catch (error) {
+        console.error('Failed to load LangChain services:', error)
+        setHealth('degraded')
+        // Set fallback services
+        setServices({
+          langGraphOrchestrator: { 
+            getStatus: () => ({ isRunning: false, totalAgents: 0, activeAgents: 0 }),
+            getPerformanceAnalytics: () => ({ overall: { totalTrades: 0, totalPnL: 0, winRate: 0 } })
+          },
+          langChainService: { 
+            healthCheck: async () => ({ status: 'unavailable' }) 
+          },
+          langChainMCPIntegration: { 
+            getIntegrationStats: () => ({ connectedClients: 0, toolsRegistered: 0, activeIntegrations: 0 })
+          }
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadServices()
+  }, [])
+
+  useEffect(() => {
+    if (!services || isLoading) return
+
+    const updateStatus = async () => {
+      try {
         // Get orchestrator status with null checks
-        const orchestratorStatus = langGraphOrchestrator.getStatus() || {
+        const orchestratorStatus = services.langGraphOrchestrator.getStatus() || {
           isRunning: false,
           totalAgents: 0,
           activeAgents: 0,
           performance: { totalTrades: 0, totalPnL: 0, winRate: 0 }
         }
         
-        const analytics = langGraphOrchestrator.getPerformanceAnalytics() || {
+        const analytics = services.langGraphOrchestrator.getPerformanceAnalytics() || {
           overall: { totalTrades: 0, totalPnL: 0, winRate: 0 }
         }
         
         // Get LangChain service health with fallback
         let serviceHealth
         try {
-          serviceHealth = await langChainService.healthCheck()
+          serviceHealth = await services.langChainService.healthCheck()
         } catch (error) {
           serviceHealth = { status: 'unhealthy', errors: ['Service unavailable'] }
         }
@@ -75,7 +118,7 @@ export function LangChainStatusWidget({
         // Get MCP integration stats with fallback
         let mcpIntegrationStats
         try {
-          mcpIntegrationStats = langChainMCPIntegration.getIntegrationStats()
+          mcpIntegrationStats = services.langChainMCPIntegration.getIntegrationStats()
         } catch (error) {
           mcpIntegrationStats = { connectedClients: 0, toolsRegistered: 0, activeIntegrations: 0 }
         }
@@ -119,7 +162,7 @@ export function LangChainStatusWidget({
     const interval = setInterval(updateStatus, 30000) // Update every 30 seconds
 
     return () => clearInterval(interval)
-  }, [])
+  }, [services, isLoading])
 
   const getHealthColor = () => {
     switch (health) {

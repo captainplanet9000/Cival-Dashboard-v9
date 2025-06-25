@@ -347,11 +347,12 @@ export default function EnhancedAgentsTab() {
             conversationCount: 23
           }
         ])
+        }
       }
     } catch (error) {
       console.error('Failed to fetch agents:', error)
     }
-  }, [])
+  }, []);
 
   // Load trading permissions using existing utility
   const fetchPermissions = useCallback(async () => {

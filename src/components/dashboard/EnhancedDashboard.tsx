@@ -40,11 +40,17 @@ import { SystemHealthDashboard } from '@/components/system/SystemHealthDashboard
 import { MCPToolsPanel } from '@/components/mcp/MCPToolsPanel'
 import { VaultIntegrationPanel } from '@/components/vault/VaultIntegrationPanel'
 
-// Import enhanced components
-import EnhancedAgentsTab from '@/components/dashboard/EnhancedAgentsTab'
+// Import enhanced components with dynamic import to prevent circular dependencies
+const EnhancedAgentsTab = dynamic(() => import('@/components/dashboard/EnhancedAgentsTab'), {
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Enhanced Agents...</div>
+})
 
-// Import enhanced farm dashboard
-import EnhancedFarmDashboard from '@/components/farm/EnhancedFarmDashboard'
+// Import enhanced farm dashboard with dynamic import to prevent circular dependencies
+const EnhancedFarmDashboard = dynamic(() => import('@/components/farm/EnhancedFarmDashboard'), {
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Farm Dashboard...</div>
+})
 
 // Import live market data component
 import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
@@ -62,15 +68,21 @@ const LangChainAGUIInterface = dynamic(() => import('@/components/langchain/Lang
   loading: () => <div className="p-6 text-center">Loading LangChain AG-UI Interface...</div>
 })
 
-// Import LangChain Status Widget
-import LangChainStatusWidget from '@/components/langchain/LangChainStatusWidget'
+// Import LangChain Status Widget with dynamic import to prevent circular dependencies
+const LangChainStatusWidget = dynamic(() => import('@/components/langchain/LangChainStatusWidget'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading LangChain Status...</div>
+})
 
 // Import simplified AI components
 import SimpleAIStatusWidget from '@/components/ai/SimpleAIStatusWidget'
 import SimpleAIRecommendations from '@/components/ai/SimpleAIRecommendations'
 
-// Import LangChain Dashboard Tab
-import LangChainDashboardTab from '@/components/dashboard/LangChainDashboardTab'
+// Import LangChain Dashboard Tab with dynamic import to prevent circular dependencies
+const LangChainDashboardTab = dynamic(() => import('@/components/dashboard/LangChainDashboardTab'), {
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading LangChain Dashboard...</div>
+})
 
 // Import consolidated dashboard components
 import LiveTradingWithMarketData from '@/components/dashboard/LiveTradingWithMarketData'
@@ -319,7 +331,7 @@ export default function EnhancedDashboard() {
       id: 'agents',
       label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <EnhancedAgentsTab metrics={metrics} />
+      component: <LocalEnhancedAgentsTab metrics={metrics} />
     },
     {
       id: 'farms',
@@ -780,7 +792,7 @@ function EnhancedTradingTab() {
 }
 
 // Enhanced Agents Tab with all functionality
-function EnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
+function LocalEnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
   const [agentSubTab, setAgentSubTab] = useState('overview')
 
   const agentSubTabs = [

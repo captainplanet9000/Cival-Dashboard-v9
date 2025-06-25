@@ -32,10 +32,7 @@ import AgentRecommendations from '@/components/langchain/AgentRecommendations'
 import LangSmithObservabilityDashboard from '@/components/langchain/LangSmithObservabilityDashboard'
 import AdvancedLearningDashboard from '@/components/langchain/AdvancedLearningDashboard'
 
-// Import services
-import { langGraphOrchestrator } from '@/lib/langchain/LangGraphOrchestratorClient'
-import { langChainService } from '@/lib/langchain/LangChainService'
-import { langChainMCPIntegration } from '@/lib/langchain/MCPIntegration'
+// Services will be lazy loaded to prevent circular dependencies
 
 interface LangChainDashboardTabProps {
   className?: string
@@ -46,22 +43,69 @@ export function LangChainDashboardTab({ className }: LangChainDashboardTabProps)
   const [serviceHealth, setServiceHealth] = useState<any>({})
   const [mcpStats, setMcpStats] = useState<any>({})
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT')
+  const [services, setServices] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'AVAX/USDT', 'MATIC/USDT']
 
+  // Lazy load services to prevent circular dependencies
   useEffect(() => {
+    const loadServices = async () => {
+      try {
+        // Only load on client side
+        if (typeof window === 'undefined') {
+          return
+        }
+
+        setIsLoading(true)
+        
+        const [
+          { langGraphOrchestrator },
+          { langChainService },
+          { langChainMCPIntegration }
+        ] = await Promise.all([
+          import('@/lib/langchain/LangGraphOrchestratorClient'),
+          import('@/lib/langchain/LangChainService'),
+          import('@/lib/langchain/MCPIntegration')
+        ])
+
+        setServices({
+          langGraphOrchestrator,
+          langChainService,
+          langChainMCPIntegration
+        })
+
+      } catch (error) {
+        console.error('Failed to load LangChain services:', error)
+        // Set fallback services
+        setServices({
+          langGraphOrchestrator: { getStatus: () => ({ status: 'unavailable' }) },
+          langChainService: { healthCheck: async () => ({ status: 'unavailable' }) },
+          langChainMCPIntegration: { getIntegrationStats: () => ({ tools: 0 }) }
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadServices()
+  }, [])
+
+  useEffect(() => {
+    if (!services || isLoading) return
+
     const updateData = async () => {
       try {
         // Get orchestrator status
-        const status = langGraphOrchestrator.getStatus()
+        const status = services.langGraphOrchestrator.getStatus()
         setOrchestratorStatus(status)
 
         // Get service health
-        const health = await langChainService.healthCheck()
+        const health = await services.langChainService.healthCheck()
         setServiceHealth(health)
 
         // Get MCP stats
-        const stats = langChainMCPIntegration.getIntegrationStats()
+        const stats = services.langChainMCPIntegration.getIntegrationStats()
         setMcpStats(stats)
 
       } catch (error) {
@@ -72,7 +116,19 @@ export function LangChainDashboardTab({ className }: LangChainDashboardTabProps)
     updateData()
     const interval = setInterval(updateData, 10000)
     return () => clearInterval(interval)
-  }, [])
+  }, [services, isLoading])
+
+  if (isLoading) {
+    return (
+      <div className={cn('flex items-center justify-center min-h-96', className)}>
+        <div className="text-center">
+          <Brain className="h-12 w-12 animate-pulse text-purple-500 mx-auto mb-4" />
+          <div className="text-lg font-semibold">Loading LangChain Services...</div>
+          <div className="text-gray-500 text-sm">Initializing AI agents and orchestrator</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn('space-y-6', className)}>
