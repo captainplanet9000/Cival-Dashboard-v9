@@ -1253,6 +1253,16 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const autonomousTradingOrchestrator = new AutonomousTradingOrchestrator()
+// Create singleton instance with lazy initialization
+let _autonomousTradingOrchestrator: AutonomousTradingOrchestrator | null = null
+
+export function getAutonomousTradingOrchestrator(): AutonomousTradingOrchestrator {
+  if (!_autonomousTradingOrchestrator) {
+    _autonomousTradingOrchestrator = new AutonomousTradingOrchestrator()
+  }
+  return _autonomousTradingOrchestrator
+}
+
+// For backwards compatibility
+export const autonomousTradingOrchestrator = getAutonomousTradingOrchestrator()
 export default autonomousTradingOrchestrator

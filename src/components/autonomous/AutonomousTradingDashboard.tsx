@@ -19,7 +19,7 @@ import {
   Settings, BarChart3, DollarSign, Clock, Users, Gauge
 } from 'lucide-react'
 
-import { autonomousTradingOrchestrator, AutonomousAgent, AgentDecision, MarketConditions } from '@/lib/autonomous/AutonomousTradingOrchestrator'
+import { getAutonomousTradingOrchestrator, AutonomousAgent, AgentDecision, MarketConditions } from '@/lib/autonomous/AutonomousTradingOrchestrator'
 import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
 
 interface DashboardMetrics {
@@ -59,10 +59,10 @@ export default function AutonomousTradingDashboard() {
   // Update data every 5 seconds
   useEffect(() => {
     const updateData = () => {
-      const currentAgents = autonomousTradingOrchestrator.getAgents()
+      const currentAgents = getAutonomousTradingOrchestrator().getAgents()
       setAgents(currentAgents)
-      setOrchestratorRunning(autonomousTradingOrchestrator.isRunning())
-      setMarketConditions(autonomousTradingOrchestrator.getMarketConditions())
+      setOrchestratorRunning(getAutonomousTradingOrchestrator().isRunning())
+      setMarketConditions(getAutonomousTradingOrchestrator().getMarketConditions())
       
       // Calculate metrics
       const activeAgents = currentAgents.filter(a => a.status === 'active')
@@ -101,32 +101,32 @@ export default function AutonomousTradingDashboard() {
       )
     }
 
-    autonomousTradingOrchestrator.on('decision:generated', handleDecisionGenerated)
-    autonomousTradingOrchestrator.on('decision:executed', handleDecisionExecuted)
+    getAutonomousTradingOrchestrator().on('decision:generated', handleDecisionGenerated)
+    getAutonomousTradingOrchestrator().on('decision:executed', handleDecisionExecuted)
 
     return () => {
       clearInterval(interval)
-      autonomousTradingOrchestrator.off('decision:generated', handleDecisionGenerated)
-      autonomousTradingOrchestrator.off('decision:executed', handleDecisionExecuted)
+      getAutonomousTradingOrchestrator().off('decision:generated', handleDecisionGenerated)
+      getAutonomousTradingOrchestrator().off('decision:executed', handleDecisionExecuted)
     }
   }, [])
 
   const handleStartOrchestrator = async () => {
-    await autonomousTradingOrchestrator.start()
+    await getAutonomousTradingOrchestrator().start()
     setOrchestratorRunning(true)
   }
 
   const handleStopOrchestrator = async () => {
-    await autonomousTradingOrchestrator.stop()
+    await getAutonomousTradingOrchestrator().stop()
     setOrchestratorRunning(false)
   }
 
   const handlePauseOrchestrator = async () => {
-    await autonomousTradingOrchestrator.pause()
+    await getAutonomousTradingOrchestrator().pause()
   }
 
   const handleResumeOrchestrator = async () => {
-    await autonomousTradingOrchestrator.resume()
+    await getAutonomousTradingOrchestrator().resume()
   }
 
   const handleToggleAgent = async (agentId: string) => {
@@ -134,7 +134,7 @@ export default function AutonomousTradingDashboard() {
     if (!agent) return
 
     const newStatus = agent.status === 'active' ? 'paused' : 'active'
-    await autonomousTradingOrchestrator.setAgentStatus(agentId, newStatus)
+    await getAutonomousTradingOrchestrator().setAgentStatus(agentId, newStatus)
   }
 
   const getStatusColor = (status: string) => {

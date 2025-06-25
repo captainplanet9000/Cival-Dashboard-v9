@@ -3,8 +3,8 @@
  * Initializes and coordinates all autonomous trading components
  */
 
-import { autonomousTradingOrchestrator } from './AutonomousTradingOrchestrator'
-import { marketDataSimulator } from './MarketDataSimulator'
+import { getAutonomousTradingOrchestrator } from './AutonomousTradingOrchestrator'
+import { getMarketDataSimulator } from './MarketDataSimulator'
 import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
 
 export class AutonomousStartupService {
@@ -19,7 +19,7 @@ export class AutonomousStartupService {
     try {
       // 1. Initialize market data simulator
       console.log('📊 Starting Market Data Simulator...')
-      marketDataSimulator.start()
+      getMarketDataSimulator().start()
 
       // 2. Create initial portfolios for agents
       console.log('💰 Initializing Agent Portfolios...')
@@ -52,7 +52,7 @@ export class AutonomousStartupService {
     console.log('▶️ Starting Autonomous Trading System...')
 
     // Start the orchestrator
-    await autonomousTradingOrchestrator.start()
+    await getAutonomousTradingOrchestrator().start()
     this.isRunning = true
 
     console.log('✅ Autonomous Trading System Started!')
@@ -64,17 +64,17 @@ export class AutonomousStartupService {
     console.log('⏹️ Stopping Autonomous Trading System...')
 
     // Stop the orchestrator
-    await autonomousTradingOrchestrator.stop()
+    await getAutonomousTradingOrchestrator().stop()
     
     // Keep market simulator running for data
-    // marketDataSimulator.stop()
+    // getMarketDataSimulator().stop()
 
     this.isRunning = false
     console.log('✅ Autonomous Trading System Stopped!')
   }
 
   private async initializeAgentPortfolios(): Promise<void> {
-    const agents = autonomousTradingOrchestrator.getAgents()
+    const agents = getAutonomousTradingOrchestrator().getAgents()
     
     for (const agent of agents) {
       try {
@@ -112,7 +112,7 @@ export class AutonomousStartupService {
     ]
 
     for (const pair of tradingPairs) {
-      marketDataSimulator.addSymbol(pair.symbol, pair.price)
+      getMarketDataSimulator().addSymbol(pair.symbol, pair.price)
       
       // Also update the paper trading engine directly
       persistentTradingEngine.updateMarketData(pair.symbol, {
@@ -143,20 +143,20 @@ export class AutonomousStartupService {
     return {
       initialized: this.isInitialized,
       running: this.isRunning,
-      orchestratorRunning: autonomousTradingOrchestrator.isRunning(),
-      simulatorRunning: marketDataSimulator.isSimulatorRunning(),
-      agents: autonomousTradingOrchestrator.getAgents().length,
-      activeAgents: autonomousTradingOrchestrator.getAgents().filter(a => a.status === 'active').length
+      orchestratorRunning: getAutonomousTradingOrchestrator().isRunning(),
+      simulatorRunning: getMarketDataSimulator().isSimulatorRunning(),
+      agents: getAutonomousTradingOrchestrator().getAgents().length,
+      activeAgents: getAutonomousTradingOrchestrator().getAgents().filter(a => a.status === 'active').length
     }
   }
 
   // Market simulation controls
   async triggerMarketEvent(type: 'crash' | 'rally', intensity: number = 0.15): Promise<void> {
     if (type === 'crash') {
-      marketDataSimulator.triggerMarketCrash(intensity)
+      getMarketDataSimulator().triggerMarketCrash(intensity)
       console.log(`💥 Triggered market crash with ${intensity * 100}% intensity`)
     } else {
-      marketDataSimulator.triggerMarketRally(intensity)
+      getMarketDataSimulator().triggerMarketRally(intensity)
       console.log(`🚀 Triggered market rally with ${intensity * 100}% intensity`)
     }
   }
@@ -167,7 +167,7 @@ export class AutonomousStartupService {
     enableNews?: boolean
     enableVolatilitySpikes?: boolean
   }): Promise<void> {
-    marketDataSimulator.setConfig(config)
+    getMarketDataSimulator().setConfig(config)
     console.log('⚙️ Updated market simulation config:', config)
   }
 
@@ -179,7 +179,7 @@ export class AutonomousStartupService {
     tradingPairs: string[]
     riskTolerance: 'conservative' | 'moderate' | 'aggressive'
   }): Promise<string> {
-    const agentId = await autonomousTradingOrchestrator.addAgent({
+    const agentId = await getAutonomousTradingOrchestrator().addAgent({
       name: config.name,
       type: config.type,
       config: {
@@ -204,7 +204,7 @@ export class AutonomousStartupService {
 
   // Performance monitoring
   getPerformanceMetrics() {
-    const agents = autonomousTradingOrchestrator.getAgents()
+    const agents = getAutonomousTradingOrchestrator().getAgents()
     const totalValue = agents.reduce((sum, agent) => {
       const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
       return sum + (portfolio?.totalValue || 0)
@@ -227,7 +227,7 @@ export class AutonomousStartupService {
       totalReturnPercent,
       avgWinRate,
       totalTrades,
-      marketConditions: autonomousTradingOrchestrator.getMarketConditions()
+      marketConditions: getAutonomousTradingOrchestrator().getMarketConditions()
     }
   }
 

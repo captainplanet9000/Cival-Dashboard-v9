@@ -46,19 +46,10 @@ export * from './portfolio'
 export * from './portfolio/advanced-portfolio-analytics'
 
 // 10. ADVANCED FEATURES COMPONENTS
-export * from './advanced'
 export * from './strategy/visual-strategy-builder'
 
-// 11. MULTI-ASSET COMPONENTS
-export * from './multi-asset'
-
-// 12. COMPLIANCE & ENTERPRISE COMPONENTS
-export * from './compliance'
+// 11. COMPLIANCE & RISK COMPONENTS
 export * from './compliance/risk-management-suite'
-export * from './enterprise'
-
-// 13. THEME & CUSTOMIZATION
-export * from './theme'
 
 // ===== TYPE DEFINITIONS =====
 export type {

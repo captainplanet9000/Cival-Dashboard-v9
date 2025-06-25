@@ -486,6 +486,16 @@ class MarketDataSimulator extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const marketDataSimulator = new MarketDataSimulator()
+// Create singleton instance with lazy initialization
+let _marketDataSimulator: MarketDataSimulator | null = null
+
+export function getMarketDataSimulator(): MarketDataSimulator {
+  if (!_marketDataSimulator) {
+    _marketDataSimulator = new MarketDataSimulator()
+  }
+  return _marketDataSimulator
+}
+
+// For backwards compatibility
+export const marketDataSimulator = getMarketDataSimulator()
 export default marketDataSimulator
