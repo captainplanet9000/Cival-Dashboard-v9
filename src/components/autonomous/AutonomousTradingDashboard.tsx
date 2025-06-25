@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 
 import { getAutonomousTradingOrchestrator, AutonomousAgent, AgentDecision, MarketConditions } from '@/lib/autonomous/AutonomousTradingOrchestrator'
-import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
+// Services will be lazy loaded to prevent circular dependencies
 
 interface DashboardMetrics {
   totalAgents: number
@@ -36,6 +36,8 @@ interface DashboardMetrics {
 export default function AutonomousTradingDashboard() {
   const [agents, setAgents] = useState<AutonomousAgent[]>([])
   const [orchestratorRunning, setOrchestratorRunning] = useState(false)
+  const [tradingEngine, setTradingEngine] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalAgents: 0,
     activeAgents: 0,
@@ -56,8 +58,31 @@ export default function AutonomousTradingDashboard() {
   const [recentDecisions, setRecentDecisions] = useState<AgentDecision[]>([])
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
 
+  // Lazy load trading engine
+  useEffect(() => {
+    const loadTradingEngine = async () => {
+      try {
+        // Only load on client side
+        if (typeof window === 'undefined') {
+          return
+        }
+
+        setIsLoading(true)
+        const { persistentTradingEngine } = await import('@/lib/paper-trading/PersistentTradingEngine')
+        setTradingEngine(persistentTradingEngine)
+      } catch (error) {
+        console.error('Failed to load trading engine:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadTradingEngine()
+  }, [])
+
   // Update data every 5 seconds
   useEffect(() => {
+    if (!tradingEngine || isLoading) return
     const updateData = () => {
       const currentAgents = getAutonomousTradingOrchestrator().getAgents()
       setAgents(currentAgents)
@@ -67,7 +92,7 @@ export default function AutonomousTradingDashboard() {
       // Calculate metrics
       const activeAgents = currentAgents.filter(a => a.status === 'active')
       const totalValue = currentAgents.reduce((sum, agent) => {
-        const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+        const portfolio = tradingEngine.getPortfolio(agent.portfolio)
         return sum + (portfolio?.totalValue || 0)
       }, 0)
       
@@ -109,7 +134,7 @@ export default function AutonomousTradingDashboard() {
       getAutonomousTradingOrchestrator().off('decision:generated', handleDecisionGenerated)
       getAutonomousTradingOrchestrator().off('decision:executed', handleDecisionExecuted)
     }
-  }, [])
+  }, [tradingEngine, isLoading])
 
   const handleStartOrchestrator = async () => {
     await getAutonomousTradingOrchestrator().start()
@@ -167,6 +192,18 @@ export default function AutonomousTradingDashboard() {
 
   const formatPercent = (value: number) => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96 p-6">
+        <div className="text-center">
+          <Bot className="h-12 w-12 animate-pulse text-blue-500 mx-auto mb-4" />
+          <div className="text-lg font-semibold">Loading Trading Engine...</div>
+          <div className="text-gray-500 text-sm">Initializing autonomous trading system</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -330,7 +367,7 @@ export default function AutonomousTradingDashboard() {
         <TabsContent value="agents" className="space-y-4">
           <div className="grid gap-4">
             {agents.map((agent) => {
-              const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+              const portfolio = tradingEngine?.getPortfolio(agent.portfolio)
               const isActive = agent.status === 'active'
               
               return (
