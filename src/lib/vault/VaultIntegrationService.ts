@@ -256,7 +256,7 @@ class VaultIntegrationService extends EventEmitter {
     }
 
     // Update agent persistence service
-    const agent = agentPersistenceService.getAgent(agentId)
+    const agent = this.agentPersistenceService?.getAgent(agentId)
     if (agent) {
       agent.walletIds = agentVaults
       this.persistData()
@@ -404,7 +404,7 @@ class VaultIntegrationService extends EventEmitter {
     }
 
     // Get DeFi wallet for this vault
-    const wallets = testnetDeFiService.getAllWallets()
+    const wallets = this.testnetDeFiService?.getAllWallets()
     const vaultWallet = wallets.find(w => w.id.includes(vaultId))
     
     if (!vaultWallet) {
@@ -412,7 +412,7 @@ class VaultIntegrationService extends EventEmitter {
     }
 
     try {
-      const position = await testnetDeFiService.stake(vaultWallet.id, protocol, asset, amount)
+      const position = await this.testnetDeFiService?.stake(vaultWallet.id, protocol, asset, amount)
       
       const txId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       const transaction: VaultTransaction = {
@@ -464,7 +464,7 @@ class VaultIntegrationService extends EventEmitter {
       throw new Error('Invalid vault for DeFi operations')
     }
 
-    const wallets = testnetDeFiService.getAllWallets()
+    const wallets = this.testnetDeFiService?.getAllWallets()
     const vaultWallet = wallets.find(w => w.id.includes(vaultId))
     
     if (!vaultWallet) {
@@ -472,7 +472,7 @@ class VaultIntegrationService extends EventEmitter {
     }
 
     try {
-      const position = await testnetDeFiService.provideLiquidity(
+      const position = await this.testnetDeFiService?.provideLiquidity(
         vaultWallet.id, protocol, tokenA, tokenB, amountA, amountB
       )
       
@@ -636,7 +636,7 @@ class VaultIntegrationService extends EventEmitter {
   // Private helper methods
   private async createDeFiWallets(vaultId: string, network: string): Promise<void> {
     try {
-      const wallet = await testnetDeFiService.createTestnetWallet(network)
+      const wallet = await this.testnetDeFiService?.createTestnetWallet(network)
       // Associate wallet with vault (simplified - store vaultId in wallet metadata)
       console.log(`Created DeFi wallet ${wallet.id} for vault ${vaultId}`)
     } catch (error) {
@@ -731,11 +731,11 @@ class VaultIntegrationService extends EventEmitter {
     const vault = this.vaults.get(vaultId)
     if (!vault || vault.type !== 'defi') return
 
-    const wallets = testnetDeFiService.getAllWallets()
+    const wallets = this.testnetDeFiService?.getAllWallets()
     const vaultWallet = wallets.find(w => w.id.includes(vaultId))
     
     if (vaultWallet) {
-      const balances = await testnetDeFiService.getWalletBalance(vaultWallet.id)
+      const balances = await this.testnetDeFiService?.getWalletBalance(vaultWallet.id)
       const assets: VaultAsset[] = balances.map(balance => ({
         symbol: balance.symbol,
         name: balance.symbol,
@@ -760,11 +760,11 @@ class VaultIntegrationService extends EventEmitter {
 
   private setupEventListeners(): void {
     // Listen to agent persistence service events
-    agentPersistenceService.on('agentCreated', (data) => {
+    this.agentPersistenceService?.on('agentCreated', (data) => {
       this.handleAgentCreated(data.agentId, data.agent)
     })
 
-    agentPersistenceService.on('agentDeleted', (data) => {
+    this.agentPersistenceService?.on('agentDeleted', (data) => {
       this.handleAgentDeleted(data.agentId)
     })
   }

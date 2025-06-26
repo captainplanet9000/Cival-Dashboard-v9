@@ -147,7 +147,7 @@ class MCPIntegrationService extends EventEmitter {
   async activateForAllAgents(): Promise<void> {
     console.log('🚀 Activating MCP infrastructure for all agents...')
     
-    const agents = agentPersistenceService.getAllAgents()
+    const agents = this.agentPersistenceService?.getAllAgents()
     const results = []
     
     for (const agent of agents) {
@@ -179,7 +179,7 @@ class MCPIntegrationService extends EventEmitter {
   // Activate MCP for a specific agent
   async activateForAgent(agentId: string): Promise<{ success: boolean; errors?: string[] }> {
     try {
-      const agent = agentPersistenceService.getAgent(agentId)
+      const agent = this.agentPersistenceService?.getAgent(agentId)
       if (!agent) {
         return { success: false, errors: ['Agent not found'] }
       }
@@ -199,7 +199,7 @@ class MCPIntegrationService extends EventEmitter {
       await this.initializeToolContexts(agentId)
 
       // 5. Update agent integration status
-      const agentUpdate = agentPersistenceService.getAgent(agentId)
+      const agentUpdate = this.agentPersistenceService?.getAgent(agentId)
       if (agentUpdate) {
         agentUpdate.integrations.mcpTools = true
         agentPersistenceService['agents'].set(agentId, agentUpdate)
@@ -606,7 +606,7 @@ class MCPIntegrationService extends EventEmitter {
 
   // Tool implementations
   private async executeTradeOrder(params: any, context: any): Promise<any> {
-    const order = await persistentTradingEngine.placeOrder(
+    const order = await this.persistentTradingEngine?.placeOrder(
       context.agentId,
       params.symbol,
       params.side,
@@ -618,18 +618,18 @@ class MCPIntegrationService extends EventEmitter {
   }
 
   private async getPortfolioStatus(context: any): Promise<any> {
-    const performance = persistentTradingEngine.getAgentPerformance(context.agentId)
-    const positions = persistentTradingEngine.getAgentPositions(context.agentId)
+    const performance = this.persistentTradingEngine?.getAgentPerformance(context.agentId)
+    const positions = this.persistentTradingEngine?.getAgentPositions(context.agentId)
     return { performance, positions }
   }
 
   private async stakeTokens(params: any, context: any): Promise<any> {
-    const agent = agentPersistenceService.getAgent(context.agentId)
+    const agent = this.agentPersistenceService?.getAgent(context.agentId)
     if (!agent || agent.walletIds.length === 0) {
       throw new Error('No DeFi wallets available for staking')
     }
 
-    const position = await testnetDeFiService.stake(
+    const position = await this.testnetDeFiService?.stake(
       agent.walletIds[0],
       params.protocol,
       params.token,
@@ -639,9 +639,9 @@ class MCPIntegrationService extends EventEmitter {
   }
 
   private async analyzeMarketSentiment(params: any, context: any): Promise<any> {
-    if (geminiService.isConfigured()) {
+    if (this.geminiService?.isConfigured()) {
       const prompt = `Analyze market sentiment for ${params.symbol} over ${params.timeframe || '1d'}. Provide a sentiment score between -1 (very bearish) and 1 (very bullish) with reasoning.`
-      const response = await geminiService.generateResponse(prompt, context.agentId)
+      const response = await this.geminiService?.generateResponse(prompt, context.agentId)
       return { symbol: params.symbol, sentiment: response, timestamp: Date.now() }
     } else {
       // Fallback mock sentiment
@@ -655,7 +655,7 @@ class MCPIntegrationService extends EventEmitter {
   }
 
   private async createTodo(params: any, context: any): Promise<any> {
-    const todo = await agentTodoService.createTodo(context.agentId, {
+    const todo = await this.agentTodoService?.createTodo(context.agentId, {
       title: params.title,
       description: params.description || '',
       priority: params.priority || 'medium',
@@ -668,7 +668,7 @@ class MCPIntegrationService extends EventEmitter {
 
   private async sendAgentMessage(params: any, context: any): Promise<any> {
     // Store message in agent memory for coordination
-    if (geminiService.isConfigured()) {
+    if (this.geminiService?.isConfigured()) {
       const memory = {
         id: `msg_${Date.now()}`,
         agentId: params.targetAgentId,
@@ -695,7 +695,7 @@ class MCPIntegrationService extends EventEmitter {
   }
 
   private async storeMemory(params: any, context: any): Promise<any> {
-    if (geminiService.isConfigured()) {
+    if (this.geminiService?.isConfigured()) {
       const memory = {
         id: `mem_${Date.now()}`,
         agentId: context.agentId,
@@ -748,11 +748,11 @@ class MCPIntegrationService extends EventEmitter {
 
   private setupEventListeners(): void {
     // Listen to agent events
-    agentPersistenceService.on('agentCreated', async (data) => {
+    this.agentPersistenceService?.on('agentCreated', async (data) => {
       await this.activateForAgent(data.agentId)
     })
 
-    agentPersistenceService.on('agentDeleted', (data) => {
+    this.agentPersistenceService?.on('agentDeleted', (data) => {
       this.deactivateForAgent(data.agentId)
     })
   }

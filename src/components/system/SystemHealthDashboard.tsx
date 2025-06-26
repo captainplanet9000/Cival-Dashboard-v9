@@ -21,7 +21,7 @@ import {
   Server
 } from 'lucide-react'
 
-import { systemLifecycleService } from '@/lib/system/SystemLifecycleService'
+// Lazy load SystemLifecycleService to prevent circular dependencies
 
 interface SystemStatus {
   overall: 'healthy' | 'warning' | 'critical'
@@ -86,6 +86,8 @@ export function SystemHealthDashboard() {
   useEffect(() => {
     const updateSystemHealth = async () => {
       try {
+        // Lazy load the service to prevent circular dependencies
+        const { systemLifecycleService } = await import('@/lib/system/SystemLifecycleService')
         const health = await systemLifecycleService.getSystemHealth()
         setSystemStatus(health)
       } catch (error) {

@@ -128,10 +128,10 @@ class SystemLifecycleService extends EventEmitter {
       await this.performHealthCheck()
       
       // 2. Activate MCP infrastructure for all existing agents
-      await mcpIntegrationService.activateForAllAgents()
+      await this.mcpIntegrationService?.activateForAllAgents()
       
       // 3. Sync all agent performance
-      await agentPersistenceService.syncAllAgents()
+      await this.agentPersistenceService?.syncAllAgents()
       
       // 4. Initialize cross-system integrations
       await this.initializeCrossSystemIntegrations()
@@ -173,7 +173,7 @@ class SystemLifecycleService extends EventEmitter {
 
     try {
       // 1. Create agent through persistence service (includes all integrations)
-      const result = await agentPersistenceService.createAgent(config)
+      const result = await this.agentPersistenceService?.createAgent(config)
       
       if (!result.success || !result.agentId) {
         throw new Error(`Agent creation failed: ${result.errors?.join(', ')}`)
@@ -201,7 +201,7 @@ class SystemLifecycleService extends EventEmitter {
         })
 
         try {
-          const vaultId = await vaultIntegrationService.createVault({
+          const vaultId = await this.vaultIntegrationService?.createVault({
             name: `${config.name} Auto-Vault`,
             description: `Auto-created vault for agent ${config.name}`,
             type: 'defi',
@@ -228,7 +228,7 @@ class SystemLifecycleService extends EventEmitter {
             yieldFarming: config.liquidityMining || false
           })
 
-          await vaultIntegrationService.assignVaultToAgent(agentId, vaultId)
+          await this.vaultIntegrationService?.assignVaultToAgent(agentId, vaultId)
           
           this.addLifecycleEvent({
             agentId,
@@ -318,36 +318,36 @@ class SystemLifecycleService extends EventEmitter {
 
   // Activate agent coordination across all systems
   private async activateAgentCoordination(agentId: string): Promise<void> {
-    const agent = agentPersistenceService.getAgent(agentId)
+    const agent = this.agentPersistenceService?.getAgent(agentId)
     if (!agent) throw new Error('Agent not found')
 
     // 1. Setup MCP tool permissions for cross-system operations
-    const mcpStats = agentPersistenceService.getAgentMCPStats(agentId)
+    const mcpStats = this.agentPersistenceService?.getAgentMCPStats(agentId)
     if (mcpStats.availableTools > 0) {
       console.log(`✅ Agent ${agentId} has ${mcpStats.availableTools} MCP tools available`)
     }
 
     // 2. Initialize vault monitoring if DeFi enabled
     if (agent.config.enableDeFi && agent.walletIds.length > 0) {
-      const vaults = vaultIntegrationService.getAgentVaults(agentId)
+      const vaults = this.vaultIntegrationService?.getAgentVaults(agentId)
       console.log(`✅ Agent ${agentId} connected to ${vaults.length} vaults`)
     }
 
     // 3. Setup trading engine coordination
     if (agent.integrations.tradingEngine) {
-      const performance = persistentTradingEngine.getAgentPerformance(agentId)
+      const performance = this.persistentTradingEngine?.getAgentPerformance(agentId)
       console.log(`✅ Agent ${agentId} trading engine initialized`)
     }
 
     // 4. Initialize AI learning coordination
-    if (agent.integrations.aiService && geminiService.isConfigured()) {
-      const memories = geminiService.getAgentMemory(agentId)
+    if (agent.integrations.aiService && this.geminiService?.isConfigured()) {
+      const memories = this.geminiService?.getAgentMemory(agentId)
       console.log(`✅ Agent ${agentId} has ${memories.length} memory entries`)
     }
 
     // 5. Setup todo coordination
     if (agent.integrations.todoService) {
-      const todos = agentTodoService.getAgentTodos(agentId)
+      const todos = this.agentTodoService?.getAgentTodos(agentId)
       console.log(`✅ Agent ${agentId} has ${todos.length} todos`)
     }
   }
@@ -365,19 +365,19 @@ class SystemLifecycleService extends EventEmitter {
     })
 
     try {
-      const agent = agentPersistenceService.getAgent(agentId)
+      const agent = this.agentPersistenceService?.getAgent(agentId)
       if (!agent) {
         throw new Error('Agent not found')
       }
 
       // 1. Remove from vaults
-      const vaults = vaultIntegrationService.getAgentVaults(agentId)
+      const vaults = this.vaultIntegrationService?.getAgentVaults(agentId)
       for (const vault of vaults) {
-        await vaultIntegrationService.removeVaultFromAgent(agentId, vault.id)
+        await this.vaultIntegrationService?.removeVaultFromAgent(agentId, vault.id)
       }
 
       // 2. Delete agent (includes all integrations)
-      const success = await agentPersistenceService.deleteAgent(agentId)
+      const success = await this.agentPersistenceService?.deleteAgent(agentId)
       
       this.addLifecycleEvent({
         agentId,
@@ -441,8 +441,8 @@ class SystemLifecycleService extends EventEmitter {
     else overall = 'offline'
 
     // Get system metrics
-    const agentStats = agentPersistenceService.getDashboardStats()
-    const mcpStats = mcpIntegrationService.getDashboardStats()
+    const agentStats = this.agentPersistenceService?.getDashboardStats()
+    const mcpStats = this.mcpIntegrationService?.getDashboardStats()
     
     this.healthStatus = {
       overall,
@@ -450,7 +450,7 @@ class SystemLifecycleService extends EventEmitter {
       metrics: {
         totalAgents: agentStats.totalAgents,
         activeAgents: agentStats.activeAgents,
-        totalVaults: vaultIntegrationService.getAllVaults().length,
+        totalVaults: this.vaultIntegrationService?.getAllVaults().length,
         totalTools: mcpStats.totalTools,
         totalCalls: mcpStats.totalCalls,
         successRate: mcpStats.totalCalls > 0 ? mcpStats.successfulCalls / mcpStats.totalCalls : 1,
@@ -481,7 +481,7 @@ class SystemLifecycleService extends EventEmitter {
     try {
       switch (serviceName) {
         case 'agentPersistence':
-          const agents = agentPersistenceService.getAllAgents()
+          const agents = this.agentPersistenceService?.getAllAgents()
           return {
             status: 'online',
             lastResponse: Date.now(),
@@ -493,7 +493,7 @@ class SystemLifecycleService extends EventEmitter {
           }
 
         case 'vaultIntegration':
-          const vaults = vaultIntegrationService.getAllVaults()
+          const vaults = this.vaultIntegrationService?.getAllVaults()
           return {
             status: 'online',
             lastResponse: Date.now(),
@@ -505,7 +505,7 @@ class SystemLifecycleService extends EventEmitter {
           }
 
         case 'mcpIntegration':
-          const mcpStats = mcpIntegrationService.getDashboardStats()
+          const mcpStats = this.mcpIntegrationService?.getDashboardStats()
           return {
             status: 'online',
             lastResponse: Date.now(),
@@ -529,7 +529,7 @@ class SystemLifecycleService extends EventEmitter {
           }
 
         case 'defiService':
-          const wallets = testnetDeFiService.getAllWallets()
+          const wallets = this.testnetDeFiService?.getAllWallets()
           return {
             status: 'online',
             lastResponse: Date.now(),
@@ -541,7 +541,7 @@ class SystemLifecycleService extends EventEmitter {
           }
 
         case 'aiService':
-          const isConfigured = geminiService.isConfigured()
+          const isConfigured = this.geminiService?.isConfigured()
           return {
             status: isConfigured ? 'online' : 'degraded',
             lastResponse: Date.now(),
@@ -601,7 +601,7 @@ class SystemLifecycleService extends EventEmitter {
   // Initialize cross-system integrations
   private async initializeCrossSystemIntegrations(): Promise<void> {
     // Setup vault service to listen to agent events
-    vaultIntegrationService.on('vaultCreated', (data) => {
+    this.vaultIntegrationService?.on('vaultCreated', (data) => {
       this.addSystemEvent({
         type: 'vault',
         level: 'info',
@@ -612,7 +612,7 @@ class SystemLifecycleService extends EventEmitter {
     })
 
     // Setup MCP service to listen to tool calls
-    mcpIntegrationService.on('toolCalled', (data) => {
+    this.mcpIntegrationService?.on('toolCalled', (data) => {
       if (!data.success) {
         this.addSystemEvent({
           type: 'mcp',
@@ -630,7 +630,7 @@ class SystemLifecycleService extends EventEmitter {
   // Setup event listeners
   private setupEventListeners(): void {
     // Listen to all service events
-    agentPersistenceService.on('agentCreated', (data) => {
+    this.agentPersistenceService?.on('agentCreated', (data) => {
       this.addSystemEvent({
         type: 'agent',
         level: 'info',
@@ -640,7 +640,7 @@ class SystemLifecycleService extends EventEmitter {
       })
     })
 
-    agentPersistenceService.on('agentDeleted', (data) => {
+    this.agentPersistenceService?.on('agentDeleted', (data) => {
       this.addSystemEvent({
         type: 'agent',
         level: 'info',
@@ -697,13 +697,13 @@ class SystemLifecycleService extends EventEmitter {
   }
 
   getSystemStats() {
-    const agentStats = agentPersistenceService.getDashboardStats()
-    const mcpStats = mcpIntegrationService.getDashboardStats()
+    const agentStats = this.agentPersistenceService?.getDashboardStats()
+    const mcpStats = this.mcpIntegrationService?.getDashboardStats()
     
     return {
       ...agentStats,
       systemHealth: this.healthStatus?.overall || 'unknown',
-      totalVaults: vaultIntegrationService.getAllVaults().length,
+      totalVaults: this.vaultIntegrationService?.getAllVaults().length,
       systemUptime: Date.now() - this.startTime,
       totalEvents: this.systemEvents.length,
       unacknowledgedEvents: this.systemEvents.filter(e => !e.acknowledged).length,
