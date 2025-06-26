@@ -15,8 +15,8 @@ import {
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
-// Import backend API
-import { backendApi } from '@/lib/api/backend-client'
+// STEP 3: Disable backend API to isolate
+// import { backendApi } from '@/lib/api/backend-client'
 
 // TEMPORARILY DISABLED: Trading components to isolate circular dependency
 // import LiveTradingDashboard from '@/components/trading/LiveTradingDashboard'
@@ -231,14 +231,14 @@ export default function EnhancedDashboard() {
         // Get real-time system health from integrated services
         const systemHealthData = await service.getSystemHealth()
         
-        // Fetch system status and trading overview data
-        const [tradingStatus, systemHealth, marketOverview, tradingOverview, portfolioSummary] = await Promise.all([
-          backendApi.get('/api/v1/trading/status').catch(() => ({ data: null })),
-          backendApi.get('/health').catch(() => ({ data: null })),
-          backendApi.get('/api/v1/market/overview').catch(() => ({ data: null })),
-          backendApi.get('/api/v1/trading/overview').catch(() => ({ data: null })),
-          backendApi.get('/api/v1/portfolio/summary').catch(() => ({ data: null }))
-        ])
+        // STEP 3: Mock data instead of API calls
+        const [tradingStatus, systemHealth, marketOverview, tradingOverview, portfolioSummary] = [
+          { data: { is_enabled: true, market_condition: 'normal', active_signals: 5 } },
+          { data: { status: 'healthy' } },
+          { data: { market_cap: 1000000, volume: 50000 } },
+          { data: { total_trades: 100, win_rate: 75 } },
+          { data: { total_value: 10000, daily_pnl: 150 } }
+        ]
 
         // Update system status
         if (tradingStatus.data) {
@@ -598,11 +598,12 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
   useEffect(() => {
     const loadTradingDetails = async () => {
       try {
-        const [positionsRes, ordersRes, riskRes] = await Promise.all([
-          backendApi.get('/api/v1/trading/positions').catch(() => ({ data: null })),
-          backendApi.get('/api/v1/trading/orders').catch(() => ({ data: null })),
-          backendApi.get('/api/v1/trading/risk-metrics').catch(() => ({ data: null }))
-        ]);
+        // STEP 3: Mock trading data
+        const [positionsRes, ordersRes, riskRes] = [
+          { data: { positions: [] } },
+          { data: { orders: [] } },
+          { data: { var: 0.02, sharpe: 1.2 } }
+        ];
 
         setPositions(positionsRes.data?.positions || []);
         setOrders(ordersRes.data?.orders || []);
@@ -1031,7 +1032,8 @@ function AgentOverviewPanel({ metrics }: { metrics: DashboardMetrics }) {
     // Load agent statistics
     const loadAgentStats = async () => {
       try {
-        const response = await backendApi.get('/api/v1/agents/status').catch(() => ({ data: null }));
+        // STEP 3: Mock agent data
+        const response = { data: { agents: [] } };
         if (response.data) {
           setAgentStats(response.data.agents || []);
         }
