@@ -5,15 +5,16 @@
 
 // Core AG-UI
 export { AGUIClient, createAGUIClient, getAGUIClient, disconnectAGUI } from './client'
-export { langChainAGUIRegistry } from './langchain-registry'
-export { langChainAGUIHandlers } from './langchain-handlers'
+// TEMPORARILY DISABLED: LangChain exports causing circular dependency
+// export { langChainAGUIRegistry } from './langchain-registry'
+// export { langChainAGUIHandlers } from './langchain-handlers'
 
 // Types
 export type * from './types'
 
-// LangChain Integration Types
-export type {
-  LangChainAGUIAgent,
-  AGUIMessageContext,
-  AGUIResponse
-} from './langchain-registry'
+// TEMPORARILY DISABLED: LangChain types causing circular dependency
+// export type {
+//   LangChainAGUIAgent,
+//   AGUIMessageContext,
+//   AGUIResponse
+// } from './langchain-registry'
