@@ -58,8 +58,8 @@ const EnhancedFarmDashboard = dynamic(() => import('@/components/farm/EnhancedFa
 // Import dynamic first
 import dynamic from 'next/dynamic'
 
-// Import AG-UI components
-import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
+// STEP 2: Disable AG-UI components to isolate
+// import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
 // TEMPORARILY DISABLED: LangChain components causing circular dependencies
 // const LangChainAGUIInterface = dynamic(() => import('@/components/langchain/LangChainAGUIInterface'), {
@@ -72,9 +72,9 @@ import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 //   loading: () => <div className="p-4 text-center">Loading LangChain Status...</div>
 // })
 
-// Import simplified AI components
-import SimpleAIStatusWidget from '@/components/ai/SimpleAIStatusWidget'
-import SimpleAIRecommendations from '@/components/ai/SimpleAIRecommendations'
+// STEP 2: Disable AI components to isolate
+// import SimpleAIStatusWidget from '@/components/ai/SimpleAIStatusWidget'
+// import SimpleAIRecommendations from '@/components/ai/SimpleAIRecommendations'
 
 // TEMPORARILY DISABLED: LangChain Dashboard Tab
 // const LangChainDashboardTab = dynamic(() => import('@/components/dashboard/LangChainDashboardTab'), {
@@ -82,18 +82,17 @@ import SimpleAIRecommendations from '@/components/ai/SimpleAIRecommendations'
 //   loading: () => <div className="p-6 text-center">Loading LangChain Dashboard...</div>
 // })
 
-// Import consolidated dashboard components
-import LiveTradingWithMarketData from '@/components/dashboard/LiveTradingWithMarketData'
-import VaultBankingWithMultiChain from '@/components/dashboard/VaultBankingWithMultiChain'
-import AdvancedConsolidatedTab from '@/components/dashboard/AdvancedConsolidatedTab'
-import AdvancedDashboardTab from '@/components/dashboard/AdvancedDashboardTab'
-import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
+// STEP 2: Disable consolidated dashboard components to isolate
+// import LiveTradingWithMarketData from '@/components/dashboard/LiveTradingWithMarketData'
+// import VaultBankingWithMultiChain from '@/components/dashboard/VaultBankingWithMultiChain'
+// import AdvancedConsolidatedTab from '@/components/dashboard/AdvancedConsolidatedTab'
+// import AdvancedDashboardTab from '@/components/dashboard/AdvancedDashboardTab'
+// STEP 2: Disable more components to isolate
+// import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
+// import { CalendarView } from '@/components/calendar/CalendarView'
 
-// Import calendar component
-import { CalendarView } from '@/components/calendar/CalendarView'
-
-// Import chart components
-import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'
+// STEP 2: Disable chart components to isolate
+// import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'
 
 // Import error handling
 import ErrorBoundary, { ComponentFallback } from '@/components/ErrorBoundary'
