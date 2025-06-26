@@ -5,8 +5,8 @@
  */
 
 import { EventEmitter } from 'events'
-import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
 // Lazy load services to avoid circular dependencies
+const getPersistentTradingEngine = () => import('@/lib/paper-trading/PersistentTradingEngine').then(m => m.persistentTradingEngine)
 const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
 import { testnetDeFiService } from '@/lib/defi/TestnetDeFiService'
 
@@ -110,6 +110,7 @@ export interface MarketConditions {
 }
 
 class AutonomousTradingOrchestrator extends EventEmitter {
+  private persistentTradingEngine: any = null
   private agents: Map<string, AutonomousAgent> = new Map()
   private strategies: Map<string, TradingStrategy> = new Map()
   private marketConditions: MarketConditions = {
@@ -134,9 +135,19 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
   constructor() {
     super()
-    this.initializeDefaultAgents()
-    this.initializeDefaultStrategies()
-    this.loadPersistedData()
+    this.initializeAsync()
+  }
+
+  private async initializeAsync() {
+    try {
+      // Load trading engine lazily
+      this.persistentTradingEngine = await getPersistentTradingEngine()
+      this.initializeDefaultAgents()
+      this.initializeDefaultStrategies()
+      this.loadPersistedData()
+    } catch (error) {
+      console.error('Failed to initialize orchestrator:', error)
+    }
   }
 
   // ================================
@@ -290,7 +301,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     }
 
     // Get current portfolio state
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
     if (!portfolio) return null
 
     // Analyze market conditions for agent's symbols
@@ -323,7 +334,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
     // Analyze each symbol the agent trades
     for (const symbol of agent.config.tradingPairs) {
-      const marketData = persistentTradingEngine.getMarketPrice(symbol)
+      const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)
       if (marketData) {
         // Calculate technical indicators
         const indicators = await this.calculateTechnicalIndicators(symbol)
@@ -362,7 +373,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     if (!bestSignal || bestSignal.confidence < 0.6) return null
 
     // Calculate position size based on strategy and risk limits
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
     const positionSize = this.calculatePositionSize(agent, bestSymbol, bestSignal.confidence)
 
     const decision: AgentDecision = {
@@ -521,7 +532,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   private async calculateTechnicalIndicators(symbol: string): Promise<any> {
     // Mock implementation - in real system, this would calculate actual indicators
     // from historical price data
-    const marketData = persistentTradingEngine.getMarketPrice(symbol)
+    const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)
     if (!marketData) return {}
 
     const price = marketData.price
@@ -559,10 +570,10 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     agent: AutonomousAgent, 
     decision: AgentDecision
   ): Promise<{ approved: boolean; reason?: string }> {
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
     
     // Check position size limits
-    const positionValue = decision.size * persistentTradingEngine.getMarketPrice(decision.symbol)!.price
+    const positionValue = decision.size * this.persistentTradingEngine?.getMarketPrice(decision.symbol)!.price
     const maxPositionValue = portfolio.totalValue * agent.riskLimits.maxPositionSize
     
     if (positionValue > maxPositionValue) {
@@ -594,7 +605,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     for (const agent of this.agents.values()) {
       if (agent.status !== 'active') continue
 
-      const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+      const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
       if (!portfolio) continue
 
       // Check if any risk limits are breached
@@ -617,8 +628,8 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   // ================================
 
   private calculatePositionSize(agent: AutonomousAgent, symbol: string, confidence: number): number {
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)!
-    const marketData = persistentTradingEngine.getMarketPrice(symbol)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
+    const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)!
     
     // Base position size as percentage of portfolio
     const basePositionPercent = agent.riskLimits.maxPositionSize * confidence
@@ -628,8 +639,8 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   }
 
   private calculateRiskScore(agent: AutonomousAgent, symbol: string, size: number): number {
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)!
-    const marketData = persistentTradingEngine.getMarketPrice(symbol)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
+    const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)!
     
     const positionValue = size * marketData.price
     const portfolioRisk = positionValue / portfolio.totalValue
@@ -642,12 +653,12 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   }
 
   private calculateTodayPnL(agent: AutonomousAgent): number {
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
     if (!portfolio) return 0
 
     // Calculate today's PnL from execution history
     const today = new Date().setHours(0, 0, 0, 0)
-    const todayExecutions = persistentTradingEngine.getExecutionHistory()
+    const todayExecutions = this.persistentTradingEngine?.getExecutionHistory()
       .filter(exec => exec.agentId === agent.portfolio && exec.timestamp >= today)
 
     return todayExecutions.reduce((pnl, exec) => {
@@ -658,7 +669,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
   private calculateCurrentDrawdown(agent: AutonomousAgent): number {
     const performance = agent.performance
-    const currentValue = persistentTradingEngine.getPortfolio(agent.portfolio)?.totalValue || 0
+    const currentValue = this.persistentTradingEngine?.getPortfolio(agent.portfolio)?.totalValue || 0
     const peakValue = Math.max(...performance.dailyReturns.map((_, i) => 
       performance.dailyReturns.slice(0, i + 1).reduce((a, b) => a + b, agent.config.initialCapital)
     ))
@@ -667,7 +678,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   }
 
   private async calculatePortfolioCorrelation(agent: AutonomousAgent, newSymbol: string): Promise<number> {
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
     const existingSymbols = Object.keys(portfolio.positions)
     
     if (existingSymbols.length === 0) return 0
@@ -855,9 +866,9 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
   private async initializeAgentPortfolio(agent: AutonomousAgent): Promise<void> {
     // Create portfolio in paper trading engine if it doesn't exist
-    const existing = persistentTradingEngine.getPortfolio(agent.portfolio)
+    const existing = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
     if (!existing) {
-      await persistentTradingEngine.createPortfolio(agent.portfolio, agent.config.initialCapital)
+      await this.persistentTradingEngine?.createPortfolio(agent.portfolio, agent.config.initialCapital)
       console.log(`📊 Created portfolio for ${agent.name} with $${agent.config.initialCapital}`)
     }
   }
@@ -868,11 +879,11 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   
   private async executeDecision(decision: AgentDecision): Promise<boolean> {
     try {
-      const marketData = persistentTradingEngine.getMarketPrice(decision.symbol)
+      const marketData = this.persistentTradingEngine?.getMarketPrice(decision.symbol)
       if (!marketData) return false
 
       // Execute the order
-      const order = await persistentTradingEngine.placeOrder(
+      const order = await this.persistentTradingEngine?.placeOrder(
         decision.agentId,
         decision.symbol,
         decision.action === 'buy' ? 'buy' : 'sell',
@@ -900,7 +911,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
   private async updateMarketConditions(): Promise<void> {
     // Analyze overall market conditions
-    const allMarketData = persistentTradingEngine.getAllMarketData()
+    const allMarketData = this.persistentTradingEngine?.getAllMarketData()
     const symbols = Array.from(allMarketData.keys())
     
     if (symbols.length === 0) return
@@ -931,7 +942,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
   private async updateAgentPerformance(): Promise<void> {
     for (const agent of this.agents.values()) {
-      const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+      const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
       if (!portfolio) continue
 
       // Update performance metrics
@@ -944,7 +955,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
       performance.lastUpdate = Date.now()
 
       // Calculate win rate from recent trades
-      const recentExecutions = persistentTradingEngine.getExecutionHistory()
+      const recentExecutions = this.persistentTradingEngine?.getExecutionHistory()
         .filter(exec => exec.agentId === agent.portfolio)
         .slice(-100) // Last 100 trades
 
@@ -964,14 +975,14 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     for (const agent of this.agents.values()) {
       if (agent.status !== 'active') continue
 
-      const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+      const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
       if (!portfolio) continue
 
       // Check each position for stop loss / take profit
       for (const [symbol, position] of Object.entries(portfolio.positions)) {
         if (position.status !== 'open') continue
 
-        const marketData = persistentTradingEngine.getMarketPrice(symbol)
+        const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)
         if (!marketData) continue
 
         const currentPrice = marketData.price
@@ -1005,7 +1016,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
   private async closePosition(agent: AutonomousAgent, position: PersistentPosition, reason: string): Promise<void> {
     try {
-      const order = await persistentTradingEngine.placeOrder(
+      const order = await this.persistentTradingEngine?.placeOrder(
         agent.portfolio,
         position.symbol,
         position.side === 'long' ? 'sell' : 'buy',
@@ -1041,7 +1052,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   }
 
   private async rebalanceAgentPortfolio(agent: AutonomousAgent): Promise<void> {
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
     if (!portfolio) return
 
     console.log(`⚖️ Rebalancing portfolio for ${agent.name}`)
@@ -1059,7 +1070,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
         const reduceSize = position.size - targetSize
 
         if (reduceSize > 0) {
-          await persistentTradingEngine.placeOrder(
+          await this.persistentTradingEngine?.placeOrder(
             agent.portfolio,
             symbol,
             position.side === 'long' ? 'sell' : 'buy',
@@ -1081,7 +1092,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     agent.status = 'stopped'
     
     // Close all positions
-    const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
     if (portfolio) {
       for (const position of Object.values(portfolio.positions)) {
         if (position.status === 'open') {
@@ -1097,7 +1108,7 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     console.log('🚨 EMERGENCY: Closing all positions across all agents')
     
     for (const agent of this.agents.values()) {
-      const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+      const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
       if (!portfolio) continue
 
       for (const position of Object.values(portfolio.positions)) {

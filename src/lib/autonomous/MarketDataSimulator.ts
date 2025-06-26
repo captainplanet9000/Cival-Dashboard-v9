@@ -4,7 +4,9 @@
  */
 
 import { EventEmitter } from 'events'
-import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
+
+// Lazy load persistent trading engine to avoid circular dependencies
+const getPersistentTradingEngine = () => import('@/lib/paper-trading/PersistentTradingEngine').then(m => m.persistentTradingEngine)
 
 export interface SimulatedMarketData {
   symbol: string
@@ -36,6 +38,7 @@ class MarketDataSimulator extends EventEmitter {
   private isRunning = false
   private updateInterval: NodeJS.Timeout | null = null
   private newsEvents: string[] = []
+  private persistentTradingEngine: any = null
   
   // Base prices for major crypto pairs (USD)
   private basePrices: Record<string, number> = {
@@ -90,16 +93,26 @@ class MarketDataSimulator extends EventEmitter {
       this.priceHistory.set(symbol, [basePrice])
       
       // Update paper trading engine
-      persistentTradingEngine.updateMarketData(symbol, marketData)
+      this.persistentTradingEngine?.updateMarketData(symbol, marketData)
     }
 
     console.log(`📊 Initialized market data for ${this.config.symbols.length} symbols`)
   }
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.isRunning) return
 
     console.log('🚀 Starting Market Data Simulator')
+    
+    // Load persistent trading engine if not loaded
+    if (!this.persistentTradingEngine) {
+      try {
+        this.persistentTradingEngine = await getPersistentTradingEngine()
+      } catch (error) {
+        console.error('Failed to load trading engine:', error)
+      }
+    }
+    
     this.isRunning = true
 
     this.updateInterval = setInterval(() => {
@@ -205,7 +218,7 @@ class MarketDataSimulator extends EventEmitter {
     this.marketData.set(symbol, updatedData)
     
     // Update paper trading engine
-    persistentTradingEngine.updateMarketData(symbol, updatedData)
+    this.persistentTradingEngine?.updateMarketData(symbol, updatedData)
 
     // Emit significant price movements
     if (Math.abs(changePercent24h) > 5) {
@@ -375,7 +388,7 @@ class MarketDataSimulator extends EventEmitter {
             timestamp: Date.now()
           })
           
-          persistentTradingEngine.updateMarketData(symbol, {
+          this.persistentTradingEngine?.updateMarketData(symbol, {
             ...currentData,
             price: updatedPrice,
             timestamp: Date.now()
@@ -442,7 +455,7 @@ class MarketDataSimulator extends EventEmitter {
         this.marketData.set(symbol, marketData)
         this.priceHistory.set(symbol, [price])
         
-        persistentTradingEngine.updateMarketData(symbol, marketData)
+        this.persistentTradingEngine?.updateMarketData(symbol, marketData)
         
         this.emit('symbol:added', { symbol, price })
       }

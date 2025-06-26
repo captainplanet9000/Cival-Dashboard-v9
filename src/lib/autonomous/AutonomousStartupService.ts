@@ -5,11 +5,14 @@
 
 import { getAutonomousTradingOrchestrator } from './AutonomousTradingOrchestrator'
 import { getMarketDataSimulator } from './MarketDataSimulator'
-import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
+
+// Lazy load persistent trading engine to avoid circular dependencies
+const getPersistentTradingEngine = () => import('@/lib/paper-trading/PersistentTradingEngine').then(m => m.persistentTradingEngine)
 
 export class AutonomousStartupService {
   private isInitialized = false
   private isRunning = false
+  private persistentTradingEngine: any = null
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return
@@ -17,9 +20,13 @@ export class AutonomousStartupService {
     console.log('🚀 Initializing Autonomous Trading System...')
 
     try {
+      // Load persistent trading engine
+      if (!this.persistentTradingEngine) {
+        this.persistentTradingEngine = await getPersistentTradingEngine()
+      }
       // 1. Initialize market data simulator
       console.log('📊 Starting Market Data Simulator...')
-      getMarketDataSimulator().start()
+      await getMarketDataSimulator().start()
 
       // 2. Create initial portfolios for agents
       console.log('💰 Initializing Agent Portfolios...')
@@ -79,10 +86,10 @@ export class AutonomousStartupService {
     for (const agent of agents) {
       try {
         // Check if portfolio already exists
-        const existing = persistentTradingEngine.getPortfolio(agent.portfolio)
+        const existing = this.persistentTradingEngine.getPortfolio(agent.portfolio)
         
         if (!existing) {
-          await persistentTradingEngine.createPortfolio(
+          await this.persistentTradingEngine.createPortfolio(
             agent.portfolio, 
             agent.config.initialCapital
           )
@@ -115,7 +122,7 @@ export class AutonomousStartupService {
       getMarketDataSimulator().addSymbol(pair.symbol, pair.price)
       
       // Also update the paper trading engine directly
-      persistentTradingEngine.updateMarketData(pair.symbol, {
+      this.persistentTradingEngine.updateMarketData(pair.symbol, {
         symbol: pair.symbol,
         price: pair.price,
         bid: pair.price * 0.999,
@@ -196,7 +203,7 @@ export class AutonomousStartupService {
     })
 
     // Initialize the portfolio
-    await persistentTradingEngine.createPortfolio(agentId, config.initialCapital)
+    await this.persistentTradingEngine.createPortfolio(agentId, config.initialCapital)
     
     console.log(`🤖 Added custom agent: ${config.name} (${agentId})`)
     return agentId
@@ -206,7 +213,7 @@ export class AutonomousStartupService {
   getPerformanceMetrics() {
     const agents = getAutonomousTradingOrchestrator().getAgents()
     const totalValue = agents.reduce((sum, agent) => {
-      const portfolio = persistentTradingEngine.getPortfolio(agent.portfolio)
+      const portfolio = this.persistentTradingEngine.getPortfolio(agent.portfolio)
       return sum + (portfolio?.totalValue || 0)
     }, 0)
 
