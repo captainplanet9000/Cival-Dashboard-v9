@@ -13,9 +13,7 @@ import {
   AGUIToolCallEvent,
   AGUIContextEvent
 } from './types'
-import { langGraphOrchestrator } from '@/lib/langchain/LangGraphOrchestrator'
-import { langChainService } from '@/lib/langchain/LangChainService'
-import { agentFactory } from '@/lib/langchain/EnhancedAgents'
+import { ServiceLocator } from '@/lib/langchain/service-locator'
 import { langChainAGUIRegistry } from './langchain-registry'
 
 export interface AGUIMessageContext {
@@ -148,6 +146,7 @@ export class LangChainAGUIHandlers {
 
     try {
       // Use LangChain to interpret the text message
+      const langChainService = ServiceLocator.getLangChainService()
       const interpretation = await langChainService.quickDecision(
         'Interpret this trading-related message and determine the appropriate action',
         [
@@ -348,6 +347,7 @@ export class LangChainAGUIHandlers {
     const response: AGUIResponse = { events: [] }
 
     try {
+      const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
       await langGraphOrchestrator.start()
       
       response.events.push({
@@ -393,6 +393,7 @@ export class LangChainAGUIHandlers {
     const response: AGUIResponse = { events: [] }
 
     try {
+      const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
       await langGraphOrchestrator.stop()
       
       response.events.push({
@@ -441,6 +442,7 @@ export class LangChainAGUIHandlers {
 
     try {
       const agentConfig = event.value
+      const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
       const agentId = await langGraphOrchestrator.addAgent(agentConfig)
       
       response.events.push({
@@ -472,6 +474,7 @@ export class LangChainAGUIHandlers {
 
     try {
       const { agentId, config } = event.value
+      const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
       const success = await langGraphOrchestrator.updateAgent(agentId, { config })
       
       if (success) {
@@ -504,6 +507,7 @@ export class LangChainAGUIHandlers {
   private async handleGetAgentStatus(event: AGUIUserActionEvent, context: AGUIMessageContext): Promise<AGUIResponse> {
     const response: AGUIResponse = { events: [] }
 
+    const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
     const agents = langGraphOrchestrator.getAgents()
     const status = langGraphOrchestrator.getStatus()
 
@@ -565,6 +569,7 @@ export class LangChainAGUIHandlers {
         const symbol = symbolList[i]
         
         // Create momentum agent for analysis
+        const agentFactory = ServiceLocator.getAgentFactory()
         const agent = agentFactory.createAgent('momentum', 'temp_analysis')
         const marketContext = {
           symbol,
@@ -634,6 +639,7 @@ export class LangChainAGUIHandlers {
     const response: AGUIResponse = { events: [] }
 
     try {
+      const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
       const status = langGraphOrchestrator.getStatus()
       
       response.events.push({
@@ -684,6 +690,7 @@ export class LangChainAGUIHandlers {
   private async getPortfolioStatus(): Promise<AGUIResponse> {
     const response: AGUIResponse = { events: [] }
 
+    const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
     const status = langGraphOrchestrator.getStatus()
     const analytics = langGraphOrchestrator.getPerformanceAnalytics()
 
@@ -721,6 +728,7 @@ export class LangChainAGUIHandlers {
   }
 
   private async getPortfolioData(agentId: string): Promise<any> {
+    const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
     const agent = langGraphOrchestrator.getAgent(agentId)
     return {
       agentId,
@@ -730,6 +738,7 @@ export class LangChainAGUIHandlers {
   }
 
   private async analyzeSymbol(symbol: string, agentId?: string): Promise<any> {
+    const agentFactory = ServiceLocator.getAgentFactory()
     const agent = agentFactory.createAgent('momentum', agentId || 'temp')
     const marketContext = {
       symbol,

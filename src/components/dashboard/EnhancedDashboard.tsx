@@ -58,31 +58,32 @@ import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
 // Import memory analytics component
 import { MemoryAnalyticsDashboard } from '@/components/memory/MemoryAnalyticsDashboard'
 
-// Import AG-UI components
-import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
+// Import dynamic first
 import dynamic from 'next/dynamic'
 
-// Import LangChain AG-UI Interface
-const LangChainAGUIInterface = dynamic(() => import('@/components/langchain/LangChainAGUIInterface'), {
-  ssr: false,
-  loading: () => <div className="p-6 text-center">Loading LangChain AG-UI Interface...</div>
-})
+// Import AG-UI components
+import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
-// Import LangChain Status Widget with dynamic import to prevent circular dependencies
-const LangChainStatusWidget = dynamic(() => import('@/components/langchain/LangChainStatusWidget'), {
-  ssr: false,
-  loading: () => <div className="p-4 text-center">Loading LangChain Status...</div>
-})
+// TEMPORARILY DISABLED: LangChain components causing circular dependencies
+// const LangChainAGUIInterface = dynamic(() => import('@/components/langchain/LangChainAGUIInterface'), {
+//   ssr: false,
+//   loading: () => <div className="p-6 text-center">Loading LangChain AG-UI Interface...</div>
+// })
+
+// const LangChainStatusWidget = dynamic(() => import('@/components/langchain/LangChainStatusWidget'), {
+//   ssr: false,
+//   loading: () => <div className="p-4 text-center">Loading LangChain Status...</div>
+// })
 
 // Import simplified AI components
 import SimpleAIStatusWidget from '@/components/ai/SimpleAIStatusWidget'
 import SimpleAIRecommendations from '@/components/ai/SimpleAIRecommendations'
 
-// Import LangChain Dashboard Tab with dynamic import to prevent circular dependencies
-const LangChainDashboardTab = dynamic(() => import('@/components/dashboard/LangChainDashboardTab'), {
-  ssr: false,
-  loading: () => <div className="p-6 text-center">Loading LangChain Dashboard...</div>
-})
+// TEMPORARILY DISABLED: LangChain Dashboard Tab
+// const LangChainDashboardTab = dynamic(() => import('@/components/dashboard/LangChainDashboardTab'), {
+//   ssr: false,
+//   loading: () => <div className="p-6 text-center">Loading LangChain Dashboard...</div>
+// })
 
 // Import consolidated dashboard components
 import LiveTradingWithMarketData from '@/components/dashboard/LiveTradingWithMarketData'
@@ -93,7 +94,6 @@ import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 // Import calendar component
 import { CalendarView } from '@/components/calendar/CalendarView'
-import CalendarWrapper from '@/components/calendar/CalendarWrapper'
 
 // Import chart components
 import { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerformanceChart'
@@ -125,10 +125,7 @@ const PaperTradingDashboard = dynamic(() => import('@/components/paper-trading/P
   loading: () => <div className="p-6 text-center">Loading Paper Trading Dashboard...</div>
 })
 
-const LiveMarketDataPanel = dynamic(() => import('@/components/market/LiveMarketDataPanel').then(mod => ({ default: mod.default || mod.LiveMarketDataPanel })), {
-  ssr: false,
-  loading: () => <div className="p-6 text-center">Loading Market Data...</div>
-})
+// LiveMarketDataPanel already imported above, removing duplicate
 
 const AgentPaperTradingDashboard = dynamic(() => import('@/components/agent/AgentPaperTradingDashboard').catch(() => import('@/components/paper-trading/PaperTradingDashboard')), {
   ssr: false,
@@ -176,7 +173,7 @@ interface DashboardTab {
 }
 
 // Calendar wrapper component with default props
-const CalendarWrapper = () => {
+const CalendarWrapperComponent = () => {
   const [currentDate] = useState(new Date())
   const [calendarData] = useState({})
   const handleDateSelect = (date: Date) => {
@@ -364,7 +361,7 @@ export default function EnhancedDashboard() {
       id: 'calendar',
       label: 'Calendar',
       icon: <Calendar className="h-4 w-4" />,
-      component: <CalendarWrapper />
+      component: <CalendarWrapperComponent />
     },
     {
       id: 'system-health',
@@ -384,12 +381,13 @@ export default function EnhancedDashboard() {
       icon: <Shield className="h-4 w-4" />,
       component: <VaultIntegrationPanel />
     },
-    {
-      id: 'langchain-agui',
-      label: 'LangChain AI',
-      icon: <Brain className="h-4 w-4" />,
-      component: <LangChainDashboardTab />
-    },
+    // TEMPORARILY DISABLED: LangChain tab causing circular dependencies
+    // {
+    //   id: 'langchain-agui',
+    //   label: 'LangChain AI',
+    //   icon: <Brain className="h-4 w-4" />,
+    //   component: <LangChainDashboardTab />
+    // },
     {
       id: 'advanced',
       label: 'Advanced',
@@ -666,7 +664,7 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
           fallback={<ComponentFallback componentName="AI Status" />}
         >
           <SimpleAIStatusWidget
-            onViewDetails={() => setActiveTab('langchain-agui')}
+            onViewDetails={() => onNavigate('langchain-agui')}
           />
         </ErrorBoundary>
       </div>

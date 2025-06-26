@@ -9,12 +9,9 @@ import { EventEmitter } from 'events'
 // Temporarily disabled for client build compatibility
 const StateGraph: any = null
 const END: any = null
-import { langChainService } from './LangChainService'
-import { tradingWorkflowEngine, TradingState, TradingDecision } from './TradingWorkflow'
+import { ServiceLocator } from './service-locator'
+import type { TradingState, TradingDecision } from './TradingWorkflow'
 import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
-import { langChainMCPIntegration } from './MCPIntegration'
-import { agentMemorySystem } from './AgentMemorySystem'
-import { advancedLearningCoordinator } from './AdvancedLearningCoordinator'
 
 export interface LangGraphAgent {
   id: string

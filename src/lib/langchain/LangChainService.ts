@@ -206,15 +206,8 @@ Rules:
 4. Be concise but thorough
 5. Format response as JSON with: analysis, reasoning, confidence`
 
-        // Enhance prompt with MCP tools if available and enabled
-        if (options?.enableMCPTools && context.agentId) {
-          try {
-            const { langChainMCPIntegration } = await import('./MCPIntegration')
-            baseSystemPrompt = langChainMCPIntegration.generateToolAwarePrompt(context.agentId, baseSystemPrompt)
-          } catch {
-            // MCP integration not available, continue without tools
-          }
-        }
+        // MCP tools enhancement disabled to prevent circular dependencies
+        // TODO: Refactor MCP integration to avoid circular imports
 
         const systemPrompt = new SystemMessage(baseSystemPrompt)
 
@@ -431,18 +424,5 @@ Respond with JSON: {"decision": "option", "reasoning": "brief explanation", "con
   }
 }
 
-// Export lazy singleton to prevent circular dependencies
-let _langChainService: LangChainService | null = null
-
-export function getLangChainService(): LangChainService {
-  if (!_langChainService) {
-    _langChainService = new LangChainService()
-  }
-  return _langChainService
-}
-
-// Keep the old export for backward compatibility but make it lazy
-// Using a function instead of Proxy to prevent circular dependency issues
-export const langChainService = {
-  get: () => getLangChainService()
-}
+// Export singleton instance
+export const langChainService = new LangChainService()

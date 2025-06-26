@@ -4,8 +4,8 @@
  */
 
 import { AGUIAgent } from './types'
-import { langGraphOrchestrator, LangGraphAgent } from '@/lib/langchain/LangGraphOrchestrator'
-import { langChainAGUIIntegration } from '@/lib/langchain/AGUIIntegration'
+import { ServiceLocator } from '@/lib/langchain/service-locator'
+import type { LangGraphAgent } from '@/lib/langchain/LangGraphOrchestrator'
 
 export interface LangChainAGUIAgent extends AGUIAgent {
   langGraphId: string
@@ -39,6 +39,7 @@ export class LangChainAGUIRegistry {
     console.log('🔧 Initializing LangChain AG-UI Registry')
 
     // Get all LangGraph agents
+    const langGraphOrchestrator = ServiceLocator.getLangGraphOrchestrator()
     const langGraphAgents = langGraphOrchestrator.getAgents()
 
     // Register each agent with AG-UI
