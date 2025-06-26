@@ -18,20 +18,19 @@ import { ThemeToggle } from '@/components/theme-toggle'
 // Import backend API
 import { backendApi } from '@/lib/api/backend-client'
 
-// Import the new professional trading components
-import LiveTradingDashboard from '@/components/trading/LiveTradingDashboard'
-import AgentControlPanel from '@/components/agent/AgentControlPanel'
-import AgentDecisionLog from '@/components/agent/AgentDecisionLog'
-import LLMProviderManager from '@/components/llm/LLMProviderManager'
-import SystemMonitoringDashboard from '@/components/monitoring/SystemMonitoringDashboard'
+// TEMPORARILY DISABLED: Trading components to isolate circular dependency
+// import LiveTradingDashboard from '@/components/trading/LiveTradingDashboard'
+// import AgentControlPanel from '@/components/agent/AgentControlPanel'
+// import AgentDecisionLog from '@/components/agent/AgentDecisionLog'
+// import LLMProviderManager from '@/components/llm/LLMProviderManager'
+// import SystemMonitoringDashboard from '@/components/monitoring/SystemMonitoringDashboard'
 
-// Import existing components
-import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel'
-import { LiveMarketTicker } from '@/components/realtime/LiveMarketTicker'
-import { PortfolioMonitor } from '@/components/trading/PortfolioMonitor'
-import { AgentManager } from '@/components/trading/AgentManager'
-import { RiskDashboard } from '@/components/trading/RiskDashboard'
-import { TradingInterface } from '@/components/trading/TradingInterface'
+// import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel'
+// import { LiveMarketTicker } from '@/components/realtime/LiveMarketTicker'
+// import { PortfolioMonitor } from '@/components/trading/PortfolioMonitor'
+// import { AgentManager } from '@/components/trading/AgentManager'
+// import { RiskDashboard } from '@/components/trading/RiskDashboard'
+// import { TradingInterface } from '@/components/trading/TradingInterface'
 
 // Services will be lazy loaded to prevent circular dependencies
 
@@ -52,11 +51,9 @@ const EnhancedFarmDashboard = dynamic(() => import('@/components/farm/EnhancedFa
   loading: () => <div className="p-6 text-center">Loading Farm Dashboard...</div>
 })
 
-// Import live market data component
-import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
-
-// Import memory analytics component
-import { MemoryAnalyticsDashboard } from '@/components/memory/MemoryAnalyticsDashboard'
+// TEMPORARILY DISABLED: Additional components to isolate issue
+// import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
+// import { MemoryAnalyticsDashboard } from '@/components/memory/MemoryAnalyticsDashboard'
 
 // Import dynamic first
 import dynamic from 'next/dynamic'
@@ -730,14 +727,14 @@ function TradingOverviewTab({ metrics, systemStatus, onNavigate }: { metrics: Da
 function EnhancedTradingTab() {
   const [tradingSubTab, setTradingSubTab] = useState('live-trading')
 
-  // Consolidated single-level navigation - removing nested tabs
+  // TEMPORARILY DISABLED: Trading sub-tabs to isolate circular dependency
   const tradingSubTabs = [
-    { id: 'live-trading', label: 'Live Trading', component: <LiveTradingDashboard /> },
+    // { id: 'live-trading', label: 'Live Trading', component: <LiveTradingDashboard /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingDashboard /> },
-    { id: 'market-data', label: 'Market Data', component: <LiveMarketDataPanel /> },
-    { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
-    { id: 'orders', label: 'Orders', component: <TradingInterface /> },
-    { id: 'risk', label: 'Risk Management', component: <RiskDashboard /> }
+    // { id: 'market-data', label: 'Market Data', component: <LiveMarketDataPanel /> },
+    // { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
+    // { id: 'orders', label: 'Orders', component: <TradingInterface /> },
+    // { id: 'risk', label: 'Risk Management', component: <RiskDashboard /> }
   ]
 
   return (
@@ -799,13 +796,15 @@ function LocalEnhancedAgentsTab({ metrics }: { metrics: DashboardMetrics }) {
 
   const agentSubTabs = [
     { id: 'overview', label: 'Overview', component: <AgentOverviewPanel metrics={metrics} /> },
-    { id: 'autonomous', label: 'Autonomous', component: <AutonomousTradingDashboard /> },
-    { id: 'agent-farm', label: 'Agent Farm', component: <AgentFarmDashboard /> },
-    { id: 'control-panel', label: 'Control', component: <AgentControlPanel /> },
+    // TEMPORARILY DISABLED: Autonomous components likely causing circular dependency
+    // { id: 'autonomous', label: 'Autonomous', component: <AutonomousTradingDashboard /> },
+    // { id: 'agent-farm', label: 'Agent Farm', component: <AgentFarmDashboard /> },
+    // TEMPORARILY DISABLED: Agent components to isolate circular dependency
+    // { id: 'control-panel', label: 'Control', component: <AgentControlPanel /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <AgentPaperTradingDashboard /> },
-    { id: 'decisions', label: 'Decisions', component: <AgentDecisionLog /> },
-    { id: 'llm-manager', label: 'LLM Provider', component: <LLMProviderManager /> },
-    { id: 'performance', label: 'Performance', component: <ExpertAgentsPanel /> }
+    // { id: 'decisions', label: 'Decisions', component: <AgentDecisionLog /> },
+    // { id: 'llm-manager', label: 'LLM Provider', component: <LLMProviderManager /> },
+    // { id: 'performance', label: 'Performance', component: <ExpertAgentsPanel /> }
   ]
 
   return (
