@@ -509,6 +509,10 @@ export function getMarketDataSimulator(): MarketDataSimulator {
   return _marketDataSimulator
 }
 
-// For backwards compatibility
-export const marketDataSimulator = getMarketDataSimulator()
+// For backwards compatibility - use lazy Proxy to prevent circular dependencies
+export const marketDataSimulator = new Proxy({} as MarketDataSimulator, {
+  get(target, prop) {
+    return getMarketDataSimulator()[prop as keyof MarketDataSimulator]
+  }
+})
 export default marketDataSimulator

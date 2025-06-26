@@ -4,9 +4,12 @@
  */
 
 import { EventEmitter } from 'events'
-import { testnetDeFiService, type TestnetWallet } from '@/lib/defi/TestnetDeFiService'
-import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
-import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
+import type { TestnetWallet } from '@/lib/defi/TestnetDeFiService'
+
+// Lazy load all services to prevent circular dependencies
+const getTestnetDeFiService = () => import('@/lib/defi/TestnetDeFiService').then(m => m.testnetDeFiService)
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
+const getPersistentTradingEngine = () => import('@/lib/paper-trading/PersistentTradingEngine').then(m => m.persistentTradingEngine)
 
 export interface VaultConfig {
   id: string
@@ -135,11 +138,29 @@ class VaultIntegrationService extends EventEmitter {
   private vaultAlerts: Map<string, VaultAlert[]> = new Map() // vaultId -> alerts
   private agentWalletMappings: Map<string, string[]> = new Map() // agentId -> vaultIds
   
+  // Lazy loaded services
+  private testnetDeFiService: any = null
+  private agentPersistenceService: any = null
+  private persistentTradingEngine: any = null
+  
   constructor() {
     super()
-    this.loadPersistedData()
-    this.setupEventListeners()
-    this.startMonitoring()
+    this.initializeAsync()
+  }
+  
+  private async initializeAsync() {
+    try {
+      // Load services lazily
+      this.testnetDeFiService = await getTestnetDeFiService()
+      this.agentPersistenceService = await getAgentPersistenceService()
+      this.persistentTradingEngine = await getPersistentTradingEngine()
+      
+      this.loadPersistedData()
+      this.setupEventListeners()
+      this.startMonitoring()
+    } catch (error) {
+      console.error('Failed to initialize VaultIntegrationService:', error)
+    }
   }
 
   // Vault Management

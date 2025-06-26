@@ -4,11 +4,13 @@
  */
 
 import { EventEmitter } from 'events'
-import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
-import { testnetDeFiService } from '@/lib/defi/TestnetDeFiService'
-import { geminiService } from '@/lib/ai/GeminiService'
-import { agentTodoService } from '@/lib/agents/AgentTodoService'
-import { mcpIntegrationService } from '@/lib/mcp/MCPIntegrationService'
+
+// Lazy load all services to prevent circular dependencies
+const getPersistentTradingEngine = () => import('@/lib/paper-trading/PersistentTradingEngine').then(m => m.persistentTradingEngine)
+const getTestnetDeFiService = () => import('@/lib/defi/TestnetDeFiService').then(m => m.testnetDeFiService)
+const getGeminiService = () => import('@/lib/ai/GeminiService').then(m => m.geminiService)
+const getAgentTodoService = () => import('@/lib/agents/AgentTodoService').then(m => m.agentTodoService)
+const getMcpIntegrationService = () => import('@/lib/mcp/MCPIntegrationService').then(m => m.mcpIntegrationService)
 
 export interface AgentConfig {
   // Basic Info
@@ -115,10 +117,32 @@ class AgentPersistenceService extends EventEmitter {
   private agentConfigs: Map<string, AgentConfig> = new Map()
   private agentRelationships: Map<string, string[]> = new Map() // parentId -> childIds
   
+  // Lazy loaded services
+  private persistentTradingEngine: any = null
+  private testnetDeFiService: any = null
+  private geminiService: any = null
+  private agentTodoService: any = null
+  private mcpIntegrationService: any = null
+  
   constructor() {
     super()
-    this.loadPersistedData()
-    this.setupEventListeners()
+    this.initializeAsync()
+  }
+  
+  private async initializeAsync() {
+    try {
+      // Load services lazily
+      this.persistentTradingEngine = await getPersistentTradingEngine()
+      this.testnetDeFiService = await getTestnetDeFiService()
+      this.geminiService = await getGeminiService()
+      this.agentTodoService = await getAgentTodoService()
+      this.mcpIntegrationService = await getMcpIntegrationService()
+      
+      this.loadPersistedData()
+      this.setupEventListeners()
+    } catch (error) {
+      console.error('Failed to initialize AgentPersistenceService:', error)
+    }
   }
 
   // Main agent creation method that integrates all systems
@@ -200,9 +224,9 @@ class AgentPersistenceService extends EventEmitter {
 
       // 4. Initialize AI Service
       try {
-        if (geminiService.isConfigured()) {
+        if (this.geminiService?.isConfigured()) {
           // Initialize agent memory
-          geminiService.clearAgentMemory(agentId) // Start fresh
+          this.geminiService?.clearAgentMemory(agentId) // Start fresh
           
           // Add initial system memory
           const systemMemory = {
@@ -233,7 +257,7 @@ class AgentPersistenceService extends EventEmitter {
         // Create default todos based on agent type
         await this.createDefaultTodos(agentId, config)
         
-        const todos = agentTodoService.getAgentTodos(agentId)
+        const todos = this.agentTodoService?.getAgentTodos(agentId)
         agent.totalTodos = todos.length
         agent.completedTodos = todos.filter(t => t.status === 'completed').length
         agent.integrations.todoService = true
@@ -255,7 +279,7 @@ class AgentPersistenceService extends EventEmitter {
 
       // 7. Initialize MCP Tools
       try {
-        const mcpResult = await mcpIntegrationService.activateForAgent(agentId)
+        const mcpResult = await this.mcpIntegrationService?.activateForAgent(agentId)
         if (mcpResult.success) {
           agent.integrations.mcpTools = true
           console.log(`✅ Initialized MCP tools for agent ${agentId}`)
@@ -331,7 +355,7 @@ class AgentPersistenceService extends EventEmitter {
       // Update AI configuration if changed
       if (updates.systemPrompt || updates.llmProvider) {
         // Add memory entry about configuration change
-        if (geminiService.isConfigured()) {
+        if (this.geminiService?.isConfigured()) {
           const memoryEntry = {
             id: `config_update_${Date.now()}`,
             agentId,
@@ -379,12 +403,12 @@ class AgentPersistenceService extends EventEmitter {
       })
 
       // Cleanup AI memory
-      geminiService.clearAgentMemory(agentId)
+      this.geminiService?.clearAgentMemory(agentId)
 
       // Cleanup todos
-      const todos = agentTodoService.getAgentTodos(agentId)
+      const todos = this.agentTodoService?.getAgentTodos(agentId)
       for (const todo of todos) {
-        await agentTodoService.deleteTodo(agentId, todo.id)
+        await this.agentTodoService?.deleteTodo(agentId, todo.id)
       }
 
       // Remove from hierarchy
@@ -461,12 +485,12 @@ class AgentPersistenceService extends EventEmitter {
       }
 
       // Update todo completion rate
-      const todos = agentTodoService.getAgentTodos(agentId)
+      const todos = this.agentTodoService?.getAgentTodos(agentId)
       agent.totalTodos = todos.length
       agent.completedTodos = todos.filter(t => t.status === 'completed').length
 
       // Update memory count
-      const memories = geminiService.getAgentMemory(agentId)
+      const memories = this.geminiService?.getAgentMemory(agentId)
       agent.memoryEntries = memories.length
 
       agent.lastActivity = Date.now()
@@ -520,23 +544,23 @@ class AgentPersistenceService extends EventEmitter {
     }
 
     for (const todoData of defaultTodos) {
-      await agentTodoService.createTodo(agentId, todoData)
+      await this.agentTodoService?.createTodo(agentId, todoData)
     }
   }
 
   // Get MCP stats for agent
   getAgentMCPStats(agentId: string) {
-    return mcpIntegrationService.getAgentStats(agentId)
+    return this.mcpIntegrationService?.getAgentStats(agentId)
   }
 
   // Call MCP tool for agent
   async callMCPTool(agentId: string, toolId: string, parameters: Record<string, any>, context?: Record<string, any>) {
-    return await mcpIntegrationService.callTool(agentId, toolId, parameters, context)
+    return await this.mcpIntegrationService?.callTool(agentId, toolId, parameters, context)
   }
 
   // Get available MCP tools for agent
   getAvailableMCPTools(agentId: string) {
-    return mcpIntegrationService.getAvailableTools(agentId)
+    return this.mcpIntegrationService?.getAvailableTools(agentId)
   }
 
   private async addToHierarchy(parentId: string, childId: string): Promise<void> {
@@ -561,7 +585,7 @@ class AgentPersistenceService extends EventEmitter {
     })
 
     // Listen to todo system events
-    agentTodoService.on('todoCreated', (data) => {
+    this.agentTodoService?.on('todoCreated', (data) => {
       const agent = this.agents.get(data.agentId)
       if (agent) {
         agent.totalTodos++
@@ -569,7 +593,7 @@ class AgentPersistenceService extends EventEmitter {
       }
     })
 
-    agentTodoService.on('todoUpdated', (data) => {
+    this.agentTodoService?.on('todoUpdated', (data) => {
       const agent = this.agents.get(data.agentId)
       if (agent && data.todo.status === 'completed' && data.previousTodo?.status !== 'completed') {
         agent.completedTodos++
@@ -638,7 +662,7 @@ class AgentPersistenceService extends EventEmitter {
   // Get dashboard stats
   getDashboardStats() {
     const agents = Array.from(this.agents.values())
-    const mcpStats = mcpIntegrationService.getDashboardStats()
+    const mcpStats = this.mcpIntegrationService?.getDashboardStats()
     
     return {
       totalAgents: agents.length,

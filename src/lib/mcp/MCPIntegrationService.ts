@@ -4,12 +4,14 @@
  */
 
 import { EventEmitter } from 'events'
-import { agentPersistenceService } from '@/lib/agents/AgentPersistenceService'
-import { vaultIntegrationService } from '@/lib/vault/VaultIntegrationService'
-import { persistentTradingEngine } from '@/lib/paper-trading/PersistentTradingEngine'
-import { testnetDeFiService } from '@/lib/defi/TestnetDeFiService'
-import { geminiService } from '@/lib/ai/GeminiService'
-import { agentTodoService } from '@/lib/agents/AgentTodoService'
+
+// Lazy load all services to prevent circular dependencies
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
+const getVaultIntegrationService = () => import('@/lib/vault/VaultIntegrationService').then(m => m.vaultIntegrationService)
+const getPersistentTradingEngine = () => import('@/lib/paper-trading/PersistentTradingEngine').then(m => m.persistentTradingEngine)
+const getTestnetDeFiService = () => import('@/lib/defi/TestnetDeFiService').then(m => m.testnetDeFiService)
+const getGeminiService = () => import('@/lib/ai/GeminiService').then(m => m.geminiService)
+const getAgentTodoService = () => import('@/lib/agents/AgentTodoService').then(m => m.agentTodoService)
 
 export interface MCPTool {
   id: string
@@ -109,12 +111,36 @@ class MCPIntegrationService extends EventEmitter {
   private sessions: Map<string, MCPSession> = new Map()
   private rateLimits: Map<string, { count: number, resetTime: number }> = new Map()
   
+  // Lazy loaded services
+  private agentPersistenceService: any = null
+  private vaultIntegrationService: any = null
+  private persistentTradingEngine: any = null
+  private testnetDeFiService: any = null
+  private geminiService: any = null
+  private agentTodoService: any = null
+  
   constructor() {
     super()
-    this.initializeDefaultTools()
-    this.setupEventListeners()
-    this.startHeartbeat()
-    this.loadPersistedData()
+    this.initializeAsync()
+  }
+  
+  private async initializeAsync() {
+    try {
+      // Load services lazily
+      this.agentPersistenceService = await getAgentPersistenceService()
+      this.vaultIntegrationService = await getVaultIntegrationService()
+      this.persistentTradingEngine = await getPersistentTradingEngine()
+      this.testnetDeFiService = await getTestnetDeFiService()
+      this.geminiService = await getGeminiService()
+      this.agentTodoService = await getAgentTodoService()
+      
+      this.initializeDefaultTools()
+      this.setupEventListeners()
+      this.startHeartbeat()
+      this.loadPersistedData()
+    } catch (error) {
+      console.error('Failed to initialize MCPIntegrationService:', error)
+    }
   }
 
   // Initialize all agents with MCP infrastructure
