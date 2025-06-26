@@ -5,11 +5,17 @@
  */
 
 import { EventEmitter } from 'events'
-import { langGraphOrchestrator, LangGraphAgent } from './LangGraphOrchestrator'
-import { langChainService } from './LangChainService'
-import { mcpIntegrationService, MCPTool, MCPCallLog } from '@/lib/mcp/MCPIntegrationService'
+// TEMPORARILY DISABLED: Circular dependency through mcpIntegrationService
+// import { langGraphOrchestrator, LangGraphAgent } from './LangGraphOrchestrator'
+// import { langChainService } from './LangChainService'
+// import { mcpIntegrationService, MCPTool, MCPCallLog } from '@/lib/mcp/MCPIntegrationService'
 import { Tool } from '@langchain/core/tools'
 import { z } from 'zod'
+
+// Temporary types to prevent build errors
+type LangGraphAgent = any
+type MCPTool = any
+type MCPCallLog = any
 
 export interface LangChainMCPConfig {
   enableToolIntegration: boolean
