@@ -35,10 +35,10 @@ import { TradingInterface } from '@/components/trading/TradingInterface'
 
 // Services will be lazy loaded to prevent circular dependencies
 
-// Import system health components
-import { SystemHealthDashboard } from '@/components/system/SystemHealthDashboard'
-import { MCPToolsPanel } from '@/components/mcp/MCPToolsPanel'
-import { VaultIntegrationPanel } from '@/components/vault/VaultIntegrationPanel'
+// TEMPORARILY DISABLED: System components causing circular dependencies
+// import { SystemHealthDashboard } from '@/components/system/SystemHealthDashboard'
+// import { MCPToolsPanel } from '@/components/mcp/MCPToolsPanel'
+// import { VaultIntegrationPanel } from '@/components/vault/VaultIntegrationPanel'
 
 // Import enhanced components with dynamic import to prevent circular dependencies
 const EnhancedAgentsTab = dynamic(() => import('@/components/dashboard/EnhancedAgentsTab'), {
@@ -363,24 +363,25 @@ export default function EnhancedDashboard() {
       icon: <Calendar className="h-4 w-4" />,
       component: <CalendarWrapperComponent />
     },
-    {
-      id: 'system-health',
-      label: 'System',
-      icon: <Activity className="h-4 w-4" />,
-      component: <SystemHealthDashboard />
-    },
-    {
-      id: 'mcp-tools',
-      label: 'MCP Tools',
-      icon: <Zap className="h-4 w-4" />,
-      component: <MCPToolsPanel />
-    },
-    {
-      id: 'vault-integration',
-      label: 'Vaults',
-      icon: <Shield className="h-4 w-4" />,
-      component: <VaultIntegrationPanel />
-    },
+    // TEMPORARILY DISABLED: System components causing circular dependencies
+    // {
+    //   id: 'system-health',
+    //   label: 'System',
+    //   icon: <Activity className="h-4 w-4" />,
+    //   component: <SystemHealthDashboard />
+    // },
+    // {
+    //   id: 'mcp-tools',
+    //   label: 'MCP Tools',
+    //   icon: <Zap className="h-4 w-4" />,
+    //   component: <MCPToolsPanel />
+    // },
+    // {
+    //   id: 'vault-integration',
+    //   label: 'Vaults',
+    //   icon: <Shield className="h-4 w-4" />,
+    //   component: <VaultIntegrationPanel />
+    // },
     // TEMPORARILY DISABLED: LangChain tab causing circular dependencies
     // {
     //   id: 'langchain-agui',
