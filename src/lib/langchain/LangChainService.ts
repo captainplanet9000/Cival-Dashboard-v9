@@ -442,8 +442,7 @@ export function getLangChainService(): LangChainService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const langChainService = new Proxy({} as LangChainService, {
-  get(target, prop) {
-    return getLangChainService()[prop as keyof LangChainService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const langChainService = {
+  get: () => getLangChainService()
+}

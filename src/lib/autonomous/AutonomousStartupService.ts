@@ -264,10 +264,9 @@ export function getAutonomousStartupService(): AutonomousStartupService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const autonomousStartupService = new Proxy({} as AutonomousStartupService, {
-  get(target, prop) {
-    return getAutonomousStartupService()[prop as keyof AutonomousStartupService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const autonomousStartupService = {
+  get: () => getAutonomousStartupService()
+}
 
 export default autonomousStartupService

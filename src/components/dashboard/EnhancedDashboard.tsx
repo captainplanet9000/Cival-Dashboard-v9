@@ -229,11 +229,14 @@ export default function EnhancedDashboard() {
         // Lazy load services to prevent circular dependencies
         const { systemLifecycleService } = await import('@/lib/system/SystemLifecycleService')
         
+        // Get the actual service instance
+        const service = systemLifecycleService.get()
+        
         // Initialize all integrated services
-        await systemLifecycleService.initializeAllServices()
+        await service.initializeAllServices()
         
         // Get real-time system health from integrated services
-        const systemHealthData = await systemLifecycleService.getSystemHealth()
+        const systemHealthData = await service.getSystemHealth()
         
         // Fetch system status and trading overview data
         const [tradingStatus, systemHealth, marketOverview, tradingOverview, portfolioSummary] = await Promise.all([

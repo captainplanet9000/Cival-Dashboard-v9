@@ -895,10 +895,9 @@ export function getMcpIntegrationService(): MCPIntegrationService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const mcpIntegrationService = new Proxy({} as MCPIntegrationService, {
-  get(target, prop) {
-    return getMcpIntegrationService()[prop as keyof MCPIntegrationService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const mcpIntegrationService = {
+  get: () => getMcpIntegrationService()
+}
 
 export default MCPIntegrationService

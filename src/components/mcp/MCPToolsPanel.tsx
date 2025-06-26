@@ -26,7 +26,7 @@ import {
   Eye
 } from 'lucide-react'
 
-import { mcpIntegrationService } from '@/lib/mcp/MCPIntegrationService'
+// Lazy load MCP service to prevent circular dependencies
 
 interface MCPTool {
   id: string
@@ -95,6 +95,9 @@ export function MCPToolsPanel() {
   useEffect(() => {
     const updateMCPData = async () => {
       try {
+        // Lazy load the service to prevent circular dependencies
+        const { mcpIntegrationService } = await import('@/lib/mcp/MCPIntegrationService')
+        
         // Get available tools
         const availableTools = mcpIntegrationService.getAvailableTools('system')
         setTools(availableTools)

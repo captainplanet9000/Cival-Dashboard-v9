@@ -42,10 +42,10 @@ import { backendApi } from '@/lib/api/backend-client'
 
 // Import integrated services for complete agent lifecycle - using lazy loading
 // Lazy load services to avoid circular dependencies
-const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService)
-const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
-const getVaultIntegrationService = () => import('@/lib/vault/VaultIntegrationService').then(m => m.vaultIntegrationService)
-const getMcpIntegrationService = () => import('@/lib/mcp/MCPIntegrationService').then(m => m.mcpIntegrationService)
+const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService.get())
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService.get())
+const getVaultIntegrationService = () => import('@/lib/vault/VaultIntegrationService').then(m => m.vaultIntegrationService.get())
+const getMcpIntegrationService = () => import('@/lib/mcp/MCPIntegrationService').then(m => m.mcpIntegrationService.get())
 
 // Import agent creation wizard
 import { AgentCreationWizard } from '@/components/modals/AgentCreationWizard'
@@ -156,6 +156,7 @@ export function EnhancedFarmDashboard() {
     const fetchFarmData = async () => {
       try {
         // Initialize all integrated services for complete agent lifecycle
+        const systemLifecycleService = await getSystemLifecycleService()
         await systemLifecycleService.initializeAllServices()
         
         // Get real-time system health from integrated services
@@ -1235,6 +1236,7 @@ export function EnhancedFarmDashboard() {
         onCreateAgent={async (agentConfig) => {
           try {
             // Use SystemLifecycleService for complete agent creation with all integrations
+            const systemLifecycleService = await getSystemLifecycleService()
             const result = await systemLifecycleService.createCompleteAgent({
               // Basic Configuration
               name: agentConfig.name,

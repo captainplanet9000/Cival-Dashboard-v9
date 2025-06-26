@@ -29,7 +29,7 @@ import {
   Target
 } from 'lucide-react'
 
-import { vaultIntegrationService } from '@/lib/vault/VaultIntegrationService'
+// Lazy load service to prevent circular dependencies
 
 interface VaultData {
   id: string
@@ -124,6 +124,9 @@ export function VaultIntegrationPanel() {
   useEffect(() => {
     const updateVaultData = async () => {
       try {
+        // Lazy load the service to prevent circular dependencies
+        const { vaultIntegrationService } = await import('@/lib/vault/VaultIntegrationService')
+        
         // Get all vaults
         const allVaults = await vaultIntegrationService.getAllVaults()
         setVaults(allVaults)

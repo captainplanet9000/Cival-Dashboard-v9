@@ -734,10 +734,9 @@ export function getSystemLifecycleService(): SystemLifecycleService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const systemLifecycleService = new Proxy({} as SystemLifecycleService, {
-  get(target, prop) {
-    return getSystemLifecycleService()[prop as keyof SystemLifecycleService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const systemLifecycleService = {
+  get: () => getSystemLifecycleService()
+}
 
 export default SystemLifecycleService

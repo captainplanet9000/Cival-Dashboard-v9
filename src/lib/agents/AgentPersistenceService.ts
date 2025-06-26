@@ -704,10 +704,9 @@ export function getAgentPersistenceService(): AgentPersistenceService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const agentPersistenceService = new Proxy({} as AgentPersistenceService, {
-  get(target, prop) {
-    return getAgentPersistenceService()[prop as keyof AgentPersistenceService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const agentPersistenceService = {
+  get: () => getAgentPersistenceService()
+}
 
 export default AgentPersistenceService

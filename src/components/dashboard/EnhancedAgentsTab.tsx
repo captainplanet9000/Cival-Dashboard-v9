@@ -60,8 +60,8 @@ import { agentTradingDb, type AgentTradingPermission } from '@/utils/agent-tradi
 import { lazy } from 'react'
 
 // Lazy load services to avoid circular dependencies
-const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
-const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService)
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService.get())
+const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService.get())
 
 // Use existing TradingAgent interface from AgentManager
 interface TradingAgent {

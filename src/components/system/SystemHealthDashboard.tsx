@@ -88,7 +88,7 @@ export function SystemHealthDashboard() {
       try {
         // Lazy load the service to prevent circular dependencies
         const { systemLifecycleService } = await import('@/lib/system/SystemLifecycleService')
-        const health = await systemLifecycleService.getSystemHealth()
+        const health = await systemLifecycleService.get().getSystemHealth()
         setSystemStatus(health)
       } catch (error) {
         console.error('Failed to fetch system health:', error)

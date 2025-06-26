@@ -195,8 +195,7 @@ export function getChainlinkService(): ChainlinkPriceFeedService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const chainlinkService = new Proxy({} as ChainlinkPriceFeedService, {
-  get(target, prop) {
-    return getChainlinkService()[prop as keyof ChainlinkPriceFeedService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const chainlinkService = {
+  get: () => getChainlinkService()
+}

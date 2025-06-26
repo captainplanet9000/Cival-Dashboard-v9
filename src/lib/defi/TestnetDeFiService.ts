@@ -545,10 +545,9 @@ export function getTestnetDeFiService(): TestnetDeFiService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const testnetDeFiService = new Proxy({} as TestnetDeFiService, {
-  get(target, prop) {
-    return getTestnetDeFiService()[prop as keyof TestnetDeFiService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const testnetDeFiService = {
+  get: () => getTestnetDeFiService()
+}
 
 export default TestnetDeFiService

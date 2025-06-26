@@ -51,9 +51,9 @@ import {
 
 // Import Agent Persistence Service and System Lifecycle
 // Lazy load services to avoid circular dependencies
-const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService)
+const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService.get())
 import { type AgentConfig as PersistenceAgentConfig } from '@/lib/agents/AgentPersistenceService'
-const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService)
+const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService.get())
 
 interface AgentConfig {
   // Basic Info

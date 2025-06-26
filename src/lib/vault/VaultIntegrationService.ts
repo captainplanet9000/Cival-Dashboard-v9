@@ -975,10 +975,9 @@ export function getVaultIntegrationService(): VaultIntegrationService {
 }
 
 // Keep the old export for backward compatibility but make it lazy
-export const vaultIntegrationService = new Proxy({} as VaultIntegrationService, {
-  get(target, prop) {
-    return getVaultIntegrationService()[prop as keyof VaultIntegrationService]
-  }
-})
+// Using a function instead of Proxy to prevent circular dependency issues
+export const vaultIntegrationService = {
+  get: () => getVaultIntegrationService()
+}
 
 export default VaultIntegrationService
