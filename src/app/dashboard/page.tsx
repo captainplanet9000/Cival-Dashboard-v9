@@ -91,28 +91,29 @@ export default function DashboardPage() {
             <li>✅ Shadcn/UI Card components restored - No errors</li>
             <li>✅ Dynamic imports restored - No errors</li>
             <li>✅ MinimalDashboard component - Passed</li>
-            <li>❌ EnhancedDashboard component - CAUSES CIRCULAR DEPENDENCY ERROR</li>
-            <li>🔍 Error Source: EnhancedDashboard.tsx needs circular dependency fix</li>
+            <li>❌ EnhancedDashboard (full) - CAUSES CIRCULAR DEPENDENCY ERROR</li>
+            <li>🧪 EnhancedDashboard (dependency-free) - Testing now</li>
+            <li>🔍 Error Source: Likely shadcn/ui or lucide-react imports</li>
           </ul>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>⚠️ ERROR IDENTIFIED</CardTitle>
+          <CardTitle>🔬 DEPENDENCY-FREE TEST</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-red-600 mb-4">
-            <strong>CONFIRMED:</strong> EnhancedDashboard component causes circular dependency error in production.
+          <p className="text-sm text-yellow-600 mb-4">
+            <strong>TESTING:</strong> EnhancedDashboard with zero external dependencies to isolate circular dependency source.
           </p>
           <p className="text-sm text-muted-foreground mb-4">
-            Error: "Cannot access 'l' before initialization" in module 43686
+            Previous error: "Cannot access 'l' before initialization" in module 43686
           </p>
-          <p className="text-sm text-green-600">
-            ✅ Reverting to stable MinimalDashboard until EnhancedDashboard is fixed.
+          <p className="text-sm text-blue-600 mb-4">
+            🧪 Current test: Pure React + Tailwind CSS (no shadcn/ui, no lucide-react icons)
           </p>
-          <Suspense fallback={<div>Loading MinimalDashboard...</div>}>
-            <MinimalDashboard />
+          <Suspense fallback={<div>Loading Dependency-Free EnhancedDashboard...</div>}>
+            <EnhancedDashboard />
           </Suspense>
         </CardContent>
       </Card>
