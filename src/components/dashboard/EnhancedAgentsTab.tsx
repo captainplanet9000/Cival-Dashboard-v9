@@ -49,7 +49,7 @@ import { AgentCreationWizard } from '@/components/modals/AgentCreationWizard'
 import { AgentManagementSuite } from '@/components/modals/AgentManagementSuite'
 
 // Import LangChain components
-import LangChainStatusWidget from '@/components/langchain/LangChainStatusWidget'
+// REMOVED: LangChain integration completely removed
 
 // Import utilities and API
 import { backendApi } from '@/lib/api/backend-client'
@@ -680,7 +680,7 @@ export default function EnhancedAgentsTab() {
           </CardContent>
         </Card>
         {/* LangChain Integration Status */}
-        <LangChainStatusWidget compact={true} />
+        {/* LangChain integration removed */}
       </div>
 
       {/* Main Agent Interface */}
