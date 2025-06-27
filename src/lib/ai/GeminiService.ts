@@ -521,7 +521,8 @@ Assess the risk and provide recommendations. Respond in this JSON format:
 }
 
 // Singleton instance
-export const geminiService = new GeminiService()
-geminiService.init()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const geminiService = new GeminiService()
+// geminiService.init()
 
 export default GeminiService

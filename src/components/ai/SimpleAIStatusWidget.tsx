@@ -20,7 +20,7 @@ import {
   DollarSign
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { directAIService } from '@/lib/ai/DirectAIService'
+// import { directAIService } from '@/lib/ai/DirectAIService' // DISABLED: Circular dependency
 
 interface SimpleAIStatusWidgetProps {
   className?: string
@@ -57,6 +57,10 @@ export function SimpleAIStatusWidget({
     const updateStatus = async () => {
       try {
         setIsLoading(true)
+        
+        // Lazy import to prevent circular dependency
+        const { DirectAIService } = await import('@/lib/ai/DirectAIService')
+        const directAIService = new DirectAIService()
         
         // Get health status
         const healthStatus = await directAIService.healthCheck()

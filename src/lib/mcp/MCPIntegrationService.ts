@@ -10,7 +10,8 @@ const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceSe
 const getVaultIntegrationService = () => import('@/lib/vault/VaultIntegrationService').then(m => m.vaultIntegrationService)
 const getPersistentTradingEngine = () => import('@/lib/paper-trading/PersistentTradingEngine').then(m => m.persistentTradingEngine)
 const getTestnetDeFiService = () => import('@/lib/defi/TestnetDeFiService').then(m => m.testnetDeFiService)
-const getGeminiService = () => import('@/lib/ai/GeminiService').then(m => m.geminiService)
+// TEMPORARILY DISABLED: Circular dependency through geminiService
+// const getGeminiService = () => import('@/lib/ai/GeminiService').then(m => m.geminiService)
 const getAgentTodoService = () => import('@/lib/agents/AgentTodoService').then(m => m.agentTodoService)
 
 export interface MCPTool {
@@ -131,7 +132,8 @@ class MCPIntegrationService extends EventEmitter {
       this.vaultIntegrationService = await getVaultIntegrationService()
       this.persistentTradingEngine = await getPersistentTradingEngine()
       this.testnetDeFiService = await getTestnetDeFiService()
-      this.geminiService = await getGeminiService()
+      // TEMPORARILY DISABLED: Circular dependency through geminiService
+      // this.geminiService = await getGeminiService()
       this.agentTodoService = await getAgentTodoService()
       
       this.initializeDefaultTools()
@@ -639,11 +641,12 @@ class MCPIntegrationService extends EventEmitter {
   }
 
   private async analyzeMarketSentiment(params: any, context: any): Promise<any> {
-    if (this.geminiService?.isConfigured()) {
-      const prompt = `Analyze market sentiment for ${params.symbol} over ${params.timeframe || '1d'}. Provide a sentiment score between -1 (very bearish) and 1 (very bullish) with reasoning.`
-      const response = await this.geminiService?.generateResponse(prompt, context.agentId)
-      return { symbol: params.symbol, sentiment: response, timestamp: Date.now() }
-    } else {
+    // TEMPORARILY DISABLED: Circular dependency through geminiService
+    // if (this.geminiService?.isConfigured()) {
+    //   const prompt = `Analyze market sentiment for ${params.symbol} over ${params.timeframe || '1d'}. Provide a sentiment score between -1 (very bearish) and 1 (very bullish) with reasoning.`
+    //   const response = await this.geminiService?.generateResponse(prompt, context.agentId)
+    //   return { symbol: params.symbol, sentiment: response, timestamp: Date.now() }
+    // } else {
       // Fallback mock sentiment
       return { 
         symbol: params.symbol, 
@@ -668,20 +671,21 @@ class MCPIntegrationService extends EventEmitter {
 
   private async sendAgentMessage(params: any, context: any): Promise<any> {
     // Store message in agent memory for coordination
-    if (this.geminiService?.isConfigured()) {
-      const memory = {
-        id: `msg_${Date.now()}`,
-        agentId: params.targetAgentId,
-        type: 'communication' as const,
-        content: `Message from agent ${context.agentId}: ${params.message}`,
-        context: { fromAgent: context.agentId, priority: params.priority },
-        importance: params.priority === 'high' ? 0.8 : 0.5,
-        timestamp: Date.now(),
-        tags: ['inter-agent', 'communication', params.priority || 'medium']
-      }
-      
-      geminiService['addToMemory'](params.targetAgentId, memory)
-    }
+    // TEMPORARILY DISABLED: Circular dependency through geminiService
+    // if (this.geminiService?.isConfigured()) {
+    //   const memory = {
+    //     id: `msg_${Date.now()}`,
+    //     agentId: params.targetAgentId,
+    //     type: 'communication' as const,
+    //     content: `Message from agent ${context.agentId}: ${params.message}`,
+    //     context: { fromAgent: context.agentId, priority: params.priority },
+    //     importance: params.priority === 'high' ? 0.8 : 0.5,
+    //     timestamp: Date.now(),
+    //     tags: ['inter-agent', 'communication', params.priority || 'medium']
+    //   }
+    //   
+    //   geminiService['addToMemory'](params.targetAgentId, memory)
+    // }
     
     this.emit('agentMessage', {
       from: context.agentId,
@@ -695,23 +699,24 @@ class MCPIntegrationService extends EventEmitter {
   }
 
   private async storeMemory(params: any, context: any): Promise<any> {
-    if (this.geminiService?.isConfigured()) {
-      const memory = {
-        id: `mem_${Date.now()}`,
-        agentId: context.agentId,
-        type: params.type,
-        content: params.content,
-        context: { source: 'mcp-tool' },
-        importance: params.importance || 0.5,
-        timestamp: Date.now(),
-        tags: ['mcp-stored', params.type]
-      }
-      
-      geminiService['addToMemory'](context.agentId, memory)
-      return { success: true, memoryId: memory.id }
-    }
+    // TEMPORARILY DISABLED: Circular dependency through geminiService
+    // if (this.geminiService?.isConfigured()) {
+    //   const memory = {
+    //     id: `mem_${Date.now()}`,
+    //     agentId: context.agentId,
+    //     type: params.type,
+    //     content: params.content,
+    //     context: { source: 'mcp-tool' },
+    //     importance: params.importance || 0.5,
+    //     timestamp: Date.now(),
+    //     tags: ['mcp-stored', params.type]
+    //   }
+    //   
+    //   geminiService['addToMemory'](context.agentId, memory)
+    //   return { success: true, memoryId: memory.id }
+    // }
     
-    return { success: false, error: 'Gemini service not available' }
+    return { success: false, error: 'Gemini service temporarily disabled' }
   }
 
   private getActiveSessionId(agentId: string): string {

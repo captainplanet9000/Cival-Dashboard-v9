@@ -293,4 +293,5 @@ Focus on actionable insights for paper trading.`
 }
 
 // Export singleton instance
-export const directAIService = new DirectAIService()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const directAIService = new DirectAIService()

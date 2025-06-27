@@ -22,7 +22,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { directAIService } from '@/lib/ai/DirectAIService'
+// import { directAIService } from '@/lib/ai/DirectAIService' // DISABLED: Circular dependency
 
 interface SimpleSentimentAnalysisProps {
   className?: string
@@ -71,6 +71,10 @@ export function SimpleSentimentAnalysis({
             trend: Math.random() > 0.5 ? 'up' : 'down'
           }
 
+          // Lazy import to prevent circular dependency
+          const { DirectAIService } = await import('@/lib/ai/DirectAIService')
+          const directAIService = new DirectAIService()
+          
           const sentiment = await directAIService.getMarketSentiment(
             symbol, 
             newsData.slice(0, 3), // Limit news data

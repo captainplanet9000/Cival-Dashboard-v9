@@ -22,7 +22,8 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { directAIService, type TradingRecommendation } from '@/lib/ai/DirectAIService'
+// import { directAIService, type TradingRecommendation } from '@/lib/ai/DirectAIService' // DISABLED: Circular dependency
+type TradingRecommendation = any // Temporary type
 
 interface SimpleAIRecommendationsProps {
   className?: string
@@ -63,6 +64,10 @@ export function SimpleAIRecommendations({
             low24h: Math.random() * 45000 + 15000
           }
 
+          // Lazy import to prevent circular dependency
+          const { DirectAIService } = await import('@/lib/ai/DirectAIService')
+          const directAIService = new DirectAIService()
+          
           const recommendation = await directAIService.getTradingAnalysis({
             symbol,
             timeframe: '1h',
