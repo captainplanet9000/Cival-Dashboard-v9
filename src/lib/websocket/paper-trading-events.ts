@@ -497,21 +497,26 @@ export class PaperTradingEventBus {
 }
 
 // Global event bus instance
-export const paperTradingEventBus = new PaperTradingEventBus();
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const paperTradingEventBus = new PaperTradingEventBus();
 
 // Event emitter helpers
+// TEMPORARILY DISABLED: All functions depend on disabled paperTradingEventBus
 export class PaperTradingEventEmitter {
   static emitOrderCreated(
     agentId: string,
     accountId: string,
     order: AgentPaperOrderRequest
   ): void {
+    // TEMPORARILY DISABLED: paperTradingEventBus auto-instantiation disabled
+    /*
     paperTradingEventBus.emit('paper_order_created', {
       agentId,
       accountId,
       order,
       timestamp: new Date().toISOString()
     });
+    */
   }
 
   static emitOrderFilled(

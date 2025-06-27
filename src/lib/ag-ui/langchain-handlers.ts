@@ -757,4 +757,5 @@ export class LangChainAGUIHandlers {
 }
 
 // Export singleton instance
-export const langChainAGUIHandlers = new LangChainAGUIHandlers()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const langChainAGUIHandlers = new LangChainAGUIHandlers()

@@ -337,4 +337,5 @@ export class LangChainAGUIRegistry {
 }
 
 // Export singleton instance
-export const langChainAGUIRegistry = new LangChainAGUIRegistry()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const langChainAGUIRegistry = new LangChainAGUIRegistry()

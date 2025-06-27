@@ -456,15 +456,19 @@ export class WebSocketConnectionManager extends EventEmitter {
 }
 
 // Singleton instance
-export const wsManager = new WebSocketConnectionManager()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const wsManager = new WebSocketConnectionManager()
 
 // React hook for WebSocket connection
+// TEMPORARILY DISABLED: Depends on disabled wsManager
 export function useWebSocket() {
-  const [isConnected, setIsConnected] = React.useState(wsManager.isConnected())
+  const [isConnected, setIsConnected] = React.useState(false)
   const [lastMessage, setLastMessage] = React.useState<WebSocketMessage | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
+    // TEMPORARILY DISABLED: wsManager auto-instantiation disabled
+    /*
     const handleConnect = () => setIsConnected(true)
     const handleDisconnect = () => setIsConnected(false)
     const handleMessage = (message: WebSocketMessage) => setLastMessage(message)
@@ -489,6 +493,7 @@ export function useWebSocket() {
       wsManager.off('message', handleMessage)
       wsManager.off('error', handleError)
     }
+    */
   }, [])
 
   return {

@@ -790,4 +790,5 @@ export class AgentFarmManager {
 }
 
 // Export singleton instance
-export const paperTradingEngine = new PaperTradingEngineImpl()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const paperTradingEngine = new PaperTradingEngineImpl()
