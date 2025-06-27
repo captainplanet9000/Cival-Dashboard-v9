@@ -100,7 +100,7 @@ export default function FarmsPage() {
       setIsLoading(true);
 
       // Load all farms
-      const farmsResponse = await backendApi.fetchWithTimeout(
+      const farmsResponse = await fetch(
         `${backendApi.getBackendUrl()}/api/v1/farms`
       );
       
@@ -116,7 +116,7 @@ export default function FarmsPage() {
         for (const farm of farmsList) {
           // Load farm agents
           try {
-            const agentsResponse = await backendApi.fetchWithTimeout(
+            const agentsResponse = await fetch(
               `${backendApi.getBackendUrl()}/api/v1/farms/${farm.farm_id}/agents`
             );
             if (agentsResponse.ok) {
@@ -130,7 +130,7 @@ export default function FarmsPage() {
 
           // Load farm performance
           try {
-            const perfResponse = await backendApi.fetchWithTimeout(
+            const perfResponse = await fetch(
               `${backendApi.getBackendUrl()}/api/v1/farms/${farm.farm_id}/performance`
             );
             if (perfResponse.ok) {
@@ -163,7 +163,7 @@ export default function FarmsPage() {
       }
 
       // Load farm metrics
-      const metricsResponse = await backendApi.fetchWithTimeout(
+      const metricsResponse = await fetch(
         `${backendApi.getBackendUrl()}/api/v1/farms/metrics`
       );
       
@@ -290,7 +290,7 @@ export default function FarmsPage() {
   const handleFarmAction = async (farmId: string, action: 'start' | 'pause' | 'stop') => {
     try {
       const endpoint = `${backendApi.getBackendUrl()}/api/v1/farms/${farmId}/${action}`;
-      const response = await backendApi.fetchWithTimeout(endpoint, {
+      const response = await fetch(endpoint, {
         method: 'POST'
       });
       
@@ -316,7 +316,7 @@ export default function FarmsPage() {
 
   const createFarm = async (farmData: Partial<Farm>) => {
     try {
-      const response = await backendApi.fetchWithTimeout(
+      const response = await fetch(
         `${backendApi.getBackendUrl()}/api/v1/farms`,
         {
           method: 'POST',

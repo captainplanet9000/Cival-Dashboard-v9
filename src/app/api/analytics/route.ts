@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     // Try to get real analytics from backend first
     try {
       const analyticsResponse = await backendApi.getAnalytics ? 
-        await backendApi.getAnalytics(type, timeframe, symbol) : null;
+        await backendApi.getAnalytics(type || undefined, timeframe, symbol || undefined) : null;
       
       if (analyticsResponse?.data) {
         return NextResponse.json({
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback to mock data
-    let data = mockAnalytics;
+    let data: any = mockAnalytics;
 
     // Filter by type if specified
     if (type) {

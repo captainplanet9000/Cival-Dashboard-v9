@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     // Try to get real profit data from backend first
     try {
       const profitResponse = await backendApi.getProfitTracking ? 
-        await backendApi.getProfitTracking(type, timeframe) : null;
+        await backendApi.getProfitTracking(type || undefined, timeframe) : null;
       
       if (profitResponse?.data) {
         return NextResponse.json({
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback to mock data
-    let data = mockProfitData;
+    let data: any = mockProfitData;
 
     // Filter by type if specified
     if (type) {

@@ -47,10 +47,10 @@ const generateMarketData = (symbol: string) => {
 
 export async function GET(
   request: Request,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
   try {
-    const symbol = params.symbol
+    const { symbol } = await params
     const marketData = generateMarketData(symbol)
 
     return NextResponse.json({
@@ -63,7 +63,7 @@ export async function GET(
       { 
         success: false, 
         error: 'Failed to fetch market data',
-        symbol: params.symbol
+        symbol: 'unknown'
       },
       { status: 500 }
     )

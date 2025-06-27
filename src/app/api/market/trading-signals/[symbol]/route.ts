@@ -165,10 +165,11 @@ const mockSignalsService = new MockTradingSignalsService()
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
   try {
-    const symbol = params.symbol.toUpperCase()
+    const { symbol: rawSymbol } = await params
+    const symbol = rawSymbol.toUpperCase()
     
     if (!symbol || symbol.length === 0) {
       return NextResponse.json(
@@ -191,7 +192,7 @@ export async function GET(
     return NextResponse.json(signals)
     
   } catch (error) {
-    console.error(`Error in trading signals API for ${params.symbol}:`, error)
+    console.error('Error in trading signals API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

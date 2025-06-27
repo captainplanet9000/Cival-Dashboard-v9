@@ -32,10 +32,10 @@ const generateOrderBook = (symbol: string, basePrice: number) => {
 
 export async function GET(
   request: Request,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
   try {
-    const symbol = params.symbol
+    const { symbol } = await params
 
     // Get base price for different symbols
     let basePrice = 50000 // Default BTC price
@@ -60,7 +60,7 @@ export async function GET(
       { 
         success: false, 
         error: 'Failed to fetch order book',
-        symbol: params.symbol,
+        symbol: 'unknown',
         bids: [],
         asks: []
       },

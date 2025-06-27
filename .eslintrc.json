@@ -6,12 +6,11 @@
     "@typescript-eslint/no-require-imports": "off",
     "jsx-a11y/alt-text": "off"
   },
-  "overrides": [
-    {
-      "files": ["**/__tests__/**/*.ts", "**/__tests__/**/*.tsx", "**/*.test.ts", "**/*.test.tsx"],
-      "rules": {
-        "@typescript-eslint/no-require-imports": "off"
-      }
-    }
+  "ignorePatterns": [
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx", 
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }

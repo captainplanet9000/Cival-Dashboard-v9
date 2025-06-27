@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       if (portfolioResponse.data) {
         const now = new Date();
         const portfolio = portfolioResponse.data;
-        const performance = performanceResponse.data || {};
+        const performance: any = performanceResponse.data || {};
         
         const portfolioData = {
           totalValue: portfolio.total_equity || 0,
