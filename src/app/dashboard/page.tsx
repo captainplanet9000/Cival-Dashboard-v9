@@ -9,9 +9,9 @@ import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-// Test the problematic dynamic import
-const MinimalDashboard = dynamic(
-  () => import('@/components/dashboard/MinimalDashboard'),
+// Test the EnhancedDashboard that originally caused module 98189 error
+const EnhancedDashboard = dynamic(
+  () => import('@/components/dashboard/EnhancedDashboard'),
   { 
     ssr: false,
     loading: () => (
@@ -19,6 +19,15 @@ const MinimalDashboard = dynamic(
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
+  }
+)
+
+// Keep MinimalDashboard for fallback testing
+const MinimalDashboard = dynamic(
+  () => import('@/components/dashboard/MinimalDashboard'),
+  { 
+    ssr: false,
+    loading: () => <div>Loading minimal dashboard...</div>
   }
 )
 
@@ -81,21 +90,22 @@ export default function DashboardPage() {
             <li>✅ ErrorBoundary restored - No errors</li>
             <li>✅ Shadcn/UI Card components restored - No errors</li>
             <li>✅ Dynamic imports - Testing...</li>
-            <li>⏳ MinimalDashboard component - Testing below</li>
+            <li>✅ MinimalDashboard component - Passed</li>
+            <li>⏳ EnhancedDashboard component - Testing now</li>
           </ul>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Dynamic Import Test</CardTitle>
+          <CardTitle>Enhanced Dashboard Test</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Testing the MinimalDashboard component that was causing the module 98189 error:
+            Testing the full EnhancedDashboard component that originally caused the module 98189 error:
           </p>
-          <Suspense fallback={<div>Loading MinimalDashboard...</div>}>
-            <MinimalDashboard />
+          <Suspense fallback={<div>Loading EnhancedDashboard...</div>}>
+            <EnhancedDashboard />
           </Suspense>
         </CardContent>
       </Card>
