@@ -52,7 +52,7 @@ export class RealTimePaperTradingAgent {
   private state: RealTimeAgentState;
   private riskMonitoringInterval?: NodeJS.Timer;
   private performanceUpdateInterval?: NodeJS.Timer;
-  private eventHandlers: Map<string, Function> = new Map();
+  private eventHandlers: Map<string, (data: any) => Promise<void>> = new Map();
 
   constructor(agentId: string, config?: Partial<RealTimeAgentConfig>) {
     this.agentId = agentId;
@@ -607,7 +607,7 @@ export class RealTimePaperTradingAgent {
   }
 
   // Event handler registration
-  setEventHandler(eventType: string, handler: Function): void {
+  setEventHandler(eventType: string, handler: (data: any) => Promise<void>): void {
     this.eventHandlers.set(eventType, handler);
   }
 

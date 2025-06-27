@@ -17,7 +17,7 @@ import { chainlinkService, ChainlinkPriceData } from '@/lib/chainlink/price-feed
 export class PaperTradingEngineImpl implements PaperTradingEngine {
   private portfolios: Map<string, PaperPortfolio> = new Map()
   private marketDataCache: Map<string, MarketData> = new Map()
-  private eventHandlers: Map<string, Function[]> = new Map()
+  private eventHandlers: Map<string, ((data: any) => void)[]> = new Map()
   private chainlinkSubscription: (() => void) | null = null
   
   portfolio: PaperPortfolio = {} as PaperPortfolio
@@ -224,7 +224,7 @@ export class PaperTradingEngineImpl implements PaperTradingEngine {
   }
 
   // Event System
-  on(event: string, handler: Function): void {
+  on(event: string, handler: (data: any) => void): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, [])
     }

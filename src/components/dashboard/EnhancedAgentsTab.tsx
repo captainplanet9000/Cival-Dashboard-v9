@@ -48,8 +48,13 @@ import { AgentPaperTradingDashboard } from '@/components/agent/AgentPaperTrading
 import { AgentCreationWizard } from '@/components/modals/AgentCreationWizard'
 import { AgentManagementSuite } from '@/components/modals/AgentManagementSuite'
 
-// Import LangChain components
-// REMOVED: LangChain integration completely removed
+// Import LangChain services
+import { 
+  getLangChainService, 
+  getLangGraphOrchestrator, 
+  getAgentMemorySystem,
+  getAGUIHandlers 
+} from '@/lib/langchain'
 
 // Import utilities and API
 import { backendApi } from '@/lib/api/backend-client'
@@ -62,6 +67,15 @@ import { lazy } from 'react'
 // Lazy load services to avoid circular dependencies
 const getAgentPersistenceService = () => import('@/lib/agents/AgentPersistenceService').then(m => m.agentPersistenceService.get())
 const getSystemLifecycleService = () => import('@/lib/system/SystemLifecycleService').then(m => m.systemLifecycleService.get())
+
+// LangChain integration state
+interface LangChainIntegration {
+  isInitialized: boolean
+  availableChains: number
+  totalExecutions: number
+  avgExecutionTime: number
+  lastActivity?: Date
+}
 
 // Use existing TradingAgent interface from AgentManager
 interface TradingAgent {
@@ -127,6 +141,9 @@ export default function EnhancedAgentsTab() {
   const [showCreateAgent, setShowCreateAgent] = useState(false)
   const [showManageAgent, setShowManageAgent] = useState(false)
   const [managementAgentId, setManagementAgentId] = useState<string | null>(null)
+  const [langChainStatus, setLangChainStatus] = useState<LangChainIntegration | null>(null)
+  const [messageInput, setMessageInput] = useState('')
+  const [isProcessingMessage, setIsProcessingMessage] = useState(false)
 
   // Load data from existing systems
   const fetchAgents = useCallback(async () => {
@@ -175,14 +192,19 @@ export default function EnhancedAgentsTab() {
         setAgents(backendAgents)
       } else {
         // Load from persistence service
-        const persistedAgents = agentPersistenceService.getAllAgents()
+        const persistenceService = await getAgentPersistenceService()
+        const persistedAgents = persistenceService.getAllAgents()
         
         if (persistedAgents.length > 0) {
           // Transform persisted agents to dashboard format with enhanced system data
-          const transformedAgents = persistedAgents.map(agent => {
+          const transformedAgents = await Promise.all(persistedAgents.map(async agent => {
             // Get comprehensive agent stats from all integrated systems
-            const mcpStats = agentPersistenceService.getAgentMCPStats(agent.id)
-            const availableTools = agentPersistenceService.getAvailableMCPTools(agent.id)
+            const mcpStats = persistenceService.getAgentMCPStats(agent.id)
+            const availableTools = persistenceService.getAvailableMCPTools(agent.id)
+            
+            // Get LangChain memory and execution stats
+            const memorySystem = await getAgentMemorySystem().catch(() => null)
+            const agentMemory = memorySystem ? await memorySystem.getAgentConversations(agent.id) : []
             
             return {
               id: agent.id,
@@ -226,10 +248,12 @@ export default function EnhancedAgentsTab() {
               mcpTools: mcpStats.availableTools || 0,
               totalCalls: mcpStats.totalCalls || 0,
               successRate: mcpStats.successRate || 0,
-              integrationHealth: agent.integrations
+              integrationHealth: agent.integrations,
+              langChainMemory: agentMemory.length || 0,
+              hasLangGraphChains: false // Will be updated by fetchLangChainStatus
             }
           }
-          })
+          }))
           
           setAgents(transformedAgents)
         } else {
@@ -357,6 +381,49 @@ export default function EnhancedAgentsTab() {
     }
   }, []);
 
+  // Fetch LangChain integration status
+  const fetchLangChainStatus = useCallback(async () => {
+    try {
+      const [langChainService, langGraphOrchestrator, memorySystem] = await Promise.all([
+        getLangChainService().catch(() => null),
+        getLangGraphOrchestrator().catch(() => null),
+        getAgentMemorySystem().catch(() => null)
+      ])
+
+      if (langChainService || langGraphOrchestrator || memorySystem) {
+        // Get integration statistics
+        const availableChains = langGraphOrchestrator ? 
+          await langGraphOrchestrator.getAvailableGraphs().catch(() => []) : []
+        
+        const totalMemoryEntries = memorySystem ? 
+          await memorySystem.getTotalConversations().catch(() => 0) : 0
+
+        setLangChainStatus({
+          isInitialized: true,
+          availableChains: availableChains.length,
+          totalExecutions: totalMemoryEntries,
+          avgExecutionTime: 150, // Mock data - would come from actual metrics
+          lastActivity: new Date()
+        })
+      } else {
+        setLangChainStatus({
+          isInitialized: false,
+          availableChains: 0,
+          totalExecutions: 0,
+          avgExecutionTime: 0
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch LangChain status:', error)
+      setLangChainStatus({
+        isInitialized: false,
+        availableChains: 0,
+        totalExecutions: 0,
+        avgExecutionTime: 0
+      })
+    }
+  }, [])
+
   // Load trading permissions using existing utility
   const fetchPermissions = useCallback(async () => {
     try {
@@ -444,17 +511,29 @@ export default function EnhancedAgentsTab() {
     }
   }
 
-  // Handle agent creation
+  // Handle agent creation with LangChain integration
   const handleCreateAgent = async (config: any) => {
     try {
+      // Initialize LangChain components for the new agent if available
+      const memorySystem = await getAgentMemorySystem().catch(() => null)
+      if (memorySystem && config.enableLearning) {
+        await memorySystem.initializeAgentMemory(config.name, {
+          systemPrompt: config.systemPrompt,
+          decisionThreshold: config.decisionThreshold
+        }).catch(error => {
+          console.warn('Failed to initialize LangChain memory:', error)
+        })
+      }
+
       // Refresh the agents list from persistence service
       // The wizard already created the agent via AgentPersistenceService
       await fetchAgents()
       
       toast.success(`Agent "${config.name}" created successfully!`)
       
-      // Refresh stats
+      // Refresh stats and LangChain status
       fetchAgentStats()
+      fetchLangChainStatus()
     } catch (error) {
       console.error('Failed to refresh agents after creation:', error)
       toast.error('Failed to refresh agent list')
@@ -558,19 +637,122 @@ export default function EnhancedAgentsTab() {
     setShowManageAgent(true)
   }
 
+  // Enhanced agent communication with LangChain
+  const sendMessageToAgent = async (agentId: string, message: string) => {
+    try {
+      const [memorySystem, langChainService] = await Promise.all([
+        getAgentMemorySystem().catch(() => null),
+        getLangChainService().catch(() => null)
+      ])
+
+      if (memorySystem && langChainService) {
+        // Add message to agent memory
+        await memorySystem.addMessage(agentId, 'user', message)
+        
+        // Process message through LangChain
+        const response = await langChainService.processAgentMessage(agentId, message)
+        
+        // Add response to memory
+        await memorySystem.addMessage(agentId, 'assistant', response)
+        
+        // Update agent state
+        setAgents(prev => prev.map(agent => 
+          agent.id === agentId 
+            ? { 
+                ...agent, 
+                lastMessage: response,
+                conversationCount: agent.conversationCount + 1,
+                lastActivity: Date.now()
+              }
+            : agent
+        ))
+        
+        toast.success('Message sent to agent successfully')
+        return response
+      } else {
+        throw new Error('LangChain services not available')
+      }
+    } catch (error) {
+      console.error('Failed to send message to agent:', error)
+      toast.error('Failed to communicate with agent')
+      return null
+    }
+  }
+
+  // Execute agent decision with LangChain orchestration
+  const executeAgentDecision = async (agentId: string) => {
+    try {
+      const [langGraphOrchestrator, langChainService] = await Promise.all([
+        getLangGraphOrchestrator().catch(() => null),
+        getLangChainService().catch(() => null)
+      ])
+
+      if (langGraphOrchestrator) {
+        // Use LangGraph for decision execution
+        const decision = await langGraphOrchestrator.executeAgentDecision(agentId)
+        
+        // Update agent state with decision
+        setAgents(prev => prev.map(agent => 
+          agent.id === agentId 
+            ? { 
+                ...agent, 
+                currentDecision: decision.description,
+                confidence: decision.confidence,
+                lastActivity: Date.now()
+              }
+            : agent
+        ))
+        
+        toast.success('Agent decision executed successfully')
+        return decision
+      } else {
+        // Fallback to backend API
+        const response = await backendApi.post(`/api/v1/agents/${agentId}/execute-decision`)
+        return response.data
+      }
+    } catch (error) {
+      console.error('Failed to execute agent decision:', error)
+      toast.error('Failed to execute agent decision')
+      return null
+    }
+  }
+
+  // Handle sending message to agent
+  const handleSendMessage = async () => {
+    if (!selectedAgent || !messageInput.trim()) return
+    
+    setIsProcessingMessage(true)
+    try {
+      const response = await sendMessageToAgent(selectedAgent.id, messageInput.trim())
+      if (response) {
+        setMessageInput('')
+        // Update selected agent to reflect new conversation
+        setSelectedAgent(prev => prev ? {
+          ...prev,
+          lastMessage: response,
+          conversationCount: prev.conversationCount + 1,
+          lastActivity: Date.now()
+        } : null)
+      }
+    } finally {
+      setIsProcessingMessage(false)
+    }
+  }
+
   // Initial data load
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true)
       await Promise.all([
         fetchAgents(),
-        fetchPermissions()
+        fetchPermissions(),
+        fetchLangChainStatus()
       ])
       setIsLoading(false)
     }
     
     loadData()
-  }, [fetchAgents, fetchPermissions])
+  }, [fetchAgents, fetchPermissions, fetchLangChainStatus])
 
   // Load stats after agents are loaded
   useEffect(() => {
@@ -586,10 +768,11 @@ export default function EnhancedAgentsTab() {
     const interval = setInterval(() => {
       fetchAgents()
       fetchPermissions()
+      fetchLangChainStatus()
     }, 10000)
     
     return () => clearInterval(interval)
-  }, [autoRefresh, fetchAgents, fetchPermissions])
+  }, [autoRefresh, fetchAgents, fetchPermissions, fetchLangChainStatus])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -680,7 +863,25 @@ export default function EnhancedAgentsTab() {
           </CardContent>
         </Card>
         {/* LangChain Integration Status */}
-        {/* LangChain integration removed */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">LangChain Status</CardTitle>
+            <Brain className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                langChainStatus?.isInitialized ? 'bg-green-500' : 'bg-red-500'
+              }`} />
+              <div className="text-sm font-medium">
+                {langChainStatus?.isInitialized ? 'Connected' : 'Disconnected'}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {langChainStatus?.availableChains || 0} chains available
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Agent Interface */}
@@ -691,6 +892,7 @@ export default function EnhancedAgentsTab() {
             <TabsTrigger value="control">Control Panel</TabsTrigger>
             <TabsTrigger value="decisions">Decisions</TabsTrigger>
             <TabsTrigger value="trading">Paper Trading</TabsTrigger>
+            <TabsTrigger value="langchain">LangChain</TabsTrigger>
             <TabsTrigger value="permissions">Permissions</TabsTrigger>
             <TabsTrigger value="manager">Advanced</TabsTrigger>
           </TabsList>
@@ -715,6 +917,7 @@ export default function EnhancedAgentsTab() {
               fetchAgents()
               fetchPermissions()
               fetchAgentStats()
+              fetchLangChainStatus()
             }} size="sm" variant="outline">
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -823,6 +1026,15 @@ export default function EnhancedAgentsTab() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => executeAgentDecision(agent.id)}
+                      disabled={agent.status !== 'active'}
+                      title="Execute Agent Decision"
+                    >
+                      <Zap className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => handleManageAgent(agent.id)}
                     >
                       <Settings className="h-3 w-3" />
@@ -844,6 +1056,175 @@ export default function EnhancedAgentsTab() {
 
         <TabsContent value="trading" className="space-y-4">
           <AgentPaperTradingDashboard />
+        </TabsContent>
+
+        <TabsContent value="langchain" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* LangChain Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  LangChain Integration Status
+                </CardTitle>
+                <CardDescription>
+                  Monitor LangChain services and agent memory systems
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Service Status</span>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      langChainStatus?.isInitialized ? 'bg-green-500' : 'bg-red-500'
+                    }`} />
+                    <span className="text-sm font-medium">
+                      {langChainStatus?.isInitialized ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Available Chains</span>
+                  <span className="text-sm font-medium">{langChainStatus?.availableChains || 0}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Total Executions</span>
+                  <span className="text-sm font-medium">{langChainStatus?.totalExecutions || 0}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Avg Execution Time</span>
+                  <span className="text-sm font-medium">{langChainStatus?.avgExecutionTime || 0}ms</span>
+                </div>
+                
+                {langChainStatus?.lastActivity && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Last Activity</span>
+                    <span className="text-sm font-medium">
+                      {langChainStatus.lastActivity.toLocaleTimeString()}
+                    </span>
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={fetchLangChainStatus} 
+                  className="w-full mt-4"
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Status
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Agent Memory Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Agent Memory System
+                </CardTitle>
+                <CardDescription>
+                  Manage agent conversations and memory
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {agents.filter(a => a.conversationCount > 0).map(agent => (
+                    <div key={agent.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={agent.avatar} alt={agent.name} />
+                          <AvatarFallback>
+                            {getTypeIcon(agent.type)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-sm">{agent.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {agent.conversationCount} conversations
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedAgent(agent)}
+                      >
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        Chat
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {agents.filter(a => a.conversationCount > 0).length === 0 && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">No agent conversations yet</p>
+                      <p className="text-xs">Start chatting with your agents to see their memory</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Agent Communication Grid */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Agent Communication</CardTitle>
+              <CardDescription>
+                Send messages to multiple agents at once
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {agents.filter(a => a.status === 'active').map(agent => (
+                  <div key={agent.id} className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={agent.avatar} alt={agent.name} />
+                        <AvatarFallback>
+                          {getTypeIcon(agent.type)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium text-sm">{agent.name}</span>
+                      <Badge variant="outline" className="ml-auto">
+                        {agent.type}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => executeAgentDecision(agent.id)}
+                        className="flex-1"
+                      >
+                        <Zap className="h-3 w-3 mr-1" />
+                        Execute
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedAgent(agent)}
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
+                    {agent.lastMessage && (
+                      <div className="mt-2 p-2 bg-muted/20 rounded text-xs">
+                        {agent.lastMessage.substring(0, 50)}...
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="permissions" className="space-y-4">
@@ -988,15 +1369,56 @@ export default function EnhancedAgentsTab() {
                 </div>
               </div>
 
-              {/* Last Message */}
-              {selectedAgent.lastMessage && (
-                <div>
-                  <h4 className="font-medium mb-2">Latest Message</h4>
-                  <div className="p-3 bg-muted/30 rounded-lg text-sm">
-                    {selectedAgent.lastMessage}
+              {/* Communication Interface */}
+              <div>
+                <h4 className="font-medium mb-3">Agent Communication</h4>
+                
+                {/* Latest Message */}
+                {selectedAgent.lastMessage && (
+                  <div className="mb-4">
+                    <div className="text-xs text-muted-foreground mb-1">Latest Response:</div>
+                    <div className="p-3 bg-muted/30 rounded-lg text-sm">
+                      {selectedAgent.lastMessage}
+                    </div>
                   </div>
+                )}
+                
+                {/* Message Input */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Send message to agent..."
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                    disabled={isProcessingMessage || selectedAgent.status !== 'active'}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!messageInput.trim() || isProcessingMessage || selectedAgent.status !== 'active'}
+                    size="sm"
+                  >
+                    {isProcessingMessage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-              )}
+                
+                {/* Communication Status */}
+                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                  <div className={`w-2 h-2 rounded-full ${
+                    langChainStatus?.isInitialized ? 'bg-green-500' : 'bg-red-500'
+                  }`} />
+                  <span>
+                    {langChainStatus?.isInitialized 
+                      ? 'LangChain communication enabled' 
+                      : 'LangChain communication unavailable'
+                    }
+                  </span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -7,16 +7,25 @@
 let OpenAI: any
 let Anthropic: any
 
-try {
-  OpenAI = require('openai')
-} catch (e) {
-  console.warn('OpenAI SDK not available:', e.message)
+// Use dynamic imports instead of require
+async function loadOpenAI() {
+  try {
+    const openaiModule = await import('openai')
+    return openaiModule.default
+  } catch (e) {
+    console.warn('OpenAI SDK not available:', e instanceof Error ? e.message : 'Unknown error')
+    return null
+  }
 }
 
-try {
-  Anthropic = require('@anthropic-ai/sdk')
-} catch (e) {
-  console.warn('Anthropic SDK not available:', e.message)
+async function loadAnthropic() {
+  try {
+    const anthropicModule = await import('@anthropic-ai/sdk')
+    return anthropicModule.default
+  } catch (e) {
+    console.warn('Anthropic SDK not available:', e instanceof Error ? e.message : 'Unknown error')
+    return null
+  }
 }
 
 // LLM Provider Types

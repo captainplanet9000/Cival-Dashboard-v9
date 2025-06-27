@@ -127,12 +127,14 @@ class MCPIntegrationService extends EventEmitter {
   
   private async initializeAsync() {
     try {
-      // Load services lazily to prevent circular dependencies
-      this.agentPersistenceService = await getAgentPersistenceService().catch(() => null)
-      this.vaultIntegrationService = await getVaultIntegrationService().catch(() => null)
-      this.persistentTradingEngine = await getPersistentTradingEngine().catch(() => null)
-      this.testnetDeFiService = await getTestnetDeFiService().catch(() => null)
-      this.agentTodoService = await getAgentTodoService().catch(() => null)
+      // Load services lazily
+      this.agentPersistenceService = await getAgentPersistenceService()
+      this.vaultIntegrationService = await getVaultIntegrationService()
+      this.persistentTradingEngine = await getPersistentTradingEngine()
+      this.testnetDeFiService = await getTestnetDeFiService()
+      // TEMPORARILY DISABLED: Circular dependency through geminiService
+      // this.geminiService = await getGeminiService()
+      this.agentTodoService = await getAgentTodoService()
       
       this.initializeDefaultTools()
       this.setupEventListeners()
@@ -147,7 +149,7 @@ class MCPIntegrationService extends EventEmitter {
   async activateForAllAgents(): Promise<void> {
     console.log('🚀 Activating MCP infrastructure for all agents...')
     
-    const agents = this.agentPersistenceService?.getAllAgents() || []
+    const agents = this.agentPersistenceService?.getAllAgents()
     const results = []
     
     for (const agent of agents) {
@@ -192,6 +194,19 @@ class MCPIntegrationService extends EventEmitter {
       const session = this.createSession(agentId)
       this.sessions.set(session.id, session)
 
+      // 3. Register agent-specific tools based on capabilities
+      await this.registerAgentTools(agentId, agent.config)
+
+      // 4. Initialize tool contexts
+      await this.initializeToolContexts(agentId)
+
+      // 5. Update agent integration status
+      const agentUpdate = this.agentPersistenceService?.getAgent(agentId)
+      if (agentUpdate) {
+        agentUpdate.integrations.mcpTools = true
+        agentPersistenceService['agents'].set(agentId, agentUpdate)
+      }
+
       this.persistData()
       this.emit('mcpActivatedForAgent', { agentId, session, permissions })
       
@@ -219,16 +234,29 @@ class MCPIntegrationService extends EventEmitter {
         throw new Error('Agent not registered for MCP')
       }
 
-      // 2. Get tool definition
+      // 2. Check tool permissions
+      if (!this.hasToolPermission(agentId, toolId)) {
+        throw new Error('Agent does not have permission for this tool')
+      }
+
+      // 3. Check rate limits
+      if (!this.checkRateLimit(agentId, toolId)) {
+        throw new Error('Rate limit exceeded')
+      }
+
+      // 4. Get tool definition
       const tool = this.tools.get(toolId)
       if (!tool || !tool.enabled) {
         throw new Error(`Tool not found or disabled: ${toolId}`)
       }
 
-      // 3. Execute tool
+      // 5. Validate parameters
+      this.validateParameters(tool, parameters)
+
+      // 6. Execute tool
       const response = await this.executeTool(tool, parameters, { agentId, ...context })
 
-      // 4. Log successful call
+      // 7. Log successful call
       const callLog: MCPCallLog = {
         id: callId,
         agentId,
@@ -329,6 +357,36 @@ class MCPIntegrationService extends EventEmitter {
       usage: { totalCalls: 0, lastUsed: 0, successRate: 0, avgResponseTime: 0 }
     })
 
+    this.tools.set('trading.get_portfolio', {
+      id: 'trading.get_portfolio',
+      name: 'Get Portfolio Status',
+      description: 'Retrieve current portfolio status and positions',
+      category: 'trading',
+      version: '1.0.0',
+      permissions: ['trading.read'],
+      parameters: [],
+      enabled: true,
+      usage: { totalCalls: 0, lastUsed: 0, successRate: 0, avgResponseTime: 0 }
+    })
+
+    // DeFi Tools
+    this.tools.set('defi.stake_tokens', {
+      id: 'defi.stake_tokens',
+      name: 'Stake Tokens',
+      description: 'Stake tokens to DeFi protocols',
+      category: 'defi',
+      version: '1.0.0',
+      permissions: ['defi.execute'],
+      parameters: [
+        { name: 'protocol', type: 'string', description: 'DeFi protocol name', required: true },
+        { name: 'token', type: 'string', description: 'Token to stake', required: true },
+        { name: 'amount', type: 'string', description: 'Amount to stake', required: true }
+      ],
+      enabled: true,
+      usage: { totalCalls: 0, lastUsed: 0, successRate: 0, avgResponseTime: 0 }
+    })
+
+    // Analysis Tools
     this.tools.set('analysis.market_sentiment', {
       id: 'analysis.market_sentiment',
       name: 'Analyze Market Sentiment',
@@ -344,6 +402,7 @@ class MCPIntegrationService extends EventEmitter {
       usage: { totalCalls: 0, lastUsed: 0, successRate: 0, avgResponseTime: 0 }
     })
 
+    // System Tools
     this.tools.set('system.create_todo', {
       id: 'system.create_todo',
       name: 'Create Todo Item',
@@ -359,20 +418,64 @@ class MCPIntegrationService extends EventEmitter {
       enabled: true,
       usage: { totalCalls: 0, lastUsed: 0, successRate: 0, avgResponseTime: 0 }
     })
+
+    // Communication Tools
+    this.tools.set('communication.agent_message', {
+      id: 'communication.agent_message',
+      name: 'Send Agent Message',
+      description: 'Send a message to another agent',
+      category: 'communication',
+      version: '1.0.0',
+      permissions: ['communication.send'],
+      parameters: [
+        { name: 'targetAgentId', type: 'string', description: 'Target agent ID', required: true },
+        { name: 'message', type: 'string', description: 'Message content', required: true },
+        { name: 'priority', type: 'string', description: 'Message priority', required: false, validation: { enum: ['low', 'medium', 'high'] } }
+      ],
+      enabled: true,
+      usage: { totalCalls: 0, lastUsed: 0, successRate: 0, avgResponseTime: 0 }
+    })
+
+    // Data Tools
+    this.tools.set('data.store_memory', {
+      id: 'data.store_memory',
+      name: 'Store Memory',
+      description: 'Store information in agent memory',
+      category: 'data',
+      version: '1.0.0',
+      permissions: ['data.write'],
+      parameters: [
+        { name: 'type', type: 'string', description: 'Memory type', required: true, validation: { enum: ['learning', 'observation', 'decision', 'insight'] } },
+        { name: 'content', type: 'string', description: 'Memory content', required: true },
+        { name: 'importance', type: 'number', description: 'Importance score (0-1)', required: false, validation: { min: 0, max: 1 } }
+      ],
+      enabled: true,
+      usage: { totalCalls: 0, lastUsed: 0, successRate: 0, avgResponseTime: 0 }
+    })
   }
 
   private createAgentPermissions(agent: any): MCPAgentPermissions {
+    // Create permissions based on agent type and configuration
     const basePermissions = ['trading.read', 'analysis.read', 'system.write', 'data.write']
-    const allowedTools = this.getToolsForPermissions(basePermissions)
+    const agentTypePermissions = {
+      'momentum': [...basePermissions, 'trading.execute'],
+      'mean_reversion': [...basePermissions, 'trading.execute'],
+      'arbitrage': [...basePermissions, 'trading.execute', 'communication.send'],
+      'risk_manager': [...basePermissions, 'communication.send'],
+      'coordinator': [...basePermissions, 'communication.send']
+    }
+
+    const allowedTools = this.getToolsForPermissions(agentTypePermissions[agent.config.type] || basePermissions)
+    const allowedCategories = agent.config.enableDeFi ? ['trading', 'analysis', 'system', 'data', 'defi'] : ['trading', 'analysis', 'system', 'data']
 
     return {
       agentId: agent.id,
       allowedTools,
-      allowedCategories: ['trading', 'analysis', 'system', 'data'],
+      allowedCategories,
       restrictions: {
-        maxCallsPerMinute: 60,
-        maxCallsPerDay: 5000,
-        requireApproval: ['trading.place_order'],
+        maxCallsPerMinute: agent.config.type === 'arbitrage' ? 100 : 60,
+        maxCallsPerDay: agent.config.type === 'risk_manager' ? 10000 : 5000,
+        requireApproval: ['trading.place_order'], // Require approval for trading
         blockedTools: []
       },
       audit: {
@@ -403,16 +506,100 @@ class MCPIntegrationService extends EventEmitter {
     }
   }
 
+  private async registerAgentTools(agentId: string, agentConfig: any): Promise<void> {
+    // Register additional tools based on agent configuration
+    if (agentConfig.enabledTools && agentConfig.enabledTools.length > 0) {
+      console.log(`Registering custom tools for agent ${agentId}:`, agentConfig.enabledTools)
+    }
+  }
+
+  private async initializeToolContexts(agentId: string): Promise<void> {
+    // Initialize any tool-specific contexts for the agent
+    console.log(`Initializing tool contexts for agent ${agentId}`)
+  }
+
+  private hasToolPermission(agentId: string, toolId: string): boolean {
+    const permissions = this.agentPermissions.get(agentId)
+    if (!permissions) return false
+
+    return permissions.allowedTools.includes(toolId) || 
+           permissions.restrictions.blockedTools.includes(toolId) === false
+  }
+
+  private checkRateLimit(agentId: string, toolId: string): boolean {
+    const permissions = this.agentPermissions.get(agentId)
+    if (!permissions) return false
+
+    const key = `${agentId}:${toolId}`
+    const now = Date.now()
+    const limit = this.rateLimits.get(key)
+
+    if (!limit || now > limit.resetTime) {
+      this.rateLimits.set(key, { count: 1, resetTime: now + 60000 }) // 1 minute window
+      return true
+    }
+
+    if (limit.count >= permissions.restrictions.maxCallsPerMinute) {
+      return false
+    }
+
+    limit.count++
+    return true
+  }
+
+  private validateParameters(tool: MCPTool, parameters: Record<string, any>): void {
+    for (const param of tool.parameters) {
+      if (param.required && !(param.name in parameters)) {
+        throw new Error(`Required parameter missing: ${param.name}`)
+      }
+
+      if (param.name in parameters) {
+        const value = parameters[param.name]
+        
+        // Type validation
+        if (param.type === 'number' && typeof value !== 'number') {
+          throw new Error(`Parameter ${param.name} must be a number`)
+        }
+
+        // Range validation
+        if (param.validation?.min !== undefined && value < param.validation.min) {
+          throw new Error(`Parameter ${param.name} must be >= ${param.validation.min}`)
+        }
+
+        if (param.validation?.max !== undefined && value > param.validation.max) {
+          throw new Error(`Parameter ${param.name} must be <= ${param.validation.max}`)
+        }
+
+        // Enum validation
+        if (param.validation?.enum && !param.validation.enum.includes(value)) {
+          throw new Error(`Parameter ${param.name} must be one of: ${param.validation.enum.join(', ')}`)
+        }
+      }
+    }
+  }
+
   private async executeTool(tool: MCPTool, parameters: Record<string, any>, context: any): Promise<any> {
     switch (tool.id) {
       case 'trading.place_order':
         return await this.executeTradeOrder(parameters, context)
+      
+      case 'trading.get_portfolio':
+        return await this.getPortfolioStatus(context)
+      
+      case 'defi.stake_tokens':
+        return await this.stakeTokens(parameters, context)
       
       case 'analysis.market_sentiment':
         return await this.analyzeMarketSentiment(parameters, context)
       
       case 'system.create_todo':
         return await this.createTodo(parameters, context)
+      
+      case 'communication.agent_message':
+        return await this.sendAgentMessage(parameters, context)
+      
+      case 'data.store_memory':
+        return await this.storeMemory(parameters, context)
       
       default:
         throw new Error(`Tool not implemented: ${tool.id}`)
@@ -429,16 +616,44 @@ class MCPIntegrationService extends EventEmitter {
       params.type || 'market',
       params.price
     )
-    return { success: true, orderId: order?.id, order }
+    return { success: true, orderId: order.id, order }
+  }
+
+  private async getPortfolioStatus(context: any): Promise<any> {
+    const performance = this.persistentTradingEngine?.getAgentPerformance(context.agentId)
+    const positions = this.persistentTradingEngine?.getAgentPositions(context.agentId)
+    return { performance, positions }
+  }
+
+  private async stakeTokens(params: any, context: any): Promise<any> {
+    const agent = this.agentPersistenceService?.getAgent(context.agentId)
+    if (!agent || agent.walletIds.length === 0) {
+      throw new Error('No DeFi wallets available for staking')
+    }
+
+    const position = await this.testnetDeFiService?.stake(
+      agent.walletIds[0],
+      params.protocol,
+      params.token,
+      params.amount
+    )
+    return { success: true, position }
   }
 
   private async analyzeMarketSentiment(params: any, context: any): Promise<any> {
-    // Fallback mock sentiment
-    return { 
-      symbol: params.symbol, 
-      sentiment: 'Neutral market sentiment (mock data)', 
-      score: 0.1,
-      timestamp: Date.now() 
+    // TEMPORARILY DISABLED: Circular dependency through geminiService
+    // if (this.geminiService?.isConfigured()) {
+    //   const prompt = `Analyze market sentiment for ${params.symbol} over ${params.timeframe || '1d'}. Provide a sentiment score between -1 (very bearish) and 1 (very bullish) with reasoning.`
+    //   const response = await this.geminiService?.generateResponse(prompt, context.agentId)
+    //   return { symbol: params.symbol, sentiment: response, timestamp: Date.now() }
+    // } else {
+      // Fallback mock sentiment
+      return { 
+        symbol: params.symbol, 
+        sentiment: 'Neutral market sentiment (mock data)', 
+        score: 0.1,
+        timestamp: Date.now() 
+      }
     }
   }
 
@@ -451,7 +666,57 @@ class MCPIntegrationService extends EventEmitter {
       estimatedDuration: 1800000, // 30 minutes default
       tags: ['mcp-generated']
     })
-    return { success: true, todoId: todo?.id, todo }
+    return { success: true, todoId: todo.id, todo }
+  }
+
+  private async sendAgentMessage(params: any, context: any): Promise<any> {
+    // Store message in agent memory for coordination
+    // TEMPORARILY DISABLED: Circular dependency through geminiService
+    // if (this.geminiService?.isConfigured()) {
+    //   const memory = {
+    //     id: `msg_${Date.now()}`,
+    //     agentId: params.targetAgentId,
+    //     type: 'communication' as const,
+    //     content: `Message from agent ${context.agentId}: ${params.message}`,
+    //     context: { fromAgent: context.agentId, priority: params.priority },
+    //     importance: params.priority === 'high' ? 0.8 : 0.5,
+    //     timestamp: Date.now(),
+    //     tags: ['inter-agent', 'communication', params.priority || 'medium']
+    //   }
+    //   
+    //   geminiService['addToMemory'](params.targetAgentId, memory)
+    // }
+    
+    this.emit('agentMessage', {
+      from: context.agentId,
+      to: params.targetAgentId,
+      message: params.message,
+      priority: params.priority,
+      timestamp: Date.now()
+    })
+    
+    return { success: true, messageId: `msg_${Date.now()}` }
+  }
+
+  private async storeMemory(params: any, context: any): Promise<any> {
+    // TEMPORARILY DISABLED: Circular dependency through geminiService
+    // if (this.geminiService?.isConfigured()) {
+    //   const memory = {
+    //     id: `mem_${Date.now()}`,
+    //     agentId: context.agentId,
+    //     type: params.type,
+    //     content: params.content,
+    //     context: { source: 'mcp-tool' },
+    //     importance: params.importance || 0.5,
+    //     timestamp: Date.now(),
+    //     tags: ['mcp-stored', params.type]
+    //   }
+    //   
+    //   geminiService['addToMemory'](context.agentId, memory)
+    //   return { success: true, memoryId: memory.id }
+    // }
+    
+    return { success: false, error: 'Gemini service temporarily disabled' }
   }
 
   private getActiveSessionId(agentId: string): string {
@@ -488,11 +753,11 @@ class MCPIntegrationService extends EventEmitter {
 
   private setupEventListeners(): void {
     // Listen to agent events
-    this.agentPersistenceService?.on?.('agentCreated', async (data: any) => {
+    this.agentPersistenceService?.on('agentCreated', async (data) => {
       await this.activateForAgent(data.agentId)
     })
 
-    this.agentPersistenceService?.on?.('agentDeleted', (data: any) => {
+    this.agentPersistenceService?.on('agentDeleted', (data) => {
       this.deactivateForAgent(data.agentId)
     })
   }
@@ -551,9 +816,7 @@ class MCPIntegrationService extends EventEmitter {
         version: '1.0.0',
         lastUpdate: Date.now()
       }
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('mcp_integration_service', JSON.stringify(data))
-      }
+      localStorage.setItem('mcp_integration_service', JSON.stringify(data))
     } catch (error) {
       console.error('Failed to persist MCP data:', error)
     }
@@ -561,8 +824,6 @@ class MCPIntegrationService extends EventEmitter {
 
   private loadPersistedData(): void {
     try {
-      if (typeof window === 'undefined' || !window.localStorage) return
-      
       const stored = localStorage.getItem('mcp_integration_service')
       if (stored) {
         const data = JSON.parse(stored)

@@ -13,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { 
   performanceMonitor, 
   useMemoryMonitor, 
-  memoryCache,
-  requestPool 
+  getMemoryCache,
+  getRequestPool 
 } from '@/lib/performance/optimization';
 import {
   Activity,
@@ -81,7 +81,7 @@ export function PerformanceMonitor({ className = '', showDetails = false }: Perf
   };
 
   const handleClearCache = () => {
-    memoryCache.invalidate();
+    getMemoryCache().invalidate();
     performanceMonitor.clearMetrics();
     setPerformanceMetrics({});
   };
@@ -318,14 +318,14 @@ export function PerformanceMonitor({ className = '', showDetails = false }: Perf
               </div>
             )}
 
-            {memoryCache.size() > 800 && (
+            {getMemoryCache().size() > 800 && (
               <div className="p-3 border border-blue-200 rounded-lg bg-blue-50">
                 <div className="flex items-center gap-2 mb-1">
                   <Database className="h-4 w-4 text-blue-500" />
                   <span className="font-medium text-blue-700">Large Cache Size</span>
                 </div>
                 <p className="text-sm text-blue-600">
-                  Cache has {memoryCache.size()} items. Consider clearing cache to free memory.
+                  Cache has {getMemoryCache().size()} items. Consider clearing cache to free memory.
                 </p>
               </div>
             )}

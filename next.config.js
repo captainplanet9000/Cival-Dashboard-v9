@@ -4,12 +4,12 @@ const nextConfig = {
   output: 'standalone',
   serverExternalPackages: ['ioredis'],
   typescript: {
-    // Temporarily ignore build errors for deployment
-    ignoreBuildErrors: true,
+    // Enable TypeScript build errors - fixed per infrastructure analysis
+    ignoreBuildErrors: false,
   },
   eslint: {
-    // Temporarily ignore ESLint errors for deployment
-    ignoreDuringBuilds: true,
+    // Enable ESLint during builds - fixed per infrastructure analysis
+    ignoreDuringBuilds: false,
   },
   experimental: {},
   webpack: (config, { isServer }) => {
@@ -21,13 +21,6 @@ const nextConfig = {
         tls: false,
         child_process: false,
         'async_hooks': false,
-      };
-      
-      // Replace LangGraph imports with empty modules on client
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@langchain/langgraph': false,
-        '@langchain/langgraph/web': false,
       };
     }
     

@@ -373,7 +373,11 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     if (!bestSignal || bestSignal.confidence < 0.6) return null
 
     // Calculate position size based on strategy and risk limits
-    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
+    if (!portfolio) {
+      console.warn(`Portfolio not found for agent ${agent.id}`)
+      return null
+    }
     const positionSize = this.calculatePositionSize(agent, bestSymbol, bestSignal.confidence)
 
     const decision: AgentDecision = {
@@ -570,10 +574,17 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     agent: AutonomousAgent, 
     decision: AgentDecision
   ): Promise<{ approved: boolean; reason?: string }> {
-    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
+    if (!portfolio) {
+      return { approved: false, reason: 'Portfolio not found' }
+    }
     
     // Check position size limits
-    const positionValue = decision.size * this.persistentTradingEngine?.getMarketPrice(decision.symbol)!.price
+    const marketPrice = this.persistentTradingEngine?.getMarketPrice(decision.symbol)
+    if (!marketPrice) {
+      return { approved: false, reason: 'Market price not available' }
+    }
+    const positionValue = decision.size * marketPrice.price
     const maxPositionValue = portfolio.totalValue * agent.riskLimits.maxPositionSize
     
     if (positionValue > maxPositionValue) {
@@ -628,8 +639,17 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   // ================================
 
   private calculatePositionSize(agent: AutonomousAgent, symbol: string, confidence: number): number {
-    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
-    const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
+    if (!portfolio) {
+      console.warn(`Portfolio not found for agent ${agent.id}`)
+      return 0
+    }
+    
+    const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)
+    if (!marketData) {
+      console.warn(`Market data not found for symbol ${symbol}`)
+      return 0
+    }
     
     // Base position size as percentage of portfolio
     const basePositionPercent = agent.riskLimits.maxPositionSize * confidence
@@ -639,8 +659,17 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   }
 
   private calculateRiskScore(agent: AutonomousAgent, symbol: string, size: number): number {
-    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
-    const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)!
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
+    if (!portfolio) {
+      console.warn(`Portfolio not found for agent ${agent.id}`)
+      return 1.0 // High risk score as fallback
+    }
+    
+    const marketData = this.persistentTradingEngine?.getMarketPrice(symbol)
+    if (!marketData) {
+      console.warn(`Market data not found for symbol ${symbol}`)
+      return 1.0 // High risk score as fallback
+    }
     
     const positionValue = size * marketData.price
     const portfolioRisk = positionValue / portfolio.totalValue
@@ -678,9 +707,13 @@ class AutonomousTradingOrchestrator extends EventEmitter {
   }
 
   private async calculatePortfolioCorrelation(agent: AutonomousAgent, newSymbol: string): Promise<number> {
-    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)!
-    const existingSymbols = Object.keys(portfolio.positions)
+    const portfolio = this.persistentTradingEngine?.getPortfolio(agent.portfolio)
+    if (!portfolio) {
+      console.warn(`Portfolio not found for agent ${agent.id}`)
+      return 0 // No correlation if portfolio not found
+    }
     
+    const existingSymbols = Object.keys(portfolio.positions)
     if (existingSymbols.length === 0) return 0
     
     // Simplified correlation - in real system, calculate actual price correlations
@@ -918,7 +951,8 @@ class AutonomousTradingOrchestrator extends EventEmitter {
 
     // Calculate average volatility
     const avgVolatility = symbols.reduce((sum, symbol) => {
-      const data = allMarketData.get(symbol)!
+      const data = allMarketData.get(symbol)
+      if (!data) return sum
       return sum + Math.abs(data.changePercent24h)
     }, 0) / symbols.length
 
@@ -929,9 +963,10 @@ class AutonomousTradingOrchestrator extends EventEmitter {
     else this.marketConditions.volatility = 'low'
 
     // Determine trend
-    const positiveMoves = symbols.filter(symbol => 
-      allMarketData.get(symbol)!.changePercent24h > 0
-    ).length
+    const positiveMoves = symbols.filter(symbol => {
+      const data = allMarketData.get(symbol)
+      return data && data.changePercent24h > 0
+    }).length
     
     if (positiveMoves / symbols.length > 0.7) this.marketConditions.trend = 'bullish'
     else if (positiveMoves / symbols.length < 0.3) this.marketConditions.trend = 'bearish'

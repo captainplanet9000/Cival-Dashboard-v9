@@ -58,8 +58,19 @@ class MemoryCache {
   }
 }
 
-// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
-// export const memoryCache = new MemoryCache();
+// Lazy exports to prevent circular dependencies
+let _memoryCache: MemoryCache | null = null;
+export function getMemoryCache(): MemoryCache {
+  if (!_memoryCache) {
+    _memoryCache = new MemoryCache();
+  }
+  return _memoryCache;
+}
+
+// For backward compatibility
+export const memoryCache = {
+  get: () => getMemoryCache()
+};
 
 // Debounce Hook
 export function useDebounce<T>(value: T, delay: number): T {
@@ -382,8 +393,19 @@ class RequestPool {
   }
 }
 
-// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
-// export const requestPool = new RequestPool();
+// Lazy exports to prevent circular dependencies
+let _requestPool: RequestPool | null = null;
+export function getRequestPool(): RequestPool {
+  if (!_requestPool) {
+    _requestPool = new RequestPool();
+  }
+  return _requestPool;
+}
+
+// For backward compatibility
+export const requestPool = {
+  get: () => getRequestPool()
+};
 
 // Bundle size optimization - dynamic imports
 export const dynamicImports = {
