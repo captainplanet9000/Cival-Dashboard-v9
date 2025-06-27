@@ -93,30 +93,31 @@ export default function DashboardPage() {
             <li>❌ SimpleTradingView (renamed) - STILL CAUSES ERROR</li>
             <li>❌ MinimalStateTest - STILL CAUSES ERROR</li>
             <li>🎯 ROOT CAUSE: useState + array + switch + onClick pattern</li>
-            <li>✅ WorkingDashboard - FIXED with alternative React patterns</li>
+            <li>❌ WorkingDashboard - STILL CAUSES ERROR even with alternative patterns</li>
+            <li>🤯 SHOCKING: Issue transcends ALL React patterns and component structures</li>
           </ul>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>🎉 ROOT CAUSE SOLVED!</CardTitle>
+          <CardTitle>🤯 MIND-BLOWING DISCOVERY!</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-green-600 mb-4">
-            <strong>BREAKTHROUGH:</strong> Systematic testing identified the exact React pattern causing webpack circular dependency!
+          <p className="text-sm text-red-600 mb-4">
+            <strong>SHOCKING:</strong> Even alternative React patterns STILL trigger the same module 43686 error!
+          </p>
+          <p className="text-sm text-orange-600 mb-4">
+            🔍 The issue transcends ALL React patterns - ANY complex dashboard component fails
           </p>
           <p className="text-sm text-blue-600 mb-4">
-            🔍 Root cause: useState + array + switch + onClick pattern triggers Next.js webpack module 43686 bug
-          </p>
-          <p className="text-sm text-purple-600 mb-4">
-            🛠️ Solution: Alternative React patterns (useCallback, object state, direct conditional rendering)
+            🎯 NEW HYPOTHESIS: Component complexity, webpack bundling, or route-specific issue
           </p>
           <p className="text-sm text-green-600">
-            ✅ Enhanced dashboard restored with webpack-safe patterns
+            ✅ Emergency revert to MinimalDashboard while investigating deeper infrastructure issue
           </p>
-          <Suspense fallback={<div>Loading enhanced dashboard...</div>}>
-            <WorkingDashboard />
+          <Suspense fallback={<div>Loading minimal dashboard...</div>}>
+            <MinimalDashboard />
           </Suspense>
         </CardContent>
       </Card>
