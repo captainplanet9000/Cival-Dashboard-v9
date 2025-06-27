@@ -654,4 +654,5 @@ export class LangSmithIntegration extends EventEmitter {
 }
 
 // Export singleton instance
-export const langSmithIntegration = new LangSmithIntegration()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency  
+// export const langSmithIntegration = new LangSmithIntegration()

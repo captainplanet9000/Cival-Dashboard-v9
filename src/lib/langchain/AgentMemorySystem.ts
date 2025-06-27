@@ -579,4 +579,5 @@ export class AgentMemorySystem extends EventEmitter {
 }
 
 // Export singleton instance
-export const agentMemorySystem = new AgentMemorySystem()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const agentMemorySystem = new AgentMemorySystem()
