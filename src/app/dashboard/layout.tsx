@@ -1,4 +1,5 @@
-import { AgentMemoryProvider } from "@/components/agents/AgentMemoryProvider";
+// ULTRA-NUCLEAR: Remove AgentMemoryProvider to eliminate all service dependencies
+// import { AgentMemoryProvider } from "@/components/agents/AgentMemoryProvider";
 
 // Force dynamic rendering for all dashboard routes
 export const dynamic = 'force-dynamic'
@@ -10,11 +11,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AgentMemoryProvider>
-      {/* Simplified layout for ModernDashboardV4 - handles its own navigation */}
-      <div className="min-h-screen">
-        {children}
-      </div>
-    </AgentMemoryProvider>
+    // ULTRA-NUCLEAR: Direct layout without any providers
+    <div className="min-h-screen">
+      {children}
+    </div>
   );
 } 
