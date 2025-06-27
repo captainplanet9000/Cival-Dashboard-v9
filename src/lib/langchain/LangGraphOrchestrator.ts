@@ -872,4 +872,5 @@ Provide risk assessment as JSON with: overallRisk, concentrationRisk, exposureLi
 }
 
 // Export singleton instance
-export const langGraphOrchestrator = new LangGraphTradingOrchestrator()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const langGraphOrchestrator = new LangGraphTradingOrchestrator()

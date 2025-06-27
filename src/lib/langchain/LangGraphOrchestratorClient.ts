@@ -196,4 +196,5 @@ export class LangGraphTradingOrchestratorClient extends EventEmitter {
 }
 
 // Export client-safe singleton
-export const langGraphOrchestrator = new LangGraphTradingOrchestratorClient()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const langGraphOrchestrator = new LangGraphTradingOrchestratorClient()

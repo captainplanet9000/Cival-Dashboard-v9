@@ -425,4 +425,5 @@ Respond with JSON: {"decision": "option", "reasoning": "brief explanation", "con
 }
 
 // Export singleton instance
-export const langChainService = new LangChainService()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const langChainService = new LangChainService()

@@ -697,4 +697,5 @@ export class AdvancedLearningCoordinator extends EventEmitter {
 }
 
 // Export singleton instance
-export const advancedLearningCoordinator = new AdvancedLearningCoordinator()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const advancedLearningCoordinator = new AdvancedLearningCoordinator()

@@ -774,4 +774,5 @@ You can use these tools by calling them with appropriate parameters. Each tool w
 }
 
 // Export singleton instance
-export const langChainMCPIntegration = new LangChainMCPIntegration()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const langChainMCPIntegration = new LangChainMCPIntegration()

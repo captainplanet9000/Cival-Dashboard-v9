@@ -628,4 +628,5 @@ Format as JSON with all fields above.`
 }
 
 // Export singleton instance
-export const tradingWorkflowEngine = new TradingWorkflowEngine()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const tradingWorkflowEngine = new TradingWorkflowEngine()
