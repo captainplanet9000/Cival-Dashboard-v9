@@ -576,7 +576,8 @@ export class EnhancedBackendClient {
 
 // ===== SINGLETON INSTANCE =====
 
-export const enhancedBackendClient = new EnhancedBackendClient()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const enhancedBackendClient = new EnhancedBackendClient()
 
 // ===== LEGACY COMPATIBILITY =====
 // Maintain compatibility with existing code that imports from backend-client.ts

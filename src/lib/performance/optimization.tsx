@@ -58,7 +58,8 @@ class MemoryCache {
   }
 }
 
-export const memoryCache = new MemoryCache();
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const memoryCache = new MemoryCache();
 
 // Debounce Hook
 export function useDebounce<T>(value: T, delay: number): T {
@@ -381,7 +382,8 @@ class RequestPool {
   }
 }
 
-export const requestPool = new RequestPool();
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const requestPool = new RequestPool();
 
 // Bundle size optimization - dynamic imports
 export const dynamicImports = {

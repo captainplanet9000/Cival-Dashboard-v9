@@ -10,9 +10,9 @@ import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import ErrorBoundary from '@/components/ErrorBoundary'
 
-// STEP 1: Re-enable EnhancedDashboard structure (components still disabled inside)
-const EnhancedDashboard = dynamic(
-  () => import('@/components/dashboard/EnhancedDashboard'),
+// NUCLEAR OPTION: Use completely minimal dashboard with zero service dependencies
+const MinimalDashboard = dynamic(
+  () => import('@/components/dashboard/MinimalDashboard'),
   { 
     ssr: false,
     loading: () => (
@@ -34,7 +34,7 @@ export default function DashboardPage() {
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         </div>
       }>
-        <EnhancedDashboard />
+        <MinimalDashboard />
       </Suspense>
     </ErrorBoundary>
   )

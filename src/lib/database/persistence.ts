@@ -564,7 +564,8 @@ class DatabaseClient {
 }
 
 // Global database client instance
-export const db = new DatabaseClient()
+// TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
+// export const db = new DatabaseClient()
 
 export {
   DatabaseClient,
