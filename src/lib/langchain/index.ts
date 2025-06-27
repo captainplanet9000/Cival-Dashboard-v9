@@ -4,66 +4,44 @@
  * Prevents circular dependencies through service locator pattern
  */
 
-// Service registry for lazy initialization
-const services = new Map<string, any>()
+// NO STATIC IMPORTS to prevent circular dependencies
 
 // Lazy service getters - prevents circular dependencies
 export async function getLangChainService() {
-  if (!services.has('langchain')) {
-    const { LangChainService } = await import('./services/LangChainService')
-    services.set('langchain', new LangChainService())
-  }
-  return services.get('langchain')
+  const { loaders } = await import('./lazy-loader')
+  return loaders.langChainService()
 }
 
 export async function getLangGraphOrchestrator() {
-  if (!services.has('langgraph')) {
-    const { LangGraphOrchestrator } = await import('./orchestrators/LangGraphOrchestrator')
-    services.set('langgraph', new LangGraphOrchestrator())
-  }
-  return services.get('langgraph')
+  const { loaders } = await import('./lazy-loader')
+  return loaders.langGraphOrchestrator()
 }
 
 export async function getAgentMemorySystem() {
-  if (!services.has('memory')) {
-    const { AgentMemorySystem } = await import('./memory/AgentMemorySystem')
-    services.set('memory', new AgentMemorySystem())
-  }
-  return services.get('memory')
+  const { loaders } = await import('./lazy-loader')
+  return loaders.agentMemorySystem()
 }
 
 export async function getAGUIHandlers() {
-  if (!services.has('agui')) {
-    const { AGUIHandlers } = await import('./handlers/AGUIHandlers')
-    services.set('agui', new AGUIHandlers())
-  }
-  return services.get('agui')
+  const { loaders } = await import('./lazy-loader')
+  return loaders.aguiHandlers()
 }
 
 export async function getChainlinkPriceFeedService() {
-  if (!services.has('chainlink')) {
-    const { ChainlinkPriceFeedService } = await import('./integrations/ChainlinkPriceFeedService')
-    services.set('chainlink', new ChainlinkPriceFeedService())
-  }
-  return services.get('chainlink')
+  const { loaders } = await import('./lazy-loader')
+  return loaders.chainlinkPriceFeed()
 }
 
 export async function getTestnetDeFiService() {
-  if (!services.has('testnet')) {
-    const { TestnetDeFiService } = await import('./integrations/TestnetDeFiService')
-    services.set('testnet', new TestnetDeFiService())
-  }
-  return services.get('testnet')
+  const { loaders } = await import('./lazy-loader')
+  return loaders.testnetDeFi()
 }
 
 // Type exports
 export type * from './types'
 
-// Utility functions
-export function clearServiceCache() {
-  services.clear()
-}
-
-export function getServiceRegistry() {
-  return new Map(services)
+// Utility function
+export async function clearServiceCache() {
+  const { clearServiceCache: clear } = await import('./lazy-loader')
+  return clear()
 }
