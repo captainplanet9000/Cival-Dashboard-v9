@@ -9,7 +9,16 @@ import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-// Keep MinimalDashboard for stable dashboard
+// Use WorkingDashboard with webpack-safe React patterns
+const WorkingDashboard = dynamic(
+  () => import('@/components/dashboard/WorkingDashboard'),
+  { 
+    ssr: false,
+    loading: () => <div>Loading enhanced dashboard...</div>
+  }
+)
+
+// Keep MinimalDashboard as backup
 const MinimalDashboard = dynamic(
   () => import('@/components/dashboard/MinimalDashboard'),
   { 
@@ -80,34 +89,34 @@ export default function DashboardPage() {
             <li>✅ MinimalDashboard component - Passed</li>
             <li>❌ EnhancedDashboard (full) - CAUSES CIRCULAR DEPENDENCY ERROR</li>
             <li>❌ EnhancedDashboard (dependency-free) - STILL CAUSES ERROR</li>
-            <li>🚨 CRITICAL: Error is NOT in external dependencies</li>
-            <li>🔍 Error Source: Dynamic import pattern or component structure</li>
+            <li>❌ TestStaticDashboard - STILL CAUSES ERROR</li>
+            <li>❌ SimpleTradingView (renamed) - STILL CAUSES ERROR</li>
+            <li>❌ MinimalStateTest - STILL CAUSES ERROR</li>
+            <li>🎯 ROOT CAUSE: useState + array + switch + onClick pattern</li>
+            <li>✅ WorkingDashboard - FIXED with alternative React patterns</li>
           </ul>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>🚨 CRITICAL DISCOVERY</CardTitle>
+          <CardTitle>🎉 ROOT CAUSE SOLVED!</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-red-600 mb-4">
-            <strong>CONFIRMED:</strong> Circular dependency error persists even with dependency-free component!
-          </p>
-          <p className="text-sm text-muted-foreground mb-4">
-            Latest error: "Cannot access 'a' before initialization" in module 43686
-          </p>
-          <p className="text-sm text-orange-600 mb-4">
-            🔍 Root cause is NOT in external dependencies (shadcn/ui, lucide-react)
+          <p className="text-sm text-green-600 mb-4">
+            <strong>BREAKTHROUGH:</strong> Systematic testing identified the exact React pattern causing webpack circular dependency!
           </p>
           <p className="text-sm text-blue-600 mb-4">
-            🎯 Issue is structural: Dynamic import pattern or Next.js bundling of the component
+            🔍 Root cause: useState + array + switch + onClick pattern triggers Next.js webpack module 43686 bug
+          </p>
+          <p className="text-sm text-purple-600 mb-4">
+            🛠️ Solution: Alternative React patterns (useCallback, object state, direct conditional rendering)
           </p>
           <p className="text-sm text-green-600">
-            ✅ Reverted to stable MinimalDashboard - Dashboard operational
+            ✅ Enhanced dashboard restored with webpack-safe patterns
           </p>
-          <Suspense fallback={<div>Loading MinimalDashboard...</div>}>
-            <MinimalDashboard />
+          <Suspense fallback={<div>Loading enhanced dashboard...</div>}>
+            <WorkingDashboard />
           </Suspense>
         </CardContent>
       </Card>
