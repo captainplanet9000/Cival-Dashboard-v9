@@ -1,94 +1,75 @@
 /**
  * Main Dashboard Page
- * Ultra-minimal version to resolve initialization errors
+ * Testing with Shadcn/UI components restored
  */
 
 'use client'
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic'
 
 export default function DashboardPage() {
   return (
-    <div style={{ padding: '24px' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-        Trading Dashboard
-      </h1>
+    <div className="p-6 space-y-6">
+      <h1 className="text-3xl font-bold">Trading Dashboard</h1>
       
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
-        <div style={{ 
-          border: '1px solid #e2e8f0', 
-          borderRadius: '8px', 
-          padding: '16px' 
-        }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
-            System Status
-          </h3>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>
-            ✅ Online
-          </div>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>
-            Dashboard loading successfully
-          </p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>System Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">✅ Online</div>
+            <p className="text-sm text-muted-foreground">
+              Dashboard loading successfully
+            </p>
+          </CardContent>
+        </Card>
 
-        <div style={{ 
-          border: '1px solid #e2e8f0', 
-          borderRadius: '8px', 
-          padding: '16px' 
-        }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
-            Portfolio
-          </h3>
-          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-            $0.00
-          </div>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>
-            No active positions
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Portfolio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">$0.00</div>
+            <p className="text-sm text-muted-foreground">
+              No active positions
+            </p>
+          </CardContent>
+        </Card>
 
-        <div style={{ 
-          border: '1px solid #e2e8f0', 
-          borderRadius: '8px', 
-          padding: '16px' 
-        }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
-            AI Agents
-          </h3>
-          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-            0
-          </div>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>
-            No agents running
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Agents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-sm text-muted-foreground">
+              No agents running
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div style={{ 
-        border: '1px solid #e2e8f0', 
-        borderRadius: '8px', 
-        padding: '16px' 
-      }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
-          Error Resolution Status
-        </h3>
-        <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-          This ultra-minimal dashboard removes all potential dependencies that could cause module initialization errors.
-        </p>
-        <ul style={{ fontSize: '14px', color: '#6b7280', paddingLeft: '20px' }}>
-          <li>✅ No Shadcn/UI components</li>
-          <li>✅ No dynamic imports</li>
-          <li>✅ No external dependencies</li>
-          <li>✅ Pure inline styles</li>
-          <li>✅ Client-side only rendering</li>
-        </ul>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Component Restoration Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Testing incremental restoration of components to identify module 98189 error source.
+          </p>
+          <ul className="text-sm text-muted-foreground space-y-1">
+            <li>✅ ThemeProvider restored - No errors</li>
+            <li>✅ ErrorBoundary restored - No errors</li>
+            <li>✅ Shadcn/UI Card components restored - Testing...</li>
+            <li>⏳ Dynamic imports - Pending</li>
+            <li>⏳ Complex components - Pending</li>
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   )
 }
