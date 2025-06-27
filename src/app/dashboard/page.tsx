@@ -9,20 +9,7 @@ import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-// Test the EnhancedDashboard that originally caused module 98189 error
-const EnhancedDashboard = dynamic(
-  () => import('@/components/dashboard/EnhancedDashboard'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-)
-
-// Keep MinimalDashboard for fallback testing
+// Keep MinimalDashboard for stable dashboard
 const MinimalDashboard = dynamic(
   () => import('@/components/dashboard/MinimalDashboard'),
   { 
@@ -92,28 +79,35 @@ export default function DashboardPage() {
             <li>✅ Dynamic imports restored - No errors</li>
             <li>✅ MinimalDashboard component - Passed</li>
             <li>❌ EnhancedDashboard (full) - CAUSES CIRCULAR DEPENDENCY ERROR</li>
-            <li>🧪 EnhancedDashboard (dependency-free) - Testing now</li>
-            <li>🔍 Error Source: Likely shadcn/ui or lucide-react imports</li>
+            <li>❌ EnhancedDashboard (dependency-free) - STILL CAUSES ERROR</li>
+            <li>🚨 CRITICAL: Error is NOT in external dependencies</li>
+            <li>🔍 Error Source: Dynamic import pattern or component structure</li>
           </ul>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>🔬 DEPENDENCY-FREE TEST</CardTitle>
+          <CardTitle>🚨 CRITICAL DISCOVERY</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-yellow-600 mb-4">
-            <strong>TESTING:</strong> EnhancedDashboard with zero external dependencies to isolate circular dependency source.
+          <p className="text-sm text-red-600 mb-4">
+            <strong>CONFIRMED:</strong> Circular dependency error persists even with dependency-free component!
           </p>
           <p className="text-sm text-muted-foreground mb-4">
-            Previous error: "Cannot access 'l' before initialization" in module 43686
+            Latest error: "Cannot access 'a' before initialization" in module 43686
+          </p>
+          <p className="text-sm text-orange-600 mb-4">
+            🔍 Root cause is NOT in external dependencies (shadcn/ui, lucide-react)
           </p>
           <p className="text-sm text-blue-600 mb-4">
-            🧪 Current test: Pure React + Tailwind CSS (no shadcn/ui, no lucide-react icons)
+            🎯 Issue is structural: Dynamic import pattern or Next.js bundling of the component
           </p>
-          <Suspense fallback={<div>Loading Dependency-Free EnhancedDashboard...</div>}>
-            <EnhancedDashboard />
+          <p className="text-sm text-green-600">
+            ✅ Reverted to stable MinimalDashboard - Dashboard operational
+          </p>
+          <Suspense fallback={<div>Loading MinimalDashboard...</div>}>
+            <MinimalDashboard />
           </Suspense>
         </CardContent>
       </Card>
