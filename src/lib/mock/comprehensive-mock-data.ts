@@ -362,13 +362,13 @@ class ComprehensiveMockDataService {
 }
 
 // Export singleton instance
-let mockDataService: ComprehensiveMockDataService | null = null
+let _mockDataService: ComprehensiveMockDataService | null = null
 
 export function getMockDataService(): ComprehensiveMockDataService {
-  if (!mockDataService) {
-    mockDataService = new ComprehensiveMockDataService()
+  if (!_mockDataService) {
+    _mockDataService = new ComprehensiveMockDataService()
   }
-  return mockDataService
+  return _mockDataService
 }
 
 // Export for direct use
