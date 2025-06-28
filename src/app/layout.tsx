@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import ErrorBoundary from "@/lib/error-handling/error-boundary";
+import MinimalErrorBoundary from "@/lib/error-handling/minimal-error-boundary";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,9 +31,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ErrorBoundary>
+          <MinimalErrorBoundary>
             {children}
-          </ErrorBoundary>
+          </MinimalErrorBoundary>
         </ThemeProvider>
       </body>
     </html>
