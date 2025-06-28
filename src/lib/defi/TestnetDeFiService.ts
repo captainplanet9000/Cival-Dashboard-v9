@@ -3,7 +3,15 @@
  * Provides DeFi functionality on testnets for agents
  */
 
-import { ethers } from 'ethers'
+// Dynamic import of ethers to prevent circular dependencies
+let ethers: any = null
+
+async function getEthers() {
+  if (!ethers) {
+    ethers = await import('ethers')
+  }
+  return ethers
+}
 
 export interface TestnetWallet {
   id: string

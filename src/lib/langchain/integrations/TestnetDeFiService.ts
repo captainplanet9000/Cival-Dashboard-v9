@@ -3,7 +3,15 @@
  * Provides safe DeFi integration for testing and simulation
  */
 
-import { ethers } from 'ethers'
+// Dynamic import of ethers to prevent circular dependencies
+let ethers: any = null
+
+async function getEthers() {
+  if (!ethers) {
+    ethers = await import('ethers')
+  }
+  return ethers
+}
 import type { DeFiPosition, TestnetConfig } from '../types'
 
 // Mock ERC20 ABI for testnet tokens

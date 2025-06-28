@@ -1,4 +1,12 @@
-import { ethers } from 'ethers';
+// Dynamic import of ethers to prevent circular dependencies
+let ethers: any = null
+
+async function getEthers() {
+  if (!ethers) {
+    ethers = await import('ethers')
+  }
+  return ethers
+}
 import { 
   BaseExchangeConnector, 
   ExchangeCredentials, 

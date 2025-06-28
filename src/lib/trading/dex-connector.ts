@@ -3,7 +3,15 @@
  * Comprehensive DEX trading with Uniswap V3, 1inch, and other DEX aggregators
  */
 
-import { ethers } from 'ethers'
+// Dynamic import of ethers to prevent circular dependencies
+let ethers: any = null
+
+async function getEthers() {
+  if (!ethers) {
+    ethers = await import('ethers')
+  }
+  return ethers
+}
 // TODO: Install Uniswap packages for production use
 // import { abi as IUniswapV3PoolABI } from '@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json'
 // import { abi as SwapRouterABI } from '@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json'

@@ -3,7 +3,16 @@
  * Integrates with Chainlink oracle network for reliable price data
  */
 
-import { ethers } from 'ethers'
+// Dynamic import of ethers to prevent circular dependencies
+let ethers: any = null
+
+async function getEthers() {
+  if (!ethers) {
+    ethers = await import('ethers')
+  }
+  return ethers
+}
+
 import type { PriceFeedData, ChainlinkConfig } from '../types'
 
 // Chainlink Aggregator ABI (simplified)
@@ -14,8 +23,8 @@ const AGGREGATOR_ABI = [
 ]
 
 export class ChainlinkPriceFeedService {
-  private provider: ethers.JsonRpcProvider | null = null
-  private contracts: Map<string, ethers.Contract> = new Map()
+  private provider: any = null
+  private contracts: Map<string, any> = new Map()
   private config: ChainlinkConfig = {
     network: 'mainnet',
     providerUrl: process.env.ETHEREUM_RPC_URL || 'https://eth-mainnet.alchemyapi.io/v2/demo',
@@ -35,13 +44,17 @@ export class ChainlinkPriceFeedService {
     if (config) {
       this.config = { ...this.config, ...config }
     }
-    this.initializeProvider()
+    // Initialize asynchronously without blocking constructor
+    this.initializeProvider().catch(error => {
+      console.error('Failed to initialize provider:', error)
+    })
   }
 
-  private initializeProvider() {
+  private async initializeProvider() {
     try {
-      this.provider = new ethers.JsonRpcProvider(this.config.providerUrl)
-      this.initializeContracts()
+      const ethersLib = await getEthers()
+      this.provider = new ethersLib.JsonRpcProvider(this.config.providerUrl)
+      await this.initializeContracts()
       console.log(`🔗 Chainlink Price Feed Service initialized for ${this.config.network}`)
     } catch (error) {
       console.error('❌ Failed to initialize Chainlink provider:', error)
@@ -49,12 +62,13 @@ export class ChainlinkPriceFeedService {
     }
   }
 
-  private initializeContracts() {
+  private async initializeContracts() {
     if (!this.provider) return
 
+    const ethersLib = await getEthers()
     for (const [symbol, address] of Object.entries(this.config.contractAddresses)) {
       try {
-        const contract = new ethers.Contract(address, AGGREGATOR_ABI, this.provider)
+        const contract = new ethersLib.Contract(address, AGGREGATOR_ABI, this.provider)
         this.contracts.set(symbol, contract)
         console.log(`📄 Initialized contract for ${symbol}: ${address}`)
       } catch (error) {
@@ -106,7 +120,8 @@ export class ChainlinkPriceFeedService {
       const decimals = await contract.decimals()
       
       // Convert price based on decimals
-      const price = parseFloat(ethers.formatUnits(answer, decimals))
+      const ethersLib = await getEthers()
+      const price = parseFloat(ethersLib.formatUnits(answer, decimals))
       
       return {
         symbol,
