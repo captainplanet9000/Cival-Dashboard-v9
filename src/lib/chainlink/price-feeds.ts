@@ -1,6 +1,14 @@
 'use client'
 
-import { ethers } from 'ethers'
+// Dynamic import of ethers to prevent circular dependencies
+let ethers: any = null
+
+async function getEthers() {
+  if (!ethers) {
+    ethers = await import('ethers')
+  }
+  return ethers
+}
 
 // Chainlink Price Feed ABI (minimal interface for price reading)
 const PRICE_FEED_ABI = [
@@ -65,7 +73,7 @@ export interface ChainlinkPriceData {
 }
 
 export class ChainlinkPriceFeedService {
-  private provider: ethers.JsonRpcProvider | null = null
+  private provider: any = null
   private useTestnet: boolean = true // Start with testnet for development
   
   constructor() {
@@ -74,13 +82,15 @@ export class ChainlinkPriceFeedService {
 
   private async initializeProvider() {
     try {
+      const ethersLib = await getEthers()
+      
       // Try to connect to a public RPC endpoint
       if (this.useTestnet) {
         // Sepolia testnet
-        this.provider = new ethers.JsonRpcProvider('https://ethereum-sepolia.publicnode.com')
+        this.provider = new ethersLib.JsonRpcProvider('https://ethereum-sepolia.publicnode.com')
       } else {
         // Ethereum mainnet (requires API key for production)
-        this.provider = new ethers.JsonRpcProvider('https://ethereum.publicnode.com')
+        this.provider = new ethersLib.JsonRpcProvider('https://ethereum.publicnode.com')
       }
       
       // Test the connection
@@ -108,7 +118,8 @@ export class ChainlinkPriceFeedService {
         return this.getFallbackPrice(symbol)
       }
 
-      const contract = new ethers.Contract(feedAddress, PRICE_FEED_ABI, this.provider)
+      const ethersLib = await getEthers()
+      const contract = new ethersLib.Contract(feedAddress, PRICE_FEED_ABI, this.provider)
       
       // Get latest price data
       const [roundId, price, startedAt, updatedAt, answeredInRound] = await contract.latestRoundData()

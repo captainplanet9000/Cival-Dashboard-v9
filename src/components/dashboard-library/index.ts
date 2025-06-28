@@ -60,7 +60,8 @@ export { PortfolioPerformanceChart } from '@/components/charts/PortfolioPerforma
 // =============================================
 // REAL-TIME COMPONENTS
 // =============================================
-export { LiveMarketTicker } from '@/components/realtime/LiveMarketTicker'
+// NOTE: LiveMarketTicker removed from static exports to prevent circular dependencies
+// Use dynamic imports instead via ComponentRegistry
 
 // =============================================
 // MONITORING COMPONENTS
