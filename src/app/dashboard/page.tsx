@@ -116,11 +116,11 @@ export default function DashboardPage() {
               </li>
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                6 AI trading agents with performance metrics
+                AI agents with persistent memory and learning
               </li>
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                Real-time trade execution simulation
+                Real-time agent thoughts and decision tracking
               </li>
             </ul>
             <Link href="/dashboard/paper-trading">
@@ -136,29 +136,29 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart3 className="w-5 h-5 mr-2" />
-              System Fix Status
+              AI Memory System Status
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Successfully resolved the module 43686 circular dependency error.
+              Advanced AI memory system with persistent learning and real-time decision tracking.
             </p>
             <ul className="text-sm space-y-2">
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                ✅ Converted all ethers imports to dynamic loading
+                ✅ Persistent memory system with local storage
               </li>
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                ✅ Removed static LiveMarketTicker export
+                ✅ Real-time agent thoughts and decision tracking
               </li>
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                ✅ Fixed Chainlink service circular dependencies
+                ✅ Memory connections and learning algorithms
               </li>
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                ✅ Dashboard loading without initialization errors
+                ✅ Live memory updates and background processing
               </li>
             </ul>
             <Badge variant="outline" className="w-full justify-center">
@@ -175,21 +175,27 @@ export default function DashboardPage() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Link href="/dashboard/paper-trading">
               <Button variant="outline" className="w-full h-20 flex flex-col">
                 <Target className="w-6 h-6 mb-2" />
                 Paper Trading
               </Button>
             </Link>
-            <Button variant="outline" className="w-full h-20 flex flex-col" disabled>
-              <Bot className="w-6 h-6 mb-2" />
-              AI Agents
-              <span className="text-xs text-muted-foreground">(Coming Soon)</span>
-            </Button>
+            <Link href="/dashboard/agent-memory">
+              <Button variant="outline" className="w-full h-20 flex flex-col">
+                <Bot className="w-6 h-6 mb-2" />
+                AI Agent Memory
+              </Button>
+            </Link>
             <Button variant="outline" className="w-full h-20 flex flex-col" disabled>
               <TrendingUp className="w-6 h-6 mb-2" />
               Analytics
+              <span className="text-xs text-muted-foreground">(Coming Soon)</span>
+            </Button>
+            <Button variant="outline" className="w-full h-20 flex flex-col" disabled>
+              <BarChart3 className="w-6 h-6 mb-2" />
+              Advanced Features
               <span className="text-xs text-muted-foreground">(Coming Soon)</span>
             </Button>
           </div>
