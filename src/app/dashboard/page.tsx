@@ -9,16 +9,7 @@ import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-// Use WorkingDashboard with webpack-safe React patterns
-const WorkingDashboard = dynamic(
-  () => import('@/components/dashboard/WorkingDashboard'),
-  { 
-    ssr: false,
-    loading: () => <div>Loading enhanced dashboard...</div>
-  }
-)
-
-// Keep MinimalDashboard as backup
+// ONLY MinimalDashboard - completely remove all complex dashboard imports
 const MinimalDashboard = dynamic(
   () => import('@/components/dashboard/MinimalDashboard'),
   { 
@@ -111,10 +102,10 @@ export default function DashboardPage() {
             🔍 The issue transcends ALL React patterns - ANY complex dashboard component fails
           </p>
           <p className="text-sm text-blue-600 mb-4">
-            🎯 NEW HYPOTHESIS: Component complexity, webpack bundling, or route-specific issue
+            🎯 INVESTIGATION: Removed ALL complex dashboard imports to test if import declarations cause the error
           </p>
           <p className="text-sm text-green-600">
-            ✅ Emergency revert to MinimalDashboard while investigating deeper infrastructure issue
+            ✅ Testing with ONLY MinimalDashboard import - no other dashboard references
           </p>
           <Suspense fallback={<div>Loading minimal dashboard...</div>}>
             <MinimalDashboard />
