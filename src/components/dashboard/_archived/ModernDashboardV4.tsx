@@ -77,6 +77,12 @@ import LiveDashboardOrchestrator from '@/components/realtime/LiveDashboardOrches
 // Import Unified AI Assistant
 import UnifiedAIAssistant from '@/components/ai-assistant/UnifiedAIAssistant'
 
+// Import Connected Dashboard Components
+import ConnectedOverviewTab from '@/components/dashboard/ConnectedOverviewTab'
+import ConnectedTradingTab from '@/components/dashboard/ConnectedTradingTab'
+import ConnectedAgentsTab from '@/components/dashboard/ConnectedAgentsTab'
+import ConnectedHistoryTab from '@/components/dashboard/ConnectedHistoryTab'
+
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Farms...</div>
@@ -219,13 +225,13 @@ export function ModernDashboardV4() {
       id: 'overview',
       label: 'Overview',
       icon: <BarChart3 className="h-4 w-4" />,
-      component: <OverviewTab metrics={metrics} chartData={chartData} />
+      component: <ConnectedOverviewTab />
     },
     {
       id: 'agents',
       label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <AgentsTab />
+      component: <ConnectedAgentsTab />
     },
     {
       id: 'ai-assistant',
@@ -249,7 +255,7 @@ export function ModernDashboardV4() {
       id: 'trading',
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
-      component: <TradingTab />
+      component: <ConnectedTradingTab />
     },
     {
       id: 'analytics',
@@ -261,7 +267,7 @@ export function ModernDashboardV4() {
       id: 'history',
       label: 'History',
       icon: <Activity className="h-4 w-4" />,
-      component: <TradingDataTable />
+      component: <ConnectedHistoryTab />
     },
     {
       id: 'vault',
