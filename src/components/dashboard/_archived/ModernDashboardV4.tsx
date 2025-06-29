@@ -71,6 +71,7 @@ import RealPortfolioAnalyticsDashboard from '@/components/portfolio/RealPortfoli
 import RealMarketDataDashboard from '@/components/market/RealMarketDataDashboard'
 import RealNotificationSystem from '@/components/notifications/RealNotificationSystem'
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
+import RealTimeDashboard from '@/components/dashboard/RealTimeDashboard'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -236,13 +237,13 @@ export function ModernDashboardV4() {
       id: 'farms',
       label: 'Farms',
       icon: <Target className="h-4 w-4" />,
-      component: <FarmsTab />
+      component: <FarmsPage />
     },
     {
       id: 'goals',
       label: 'Goals',
       icon: <Star className="h-4 w-4" />,
-      component: <GoalsTab />
+      component: <GoalsPage />
     },
     {
       id: 'eliza',
@@ -260,7 +261,7 @@ export function ModernDashboardV4() {
       id: 'analytics',
       label: 'Analytics',
       icon: <PieChart className="h-4 w-4" />,
-      component: <AdvancedAnalytics />
+      component: <RealAnalyticsDashboard />
     },
     {
       id: 'history',
@@ -272,7 +273,7 @@ export function ModernDashboardV4() {
       id: 'vault',
       label: 'Vault',
       icon: <Wallet className="h-4 w-4" />,
-      component: <VaultTab />
+      component: <VaultPage />
     },
     {
       id: 'calendar',
@@ -376,11 +377,12 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
   const [overviewTab, setOverviewTab] = useState('dashboard')
   
   const overviewSubTabs = [
-    { id: 'dashboard', label: 'Dashboard', component: <DashboardOverview metrics={metrics} chartData={chartData} /> },
+    { id: 'dashboard', label: 'Dashboard', component: <RealTimeDashboard /> },
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
-    { id: 'trading', label: 'Trading', component: <TradingInterface /> },
-    { id: 'agents', label: 'Agent Manager', component: <AgentManager /> },
-    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
+    { id: 'trading', label: 'Trading', component: <RealTradingInterface /> },
+    { id: 'agents', label: 'Agent Manager', component: <RealAgentManagement /> },
+    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> },
+    { id: 'analytics', label: 'Analytics', component: <RealAnalyticsDashboard /> }
   ]
   
   return (
@@ -394,7 +396,7 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
 
       {/* Overview Sub-Navigation */}
       <Tabs value={overviewTab} onValueChange={setOverviewTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-emerald-50 gap-2">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 bg-emerald-50 gap-2">
           {overviewSubTabs.map((tab) => (
             <TabsTrigger
               key={tab.id}
@@ -452,6 +454,33 @@ function ModernMetricCard({
 function DashboardOverview({ metrics, chartData }: { metrics: DashboardMetrics; chartData: ChartDataPoint[] }) {
   return (
     <div className="space-y-6">
+      {/* Real-time Market Data */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="modern-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              Market Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RealMarketDataDashboard />
+          </CardContent>
+        </Card>
+        
+        <Card className="modern-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-purple-600" />
+              Live Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RealNotificationSystem />
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Animated Metrics */}
       <AnimatedMetrics className="mb-6" />
       
