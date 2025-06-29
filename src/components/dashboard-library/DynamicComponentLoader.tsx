@@ -31,6 +31,7 @@ const components = {
   // Monitoring Components
   'system-monitoring': lazy(() => import('@/components/monitoring/SystemMonitoringDashboard')),
   'performance-monitor': lazy(() => import('@/components/monitoring/PerformanceMonitor')),
+  'queue-based-dashboard': lazy(() => import('@/components/realtime/QueueBasedDashboard')),
 
   // Farm Components
   'enhanced-farm-dashboard': lazy(() => import('@/components/farm/EnhancedFarmDashboard')),

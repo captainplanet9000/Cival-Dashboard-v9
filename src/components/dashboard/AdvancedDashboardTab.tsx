@@ -242,6 +242,16 @@ const dashboardFeatures: FeatureCard[] = [
     tags: ['monitoring', 'system', 'health']
   },
   {
+    id: 'queue-based-dashboard',
+    title: 'Queue-Based Real-time Dashboard',
+    description: 'Real-time monitoring powered by Supabase queues with guaranteed delivery',
+    icon: <Zap className="h-6 w-6" />,
+    componentKey: 'queue-based-dashboard',
+    category: 'Monitoring',
+    status: 'available',
+    tags: ['queues', 'real-time', 'monitoring', 'supabase']
+  },
+  {
     id: 'performance-monitor',
     title: 'Performance Monitor',
     description: 'Real-time performance metrics and alerts',

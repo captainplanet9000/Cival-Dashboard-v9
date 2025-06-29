@@ -1,12 +1,14 @@
 'use client'
 
 /**
- * Persistent Memory Service with Real Storage
+ * Persistent Memory Service with Real Storage and Queue Integration
  * Provides actual persistent memory with localStorage/IndexedDB backup
  * Simulates LLM responses but maintains real memory connections
+ * Enhanced with Supabase Queues for reliable message processing
  */
 
 import { getSimpleMemoryService, type AgentMemoryNode, type AgentPersonality } from './simple-agent-memory'
+import { getSupabaseQueueService, type MemoryMessage, type AgentMessage } from '../queues/supabase-queue-service'
 
 export interface MemoryConnection {
   id: string
@@ -58,6 +60,7 @@ export interface RealTimeMemoryUpdate {
 
 class PersistentMemoryService {
   private simpleMemory = getSimpleMemoryService()
+  private queueService = getSupabaseQueueService()
   private connections: Map<string, MemoryConnection[]> = new Map()
   private thoughts: Map<string, AgentThought[]> = new Map()
   private decisions: Map<string, AgentDecision[]> = new Map()
@@ -65,10 +68,12 @@ class PersistentMemoryService {
   private connectionCounter = 0
   private thoughtCounter = 0
   private decisionCounter = 0
+  private queueInitialized = false
 
   constructor() {
     this.loadFromStorage()
     this.initializeMemoryConnections()
+    this.initializeQueueHandlers()
     this.startBackgroundProcessing()
   }
 
@@ -135,6 +140,210 @@ class PersistentMemoryService {
     } catch (error) {
       console.warn('Failed to load memory data from localStorage:', error)
     }
+  }
+
+  // Queue system initialization
+  private async initializeQueueHandlers() {
+    try {
+      // Initialize queue service
+      await this.queueService.initialize()
+      
+      // Set up memory update queue handler
+      await this.queueService.receiveMemoryUpdates(async (message) => {
+        await this.processQueuedMemoryUpdate(message.payload)
+      })
+
+      // Set up agent message handler for memory operations
+      await this.queueService.receiveAgentMessages(async (message) => {
+        if (message.payload.type === 'memory_update') {
+          await this.processAgentMemoryMessage(message.payload)
+        }
+      })
+
+      this.queueInitialized = true
+      console.log('✅ Memory service queue handlers initialized')
+    } catch (error) {
+      console.warn('⚠️ Queue initialization failed, falling back to local-only mode:', error)
+      this.queueInitialized = false
+    }
+  }
+
+  private async processQueuedMemoryUpdate(update: MemoryMessage) {
+    try {
+      switch (update.type) {
+        case 'connection':
+          await this.processConnectionUpdate(update)
+          break
+        case 'thought':
+          await this.processThoughtUpdate(update)
+          break
+        case 'decision':
+          await this.processDecisionUpdate(update)
+          break
+        case 'learning':
+          await this.processLearningUpdate(update)
+          break
+      }
+    } catch (error) {
+      console.error('Error processing queued memory update:', error)
+    }
+  }
+
+  private async processAgentMemoryMessage(message: AgentMessage) {
+    try {
+      const { agentId, data } = message
+      
+      // Process different types of agent memory operations
+      switch (data.operation) {
+        case 'store_memory':
+          this.simpleMemory.storeMemory(agentId, data.memory)
+          break
+        case 'create_connection':
+          await this.createMemoryConnection(agentId, data.connection)
+          break
+        case 'update_thought':
+          await this.updateAgentThought(agentId, data.thought)
+          break
+      }
+    } catch (error) {
+      console.error('Error processing agent memory message:', error)
+    }
+  }
+
+  private async processConnectionUpdate(update: MemoryMessage) {
+    const { agentId, data } = update
+    if (data.connection) {
+      const agentConnections = this.connections.get(agentId) || []
+      agentConnections.push(data.connection)
+      this.connections.set(agentId, agentConnections)
+      this.saveToStorage()
+    }
+  }
+
+  private async processThoughtUpdate(update: MemoryMessage) {
+    const { agentId, data } = update
+    if (data.thought) {
+      const agentThoughts = this.thoughts.get(agentId) || []
+      agentThoughts.unshift(data.thought)
+      this.thoughts.set(agentId, agentThoughts.slice(0, 50)) // Keep last 50
+      this.saveToStorage()
+    }
+  }
+
+  private async processDecisionUpdate(update: MemoryMessage) {
+    const { agentId, data } = update
+    if (data.decision) {
+      const agentDecisions = this.decisions.get(agentId) || []
+      agentDecisions.unshift(data.decision)
+      this.decisions.set(agentId, agentDecisions.slice(0, 100)) // Keep last 100
+      this.saveToStorage()
+    }
+  }
+
+  private async processLearningUpdate(update: MemoryMessage) {
+    const { agentId, data } = update
+    // Process learning updates - could trigger new connections or thoughts
+    if (data.learningContext) {
+      this.analyzeAndCreateConnections(agentId)
+      this.generateThought(agentId, data.learningContext, 'reflection')
+    }
+  }
+
+  private async createMemoryConnection(agentId: string, connectionData: any) {
+    const connection: MemoryConnection = {
+      id: `conn_${this.connectionCounter++}`,
+      sourceMemoryId: connectionData.sourceMemoryId,
+      targetMemoryId: connectionData.targetMemoryId,
+      connectionType: connectionData.connectionType,
+      strength: connectionData.strength || 0.5,
+      createdAt: new Date()
+    }
+
+    const agentConnections = this.connections.get(agentId) || []
+    agentConnections.push(connection)
+    this.connections.set(agentId, agentConnections)
+    this.saveToStorage()
+
+    // Notify via queue if available
+    if (this.queueInitialized) {
+      await this.queueService.sendMemoryUpdate({
+        type: 'connection',
+        agentId,
+        data: { connection },
+        timestamp: new Date()
+      })
+    }
+  }
+
+  private async updateAgentThought(agentId: string, thoughtData: any) {
+    const thought: AgentThought = {
+      id: `thought_${this.thoughtCounter++}`,
+      agentId,
+      thought: thoughtData.content,
+      context: thoughtData.context,
+      confidence: thoughtData.confidence || 0.7,
+      relatedMemories: thoughtData.relatedMemories || [],
+      timestamp: new Date(),
+      thoughtType: thoughtData.type || 'analysis'
+    }
+
+    const agentThoughts = this.thoughts.get(agentId) || []
+    agentThoughts.unshift(thought)
+    this.thoughts.set(agentId, agentThoughts.slice(0, 50))
+    this.saveToStorage()
+
+    // Notify via queue if available
+    if (this.queueInitialized) {
+      await this.queueService.sendMemoryUpdate({
+        type: 'thought',
+        agentId,
+        data: { thought },
+        timestamp: new Date()
+      })
+    }
+  }
+
+  // Enhanced methods with queue integration
+  async storeMemoryWithQueue(agentId: string, memory: AgentMemoryNode) {
+    // Store locally first
+    this.simpleMemory.storeMemory(agentId, memory)
+
+    // Send to queue for distributed processing
+    if (this.queueInitialized) {
+      await this.queueService.sendMemoryUpdate({
+        type: 'learning',
+        agentId,
+        data: { memory, learningContext: memory.content },
+        timestamp: new Date()
+      })
+    }
+
+    // Trigger local connection analysis
+    this.analyzeAndCreateConnections(agentId)
+  }
+
+  async makeAgentDecisionWithQueue(agentId: string, symbol: string, marketContext: any): Promise<AgentDecision> {
+    // Make decision locally
+    const decision = this.makeAgentDecision(agentId, symbol, marketContext)
+
+    // Send to queue for coordination
+    if (this.queueInitialized) {
+      await this.queueService.sendAgentMessage({
+        type: 'decision',
+        agentId,
+        data: { decision, marketContext },
+        priority: 2
+      })
+
+      await this.queueService.sendMemoryUpdate({
+        type: 'decision',
+        agentId,
+        data: { decision },
+        timestamp: new Date()
+      })
+    }
+
+    return decision
   }
 
   // Real-time update system
