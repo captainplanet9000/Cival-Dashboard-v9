@@ -75,19 +75,21 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
     { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
   ]
 
-  // Format currency
-  const formatCurrency = (value: number) => {
+  // Format currency with null safety
+  const formatCurrency = (value: number | undefined | null) => {
+    const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(value)
+    }).format(safeValue)
   }
 
-  // Format percentage
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(2)}%`
+  // Format percentage with null safety
+  const formatPercentage = (value: number | undefined | null) => {
+    const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0
+    return `${safeValue.toFixed(2)}%`
   }
 
   return (
@@ -136,11 +138,11 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
                   <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
                 )}
                 <span className={`text-sm font-medium ${state.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(Math.abs(state.totalPnL))} ({formatPercentage((state.totalPnL / (state.totalAgents * 10000)) * 100)})
+                  {formatCurrency(Math.abs(state.totalPnL || 0))} ({formatPercentage(state.totalAgents > 0 ? (state.totalPnL / (state.totalAgents * 10000)) * 100 : 0)})
                 </span>
               </div>
               <Progress 
-                value={(state.portfolioValue / (state.totalAgents * 10000)) * 100} 
+                value={state.totalAgents > 0 ? (state.portfolioValue / (state.totalAgents * 10000)) * 100 : 0} 
                 className="mt-2 h-1"
               />
             </CardContent>

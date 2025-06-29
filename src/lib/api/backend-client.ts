@@ -1957,6 +1957,67 @@ class BackendApiClient {
       };
     }
   }
+
+  // Generic HTTP methods for backward compatibility
+  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    try {
+      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+      const response = await this.fetchWithTimeout(url);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'GET request failed',
+        status: 0,
+      };
+    }
+  }
+
+  async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    try {
+      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+      const response = await this.fetchWithTimeout(url, {
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined
+      });
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'POST request failed',
+        status: 0,
+      };
+    }
+  }
+
+  async put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    try {
+      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+      const response = await this.fetchWithTimeout(url, {
+        method: 'PUT',
+        body: data ? JSON.stringify(data) : undefined
+      });
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'PUT request failed',
+        status: 0,
+      };
+    }
+  }
+
+  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    try {
+      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+      const response = await this.fetchWithTimeout(url, {
+        method: 'DELETE'
+      });
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'DELETE request failed',
+        status: 0,
+      };
+    }
+  }
 }
 
 // Export singleton instance
