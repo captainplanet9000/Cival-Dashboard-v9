@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Activity, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Zap,
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
-  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search
+  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search, Brain
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -59,7 +59,7 @@ import { CommandPalette } from '@/components/expansions/command-palette'
 import { TradingDataTable } from '@/components/expansions/trading-data-table'
 
 // Import AG-UI infrastructure
-import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
+import { AGUIProvider } from '@/components/ag-ui/fallback'
 
 // Import Real Trading Components
 import RealAgentCreation from '@/components/agents/RealAgentCreation'
@@ -73,6 +73,9 @@ import RealNotificationSystem from '@/components/notifications/RealNotificationS
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
 import RealTimeDashboard from '@/components/dashboard/RealTimeDashboard'
 import LiveDashboardOrchestrator from '@/components/realtime/LiveDashboardOrchestrator'
+
+// Import Unified AI Assistant
+import UnifiedAIAssistant from '@/components/ai-assistant/UnifiedAIAssistant'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -109,10 +112,6 @@ const PersistencePage = dynamic(() => import('@/app/dashboard/persistence/page')
 const PythonAnalysisPage = dynamic(() => import('@/app/dashboard/python-analysis/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Python Analysis...</div>
-})
-const ElizaPage = dynamic(() => import('@/app/dashboard/eliza/page'), { 
-  ssr: false,
-  loading: () => <div className="p-6 text-center">Loading Eliza AI...</div>
 })
 
 // Import advanced feature components
@@ -229,10 +228,10 @@ export function ModernDashboardV4() {
       component: <AgentsTab />
     },
     {
-      id: 'agui-chat',
-      label: 'AG-UI Chat',
-      icon: <Users className="h-4 w-4" />,
-      component: <AGUIChat />
+      id: 'ai-assistant',
+      label: 'AI Assistant',
+      icon: <Brain className="h-4 w-4" />,
+      component: <UnifiedAIAssistant />
     },
     {
       id: 'farms',
@@ -245,12 +244,6 @@ export function ModernDashboardV4() {
       label: 'Goals',
       icon: <Star className="h-4 w-4" />,
       component: <GoalsPage />
-    },
-    {
-      id: 'eliza',
-      label: 'Eliza AI',
-      icon: <Bot className="h-4 w-4" />,
-      component: <ElizaPage />
     },
     {
       id: 'trading',
@@ -2373,7 +2366,7 @@ function AdvancedTab() {
     { id: 'python-analysis', label: 'Python Analysis', component: <div className="p-6"><PythonAnalysisPage /></div> },
     { id: 'persistence', label: 'Persistence', component: <div className="p-6"><PersistencePage /></div> },
     { id: 'calendar', label: 'Calendar', component: <div className="p-6"><CalendarPage /></div> },
-    { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
+    { id: 'ai-assistant-advanced', label: 'AI Assistant', component: <div className="p-6"><UnifiedAIAssistant /></div> },
     { id: 'risk', label: 'Risk Management', component: <RealRiskManagementDashboard /> }
   ]
   
