@@ -83,6 +83,11 @@ import ConnectedTradingTab from '@/components/dashboard/ConnectedTradingTab'
 import ConnectedAgentsTab from '@/components/dashboard/ConnectedAgentsTab'
 import ConnectedHistoryTab from '@/components/dashboard/ConnectedHistoryTab'
 import ConnectedAnalyticsTab from '@/components/dashboard/ConnectedAnalyticsTab'
+import ConnectedFarmsTab from '@/components/dashboard/ConnectedFarmsTab'
+import ConnectedGoalsTab from '@/components/dashboard/ConnectedGoalsTab'
+import ConnectedVaultTab from '@/components/dashboard/ConnectedVaultTab'
+import ConnectedCalendarTab from '@/components/dashboard/ConnectedCalendarTab'
+import ConnectedAdvancedTab from '@/components/dashboard/ConnectedAdvancedTab'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -244,13 +249,13 @@ export function ModernDashboardV4() {
       id: 'farms',
       label: 'Farms',
       icon: <Target className="h-4 w-4" />,
-      component: <FarmsPage />
+      component: <ConnectedFarmsTab />
     },
     {
       id: 'goals',
       label: 'Goals',
       icon: <Star className="h-4 w-4" />,
-      component: <GoalsPage />
+      component: <ConnectedGoalsTab />
     },
     {
       id: 'trading',
@@ -274,19 +279,19 @@ export function ModernDashboardV4() {
       id: 'vault',
       label: 'Vault',
       icon: <Wallet className="h-4 w-4" />,
-      component: <VaultPage />
+      component: <ConnectedVaultTab />
     },
     {
       id: 'calendar',
       label: 'Calendar',
       icon: <Calendar className="h-4 w-4" />,
-      component: <CalendarPage />
+      component: <ConnectedCalendarTab />
     },
     {
       id: 'advanced',
       label: 'Advanced',
       icon: <Settings className="h-4 w-4" />,
-      component: <AdvancedTab />
+      component: <ConnectedAdvancedTab />
     }
   ]
 
