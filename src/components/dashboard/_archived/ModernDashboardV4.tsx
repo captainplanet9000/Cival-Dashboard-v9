@@ -68,6 +68,9 @@ import RealTradingInterface from '@/components/trading/RealTradingInterface'
 import RealAnalyticsDashboard from '@/components/analytics/RealAnalyticsDashboard'
 import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
 import RealPortfolioAnalyticsDashboard from '@/components/portfolio/RealPortfolioAnalyticsDashboard'
+import RealMarketDataDashboard from '@/components/market/RealMarketDataDashboard'
+import RealNotificationSystem from '@/components/notifications/RealNotificationSystem'
+import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -2178,6 +2181,7 @@ function TradingTab() {
     { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingPanel /> },
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> },
+    { id: 'backtesting', label: 'Backtesting', component: <RealBacktestingDashboard /> },
     { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
   ]
   
@@ -2392,6 +2396,8 @@ function AdvancedTab() {
   
   const advancedSubTabs = [
     { id: 'analytics', label: 'Analytics', component: <RealAnalyticsDashboard /> },
+    { id: 'market-data', label: 'Market Data', component: <RealMarketDataDashboard /> },
+    { id: 'notifications', label: 'Notifications', component: <RealNotificationSystem /> },
     { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6"><ComprehensiveAnalyticsPage /></div> },
     { id: 'flashloan', label: 'FlashLoan', component: <div className="p-6"><FlashLoanView /></div> },
     { id: 'hyperlend', label: 'HyperLend', component: <div className="p-6"><HyperLendView /></div> },
@@ -2426,8 +2432,8 @@ function AdvancedTab() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 md:grid-cols-3 bg-gray-50 gap-2">
-              {advancedSubTabs.slice(4, 7).map((tab) => (
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 md:grid-cols-4 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(4, 8).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
@@ -2437,8 +2443,8 @@ function AdvancedTab() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 bg-gray-50 gap-2">
-              {advancedSubTabs.slice(7, 10).map((tab) => (
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 md:grid-cols-4 bg-gray-50 gap-2">
+              {advancedSubTabs.slice(8, 12).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
