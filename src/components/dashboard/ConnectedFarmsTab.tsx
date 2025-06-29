@@ -30,6 +30,7 @@ import { useDashboardConnection } from './DashboardTabConnector'
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
 import { toast } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
+import { EnhancedFarmCreationWizard } from '@/components/farms/EnhancedFarmCreationWizard'
 
 interface Farm {
   id: string
@@ -57,17 +58,6 @@ interface ConnectedFarmsTabProps {
 export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
   const { state, actions } = useDashboardConnection('farms')
   const [farms, setFarms] = useState<Farm[]>([])
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
-  
-  // Farm creation form state
-  const [newFarm, setNewFarm] = useState({
-    name: '',
-    description: '',
-    strategy: 'momentum',
-    agentCount: 3,
-    totalCapital: 30000,
-    coordinationMode: 'coordinated' as 'independent' | 'coordinated' | 'hierarchical'
-  })
 
   // Load farms data
   useEffect(() => {
@@ -112,74 +102,6 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
     }
   }
 
-  const createFarm = async () => {
-    if (!newFarm.name.trim()) {
-      toast.error('Please enter a farm name')
-      return
-    }
-
-    const farmId = `farm_${Date.now()}`
-    const createdAgents: string[] = []
-
-    // Create agents for the farm
-    for (let i = 0; i < newFarm.agentCount; i++) {
-      const agentConfig = {
-        name: `${newFarm.name} Agent ${i + 1}`,
-        strategy: newFarm.strategy,
-        capital: newFarm.totalCapital / newFarm.agentCount,
-        config: {
-          riskPerTrade: 0.02,
-          maxPositions: 3,
-          stopLoss: 0.05,
-          takeProfit: 0.1,
-          coordinationMode: newFarm.coordinationMode
-        }
-      }
-      
-      const agent = paperTradingEngine.createAgent(agentConfig)
-      paperTradingEngine.startAgent(agent.id)
-      createdAgents.push(agent.id)
-    }
-
-    const farm: Farm = {
-      id: farmId,
-      name: newFarm.name,
-      description: newFarm.description,
-      strategy: newFarm.strategy,
-      agentCount: newFarm.agentCount,
-      totalCapital: newFarm.totalCapital,
-      coordinationMode: newFarm.coordinationMode,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      agents: createdAgents,
-      performance: {
-        totalValue: newFarm.totalCapital,
-        totalPnL: 0,
-        winRate: 0,
-        tradeCount: 0
-      }
-    }
-
-    // Store farm
-    const existingFarms = localStorage.getItem('trading_farms')
-    const allFarms = existingFarms ? JSON.parse(existingFarms) : []
-    allFarms.push(farm)
-    localStorage.setItem('trading_farms', JSON.stringify(allFarms))
-
-    // Reset form and close dialog
-    setNewFarm({
-      name: '',
-      description: '',
-      strategy: 'momentum',
-      agentCount: 3,
-      totalCapital: 30000,
-      coordinationMode: 'coordinated'
-    })
-    setShowCreateDialog(false)
-    
-    toast.success(`Farm "${farm.name}" created with ${farm.agentCount} agents`)
-    loadFarmsData()
-  }
 
   const toggleFarmStatus = (farmId: string) => {
     try {
@@ -237,19 +159,6 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
     }
   }
 
-  const coordinationModes = [
-    { value: 'independent', label: 'Independent', description: 'Agents trade independently' },
-    { value: 'coordinated', label: 'Coordinated', description: 'Agents share signals and coordinate' },
-    { value: 'hierarchical', label: 'Hierarchical', description: 'Lead agent coordinates others' }
-  ]
-
-  const strategies = [
-    { value: 'momentum', label: 'Momentum Trading' },
-    { value: 'mean_reversion', label: 'Mean Reversion' },
-    { value: 'arbitrage', label: 'Arbitrage' },
-    { value: 'breakout', label: 'Breakout Trading' },
-    { value: 'scalping', label: 'Scalping' }
-  ]
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -262,109 +171,38 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Farm
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Create Trading Farm</DialogTitle>
-                <DialogDescription>
-                  Deploy multiple coordinated agents with a unified strategy
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Farm Name</Label>
-                  <Input
-                    value={newFarm.name}
-                    onChange={(e) => setNewFarm({...newFarm, name: e.target.value})}
-                    placeholder="e.g., Momentum Farm Alpha"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Description</Label>
-                  <Input
-                    value={newFarm.description}
-                    onChange={(e) => setNewFarm({...newFarm, description: e.target.value})}
-                    placeholder="Brief description of the farm's purpose"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Strategy</Label>
-                    <Select value={newFarm.strategy} onValueChange={(v) => setNewFarm({...newFarm, strategy: v})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {strategies.map(strategy => (
-                          <SelectItem key={strategy.value} value={strategy.value}>
-                            {strategy.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label>Agent Count</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={newFarm.agentCount}
-                      onChange={(e) => setNewFarm({...newFarm, agentCount: parseInt(e.target.value)})}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label>Total Capital ($)</Label>
-                  <Input
-                    type="number"
-                    min="1000"
-                    value={newFarm.totalCapital}
-                    onChange={(e) => setNewFarm({...newFarm, totalCapital: parseInt(e.target.value)})}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ${(newFarm.totalCapital / newFarm.agentCount).toFixed(0)} per agent
-                  </p>
-                </div>
-                
-                <div>
-                  <Label>Coordination Mode</Label>
-                  <Select 
-                    value={newFarm.coordinationMode} 
-                    onValueChange={(v: any) => setNewFarm({...newFarm, coordinationMode: v})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {coordinationModes.map(mode => (
-                        <SelectItem key={mode.value} value={mode.value}>
-                          <div>
-                            <div className="font-medium">{mode.label}</div>
-                            <div className="text-xs text-muted-foreground">{mode.description}</div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button onClick={createFarm} className="w-full">
-                  Create Farm
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <EnhancedFarmCreationWizard
+            onFarmCreated={(farm) => {
+              // Convert enhanced farm format to legacy format for compatibility
+              const legacyFarm: Farm = {
+                id: farm.farm_id,
+                name: farm.farm_name,
+                description: farm.description,
+                strategy: farm.strategy_type,
+                agentCount: farm.metadata?.agent_count || 0,
+                totalCapital: farm.total_allocated_capital,
+                coordinationMode: farm.coordination_mode,
+                status: farm.status as 'active' | 'paused' | 'stopped',
+                createdAt: farm.created_at,
+                agents: farm.agents || [],
+                performance: {
+                  totalValue: farm.total_allocated_capital,
+                  totalPnL: 0,
+                  winRate: 0,
+                  tradeCount: 0
+                }
+              }
+
+              // Store in localStorage for ConnectedFarmsTab compatibility
+              const existingFarms = localStorage.getItem('trading_farms')
+              const allFarms = existingFarms ? JSON.parse(existingFarms) : []
+              allFarms.push(farm) // Store enhanced format
+              localStorage.setItem('trading_farms', JSON.stringify(allFarms))
+
+              toast.success(`Farm "${farm.farm_name}" created with ${farm.metadata?.agent_count} agents`)
+              loadFarmsData()
+            }}
+          />
           
           <Button variant="outline" size="sm" onClick={actions.refresh}>
             <RefreshCw className="h-4 w-4" />
@@ -484,7 +322,14 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="text-muted-foreground">Strategy:</span>
-                          <div className="font-medium">{strategies.find(s => s.value === farm.strategy)?.label}</div>
+                          <div className="font-medium">
+                            {farm.strategy === 'momentum' ? 'Momentum Trading' :
+                             farm.strategy === 'mean_reversion' ? 'Mean Reversion' :
+                             farm.strategy === 'arbitrage' ? 'Arbitrage' :
+                             farm.strategy === 'breakout' ? 'Breakout Trading' :
+                             farm.strategy === 'scalping' ? 'Scalping' : 
+                             farm.strategy.charAt(0).toUpperCase() + farm.strategy.slice(1)}
+                          </div>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Agents:</span>
@@ -492,7 +337,12 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                         </div>
                         <div>
                           <span className="text-muted-foreground">Coordination:</span>
-                          <div className="font-medium">{coordinationModes.find(m => m.value === farm.coordinationMode)?.label}</div>
+                          <div className="font-medium">
+                            {farm.coordinationMode === 'independent' ? 'Independent' :
+                             farm.coordinationMode === 'coordinated' ? 'Coordinated' :
+                             farm.coordinationMode === 'hierarchical' ? 'Hierarchical' :
+                             farm.coordinationMode.charAt(0).toUpperCase() + farm.coordinationMode.slice(1)}
+                          </div>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Capital:</span>

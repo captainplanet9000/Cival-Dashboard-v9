@@ -4,6 +4,7 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { EnhancedDropdown, type DropdownOption } from '@/components/ui/enhanced-dropdown'
 import { Badge } from '@/components/ui/badge'
 import { Palette, Monitor, Moon, Sun, Target, BarChart3, Eye } from 'lucide-react'
 import { useTheme } from './theme-provider'
@@ -42,24 +43,21 @@ export function ThemeSelector() {
         {/* Theme Selector */}
         <div className="space-y-3">
           <label className="text-sm font-medium">Select Theme</label>
-          <Select value={theme} onValueChange={setTheme}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a theme" />
-            </SelectTrigger>
-            <SelectContent>
-              {themes.map((themeOption) => {
-                const Icon = themeIcons[themeOption.value]
-                return (
-                  <SelectItem key={themeOption.value} value={themeOption.value}>
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4" />
-                      <span>{themeOption.label}</span>
-                    </div>
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
+          <EnhancedDropdown
+            options={themes.map((themeOption): DropdownOption => {
+              const Icon = themeIcons[themeOption.value]
+              return {
+                value: themeOption.value,
+                label: themeOption.label,
+                description: themeOption.description,
+                icon: <Icon className="h-4 w-4" />
+              }
+            })}
+            value={theme}
+            onValueChange={setTheme}
+            placeholder="Choose a theme"
+            searchable
+          />
         </div>
 
         {/* Theme Preview Grid */}

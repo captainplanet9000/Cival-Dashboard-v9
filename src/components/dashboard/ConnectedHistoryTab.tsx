@@ -21,6 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { EnhancedTable, type Column } from '@/components/ui/enhanced-table'
+import { EnhancedDropdown, type DropdownOption } from '@/components/ui/enhanced-dropdown'
 import {
   Activity, Download, Filter, RefreshCw, Search, TrendingUp, TrendingDown,
   Calendar, Clock, DollarSign, Hash, User, FileText, BarChart3

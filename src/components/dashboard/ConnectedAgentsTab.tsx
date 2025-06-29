@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { EnhancedDropdown, type DropdownOption } from '@/components/ui/enhanced-dropdown'
 import {
   Bot, Plus, Play, Pause, Trash2, Settings, TrendingUp, 
   Activity, Brain, Zap, Shield, Target, DollarSign, RefreshCw

@@ -34,7 +34,8 @@ import {
   TradingAgent, 
   TradingStrategy 
 } from '@/lib/trading/real-paper-trading-engine';
-import RealFarmCreationWizard from '@/components/farms/RealFarmCreationWizard';
+import { EnhancedFarmCreationWizard } from '@/components/farms/EnhancedFarmCreationWizard';
+import { Breadcrumb, type BreadcrumbItem } from '@/components/ui/navigation/breadcrumb';
 
 // Helper function for formatting percentages
 const formatPercentage = (value: number) => {
@@ -417,8 +418,16 @@ export default function FarmsPage() {
     );
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Farms", icon: <Target className="h-4 w-4" /> }
+  ]
+
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb items={breadcrumbItems} />
+      
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -432,7 +441,7 @@ export default function FarmsPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh Data
           </Button>
-          <RealFarmCreationWizard
+          <EnhancedFarmCreationWizard
             onFarmCreated={(farm) => {
               // Add to farms list and refresh data
               setFarms([farm, ...farms])

@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { EnhancedDropdown, type DropdownOption } from '@/components/ui/enhanced-dropdown'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -227,18 +228,18 @@ export function TradingForm({ className }: TradingFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Trading Agent</label>
-                <Select value={selectedAgent} onValueChange={handleAgentChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name} (${agent.portfolio.cash.toFixed(2)} available)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <EnhancedDropdown
+                  options={agents.map((agent): DropdownOption => ({
+                    value: agent.id,
+                    label: agent.name,
+                    description: `$${agent.portfolio.cash.toFixed(2)} available`,
+                    icon: <TrendingUp className="h-4 w-4" />
+                  }))}
+                  value={selectedAgent}
+                  onValueChange={handleAgentChange}
+                  placeholder="Select agent"
+                  searchable
+                />
               </div>
               
               <div className="space-y-2">
@@ -290,29 +291,27 @@ export function TradingForm({ className }: TradingFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Symbol</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select symbol" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {marketPrices.length > 0 ? (
-                          marketPrices.map((price) => (
-                            <SelectItem key={price.symbol} value={price.symbol}>
-                              {price.symbol} - ${price.price.toLocaleString()}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <>
-                            <SelectItem value="BTC/USD">BTC/USD</SelectItem>
-                            <SelectItem value="ETH/USD">ETH/USD</SelectItem>
-                            <SelectItem value="SOL/USD">SOL/USD</SelectItem>
-                            <SelectItem value="BNB/USD">BNB/USD</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <EnhancedDropdown
+                        options={marketPrices.length > 0 ? 
+                          marketPrices.map((price): DropdownOption => ({
+                            value: price.symbol,
+                            label: price.symbol,
+                            description: `$${price.price.toLocaleString()}`,
+                            icon: <TrendingUp className="h-4 w-4" />
+                          })) : [
+                            { value: "BTC/USD", label: "BTC/USD", icon: <TrendingUp className="h-4 w-4" /> },
+                            { value: "ETH/USD", label: "ETH/USD", icon: <TrendingUp className="h-4 w-4" /> },
+                            { value: "SOL/USD", label: "SOL/USD", icon: <TrendingUp className="h-4 w-4" /> },
+                            { value: "BNB/USD", label: "BNB/USD", icon: <TrendingUp className="h-4 w-4" /> }
+                          ]
+                        }
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Select symbol"
+                        searchable
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -324,19 +323,19 @@ export function TradingForm({ className }: TradingFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Order Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select order type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="market">Market</SelectItem>
-                        <SelectItem value="limit">Limit</SelectItem>
-                        <SelectItem value="stop">Stop</SelectItem>
-                        <SelectItem value="stop-limit">Stop Limit</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <EnhancedDropdown
+                        options={[
+                          { value: "market", label: "Market", description: "Execute immediately at current price" },
+                          { value: "limit", label: "Limit", description: "Execute at specified price or better" },
+                          { value: "stop", label: "Stop", description: "Execute when price reaches stop level" },
+                          { value: "stop-limit", label: "Stop Limit", description: "Combine stop and limit orders" }
+                        ]}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Select order type"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

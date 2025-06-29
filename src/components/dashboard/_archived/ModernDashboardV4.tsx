@@ -90,7 +90,7 @@ import ConnectedCalendarTab from '@/components/dashboard/ConnectedCalendarTab'
 import ConnectedAdvancedTab from '@/components/dashboard/ConnectedAdvancedTab'
 
 // Import Premium Components
-import AutonomousTradingDashboard from '@/components/autonomous/AutonomousTradingDashboard'
+// import AutonomousTradingDashboard from '@/components/autonomous/AutonomousTradingDashboard' // Removed autonomous tab
 import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
@@ -267,12 +267,13 @@ export function ModernDashboardV4() {
       icon: <TrendingUp className="h-4 w-4" />,
       component: <ConnectedTradingTab />
     },
-    {
-      id: 'autonomous',
-      label: 'Autonomous',
-      icon: <Zap className="h-4 w-4" />,
-      component: <AutonomousTradingDashboard />
-    },
+    // Removed autonomous tab
+    // {
+    //   id: 'autonomous',
+    //   label: 'Autonomous',
+    //   icon: <Zap className="h-4 w-4" />,
+    //   component: <AutonomousTradingDashboard />
+    // },
     {
       id: 'defi',
       label: 'DeFi',
