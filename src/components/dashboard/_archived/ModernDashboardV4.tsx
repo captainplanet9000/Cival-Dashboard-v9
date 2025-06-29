@@ -82,6 +82,7 @@ import ConnectedOverviewTab from '@/components/dashboard/ConnectedOverviewTab'
 import ConnectedTradingTab from '@/components/dashboard/ConnectedTradingTab'
 import ConnectedAgentsTab from '@/components/dashboard/ConnectedAgentsTab'
 import ConnectedHistoryTab from '@/components/dashboard/ConnectedHistoryTab'
+import ConnectedAnalyticsTab from '@/components/dashboard/ConnectedAnalyticsTab'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -261,7 +262,7 @@ export function ModernDashboardV4() {
       id: 'analytics',
       label: 'Analytics',
       icon: <PieChart className="h-4 w-4" />,
-      component: <RealAnalyticsDashboard />
+      component: <ConnectedAnalyticsTab />
     },
     {
       id: 'history',
