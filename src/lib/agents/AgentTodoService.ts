@@ -5,7 +5,11 @@
 
 import { EventEmitter } from 'events'
 import { AgentTodo, TodoSystemStats } from '@/components/agents/AgentTodoSystem'
-import { geminiService } from '@/lib/ai/GeminiService'
+import GeminiService from '@/lib/ai/GeminiService'
+
+// Create local instance to avoid circular dependency
+const geminiService = new GeminiService()
+geminiService.init()
 
 export interface TodoTemplate {
   id: string

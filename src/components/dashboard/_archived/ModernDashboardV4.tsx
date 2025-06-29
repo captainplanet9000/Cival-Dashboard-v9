@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Activity, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Zap,
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
-  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search, Brain
+  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search, Brain, Coins
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -88,6 +88,10 @@ import ConnectedGoalsTab from '@/components/dashboard/ConnectedGoalsTab'
 import ConnectedVaultTab from '@/components/dashboard/ConnectedVaultTab'
 import ConnectedCalendarTab from '@/components/dashboard/ConnectedCalendarTab'
 import ConnectedAdvancedTab from '@/components/dashboard/ConnectedAdvancedTab'
+
+// Import Premium Components
+import AutonomousTradingDashboard from '@/components/autonomous/AutonomousTradingDashboard'
+import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -262,6 +266,18 @@ export function ModernDashboardV4() {
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
       component: <ConnectedTradingTab />
+    },
+    {
+      id: 'autonomous',
+      label: 'Autonomous',
+      icon: <Zap className="h-4 w-4" />,
+      component: <AutonomousTradingDashboard />
+    },
+    {
+      id: 'defi',
+      label: 'DeFi',
+      icon: <Coins className="h-4 w-4" />,
+      component: <DeFiIntegrationHub />
     },
     {
       id: 'analytics',
