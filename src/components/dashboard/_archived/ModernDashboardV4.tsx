@@ -61,6 +61,11 @@ import { TradingDataTable } from '@/components/expansions/trading-data-table'
 // Import AG-UI infrastructure
 import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 
+// Import Real Trading Components
+import RealAgentCreation from '@/components/agents/RealAgentCreation'
+import RealAgentManagement from '@/components/agents/RealAgentManagement'
+import RealTradingInterface from '@/components/trading/RealTradingInterface'
+
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Farms...</div>
@@ -1278,12 +1283,12 @@ function TradingStrategiesPanel() {
 
 // Consolidated Agents Tab with 5 sub-tabs - Fixed browser freeze issues
 function AgentsTab() {
-  const [agentSubTab, setAgentSubTab] = useState('expert-agents')
+  const [agentSubTab, setAgentSubTab] = useState('agent-management')
   
   const agentSubTabs = [
+    { id: 'agent-management', label: 'Management', component: <RealAgentManagement /> },
+    { id: 'agent-creation', label: 'Create Agent', component: <RealAgentCreation /> },
     { id: 'expert-agents', label: 'Expert Agents', component: <AgentOverviewPanel /> },
-    { id: 'agent-creation', label: 'Create Agent', component: <AgentCreationPanel /> },
-    { id: 'agent-management', label: 'Management', component: <AgentManagementPanel /> },
     { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> }
   ]
@@ -2160,9 +2165,10 @@ function PaperTradingPanel() {
 
 // Consolidated Trading Tab - Live, Paper, Advanced Trading
 function TradingTab() {
-  const [tradingSubTab, setTradingSubTab] = useState('charts')
+  const [tradingSubTab, setTradingSubTab] = useState('real-trading')
   
   const tradingSubTabs = [
+    { id: 'real-trading', label: 'Real Trading', component: <RealTradingInterface /> },
     { id: 'charts', label: 'Charts', component: <TradingCharts /> },
     { id: 'order-form', label: 'Order Form', component: <TradingForm /> },
     { id: 'live-trading', label: 'Live Trading', component: <TradingInterface /> },
@@ -2183,7 +2189,7 @@ function TradingTab() {
       </CardHeader>
       <CardContent>
         <Tabs value={tradingSubTab} onValueChange={setTradingSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 bg-gray-100 gap-2">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 bg-gray-100 gap-2">
             {tradingSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
