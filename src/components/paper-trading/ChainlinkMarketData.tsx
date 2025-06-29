@@ -49,7 +49,8 @@ export function ChainlinkMarketData({ onPriceUpdate, className }: ChainlinkMarke
 
   useEffect(() => {
     fetchInitialPrices()
-    startPriceSubscription()
+    const cleanup = startPriceSubscription()
+    return cleanup
   }, [useTestnet])
 
   const fetchInitialPrices = async () => {
@@ -57,7 +58,8 @@ export function ChainlinkMarketData({ onPriceUpdate, className }: ChainlinkMarke
     setError(null)
     
     try {
-      const prices = await chainlinkService.getMultiplePrices(symbols)
+      const service = await chainlinkService.get()
+      const prices = await service.getMultiplePrices(symbols)
       setPriceData(prices)
       setIsConnected(true)
       setLastUpdate(new Date())
@@ -93,9 +95,11 @@ export function ChainlinkMarketData({ onPriceUpdate, className }: ChainlinkMarke
   }
 
   const startPriceSubscription = () => {
-    const cleanup = chainlinkService.subscribeToPriceUpdates(
-      symbols,
-      (prices: ChainlinkPriceData[]) => {
+    const subscribeAsync = async () => {
+      const service = await chainlinkService.get()
+      return service.subscribeToPriceUpdates(
+        symbols,
+        (prices: ChainlinkPriceData[]) => {
         setPriceData(prices)
         setLastUpdate(new Date())
         setIsConnected(true)
@@ -121,14 +125,21 @@ export function ChainlinkMarketData({ onPriceUpdate, className }: ChainlinkMarke
           onPriceUpdate(marketDataArray)
         }
       }
-    )
-
-    return cleanup
+      )
+    }
+    
+    let cleanup = () => {}
+    subscribeAsync().then(unsub => {
+      cleanup = unsub
+    })
+    
+    return () => cleanup()
   }
 
-  const handleNetworkSwitch = (testnet: boolean) => {
+  const handleNetworkSwitch = async (testnet: boolean) => {
     setUseTestnet(testnet)
-    chainlinkService.switchNetwork(testnet)
+    const service = await chainlinkService.get()
+    service.switchNetwork(testnet)
     fetchInitialPrices()
   }
 
