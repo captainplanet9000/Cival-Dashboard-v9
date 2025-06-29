@@ -186,7 +186,6 @@ const generateChartData = (): ChartDataPoint[] => {
 
 export function ModernDashboardV4() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartData] = useState<ChartDataPoint[]>(generateChartData())
@@ -296,98 +295,32 @@ export function ModernDashboardV4() {
   return (
     <AGUIProvider>
       <div className="dashboard-dark">
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="mobile-overlay lg:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <div className="dashboard-container">
-        {/* Sidebar */}
-        <aside className={`sidebar-dark ${isMobileMenuOpen ? 'open' : ''}`}>
-          <div className="sidebar-header">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-primary">
-                  Cival Dashboard
-                </h2>
-                <p className="text-sm text-tertiary">AI Trading Platform</p>
-              </div>
-              <button
-                className="mobile-menu-btn lg:hidden"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-          
-          <nav className="sidebar-nav">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id)
-                  setIsMobileMenuOpen(false)
-                }}
-                className={`sidebar-link ${activeTab === tab.id ? 'active' : ''}`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-          
-          <div className="mt-auto p-4 border-t border-primary">
-            <div className="card-dark p-3">
-              <div className="flex items-center gap-2 text-success">
-                <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-                <span className="text-sm font-medium">System Online</span>
-              </div>
-              <p className="text-xs text-muted mt-1">All systems operational</p>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="main-content">
+        {/* Main Content - Full Width */}
+        <main className="w-full min-h-screen bg-background">
           {/* Header */}
-          <header className="dashboard-header">
-            <div className="flex items-center justify-between">
+          <header className="dashboard-header border-b">
+            <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-4">
-                <button
-                  className="mobile-menu-btn"
-                  onClick={() => setIsMobileMenuOpen(true)}
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
                 <div>
-                  <h1 className="text-2xl font-bold text-primary">
+                  <h1 className="text-xl sm:text-2xl font-bold text-primary">
                     Cival Dashboard
                   </h1>
-                  <p className="text-sm text-secondary">Advanced AI Trading Platform</p>
+                  <p className="text-xs sm:text-sm text-secondary hidden sm:block">Advanced AI Trading Platform</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3">
-                <div className="badge-success-dark">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="badge-success-dark hidden sm:flex">
                   Live
                 </div>
                 <button 
-                  className="btn-secondary-dark hidden sm:flex"
+                  className="btn-secondary-dark hidden lg:flex"
                   onClick={() => setCommandPaletteOpen(true)}
                 >
                   <Search className="h-4 w-4 mr-2" />
                   Search
                 </button>
-                <button className="btn-secondary-dark hidden sm:flex">
+                <button className="btn-secondary-dark hidden md:flex">
                   <Bell className="h-4 w-4 mr-2" />
                   Alerts
                 </button>
@@ -401,36 +334,41 @@ export function ModernDashboardV4() {
 
           {/* Dashboard Content */}
           <div className="dashboard-content">
-            {/* Fixed Navigation Tabs */}
-            <div className="nav-tabs-dark">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`nav-tab-dark ${activeTab === tab.id ? 'active' : ''}`}
-                >
-                  {tab.icon}
-                  <span className="hidden xs:inline">{tab.label}</span>
-                </button>
-              ))}
+            {/* Mobile-Optimized Navigation Tabs */}
+            <div className="bg-card border-b sticky top-0 z-10">
+              <div className="flex overflow-x-auto scrollbar-hide">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      activeTab === tab.id 
+                        ? 'border-primary text-primary bg-primary/5' 
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span className="hidden xs:inline">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Dynamic Content Area */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-6">
               {tabs.find(tab => tab.id === activeTab)?.component}
             </div>
           </div>
         </main>
       </div>
 
-      {/* Command Palette */}
-      <CommandPalette 
-        open={commandPaletteOpen} 
-        onOpenChange={setCommandPaletteOpen} 
-      />
-      </div>
-    </AGUIProvider>
-  )
+        {/* Command Palette */}
+        <CommandPalette 
+          open={commandPaletteOpen} 
+          onOpenChange={setCommandPaletteOpen} 
+        />
+      </AGUIProvider>
+    )
 }
 
 // Enhanced Overview Tab with Real Trading Functionality
