@@ -379,6 +379,111 @@
 }
 
 @layer components {
+  /* Modal and Popup fixes - ensure solid backgrounds */
+  .modal-overlay {
+    @apply bg-black/50 backdrop-blur-sm;
+  }
+  
+  /* Dialog/Modal Content */
+  .modal-content, 
+  .dialog-content,
+  .popover-content,
+  .dropdown-content,
+  [data-radix-dialog-content],
+  [data-radix-popover-content],
+  [data-radix-dropdown-menu-content],
+  [data-radix-select-content],
+  [data-radix-tooltip-content],
+  [role="dialog"],
+  [role="menu"],
+  [role="listbox"],
+  [role="tooltip"] {
+    @apply bg-card border border-border shadow-xl;
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+  }
+  
+  /* Strategy Creation Modal and similar */
+  .dialog-content[class*="max-w"],
+  [data-radix-dialog-content][class*="max-w"] {
+    @apply bg-card border border-border shadow-2xl rounded-lg;
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
+    opacity: 1 !important;
+  }
+  
+  /* Fix for create farm modal and other fixed positioned modals */
+  .fixed.inset-0 .max-w-md,
+  .fixed.inset-0 .max-w-lg,
+  .fixed.inset-0 .max-w-xl,
+  .fixed.inset-0 .max-w-2xl,
+  .fixed.inset-0 .max-w-4xl,
+  .fixed.inset-0 [class*="max-w"] {
+    @apply bg-card border border-border shadow-2xl;
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
+    opacity: 1 !important;
+  }
+  
+  /* Ensure all card content is visible */
+  .card, 
+  .card-content, 
+  .card-header, 
+  .card-footer,
+  [data-radix-card],
+  [data-radix-card-content],
+  [data-radix-card-header],
+  [data-radix-card-footer] {
+    @apply bg-card text-card-foreground;
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
+  }
+  
+  /* Specific fixes for dialog components */
+  .dialog-header,
+  .dialog-footer,
+  .dialog-title,
+  .dialog-description,
+  [data-radix-dialog-title],
+  [data-radix-dialog-description] {
+    background-color: transparent !important;
+    color: hsl(var(--card-foreground)) !important;
+  }
+  
+  /* Input and form elements in modals */
+  .dialog-content input,
+  .dialog-content textarea,
+  .dialog-content select,
+  [data-radix-dialog-content] input,
+  [data-radix-dialog-content] textarea,
+  [data-radix-dialog-content] select {
+    @apply bg-background border border-border;
+    background-color: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  /* Button fixes in modals */
+  .dialog-content button,
+  [data-radix-dialog-content] button {
+    opacity: 1 !important;
+  }
+  
+  /* Select dropdown content */
+  [data-radix-select-content] {
+    @apply bg-popover border border-border shadow-lg;
+    background-color: hsl(var(--popover)) !important;
+    color: hsl(var(--popover-foreground)) !important;
+    opacity: 1 !important;
+  }
+  
+  /* Alert components in modals */
+  .dialog-content .alert,
+  [data-radix-dialog-content] .alert {
+    opacity: 1 !important;
+  }
+
   /* Original component styles from globals.css */
   .trading-card { @apply bg-card text-card-foreground border border-border rounded-lg p-4 shadow-sm; }
   .trading-card-header { @apply flex items-center justify-between pb-2 mb-4 border-b border-border; }

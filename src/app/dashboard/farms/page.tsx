@@ -34,6 +34,7 @@ import {
   TradingAgent, 
   TradingStrategy 
 } from '@/lib/trading/real-paper-trading-engine';
+import RealFarmCreationWizard from '@/components/farms/RealFarmCreationWizard';
 
 // Helper function for formatting percentages
 const formatPercentage = (value: number) => {
@@ -93,11 +94,39 @@ export default function FarmsPage() {
   const [metrics, setMetrics] = useState<FarmMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
-  const [showCreateFarm, setShowCreateFarm] = useState(false);
 
-  // Load farms data on component mount
+  // Load farms data on component mount and set up real-time updates
   useEffect(() => {
     loadFarmsData();
+
+    // Set up real-time listeners for live updates
+    const handlePricesUpdated = () => {
+      loadFarmsData(); // Refresh farm data when prices update
+    };
+
+    const handleOrderFilled = () => {
+      setTimeout(() => {
+        loadFarmsData(); // Refresh farm data after orders are filled
+      }, 1000);
+    };
+
+    const handleAgentCreated = () => {
+      loadFarmsData(); // Refresh when new agents are created
+    };
+
+    paperTradingEngine.on('pricesUpdated', handlePricesUpdated);
+    paperTradingEngine.on('orderFilled', handleOrderFilled);
+    paperTradingEngine.on('agentCreated', handleAgentCreated);
+
+    // Update farms data every 10 seconds
+    const interval = setInterval(loadFarmsData, 10000);
+
+    return () => {
+      paperTradingEngine.off('pricesUpdated', handlePricesUpdated);
+      paperTradingEngine.off('orderFilled', handleOrderFilled);
+      paperTradingEngine.off('agentCreated', handleAgentCreated);
+      clearInterval(interval);
+    };
   }, []);
 
   const loadFarmsData = async () => {
@@ -108,6 +137,9 @@ export default function FarmsPage() {
       if (!paperTradingEngine.listenerCount('pricesUpdated')) {
         paperTradingEngine.start();
       }
+
+      // Load stored farms from localStorage
+      const storedFarms = JSON.parse(localStorage.getItem('trading_farms') || '[]');
 
       // Get agents from paper trading engine and group them into "farms"
       const allAgents = paperTradingEngine.getAllAgents();
@@ -400,10 +432,14 @@ export default function FarmsPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh Data
           </Button>
-          <Button onClick={() => setShowCreateFarm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Farm
-          </Button>
+          <RealFarmCreationWizard
+            onFarmCreated={(farm) => {
+              // Add to farms list and refresh data
+              setFarms([farm, ...farms])
+              loadFarmsData()
+              toast.success(`Farm "${farm.farm_name}" created successfully with ${farm.metadata?.agent_count} agents!`)
+            }}
+          />
         </div>
       </div>
 
@@ -610,88 +646,6 @@ export default function FarmsPage() {
         )}
       </div>
 
-      {/* Create Farm Modal */}
-      {showCreateFarm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Create New Farm</CardTitle>
-              <CardDescription>
-                Set up a new agent farm for coordinated trading
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Farm Name</label>
-                <input 
-                  type="text" 
-                  className="w-full p-2 border rounded-md"
-                  placeholder="e.g., Momentum Farm"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Strategy Type</label>
-                <select className="w-full p-2 border rounded-md">
-                  <option>Darvas Box</option>
-                  <option>Elliott Wave</option>
-                  <option>Multi-Strategy</option>
-                  <option>Momentum</option>
-                  <option>Mean Reversion</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Allocated Capital</label>
-                <input 
-                  type="number" 
-                  className="w-full p-2 border rounded-md"
-                  placeholder="50000"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Daily Target ($)</label>
-                <input 
-                  type="number" 
-                  className="w-full p-2 border rounded-md"
-                  placeholder="1000"
-                />
-              </div>
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  className="flex-1"
-                  onClick={() => {
-                    // Mock farm creation
-                    const newFarm: Farm = {
-                      farm_id: `farm-${Date.now()}`,
-                      farm_name: "New Farm",
-                      description: "Newly created farm",
-                      strategy_type: "Multi-Strategy",
-                      status: "active",
-                      created_at: new Date().toISOString(),
-                      target_daily_profit: 1000,
-                      target_win_rate: 75,
-                      max_risk_per_trade: 2.5,
-                      total_allocated_capital: 50000,
-                      metadata: {}
-                    };
-                    
-                    setFarms([...farms, newFarm]);
-                    toast.success('Farm created successfully!');
-                    setShowCreateFarm(false);
-                  }}
-                >
-                  Create Farm
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowCreateFarm(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

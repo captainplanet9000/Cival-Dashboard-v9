@@ -27,9 +27,10 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+          defaultTheme="dark"
+          enableSystem={true}
+          themes={['light', 'dark', 'trading-green', 'trading-blue', 'trading-modern', 'high-contrast']}
+          disableTransitionOnChange={false}
         >
           <MinimalErrorBoundary>
             {children}

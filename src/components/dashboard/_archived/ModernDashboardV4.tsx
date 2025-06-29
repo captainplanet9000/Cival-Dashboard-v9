@@ -72,6 +72,7 @@ import RealMarketDataDashboard from '@/components/market/RealMarketDataDashboard
 import RealNotificationSystem from '@/components/notifications/RealNotificationSystem'
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
 import RealTimeDashboard from '@/components/dashboard/RealTimeDashboard'
+import LiveDashboardOrchestrator from '@/components/realtime/LiveDashboardOrchestrator'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -377,12 +378,12 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
   const [overviewTab, setOverviewTab] = useState('dashboard')
   
   const overviewSubTabs = [
-    { id: 'dashboard', label: 'Dashboard', component: <RealTimeDashboard /> },
+    { id: 'dashboard', label: 'Live Dashboard', component: <LiveDashboardOrchestrator /> },
+    { id: 'realtime', label: 'Real-Time', component: <RealTimeDashboard /> },
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'trading', label: 'Trading', component: <RealTradingInterface /> },
     { id: 'agents', label: 'Agent Manager', component: <RealAgentManagement /> },
-    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> },
-    { id: 'analytics', label: 'Analytics', component: <RealAnalyticsDashboard /> }
+    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
   ]
   
   return (
