@@ -5,6 +5,7 @@ import { X, Info, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { createPortal } from "react-dom"
+import { createRoot } from "react-dom/client"
 
 // Enhanced Modal Component like Ant Design
 
@@ -275,7 +276,6 @@ const confirm = (props: ConfirmModalProps): { destroy: () => void; update: (newP
     const root = (window as any).__REACT_ROOT_CACHE__ = (window as any).__REACT_ROOT_CACHE__ || new Map()
     
     if (!root.has(container)) {
-      const { createRoot } = require('react-dom/client')
       root.set(container, createRoot(container))
     }
     

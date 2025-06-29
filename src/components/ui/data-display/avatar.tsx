@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -82,12 +83,12 @@ const Avatar: React.FC<AvatarProps> = ({
   const renderContent = () => {
     if (src && !hasError) {
       return (
-        <img
+        <Image
           src={src}
-          srcSet={srcSet}
-          alt={alt}
+          alt={alt || ''}
+          width={typeof size === 'number' ? size : 40}
+          height={typeof size === 'number' ? size : 40}
           draggable={draggable}
-          crossOrigin={crossOrigin}
           onError={handleError}
           onLoad={handleLoad}
           className="w-full h-full object-cover"

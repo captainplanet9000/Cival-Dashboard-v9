@@ -25,7 +25,7 @@ import {
 import {
   Target, TrendingUp, DollarSign, Activity, Trophy, 
   Plus, RefreshCw, CheckCircle2, Clock, Calendar,
-  History, BarChart3, Timeline, Award, Filter
+  History, BarChart3, Award, Filter
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { toast } from 'react-hot-toast'
@@ -791,7 +791,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Timeline className="h-5 w-5" />
+                <Clock className="h-5 w-5" />
                 Trading Activity Timeline
               </CardTitle>
               <CardDescription>

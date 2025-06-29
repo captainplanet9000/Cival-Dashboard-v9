@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Brain, Database, Activity, Zap, Memory, HardDrive, 
+  Brain, Database, Activity, Zap, HardDrive, 
   Cpu, RefreshCw, AlertTriangle, TrendingUp, BarChart3,
   Clock, Network, Search, Filter, Eye, Download
 } from 'lucide-react'
@@ -286,7 +286,7 @@ export function MemoryAnalyticsDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Memory className="h-5 w-5 text-blue-600" />
+            <Database className="h-5 w-5 text-blue-600" />
             Memory Analytics
           </h3>
           <p className="text-sm text-muted-foreground">
@@ -432,7 +432,7 @@ export function MemoryAnalyticsDashboard() {
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {filteredMemories.length === 0 ? (
                   <div className="text-center py-8">
-                    <Memory className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No Memories Found</h3>
                     <p className="text-muted-foreground">
                       Adjust your filters to see memory entries
