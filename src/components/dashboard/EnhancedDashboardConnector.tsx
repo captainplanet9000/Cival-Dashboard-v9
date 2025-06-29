@@ -181,34 +181,42 @@ export function useEnhancedDashboardConnection(tabId: string) {
           return
         }
         
-        // Fetch fresh data
-        const allAgents = paperTradingEngine.getAllAgents()
-        const prices = paperTradingEngine.getCurrentPrices()
+        // Fetch fresh data with null safety
+        const allAgents = paperTradingEngine.getAllAgents() || []
+        const prices = paperTradingEngine.getCurrentPrices() || new Map()
         
-        // Calculate metrics
-        const portfolioValue = allAgents.reduce((sum, agent) => sum + agent.portfolioValue, 0)
-        const totalPnL = allAgents.reduce((sum, agent) => sum + agent.pnl, 0)
-        const activeAgents = allAgents.filter(agent => agent.status === 'active').length
+        // Calculate metrics with null safety
+        const portfolioValue = allAgents.reduce((sum, agent) => {
+          const value = agent?.portfolioValue || agent?.portfolio?.totalValue || 0
+          return sum + value
+        }, 0)
+        const totalPnL = allAgents.reduce((sum, agent) => {
+          const pnl = agent?.pnl || ((agent?.portfolio?.totalValue || 0) - 10000)
+          return sum + pnl
+        }, 0)
+        const activeAgents = allAgents.filter(agent => agent?.status === 'active' || agent?.isActive).length
         
-        // Calculate win rate
-        const allOrders = allAgents.flatMap(agent => agent.orderHistory || [])
-        const completedOrders = allOrders.filter(order => order.status === 'filled')
-        const profitableOrders = completedOrders.filter(order => (order.pnl || 0) > 0)
+        // Calculate win rate with null safety
+        const allOrders = allAgents.flatMap(agent => agent?.orderHistory || agent?.orders || [])
+        const completedOrders = allOrders.filter(order => order?.status === 'filled')
+        const profitableOrders = completedOrders.filter(order => (order?.pnl || 0) > 0)
         const winRate = completedOrders.length > 0 ? (profitableOrders.length / completedOrders.length) * 100 : 0
         
-        // Build agent performance map
+        // Build agent performance map with null safety
         const agentPerformance = new Map<string, AgentPerformance>()
         allAgents.forEach(agent => {
-          agentPerformance.set(agent.id, {
-            agentId: agent.id,
-            name: agent.name,
-            portfolioValue: agent.portfolioValue,
-            pnl: agent.pnl,
-            winRate: agent.winRate || 0,
-            tradeCount: agent.orderHistory?.length || 0,
-            lastActivity: new Date(),
-            status: agent.status
-          })
+          if (agent && agent.id) {
+            agentPerformance.set(agent.id, {
+              agentId: agent.id,
+              name: agent.name || 'Unknown Agent',
+              portfolioValue: agent.portfolioValue || agent?.portfolio?.totalValue || 0,
+              pnl: agent.pnl || ((agent?.portfolio?.totalValue || 0) - 10000),
+              winRate: agent.winRate || agent?.performance?.winRate || 0,
+              tradeCount: agent.orderHistory?.length || agent?.orders?.length || agent?.performance?.totalTrades || 0,
+              lastActivity: new Date(),
+              status: (agent.status === 'active' || agent.isActive) ? 'active' : 'paused'
+            })
+          }
         })
         
         const newData = {

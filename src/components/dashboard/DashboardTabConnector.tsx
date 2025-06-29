@@ -137,11 +137,14 @@ export function useDashboardConnection(tabId: string) {
   // Update all dashboard state from paper trading engine
   const updateDashboardState = () => {
     try {
-      const allAgents = paperTradingEngine.getAllAgents()
-      const prices = paperTradingEngine.getCurrentPrices()
+      const allAgents = paperTradingEngine.getAllAgents() || []
+      const prices = paperTradingEngine.getCurrentPrices() || new Map()
       
-      // Calculate portfolio metrics
-      const portfolioValue = allAgents.reduce((sum, agent) => sum + agent.portfolio.totalValue, 0)
+      // Calculate portfolio metrics with null safety
+      const portfolioValue = allAgents.reduce((sum, agent) => {
+        const value = agent?.portfolio?.totalValue || 0
+        return sum + value
+      }, 0)
       const totalPnL = portfolioValue - (allAgents.length * 10000) // Assuming $10k starting capital per agent
       
       // Calculate time-based P&L (mock calculation for now)
@@ -149,18 +152,20 @@ export function useDashboardConnection(tabId: string) {
       const weeklyPnL = totalPnL * 0.3 // Mock 30% of total as weekly
       const monthlyPnL = totalPnL * 0.8 // Mock 80% of total as monthly
       
-      // Agent performance metrics
+      // Agent performance metrics with null safety
       const agentPerformance = new Map<string, AgentPerformance>()
       allAgents.forEach(agent => {
-        agentPerformance.set(agent.id, {
-          agentId: agent.id,
-          name: agent.name,
-          portfolioValue: agent.portfolio.totalValue,
-          pnl: agent.portfolio.totalValue - 10000,
-          winRate: agent.performance.winRate || 0,
-          tradeCount: agent.performance.totalTrades || 0,
-          status: agent.isActive ? 'active' : 'paused'
-        })
+        if (agent && agent.id) {
+          agentPerformance.set(agent.id, {
+            agentId: agent.id,
+            name: agent.name || 'Unknown Agent',
+            portfolioValue: agent.portfolio?.totalValue || 0,
+            pnl: (agent.portfolio?.totalValue || 0) - 10000,
+            winRate: agent.performance?.winRate || 0,
+            tradeCount: agent.performance?.totalTrades || 0,
+            status: agent.isActive ? 'active' : 'paused'
+          })
+        }
       })
       
       // Collect all positions and orders
@@ -169,21 +174,26 @@ export function useDashboardConnection(tabId: string) {
       const executedOrders: Order[] = []
       
       allAgents.forEach(agent => {
-        openPositions.push(...agent.portfolio.positions)
-        agent.orders.forEach(order => {
-          if (order.status === 'pending') {
-            pendingOrders.push(order)
-          } else if (order.status === 'filled') {
-            executedOrders.push(order)
-          }
-        })
+        if (agent?.portfolio?.positions) {
+          openPositions.push(...agent.portfolio.positions)
+        }
+        if (agent?.orders) {
+          agent.orders.forEach(order => {
+            if (order?.status === 'pending') {
+              pendingOrders.push(order)
+            } else if (order?.status === 'filled') {
+              executedOrders.push(order)
+            }
+          })
+        }
       })
       
-      // Calculate win rate
+      // Calculate win rate with null safety
       const winningTrades = executedOrders.filter(order => {
-        const position = openPositions.find(p => p.symbol === order.symbol)
+        if (!order?.symbol || !order?.price || !order?.quantity) return false
+        const position = openPositions.find(p => p?.symbol === order.symbol)
         if (!position) return false
-        const currentPrice = prices.get(order.symbol) || order.price
+        const currentPrice = prices.get(order.symbol) || order.price || 0
         const pnl = order.side === 'buy' 
           ? (currentPrice - order.price) * order.quantity
           : (order.price - currentPrice) * order.quantity
@@ -239,14 +249,18 @@ export function useDashboardConnection(tabId: string) {
         goalProgress.set(goal.id, progress)
       })
       
-      // Convert price map to state format
+      // Convert price map to state format with null safety
       const marketPrices = new Map<string, number>()
       const marketVolumes = new Map<string, number>()
       
-      prices.forEach((price, symbol) => {
-        marketPrices.set(symbol, price)
-        marketVolumes.set(symbol, Math.random() * 1000000) // Mock volume
-      })
+      if (prices && typeof prices.forEach === 'function') {
+        prices.forEach((price, symbol) => {
+          if (symbol && typeof price === 'number' && !isNaN(price)) {
+            marketPrices.set(symbol, price)
+            marketVolumes.set(symbol, Math.random() * 1000000) // Mock volume
+          }
+        })
+      }
       
       // Update state
       setState({
@@ -275,7 +289,17 @@ export function useDashboardConnection(tabId: string) {
       
     } catch (error) {
       console.error('[DashboardTabConnector] Error updating state:', error)
-      toast.error('Failed to update dashboard data')
+      setError(error instanceof Error ? error.message : 'Unknown error')
+      
+      // Retry mechanism
+      if (retryCount.current < maxRetries) {
+        retryCount.current++
+        console.log(`[DashboardTabConnector] Retrying update (${retryCount.current}/${maxRetries})`)
+        setTimeout(() => updateDashboardState(), 1000 * retryCount.current)
+      } else {
+        console.error('[DashboardTabConnector] Max retries reached, giving up')
+        toast.error('Failed to update dashboard data')
+      }
     }
   }
   
@@ -295,11 +319,13 @@ export function useDashboardConnection(tabId: string) {
     }
     
     const handlePricesUpdated = (prices: Map<string, number>) => {
-      setState(prev => ({
-        ...prev,
-        marketPrices: new Map(prices),
-        lastUpdate: new Date()
-      }))
+      if (prices && typeof prices.forEach === 'function') {
+        setState(prev => ({
+          ...prev,
+          marketPrices: new Map(prices),
+          lastUpdate: new Date()
+        }))
+      }
     }
     
     // Register listeners
@@ -410,7 +436,9 @@ export function useDashboardConnection(tabId: string) {
   return {
     state,
     actions,
-    isConnected: state.isConnected
+    isConnected: state.isConnected,
+    isLoading,
+    error
   }
 }
 
