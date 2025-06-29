@@ -29,6 +29,11 @@ import {
 import { toast } from 'react-hot-toast';
 import { backendApi } from '@/lib/api/backend-client';
 import { formatPrice } from '@/lib/utils';
+import { 
+  paperTradingEngine, 
+  TradingAgent, 
+  TradingStrategy 
+} from '@/lib/trading/real-paper-trading-engine';
 
 // Helper function for formatting percentages
 const formatPercentage = (value: number) => {
@@ -99,100 +104,117 @@ export default function FarmsPage() {
     try {
       setIsLoading(true);
 
-      // Load all farms
-      const farmsResponse = await fetch(
-        `${backendApi.getBackendUrl()}/api/v1/farms`
-      );
+      // Start the paper trading engine if not running
+      if (!paperTradingEngine.listenerCount('pricesUpdated')) {
+        paperTradingEngine.start();
+      }
+
+      // Get agents from paper trading engine and group them into "farms"
+      const allAgents = paperTradingEngine.getAllAgents();
       
-      if (farmsResponse.ok) {
-        const farmsData = await farmsResponse.json();
-        const farmsList = farmsData.farms || [];
+      if (allAgents.length > 0) {
+        // Group agents by strategy type to create logical "farms"
+        const farmGroups: Record<string, TradingAgent[]> = {};
+        
+        allAgents.forEach(agent => {
+          const farmKey = agent.strategy.type;
+          if (!farmGroups[farmKey]) {
+            farmGroups[farmKey] = [];
+          }
+          farmGroups[farmKey].push(agent);
+        });
+
+        // Create farm objects from agent groups
+        const farmsList: Farm[] = Object.entries(farmGroups).map(([strategyType, agents]) => {
+          const totalCapital = agents.reduce((sum, agent) => sum + agent.portfolio.totalValue, 0);
+          const totalPnL = agents.reduce((sum, agent) => sum + (agent.portfolio.totalValue - 10000), 0);
+          const avgWinRate = agents.reduce((sum, agent) => sum + (agent.performance.winRate || 0), 0) / agents.length;
+          
+          return {
+            farm_id: `farm_${strategyType}`,
+            farm_name: `${strategyType.charAt(0).toUpperCase() + strategyType.slice(1)} Farm`,
+            description: `Automated ${strategyType} trading strategy farm with ${agents.length} agents`,
+            strategy_type: strategyType,
+            status: agents.some(a => a.status === 'active') ? 'active' : 'paused',
+            created_at: new Date().toISOString(),
+            target_daily_profit: totalCapital * 0.02, // 2% daily target
+            target_win_rate: 0.7, // 70% target win rate
+            max_risk_per_trade: 0.05, // 5% max risk
+            total_allocated_capital: totalCapital,
+            metadata: {
+              agent_count: agents.length,
+              avg_portfolio_value: totalCapital / agents.length
+            }
+          };
+        });
+
         setFarms(farmsList);
 
-        // Load agents and performance for each farm
+        // Create agents map and performance map
         const agentsMap: Record<string, FarmAgent[]> = {};
         const performanceMap: Record<string, FarmPerformance> = {};
 
-        for (const farm of farmsList) {
-          // Load farm agents
-          try {
-            const agentsResponse = await fetch(
-              `${backendApi.getBackendUrl()}/api/v1/farms/${farm.farm_id}/agents`
-            );
-            if (agentsResponse.ok) {
-              const agentsData = await agentsResponse.json();
-              agentsMap[farm.farm_id] = agentsData.agents || [];
-            }
-          } catch (error) {
-            console.warn(`Failed to load agents for farm ${farm.farm_id}:`, error);
-            agentsMap[farm.farm_id] = [];
-          }
+        Object.entries(farmGroups).forEach(([strategyType, agents]) => {
+          const farmId = `farm_${strategyType}`;
+          
+          // Convert TradingAgents to FarmAgents
+          agentsMap[farmId] = agents.map(agent => ({
+            agent_id: agent.id,
+            agent_name: agent.name,
+            status: agent.status,
+            strategy_type: agent.strategy.type,
+            allocated_capital: agent.portfolio.totalValue,
+            current_pnl: agent.portfolio.totalValue - 10000,
+            win_rate: agent.performance.winRate || 0,
+            total_trades: agent.performance.totalTrades || 0,
+            last_trade_at: agent.performance.lastTradeTime?.toISOString() || new Date().toISOString(),
+            created_at: new Date().toISOString()
+          }));
 
-          // Load farm performance
-          try {
-            const perfResponse = await fetch(
-              `${backendApi.getBackendUrl()}/api/v1/farms/${farm.farm_id}/performance`
-            );
-            if (perfResponse.ok) {
-              const perfData = await perfResponse.json();
-              performanceMap[farm.farm_id] = perfData;
-            }
-          } catch (error) {
-            console.warn(`Failed to load performance for farm ${farm.farm_id}:`, error);
-          }
-        }
+          // Calculate farm performance
+          const totalValue = agents.reduce((sum, agent) => sum + agent.portfolio.totalValue, 0);
+          const totalInitial = agents.length * 10000; // Assuming 10k initial per agent
+          const totalPnL = totalValue - totalInitial;
+          
+          performanceMap[farmId] = {
+            farm_id: farmId,
+            total_pnl: totalPnL,
+            total_pnl_percentage: (totalPnL / totalInitial) * 100,
+            daily_pnl: totalPnL * 0.1, // Mock daily P&L as 10% of total
+            win_rate: agents.reduce((sum, agent) => sum + (agent.performance.winRate || 0), 0) / agents.length,
+            total_trades: agents.reduce((sum, agent) => sum + (agent.performance.totalTrades || 0), 0),
+            active_positions: agents.reduce((sum, agent) => sum + agent.portfolio.positions.length, 0),
+            sharpe_ratio: 1.2 + Math.random() * 0.8, // Mock Sharpe ratio
+            max_drawdown: Math.random() * 0.15, // Mock max drawdown
+            last_updated: new Date().toISOString()
+          };
+        });
 
         setAgents(agentsMap);
         setPerformance(performanceMap);
       } else {
-        // Use fallback mock data when backend is not available
+        // Use fallback mock data when no agents exist
+        console.log('No agents found, using mock data');
         const mockFarms = generateMockFarms();
+        const mockAgents = generateMockAgents();
+        const mockPerformance = generateMockPerformance();
+        
         setFarms(mockFarms);
-        
-        // Generate mock agents and performance
-        const mockAgents: Record<string, FarmAgent[]> = {};
-        const mockPerformance: Record<string, FarmPerformance> = {};
-        
-        mockFarms.forEach(farm => {
-          mockAgents[farm.farm_id] = generateMockAgents(farm.farm_id);
-          mockPerformance[farm.farm_id] = generateMockPerformance(farm.farm_id);
-        });
-        
         setAgents(mockAgents);
         setPerformance(mockPerformance);
       }
-
-      // Load farm metrics
-      const metricsResponse = await fetch(
-        `${backendApi.getBackendUrl()}/api/v1/farms/metrics`
-      );
-      
-      if (metricsResponse.ok) {
-        const metricsData = await metricsResponse.json();
-        setMetrics(metricsData);
-      } else {
-        // Generate mock metrics
-        setMetrics({
-          total_farms: farms.length,
-          active_farms: farms.filter(f => f.status === 'active').length,
-          total_profit_loss: 15025.40,
-          total_agents: Object.values(agents).flat().length,
-          average_performance: 8.45
-        });
-      }
-
     } catch (error) {
       console.error('Error loading farms data:', error);
-      // Set fallback data
+      toast.error('Failed to load farms data');
+      
+      // Use mock data on error
       const mockFarms = generateMockFarms();
+      const mockAgents = generateMockAgents();
+      const mockPerformance = generateMockPerformance();
+      
       setFarms(mockFarms);
-      setMetrics({
-        total_farms: 3,
-        active_farms: 3,
-        total_profit_loss: 15025.40,
-        total_agents: 18,
-        average_performance: 8.45
-      });
+      setAgents(mockAgents);
+      setPerformance(mockPerformance);
     } finally {
       setIsLoading(false);
     }

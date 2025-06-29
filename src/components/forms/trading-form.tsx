@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
@@ -26,8 +26,14 @@ import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, TrendingUp } from 'lucide-react'
+import { AlertCircle, TrendingUp, CheckCircle2, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { toast } from 'react-hot-toast'
+import {
+  paperTradingEngine,
+  TradingAgent,
+  MarketPrice
+} from '@/lib/trading/real-paper-trading-engine'
 
 // Trading form schema
 const tradingFormSchema = z.object({
@@ -51,12 +57,18 @@ interface TradingFormProps {
 }
 
 export function TradingForm({ className }: TradingFormProps) {
+  const [agents, setAgents] = useState<TradingAgent[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<string>('')
+  const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [portfolio, setPortfolio] = useState<any>(null)
+
   const form = useForm<TradingFormValues>({
     resolver: zodResolver(tradingFormSchema),
     defaultValues: {
       orderType: 'market',
       side: 'buy',
-      symbol: 'BTCUSD',
+      symbol: 'BTC/USD',
       quantity: '',
       timeInForce: 'GTC',
       postOnly: false,
@@ -66,10 +78,140 @@ export function TradingForm({ className }: TradingFormProps) {
 
   const orderType = form.watch('orderType')
   const side = form.watch('side')
+  const symbol = form.watch('symbol')
 
-  function onSubmit(data: TradingFormValues) {
-    console.log('Order submitted:', data)
-    // Here you would send the order to your trading API
+  useEffect(() => {
+    // Start the trading engine if not already running
+    if (!paperTradingEngine.listenerCount('pricesUpdated')) {
+      paperTradingEngine.start()
+    }
+
+    // Load agents and market data
+    loadData()
+
+    // Listen for updates
+    const handlePricesUpdated = (prices: MarketPrice[]) => {
+      setMarketPrices(prices)
+    }
+
+    paperTradingEngine.on('pricesUpdated', handlePricesUpdated)
+
+    return () => {
+      paperTradingEngine.off('pricesUpdated', handlePricesUpdated)
+    }
+  }, [])
+
+  const loadData = () => {
+    const allAgents = paperTradingEngine.getAllAgents()
+    setAgents(allAgents)
+    
+    if (allAgents.length > 0 && !selectedAgent) {
+      setSelectedAgent(allAgents[0].id)
+      setPortfolio(allAgents[0].portfolio)
+    }
+
+    const prices = paperTradingEngine.getAllMarketPrices()
+    setMarketPrices(prices)
+  }
+
+  const handleAgentChange = (agentId: string) => {
+    setSelectedAgent(agentId)
+    const agent = agents.find(a => a.id === agentId)
+    if (agent) {
+      setPortfolio(agent.portfolio)
+    }
+  }
+
+  const getCurrentPrice = (symbol: string): number => {
+    const price = marketPrices.find(p => p.symbol === symbol)
+    return price?.price || 0
+  }
+
+  const getAvailableBalance = (): number => {
+    return portfolio?.cash || 0
+  }
+
+  const calculateOrderValue = (): number => {
+    const quantity = parseFloat(form.getValues('quantity') || '0')
+    const price = getCurrentPrice(symbol)
+    return quantity * price
+  }
+
+  async function onSubmit(data: TradingFormValues) {
+    if (!selectedAgent) {
+      toast.error('Please select an agent to execute the trade')
+      return
+    }
+
+    if (agents.length === 0) {
+      toast.error('No trading agents available. Please create an agent first.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const agent = agents.find(a => a.id === selectedAgent)
+      if (!agent) {
+        throw new Error('Selected agent not found')
+      }
+
+      // Validate order
+      const currentPrice = getCurrentPrice(data.symbol)
+      if (currentPrice === 0) {
+        throw new Error('Unable to get current price for symbol')
+      }
+
+      const quantity = parseFloat(data.quantity)
+      const orderValue = quantity * currentPrice
+      
+      if (data.side === 'buy' && orderValue > getAvailableBalance()) {
+        throw new Error('Insufficient balance for this order')
+      }
+
+      // Create order
+      const order = {
+        agentId: selectedAgent,
+        symbol: data.symbol,
+        side: data.side,
+        type: data.orderType,
+        quantity: quantity,
+        price: data.orderType === 'market' ? currentPrice : parseFloat(data.price || '0'),
+        stopPrice: data.stopPrice ? parseFloat(data.stopPrice) : undefined,
+        timeInForce: data.timeInForce.toLowerCase() as 'gtc' | 'ioc' | 'fok',
+        postOnly: data.postOnly,
+        reduceOnly: data.reduceOnly
+      }
+
+      // Execute the order
+      const result = await paperTradingEngine.executeOrder(selectedAgent, order)
+      
+      if (result.success) {
+        toast.success(`${data.side.toUpperCase()} order executed successfully!`)
+        
+        // Reset form
+        form.reset({
+          orderType: 'market',
+          side: 'buy',
+          symbol: data.symbol,
+          quantity: '',
+          timeInForce: 'GTC',
+          postOnly: false,
+          reduceOnly: false,
+        })
+
+        // Reload data to reflect changes
+        setTimeout(loadData, 500)
+      } else {
+        throw new Error(result.error || 'Order execution failed')
+      }
+
+    } catch (error) {
+      console.error('Order submission error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to execute order')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -79,6 +221,53 @@ export function TradingForm({ className }: TradingFormProps) {
         <CardDescription>Execute trades with advanced order types</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Agent Selection and Portfolio Info */}
+        <div className="mb-6 space-y-4">
+          {agents.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Trading Agent</label>
+                <Select value={selectedAgent} onValueChange={handleAgentChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name} (${agent.portfolio.cash.toFixed(2)} available)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Available Balance:</span>
+                  <span className="font-medium">${getAvailableBalance().toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Current Price ({symbol}):</span>
+                  <span className="font-medium">${getCurrentPrice(symbol).toLocaleString()}</span>
+                </div>
+                {form.getValues('quantity') && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Order Value:</span>
+                    <span className="font-medium">${calculateOrderValue().toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No trading agents found. Please create an agent first in the Agents tab.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Order Side Tabs */}
@@ -108,10 +297,20 @@ export function TradingForm({ className }: TradingFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="BTCUSD">BTC/USD</SelectItem>
-                        <SelectItem value="ETHUSD">ETH/USD</SelectItem>
-                        <SelectItem value="SOLUSD">SOL/USD</SelectItem>
-                        <SelectItem value="BNBUSD">BNB/USD</SelectItem>
+                        {marketPrices.length > 0 ? (
+                          marketPrices.map((price) => (
+                            <SelectItem key={price.symbol} value={price.symbol}>
+                              {price.symbol} - ${price.price.toLocaleString()}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <>
+                            <SelectItem value="BTC/USD">BTC/USD</SelectItem>
+                            <SelectItem value="ETH/USD">ETH/USD</SelectItem>
+                            <SelectItem value="SOL/USD">SOL/USD</SelectItem>
+                            <SelectItem value="BNB/USD">BNB/USD</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -295,10 +494,32 @@ export function TradingForm({ className }: TradingFormProps) {
               </AlertDescription>
             </Alert>
 
-            <Button type="submit" className="w-full" size="lg">
-              <TrendingUp className="mr-2 h-4 w-4" />
-              Place {side === 'buy' ? 'Buy' : 'Sell'} Order
+            <Button 
+              type="submit" 
+              className="w-full" 
+              size="lg"
+              disabled={isSubmitting || agents.length === 0}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Executing Order...
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  Place {side === 'buy' ? 'Buy' : 'Sell'} Order
+                </>
+              )}
             </Button>
+            
+            {agents.length === 0 && (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Create a trading agent first to place orders
+                </p>
+              </div>
+            )}
           </form>
         </Form>
       </CardContent>
