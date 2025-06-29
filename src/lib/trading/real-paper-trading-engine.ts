@@ -337,6 +337,20 @@ export class RealPaperTradingEngine extends EventEmitter {
     return Array.from(this.marketPrices.values())
   }
 
+  // Get current prices (alias for getAllMarketPrices for compatibility)
+  getCurrentPrices(): MarketPrice[] {
+    return this.getAllMarketPrices()
+  }
+
+  // Get current prices as a map for easier access
+  getCurrentPricesMap(): Map<string, number> {
+    const pricesMap = new Map<string, number>()
+    this.marketPrices.forEach((marketPrice, symbol) => {
+      pricesMap.set(symbol, marketPrice.price)
+    })
+    return pricesMap
+  }
+
   // Update market prices with realistic movements
   private updateMarketPrices() {
     this.marketPrices.forEach((price, symbol) => {

@@ -124,6 +124,27 @@ export class PaperTradingEngine {
   }
 
   /**
+   * Get current prices for multiple symbols (compatibility method)
+   */
+  async getCurrentPrices(symbols?: string[]): Promise<Record<string, number>> {
+    const defaultSymbols = ['BTC', 'ETH', 'AAPL', 'GOOGL', 'TSLA', 'SPY', 'QQQ', 'IWM']
+    const symbolsToFetch = symbols || defaultSymbols
+    
+    const prices: Record<string, number> = {}
+    
+    for (const symbol of symbolsToFetch) {
+      try {
+        prices[symbol] = await this.getCurrentPrice(symbol)
+      } catch (error) {
+        console.error(`Failed to get price for ${symbol}:`, error)
+        prices[symbol] = this.getMockPrice(symbol)
+      }
+    }
+    
+    return prices
+  }
+
+  /**
    * Place a paper trading order
    */
   async placeOrder(order: PaperTradeOrder): Promise<string> {

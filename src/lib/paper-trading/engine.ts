@@ -97,6 +97,20 @@ export class PaperTradingEngineImpl implements PaperTradingEngine {
     return this.marketDataCache.get(symbol) || null
   }
 
+  // Get current prices (compatibility method)
+  getCurrentPrices(): MarketData[] {
+    return Array.from(this.marketDataCache.values())
+  }
+
+  // Get current prices as a map for easier access
+  getCurrentPricesMap(): Map<string, number> {
+    const pricesMap = new Map<string, number>()
+    this.marketDataCache.forEach((marketData, symbol) => {
+      pricesMap.set(symbol, marketData.price)
+    })
+    return pricesMap
+  }
+
   // Chainlink Integration Methods
   private initializeChainlinkFeeds(): void {
     const tradingSymbols = ['ETH/USD', 'BTC/USD', 'LINK/USD', 'UNI/USD', 'AAVE/USD']
