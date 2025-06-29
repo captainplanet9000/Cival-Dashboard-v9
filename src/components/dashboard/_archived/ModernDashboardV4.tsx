@@ -51,8 +51,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 
 // Import new ShadCN migration components
-import TradingCharts from './TradingCharts'
-import AdvancedAnalytics from './AdvancedAnalytics'
+import TradingCharts from '../TradingCharts'
+import AdvancedAnalytics from '../AdvancedAnalytics'
 import { AnimatedMetrics } from '@/components/motion/animated-metrics'
 import { TradingForm } from '@/components/forms/trading-form'
 import { CommandPalette } from '@/components/expansions/command-palette'
