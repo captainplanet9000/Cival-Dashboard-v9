@@ -65,6 +65,9 @@ import { AGUIProvider, AGUIChat } from '@/components/ag-ui/fallback'
 import RealAgentCreation from '@/components/agents/RealAgentCreation'
 import RealAgentManagement from '@/components/agents/RealAgentManagement'
 import RealTradingInterface from '@/components/trading/RealTradingInterface'
+import RealAnalyticsDashboard from '@/components/analytics/RealAnalyticsDashboard'
+import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
+import RealPortfolioAnalyticsDashboard from '@/components/portfolio/RealPortfolioAnalyticsDashboard'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
@@ -433,10 +436,10 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
   
   const overviewSubTabs = [
     { id: 'dashboard', label: 'Dashboard', component: <DashboardOverview metrics={metrics} chartData={chartData} /> },
-    { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
+    { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'trading', label: 'Trading', component: <TradingInterface /> },
     { id: 'agents', label: 'Agent Manager', component: <AgentManager /> },
-    { id: 'risk', label: 'Risk Monitor', component: <RiskDashboard /> }
+    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
   ]
   
   return (
@@ -2173,9 +2176,9 @@ function TradingTab() {
     { id: 'order-form', label: 'Order Form', component: <TradingForm /> },
     { id: 'live-trading', label: 'Live Trading', component: <TradingInterface /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingPanel /> },
-    { id: 'portfolio', label: 'Portfolio', component: <PortfolioMonitor /> },
+    { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> },
-    { id: 'risk', label: 'Risk Monitor', component: <RiskDashboard /> }
+    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
   ]
   
   return (
@@ -2220,7 +2223,7 @@ function VaultTab() {
     { id: 'vault-overview', label: 'Vault Banking', component: <div className="p-6"><VaultPage /></div> },
     { id: 'multi-chain', label: 'Multi-Chain Wallets', component: <div className="p-6"><MultiChainWalletView /></div> },
     { id: 'defi-lending', label: 'DeFi Operations', component: <div className="p-6"><DeFiLendingPage /></div> },
-    { id: 'portfolio', label: 'Portfolio Overview', component: <PortfolioTab /> }
+    { id: 'portfolio', label: 'Portfolio Overview', component: <RealPortfolioAnalyticsDashboard /> }
   ]
   
   return (
@@ -2388,7 +2391,7 @@ function AdvancedTab() {
   const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
   
   const advancedSubTabs = [
-    { id: 'analytics', label: 'Analytics', component: <SimpleAnalytics /> },
+    { id: 'analytics', label: 'Analytics', component: <RealAnalyticsDashboard /> },
     { id: 'comprehensive-analytics', label: 'Comprehensive Analytics', component: <div className="p-6"><ComprehensiveAnalyticsPage /></div> },
     { id: 'flashloan', label: 'FlashLoan', component: <div className="p-6"><FlashLoanView /></div> },
     { id: 'hyperlend', label: 'HyperLend', component: <div className="p-6"><HyperLendView /></div> },
@@ -2397,7 +2400,7 @@ function AdvancedTab() {
     { id: 'persistence', label: 'Persistence', component: <div className="p-6"><PersistencePage /></div> },
     { id: 'calendar', label: 'Calendar', component: <div className="p-6"><CalendarPage /></div> },
     { id: 'eliza-ai', label: 'Eliza AI', component: <div className="p-6"><ElizaPage /></div> },
-    { id: 'risk', label: 'Risk Management', component: <RiskManagementPanel /> }
+    { id: 'risk', label: 'Risk Management', component: <RealRiskManagementDashboard /> }
   ]
   
   return (
