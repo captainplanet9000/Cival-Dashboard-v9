@@ -1,8 +1,20 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { paperTradingEngine, TradingAgent, Order, Position } from '@/lib/trading/real-paper-trading-engine'
 import { toast } from 'react-hot-toast'
+
+// Performance optimization: Debounce helper
+const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  return useCallback((...args: any[]) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    timeoutRef.current = setTimeout(() => callback(...args), delay)
+  }, [callback, delay])
+}
 
 // Comprehensive dashboard state management
 export interface DashboardState {
@@ -87,7 +99,11 @@ export function useDashboardConnection(tabId: string) {
     lastUpdate: new Date()
   })
   
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const updateInterval = useRef<NodeJS.Timeout>()
+  const retryCount = useRef(0)
+  const maxRetries = 3
   
   // Initialize connection and data refresh
   useEffect(() => {

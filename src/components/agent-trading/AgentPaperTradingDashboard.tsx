@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { AgentPaperTradingManager } from '@/lib/agents/paper-trading-manager';
 import { createAgentPaperPortfolioManager } from '@/lib/agents/paper-portfolio-manager';
-import { paperTradingEventBus } from '@/lib/websocket/paper-trading-events';
+import { PaperTradingEventBus } from '@/lib/websocket/paper-trading-events';
 import type { 
   AgentPaperTradingAccount, 
   AgentPaperTradingAlert,
@@ -77,6 +77,7 @@ export function AgentPaperTradingDashboard({ agentId, agentName }: AgentPaperTra
 
   const paperTradingManager = new AgentPaperTradingManager(agentId);
   const portfolioManager = createAgentPaperPortfolioManager(agentId);
+  const eventBus = new PaperTradingEventBus();
 
   useEffect(() => {
     loadDashboardData();
@@ -127,11 +128,11 @@ export function AgentPaperTradingDashboard({ agentId, agentName }: AgentPaperTra
 
   const setupRealTimeUpdates = async () => {
     try {
-      await paperTradingEventBus.connect();
+      await eventBus.connect();
       setRealTimeConnected(true);
 
       // Subscribe to agent-specific events
-      paperTradingEventBus.subscribeToAgentEvents(agentId, handleRealTimeUpdate);
+      eventBus.subscribeToAgentEvents(agentId, handleRealTimeUpdate);
 
     } catch (err) {
       console.error('Failed to setup real-time updates:', err);
