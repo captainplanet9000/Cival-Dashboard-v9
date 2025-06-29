@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
   Settings, RefreshCw, BarChart3, Database, Bell, 
-  TrendingUp, Zap, Shield, Brain, Calendar, Target, MessageSquare
+  TrendingUp, Zap, Shield, Brain, Calendar, Target, MessageSquare,
+  FileText, Download
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { motion } from 'framer-motion'
@@ -25,6 +26,8 @@ import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDa
 import UnifiedAIAssistant from '@/components/ai-assistant/UnifiedAIAssistant'
 import ElizaAIHub from '@/components/advanced/ElizaAIHub'
 import SystemMonitoringDashboard from '@/components/monitoring/SystemMonitoringDashboard'
+import FileManager from '@/components/data-manager/FileManager'
+import { ExportManager } from '@/components/export/ExportManager'
 
 interface ConnectedAdvancedTabProps {
   className?: string
@@ -407,6 +410,8 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
     { id: 'notifications', label: 'Notifications', component: <RealNotificationSystem />, icon: <Bell className="h-4 w-4" /> },
     { id: 'backtesting', label: 'Backtesting', component: <RealBacktestingDashboard />, icon: <TrendingUp className="h-4 w-4" /> },
     { id: 'ai-assistant', label: 'AI Hub', component: <AIAssistantHubPanel />, icon: <Brain className="h-4 w-4" /> },
+    { id: 'file-management', label: 'File Manager', component: <FileManager />, icon: <FileText className="h-4 w-4" /> },
+    { id: 'export-reports', label: 'Export & Reports', component: <ExportManager />, icon: <Download className="h-4 w-4" /> },
     { id: 'system-monitoring', label: 'System Monitor', component: <SystemMonitoringPanel />, icon: <Zap className="h-4 w-4" /> },
     { id: 'infrastructure', label: 'Infrastructure', component: <SystemMonitoringDashboard />, icon: <Target className="h-4 w-4" /> }
   ]
@@ -437,8 +442,8 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
       <CardContent>
         <Tabs value={advancedSubTab} onValueChange={setAdvancedSubTab} className="space-y-4">
           <div className="space-y-2">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
-              {advancedSubTabs.slice(0, 4).map((tab) => (
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
+              {advancedSubTabs.slice(0, 5).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
@@ -449,8 +454,8 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
-              {advancedSubTabs.slice(4).map((tab) => (
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
+              {advancedSubTabs.slice(5).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}

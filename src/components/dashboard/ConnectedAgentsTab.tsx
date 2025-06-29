@@ -26,6 +26,7 @@ import { toast } from 'react-hot-toast'
 import RealAgentManagement from '@/components/agents/RealAgentManagement'
 import RealAgentCreation from '@/components/agents/RealAgentCreation'
 import { motion, AnimatePresence } from 'framer-motion'
+import MemoryAnalyticsDashboard from './MemoryAnalyticsDashboard'
 
 // Agent Overview Panel showing expert agents
 function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string, any> }) {
@@ -356,6 +357,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
     { id: 'agent-creation', label: 'Create Agent', component: <RealAgentCreation /> },
     { id: 'expert-agents', label: 'Expert Agents', component: <AgentOverviewPanel agentPerformance={state.agentPerformance} /> },
     { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel agentPerformance={state.agentPerformance} /> },
+    { id: 'memory-analytics', label: 'Memory Analytics', component: <MemoryAnalyticsDashboard /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> }
   ]
   
@@ -426,7 +428,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
         
         {/* Sub-tabs */}
         <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             {agentSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}

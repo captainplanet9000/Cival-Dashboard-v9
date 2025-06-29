@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/dialog'
 import {
   Target, TrendingUp, DollarSign, Activity, Trophy, 
-  Plus, RefreshCw, CheckCircle2, Clock, Calendar
+  Plus, RefreshCw, CheckCircle2, Clock, Calendar,
+  History, BarChart3, Timeline, Award, Filter
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { toast } from 'react-hot-toast'
@@ -55,6 +56,9 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   const { state, actions } = useDashboardConnection('goals')
   const [goals, setGoals] = useState<Goal[]>([])
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [activeTab, setActiveTab] = useState<'goals' | 'history' | 'performance'>('goals')
+  const [historyData, setHistoryData] = useState<any[]>([])
+  const [performanceHistory, setPerformanceHistory] = useState<any[]>([])
   
   // Goal creation form state
   const [newGoal, setNewGoal] = useState({
@@ -67,10 +71,15 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
     reward: ''
   })
 
-  // Load goals data
+  // Load goals data and history
   useEffect(() => {
     loadGoalsData()
-    const interval = setInterval(updateGoalProgress, 5000) // Update every 5 seconds
+    loadHistoryData()
+    loadPerformanceHistory()
+    const interval = setInterval(() => {
+      updateGoalProgress()
+      updateHistoryData()
+    }, 5000) // Update every 5 seconds
     return () => clearInterval(interval)
   }, [state])
 
@@ -227,6 +236,119 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
     }
   }
 
+  // Load trading history data
+  const loadHistoryData = () => {
+    try {
+      // Get trading history from various sources
+      const tradingHistory = []
+      
+      // Recent trades from executed orders
+      state.executedOrders.forEach(order => {
+        tradingHistory.push({
+          id: order.id,
+          type: 'trade',
+          action: `${order.side.toUpperCase()} ${order.quantity} ${order.symbol}`,
+          timestamp: order.timestamp,
+          value: order.price * order.quantity,
+          pnl: Math.random() * 200 - 100, // Mock P&L
+          status: 'completed'
+        })
+      })
+
+      // Goal completions
+      goals.filter(g => g.status === 'completed').forEach(goal => {
+        if (goal.completedAt) {
+          tradingHistory.push({
+            id: goal.id,
+            type: 'goal_completed',
+            action: `Completed goal: ${goal.name}`,
+            timestamp: new Date(goal.completedAt),
+            value: goal.target,
+            pnl: 0,
+            status: 'success'
+          })
+        }
+      })
+
+      // Agent activities
+      Array.from(state.agentPerformance.values()).forEach(agent => {
+        tradingHistory.push({
+          id: `agent_${agent.agentId}`,
+          type: 'agent_activity',
+          action: `Agent ${agent.name} - ${agent.tradeCount} trades`,
+          timestamp: new Date(),
+          value: agent.portfolioValue,
+          pnl: agent.pnl,
+          status: agent.status
+        })
+      })
+
+      // Sort by timestamp (newest first)
+      tradingHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      
+      setHistoryData(tradingHistory.slice(0, 50)) // Keep last 50 items
+    } catch (error) {
+      console.error('Error loading history data:', error)
+    }
+  }
+
+  // Load performance history
+  const loadPerformanceHistory = () => {
+    try {
+      const performanceData = []
+      const now = new Date()
+      
+      // Generate daily performance history for last 30 days
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+        const dayFactor = Math.random()
+        
+        performanceData.push({
+          date: format(date, 'yyyy-MM-dd'),
+          portfolioValue: state.portfolioValue * (0.95 + dayFactor * 0.1),
+          totalPnL: state.totalPnL * (0.8 + dayFactor * 0.4),
+          dailyPnL: (Math.random() - 0.4) * 500,
+          winRate: 45 + Math.random() * 30,
+          tradeCount: Math.floor(Math.random() * 20),
+          activeGoals: goals.filter(g => g.status === 'active').length,
+          completedGoals: goals.filter(g => g.status === 'completed' && 
+            format(new Date(g.completedAt || ''), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')).length
+        })
+      }
+      
+      setPerformanceHistory(performanceData)
+    } catch (error) {
+      console.error('Error loading performance history:', error)
+    }
+  }
+
+  // Update real-time history data
+  const updateHistoryData = () => {
+    // Add new trading events to history
+    const newEvents = []
+    
+    // Check for new orders
+    const recentOrders = state.executedOrders.filter(order => 
+      new Date().getTime() - new Date(order.timestamp).getTime() < 5000 // Last 5 seconds
+    )
+    
+    recentOrders.forEach(order => {
+      newEvents.push({
+        id: `${order.id}_${Date.now()}`,
+        type: 'trade',
+        action: `${order.side.toUpperCase()} ${order.quantity} ${order.symbol}`,
+        timestamp: new Date(),
+        value: order.price * order.quantity,
+        pnl: Math.random() * 200 - 100,
+        status: 'completed'
+      })
+    })
+
+    if (newEvents.length > 0) {
+      setHistoryData(prev => [...newEvents, ...prev].slice(0, 50))
+    }
+  }
+
   const goalTypes = [
     { value: 'profit', label: 'Profit Target', unit: '$', description: 'Total profit goal' },
     { value: 'winRate', label: 'Win Rate', unit: '%', description: 'Minimum win rate percentage' },
@@ -253,9 +375,9 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Trading Goals</h2>
+          <h2 className="text-2xl font-bold">Trading Goals & History</h2>
           <p className="text-muted-foreground">
-            Set and track your trading objectives and milestones
+            Set and track your trading objectives, milestones, and performance history
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -370,7 +492,37 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
         </div>
       </div>
 
-      {/* Goal Statistics */}
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'goals', label: 'Goals', icon: Target },
+            { id: 'history', label: 'History', icon: History },
+            { id: 'performance', label: 'Performance', icon: BarChart3 }
+          ].map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'goals' && (
+        <>
+          {/* Goal Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -570,6 +722,296 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           )}
         </AnimatePresence>
       </div>
+        </>
+      )}
+
+      {/* History Tab */}
+      {activeTab === 'history' && (
+        <div className="space-y-6">
+          {/* History Statistics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Total Events</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{historyData.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Last 30 days
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Recent Trades</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {historyData.filter(h => h.type === 'trade').length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Executed orders
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Goals Completed</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {historyData.filter(h => h.type === 'goal_completed').length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Achievements unlocked
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Total P&L</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${
+                  historyData.reduce((sum, h) => sum + (h.pnl || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  ${historyData.reduce((sum, h) => sum + (h.pnl || 0), 0).toFixed(0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  From history
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* History Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Timeline className="h-5 w-5" />
+                Trading Activity Timeline
+              </CardTitle>
+              <CardDescription>
+                Recent trading events, goals, and agent activities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {historyData.length === 0 ? (
+                  <div className="text-center py-8">
+                    <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No History Available</h3>
+                    <p className="text-muted-foreground">
+                      Start trading or set goals to see your activity history
+                    </p>
+                  </div>
+                ) : (
+                  historyData.map((event, index) => (
+                    <div key={event.id} className="flex items-start gap-4 p-3 border rounded-lg hover:bg-gray-50">
+                      <div className={`p-2 rounded-full ${
+                        event.type === 'trade' ? 'bg-blue-100' :
+                        event.type === 'goal_completed' ? 'bg-green-100' :
+                        'bg-purple-100'
+                      }`}>
+                        {event.type === 'trade' && <DollarSign className="h-4 w-4 text-blue-600" />}
+                        {event.type === 'goal_completed' && <Trophy className="h-4 w-4 text-green-600" />}
+                        {event.type === 'agent_activity' && <Activity className="h-4 w-4 text-purple-600" />}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium truncate">{event.action}</h4>
+                          <div className="flex items-center gap-2">
+                            {event.pnl !== 0 && (
+                              <span className={`text-sm font-medium ${
+                                event.pnl > 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {event.pnl > 0 ? '+' : ''}${event.pnl.toFixed(0)}
+                              </span>
+                            )}
+                            <Badge variant="outline" className={
+                              event.status === 'completed' || event.status === 'success' ? 'text-green-600' :
+                              event.status === 'active' ? 'text-blue-600' : 'text-gray-600'
+                            }>
+                              {event.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            Value: ${event.value.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(event.timestamp), 'MMM dd, HH:mm')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Performance Tab */}
+      {activeTab === 'performance' && (
+        <div className="space-y-6">
+          {/* Performance Overview */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Avg Daily P&L</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${
+                  performanceHistory.length > 0 && 
+                  (performanceHistory.reduce((sum, p) => sum + p.dailyPnL, 0) / performanceHistory.length) >= 0 
+                    ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  ${performanceHistory.length > 0 
+                    ? (performanceHistory.reduce((sum, p) => sum + p.dailyPnL, 0) / performanceHistory.length).toFixed(0)
+                    : '0'
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Last 30 days
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Best Day</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  ${performanceHistory.length > 0 
+                    ? Math.max(...performanceHistory.map(p => p.dailyPnL)).toFixed(0)
+                    : '0'
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Highest daily P&L
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Worst Day</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  ${performanceHistory.length > 0 
+                    ? Math.min(...performanceHistory.map(p => p.dailyPnL)).toFixed(0)
+                    : '0'
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Lowest daily P&L
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Avg Win Rate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {performanceHistory.length > 0 
+                    ? (performanceHistory.reduce((sum, p) => sum + p.winRate, 0) / performanceHistory.length).toFixed(0)
+                    : '0'
+                  }%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Historical average
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Performance Chart Placeholder */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Performance Trends
+              </CardTitle>
+              <CardDescription>
+                Daily P&L and portfolio value over time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="text-center">
+                  <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Performance Chart</h3>
+                  <p className="text-muted-foreground">
+                    Interactive chart showing P&L trends, win rates, and goal progress
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Daily Performance Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Daily Performance History</CardTitle>
+              <CardDescription>
+                Detailed breakdown of daily trading performance
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Date</th>
+                      <th className="text-right p-2">Portfolio Value</th>
+                      <th className="text-right p-2">Daily P&L</th>
+                      <th className="text-right p-2">Win Rate</th>
+                      <th className="text-right p-2">Trades</th>
+                      <th className="text-right p-2">Goals</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {performanceHistory.slice(0, 10).map((day, index) => (
+                      <tr key={day.date} className="border-b hover:bg-gray-50">
+                        <td className="p-2 font-medium">{format(new Date(day.date), 'MMM dd')}</td>
+                        <td className="p-2 text-right">${day.portfolioValue.toLocaleString()}</td>
+                        <td className={`p-2 text-right font-medium ${
+                          day.dailyPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {day.dailyPnL >= 0 ? '+' : ''}${day.dailyPnL.toFixed(0)}
+                        </td>
+                        <td className="p-2 text-right">{day.winRate.toFixed(0)}%</td>
+                        <td className="p-2 text-right">{day.tradeCount}</td>
+                        <td className="p-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <span className="text-blue-600">{day.activeGoals}</span>
+                            {day.completedGoals > 0 && (
+                              <Badge variant="outline" className="text-green-600">
+                                +{day.completedGoals}
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
