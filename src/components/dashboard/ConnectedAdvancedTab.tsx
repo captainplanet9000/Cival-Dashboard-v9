@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
   Settings, RefreshCw, BarChart3, Database, Bell, 
-  TrendingUp, Zap, Shield, Brain, Calendar, Target
+  TrendingUp, Zap, Shield, Brain, Calendar, Target, MessageSquare
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { motion } from 'framer-motion'
@@ -23,6 +23,8 @@ import RealNotificationSystem from '@/components/notifications/RealNotificationS
 import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
 import UnifiedAIAssistant from '@/components/ai-assistant/UnifiedAIAssistant'
+import ElizaAIHub from '@/components/advanced/ElizaAIHub'
+import SystemMonitoringDashboard from '@/components/monitoring/SystemMonitoringDashboard'
 
 interface ConnectedAdvancedTabProps {
   className?: string
@@ -357,14 +359,56 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
     </div>
   )
 
+  // AI Assistant Hub Panel with sub-tabs
+  const AIAssistantHubPanel = () => {
+    const [aiSubTab, setAiSubTab] = useState('unified')
+    
+    const aiSubTabs = [
+      { id: 'unified', label: 'Unified AI', component: <UnifiedAIAssistant />, icon: <Brain className="h-4 w-4" /> },
+      { id: 'eliza', label: 'Eliza Hub', component: <ElizaAIHub />, icon: <MessageSquare className="h-4 w-4" /> }
+    ]
+
+    return (
+      <div className="space-y-4">
+        <Tabs value={aiSubTab} onValueChange={setAiSubTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 gap-2">
+            {aiSubTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm flex items-center gap-2"
+              >
+                {tab.icon}
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {aiSubTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {tab.component}
+              </motion.div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+    )
+  }
+
   const advancedSubTabs = [
     { id: 'analytics', label: 'Analytics', component: <PortfolioAnalyticsPanel />, icon: <BarChart3 className="h-4 w-4" /> },
     { id: 'market-data', label: 'Market Data', component: <RealMarketDataDashboard />, icon: <Database className="h-4 w-4" /> },
     { id: 'risk-management', label: 'Risk Management', component: <RiskManagementPanel />, icon: <Shield className="h-4 w-4" /> },
     { id: 'notifications', label: 'Notifications', component: <RealNotificationSystem />, icon: <Bell className="h-4 w-4" /> },
     { id: 'backtesting', label: 'Backtesting', component: <RealBacktestingDashboard />, icon: <TrendingUp className="h-4 w-4" /> },
-    { id: 'ai-assistant', label: 'AI Assistant', component: <UnifiedAIAssistant />, icon: <Brain className="h-4 w-4" /> },
-    { id: 'system-monitoring', label: 'System Monitor', component: <SystemMonitoringPanel />, icon: <Zap className="h-4 w-4" /> }
+    { id: 'ai-assistant', label: 'AI Hub', component: <AIAssistantHubPanel />, icon: <Brain className="h-4 w-4" /> },
+    { id: 'system-monitoring', label: 'System Monitor', component: <SystemMonitoringPanel />, icon: <Zap className="h-4 w-4" /> },
+    { id: 'infrastructure', label: 'Infrastructure', component: <SystemMonitoringDashboard />, icon: <Target className="h-4 w-4" /> }
   ]
 
   return (
@@ -405,7 +449,7 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 gap-2">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
               {advancedSubTabs.slice(4).map((tab) => (
                 <TabsTrigger
                   key={tab.id}
