@@ -279,16 +279,16 @@ export function ModernDashboardV4() {
       component: <ConnectedFarmsTab />
     },
     {
-      id: 'ai-assistant',
-      label: 'AI Assistant',
-      icon: <Brain className="h-4 w-4" />,
-      component: <UnifiedAIAssistant />
-    },
-    {
       id: 'goals',
       label: 'Goals',
       icon: <Star className="h-4 w-4" />,
       component: <ConnectedGoalsTab />
+    },
+    {
+      id: 'ai-assistant',
+      label: 'AI Assistant',
+      icon: <Brain className="h-4 w-4" />,
+      component: <UnifiedAIAssistant />
     },
     {
       id: 'trading',
