@@ -914,7 +914,7 @@ export function UnifiedAIAssistant({
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-6 h-full min-h-screen ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -999,7 +999,7 @@ export function UnifiedAIAssistant({
       </div>
 
       {/* Main Chat Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
         {/* Personality Panel */}
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -1052,7 +1052,7 @@ export function UnifiedAIAssistant({
         </Card>
 
         {/* Chat Interface */}
-        <Card className="lg:col-span-3 flex flex-col">
+        <Card className="lg:col-span-3 flex flex-col h-[calc(100vh-200px)] min-h-[600px]">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -1096,9 +1096,9 @@ export function UnifiedAIAssistant({
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 flex flex-col">
+          <CardContent className="flex-1 flex flex-col h-full">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96 min-h-96">
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4 h-[calc(100vh-400px)] min-h-[400px] max-h-[80vh]">
               <AnimatePresence>
                 {filteredMessages.map(renderMessage)}
               </AnimatePresence>
