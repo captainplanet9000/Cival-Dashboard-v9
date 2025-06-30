@@ -47,7 +47,8 @@ import {
   Plus,
   ArrowLeft,
   ArrowRight,
-  Save
+  Save,
+  X
 } from 'lucide-react'
 import { paperTradingEngine, TradingAgent, TradingStrategy, RiskLimits } from '@/lib/trading/real-paper-trading-engine'
 
@@ -412,11 +413,43 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
+      console.log('Dialog onOpenChange:', open)
       setIsOpen(open)
       if (!open) {
-        // Reset form state when dialog closes
-        setStep(1)
-        setErrors({})
+        // Reset form state when dialog closes with delay to ensure proper cleanup
+        setTimeout(() => {
+          setStep(1)
+          setErrors({})
+          // Reset config to default state
+          setConfig({
+            name: '',
+            description: '',
+            strategy: {
+              type: 'momentum' as TradingStrategy['type'],
+              name: 'Momentum Trading',
+              parameters: STRATEGY_TEMPLATES.momentum.defaultParams,
+              description: STRATEGY_TEMPLATES.momentum.description
+            },
+            riskLimits: {
+              maxPositionSize: 1000,
+              maxDailyLoss: 500,
+              maxDrawdown: 1000,
+              stopLossEnabled: true,
+              takeProfitEnabled: true,
+              allowedSymbols: ['BTC/USD', 'ETH/USD']
+            },
+            agentCount: 3,
+            initialCapitalPerAgent: 10000,
+            totalAllocatedCapital: 30000,
+            targetDailyProfit: 100,
+            targetWinRate: 65,
+            maxRiskPerTrade: 2,
+            coordinationMode: 'coordinated' as 'independent' | 'coordinated' | 'hierarchical',
+            profitDistribution: 'performance' as 'equal' | 'performance' | 'capital',
+            autoScaling: false,
+            emergencyStopLoss: 10
+          })
+        }, 150)
       }
     }}>
       <DialogTrigger asChild>
@@ -426,16 +459,26 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card border border-border sm:w-full">
+      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] sm:h-[90vh] bg-card border border-border sm:w-full flex flex-col">
         <DialogHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <Target className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
-            <div>
-              <DialogTitle className="text-xl sm:text-2xl">Create Trading Farm</DialogTitle>
-              <DialogDescription className="mt-1 text-sm">
-                Set up a coordinated group of AI agents to execute your trading strategy
-              </DialogDescription>
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <Target className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
+              <div>
+                <DialogTitle className="text-xl sm:text-2xl">Create Trading Farm</DialogTitle>
+                <DialogDescription className="mt-1 text-sm">
+                  Set up a coordinated group of AI agents to execute your trading strategy
+                </DialogDescription>
+              </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(false)}
+              className="h-6 w-6 p-0 hover:bg-gray-100"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Progress Steps */}
@@ -465,7 +508,7 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
           </div>
         </DialogHeader>
 
-        <div className="mt-4 sm:mt-6 px-1">
+        <div className="flex-1 overflow-y-auto px-1 pb-4">
           <AnimatePresence mode="wait">
             {/* Step 1: Basic Configuration */}
             {step === 1 && (
@@ -968,8 +1011,11 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
             </div>
           )}
 
-          {/* Navigation Buttons */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mt-8 pt-6 border-t">
+        </div>
+        
+        {/* Fixed Navigation Buttons */}
+        <div className="border-t bg-card p-4 mt-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
             <Button
               variant="outline"
               onClick={handleBack}
