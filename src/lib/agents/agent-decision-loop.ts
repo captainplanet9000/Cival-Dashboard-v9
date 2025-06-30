@@ -3,6 +3,7 @@
 import { unifiedLLMService, type AIDecisionRequest, type AIDecision } from '@/lib/ai/unified-llm-service'
 import { backendApi } from '@/lib/api/backend-client'
 import { agentWalletManager, type AgentWallet } from './agent-wallet-manager'
+import { mcpIntegrationService, type MCPTool } from '@/lib/mcp/MCPIntegrationService'
 
 export interface Agent {
   id: string
@@ -78,6 +79,9 @@ export class AgentDecisionLoop {
       
       // Initialize agent services
       await this.initializeServices(agent)
+      
+      // Register agent with MCP service for tool access
+      await this.ensureMCPAgentRegistration(agentId)
       
       // Start decision loop
       const interval = setInterval(async () => {
@@ -166,18 +170,28 @@ export class AgentDecisionLoop {
         context: `Agent ${agent.name} making goal-driven decision at ${new Date().toISOString()}. Active goals: ${goalsContext.activeGoals.length}`
       }
       
-      // 6. Make LLM decision with goals awareness
-      const decision = await unifiedLLMService.makeDecision(decisionRequest)
-      console.log(`💡 Agent ${agent.id} decision:`, decision)
+      // 6. Get available MCP tools for enhanced decision making
+      const availableTools = mcpIntegrationService.getAvailableTools(agent.id)
       
-      // 7. Validate and execute decision
+      // 7. Use MCP tools to enhance market analysis if available
+      const toolEnhancedContext = await this.enhanceDecisionWithMCPTools(agent.id, marketData, portfolio, availableTools)
+      
+      // 8. Make LLM decision with goals awareness and tool-enhanced context
+      const enhancedRequest = {
+        ...decisionRequest,
+        context: `${decisionRequest.context}\n\nMCP Tool Analysis: ${toolEnhancedContext}`
+      }
+      const decision = await unifiedLLMService.makeDecision(enhancedRequest)
+      console.log(`💡 Agent ${agent.id} MCP-enhanced decision:`, decision)
+      
+      // 9. Validate and execute decision
       if (this.validateDecision(decision, portfolio, agent.config)) {
         await this.executeDecision(agent.id, decision)
         
-        // 8. Update memory with successful decision
+        // 10. Update memory with successful decision
         await this.updateMemory(agent.id, decision, marketData, 'executed')
         
-        // 9. Update performance metrics and goal progress
+        // 11. Update performance metrics and goal progress
         await this.updatePerformance(agent.id, decision, 'success')
         
       } else {
@@ -186,10 +200,10 @@ export class AgentDecisionLoop {
         await this.updatePerformance(agent.id, decision, 'validation_failed')
       }
       
-      // 10. Update goal progress based on decision results
+      // 12. Update goal progress based on decision results
       await this.updateGoalProgress(agent.id, decision, portfolio)
       
-      // 11. Check for learning opportunities
+      // 13. Check for learning opportunities
       await this.processLearning(agent.id, decision, marketData)
       
     } catch (error) {
@@ -827,6 +841,120 @@ export class AgentDecisionLoop {
       
     } catch (error) {
       console.error('Failed to update goal progress:', error)
+    }
+  }
+  
+  // MCP Tool Integration Methods
+  private async enhanceDecisionWithMCPTools(
+    agentId: string, 
+    marketData: MarketData[], 
+    portfolio: Portfolio, 
+    availableTools: MCPTool[]
+  ): Promise<string> {
+    try {
+      const toolResults: string[] = []
+      
+      // Register agent with MCP service if not already registered
+      await this.ensureMCPAgentRegistration(agentId)
+      
+      // Use technical analysis tools if available
+      const technicalTools = availableTools.filter(tool => 
+        tool.category === 'analysis' && tool.name.includes('technical')
+      )
+      
+      for (const tool of technicalTools.slice(0, 2)) { // Limit to 2 tools to avoid delays
+        try {
+          const result = await mcpIntegrationService.callTool(agentId, tool.id, {
+            symbols: marketData.map(d => d.symbol),
+            timeframe: '1h',
+            indicators: ['RSI', 'MACD', 'SMA']
+          })
+          
+          toolResults.push(`${tool.name}: ${JSON.stringify(result).substring(0, 200)}`)
+        } catch (error) {
+          console.warn(`MCP tool ${tool.name} failed:`, error)
+        }
+      }
+      
+      // Use risk analysis tools if available
+      const riskTools = availableTools.filter(tool => 
+        tool.category === 'analysis' && tool.name.includes('risk')
+      )
+      
+      for (const tool of riskTools.slice(0, 1)) { // Limit to 1 risk tool
+        try {
+          const result = await mcpIntegrationService.callTool(agentId, tool.id, {
+            portfolio: {
+              totalValue: portfolio.totalValue,
+              positions: portfolio.positions.map(p => ({
+                symbol: p.symbol,
+                value: p.quantity * p.currentPrice,
+                unrealizedPnL: p.unrealizedPnL
+              }))
+            }
+          })
+          
+          toolResults.push(`${tool.name}: ${JSON.stringify(result).substring(0, 200)}`)
+        } catch (error) {
+          console.warn(`MCP risk tool ${tool.name} failed:`, error)
+        }
+      }
+      
+      return toolResults.length > 0 
+        ? `Enhanced analysis from ${toolResults.length} MCP tools: ${toolResults.join('; ')}`
+        : 'No MCP tool analysis available'
+        
+    } catch (error) {
+      console.error('MCP tool enhancement failed:', error)
+      return 'MCP tool integration unavailable'
+    }
+  }
+  
+  private async ensureMCPAgentRegistration(agentId: string): Promise<void> {
+    try {
+      // Activate MCP infrastructure for the agent
+      const result = await mcpIntegrationService.activateForAgent(agentId)
+      
+      if (result.success) {
+        console.log(`📡 Agent ${agentId} activated with MCP service`)
+      } else {
+        console.warn(`MCP activation failed for agent ${agentId}:`, result.errors)
+      }
+    } catch (error) {
+      console.warn('MCP agent activation failed:', error)
+    }
+  }
+  
+  // Get MCP tool recommendations for agent based on current context
+  async getRecommendedMCPTools(agentId: string, context: string): Promise<MCPTool[]> {
+    try {
+      const availableTools = mcpIntegrationService.getAvailableTools(agentId)
+      
+      // Simple recommendation logic based on context keywords
+      const recommendations: MCPTool[] = []
+      
+      if (context.includes('market') || context.includes('price')) {
+        recommendations.push(...availableTools.filter(t => 
+          t.category === 'analysis' && t.name.includes('market')
+        ))
+      }
+      
+      if (context.includes('risk') || context.includes('portfolio')) {
+        recommendations.push(...availableTools.filter(t => 
+          t.category === 'analysis' && t.name.includes('risk')
+        ))
+      }
+      
+      if (context.includes('trade') || context.includes('order')) {
+        recommendations.push(...availableTools.filter(t => 
+          t.category === 'trading'
+        ))
+      }
+      
+      return recommendations.slice(0, 5) // Limit to top 5 recommendations
+    } catch (error) {
+      console.error('Failed to get MCP tool recommendations:', error)
+      return []
     }
   }
 }
