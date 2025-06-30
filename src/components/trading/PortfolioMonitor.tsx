@@ -29,6 +29,10 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 // AG-UI Protocol integration
 import { subscribe, emit, type TradingEvents, type WalletEvents } from '@/lib/ag-ui-protocol-v2'
 
+// Live agent data integration
+import { useAgentData } from '@/hooks/useAgentData'
+import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
+
 // Portfolio Types
 interface PortfolioPosition {
   id: string
@@ -84,6 +88,79 @@ export function PortfolioMonitor() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [showSmallPositions, setShowSmallPositions] = useState(false)
+
+  // Live agent data integration
+  const { agents, loading: agentsLoading } = useAgentData()
+
+  // Convert agent wallet data to portfolio format
+  useEffect(() => {
+    if (!agentsLoading && agents.length > 0) {
+      // Aggregate all agent positions
+      const allPositions: PortfolioPosition[] = []
+      let totalValue = 0
+      let totalPnL = 0
+      let totalTrades = 0
+
+      agents.forEach((agent, index) => {
+        if (agent.wallet) {
+          totalValue += agent.wallet.totalValue
+          totalPnL += agent.wallet.realizedPnL + agent.wallet.unrealizedPnL
+          totalTrades += agent.performance.totalDecisions
+
+          // Add agent positions to portfolio
+          agent.wallet.positions.forEach((pos, posIndex) => {
+            allPositions.push({
+              id: `${agent.id}_${posIndex}`,
+              symbol: pos.symbol,
+              exchange: 'Paper Trading',
+              size: pos.quantity,
+              averagePrice: pos.avgPrice,
+              currentPrice: pos.currentPrice,
+              marketValue: pos.currentPrice * pos.quantity,
+              unrealizedPnl: pos.unrealizedPnL || 0,
+              unrealizedPnlPercent: pos.avgPrice > 0 ? ((pos.currentPrice - pos.avgPrice) / pos.avgPrice) * 100 : 0,
+              allocation: totalValue > 0 ? ((pos.currentPrice * pos.quantity) / totalValue) * 100 : 0,
+              risk: Math.abs(pos.unrealizedPnL || 0) / (pos.avgPrice * pos.quantity) * 100,
+              lastUpdate: Date.now()
+            })
+          })
+        }
+      })
+
+      setPositions(allPositions)
+      
+      // Set aggregated performance
+      setPerformance({
+        totalValue,
+        totalPnl: totalPnL,
+        dailyPnl: totalPnL * 0.1, // Estimate daily as 10% of total
+        totalReturn: agents.length > 0 ? (totalPnL / (agents.length * 10000)) * 100 : 0, // Assuming $10k per agent
+        sharpeRatio: 1.5, // Mock value
+        winRate: agents.reduce((sum, a) => sum + a.performance.totalDecisions, 0) > 0 ? 
+          (agents.reduce((sum, a) => sum + a.performance.successfulDecisions, 0) / 
+           agents.reduce((sum, a) => sum + a.performance.totalDecisions, 0)) * 100 : 0,
+        totalTrades
+      })
+
+      // Generate allocation data
+      const allocationMap = new Map<string, number>()
+      allPositions.forEach(pos => {
+        const existing = allocationMap.get(pos.symbol) || 0
+        allocationMap.set(pos.symbol, existing + pos.marketValue)
+      })
+
+      const allocData: AllocationData[] = Array.from(allocationMap.entries()).map(([symbol, value], index) => ({
+        name: symbol,
+        value,
+        color: COLORS[index % COLORS.length],
+        allocation: totalValue > 0 ? (value / totalValue) * 100 : 0
+      }))
+
+      setAllocationData(allocData)
+      setLastUpdate(new Date())
+      setIsLoading(false)
+    }
+  }, [agents, agentsLoading])
 
   // AG-UI Event Subscriptions
   useEffect(() => {

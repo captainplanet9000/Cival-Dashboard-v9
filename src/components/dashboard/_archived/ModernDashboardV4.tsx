@@ -48,6 +48,10 @@ import SimpleAnalytics from '../SimpleAnalytics'
 // Import missing UI components for forms
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+
+// Import our live agent data hooks
+import { useAgentData } from '@/hooks/useAgentData'
+import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
 import { Switch } from '@/components/ui/switch'
 
 // Import new ShadCN migration components
@@ -207,21 +211,46 @@ export function ModernDashboardV4() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartData] = useState<ChartDataPoint[]>(generateChartData())
   
-  // Remove unused backendClient reference
-  // const backendClient = backendApi
-
-  // Dashboard metrics state with v4 minimal mock data
+  // Use live agent data
+  const { agents, loading: agentsLoading } = useAgentData()
+  
+  // Calculate live metrics from agent data
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalValue: 125847.32,
     dailyPnL: 2847.32,
     totalPnL: 25847.32,
     activePositions: 8,
-    activeAgents: 5, // Our 5 expert agents
+    activeAgents: 5,
     activeFarms: 3,
     winRate: 78.4,
     avgReturn: 15.2,
     riskScore: 23.5
   })
+
+  // Update metrics with live agent data
+  useEffect(() => {
+    if (!agentsLoading && agents.length > 0) {
+      const totalPortfolioValue = agents.reduce((sum, agent) => sum + (agent.wallet?.totalValue || 0), 0)
+      const totalPnL = agents.reduce((sum, agent) => 
+        sum + (agent.wallet ? agent.wallet.realizedPnL + agent.wallet.unrealizedPnL : 0), 0)
+      const activeAgentCount = agents.filter(agent => agent.isActive).length
+      const totalPositions = agents.reduce((sum, agent) => sum + (agent.wallet?.positions.length || 0), 0)
+      const totalDecisions = agents.reduce((sum, agent) => sum + agent.performance.totalDecisions, 0)
+      const successfulDecisions = agents.reduce((sum, agent) => sum + agent.performance.successfulDecisions, 0)
+      const winRate = totalDecisions > 0 ? (successfulDecisions / totalDecisions) * 100 : 0
+
+      setMetrics(prev => ({
+        ...prev,
+        totalValue: totalPortfolioValue,
+        totalPnL: totalPnL,
+        dailyPnL: totalPnL * 0.1, // Estimate daily PnL
+        activeAgents: activeAgentCount,
+        activePositions: totalPositions,
+        winRate: winRate,
+        activeFarms: Math.ceil(activeAgentCount / 2) // Estimate farms
+      }))
+    }
+  }, [agents, agentsLoading])
 
   // Quick loading - no external dependencies
   useEffect(() => {
