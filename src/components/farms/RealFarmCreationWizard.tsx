@@ -411,7 +411,14 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
   ]
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open)
+      if (!open) {
+        // Reset form state when dialog closes
+        setStep(1)
+        setErrors({})
+      }
+    }}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700">
           <Plus className="h-4 w-4 mr-2" />
@@ -419,24 +426,24 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border border-border">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card border border-border sm:w-full">
         <DialogHeader>
-          <div className="flex items-center space-x-3">
-            <Target className="h-8 w-8 text-emerald-600" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+            <Target className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
             <div>
-              <DialogTitle className="text-2xl">Create Trading Farm</DialogTitle>
-              <DialogDescription className="mt-1">
+              <DialogTitle className="text-xl sm:text-2xl">Create Trading Farm</DialogTitle>
+              <DialogDescription className="mt-1 text-sm">
                 Set up a coordinated group of AI agents to execute your trading strategy
               </DialogDescription>
             </div>
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center space-x-4 mt-6">
+          <div className="flex items-center justify-center space-x-2 sm:space-x-4 mt-6 overflow-x-auto px-2">
             {[1, 2, 3].map((stepNum) => (
               <div key={stepNum} className="flex items-center">
                 <div className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors
+                  w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors flex-shrink-0
                   ${step >= stepNum 
                     ? 'bg-emerald-600 text-white' 
                     : 'bg-muted text-muted-foreground'
@@ -445,7 +452,7 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
                   {stepNum}
                 </div>
                 {stepNum < 3 && (
-                  <div className={`w-12 h-1 transition-colors ${
+                  <div className={`w-8 sm:w-12 h-1 transition-colors flex-shrink-0 ${
                     step > stepNum ? 'bg-emerald-600' : 'bg-muted'
                   }`} />
                 )}
@@ -458,7 +465,7 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
           </div>
         </DialogHeader>
 
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6 px-1">
           <AnimatePresence mode="wait">
             {/* Step 1: Basic Configuration */}
             {step === 1 && (
@@ -585,11 +592,11 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
+                  <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center">
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600" />
                     Strategy & Coordination
                   </h3>
 
@@ -654,13 +661,13 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
                   </div>
 
                   {/* Strategy Parameters */}
-                  <div className="mt-6">
-                    <h4 className="font-medium mb-3 flex items-center">
+                  <div className="mt-4 sm:mt-6">
+                    <h4 className="text-sm sm:text-base font-medium mb-3 flex items-center">
                       <Settings className="h-4 w-4 mr-2" />
                       Strategy Parameters
                     </h4>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {Object.entries(config.strategy.parameters).map(([key, value]) => (
                         <div key={key}>
                           <Label className="capitalize">
@@ -678,14 +685,14 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
                   </div>
 
                   {/* Coordination Mode Details */}
-                  <div className="mt-6 p-4 border rounded-lg">
-                    <h5 className="font-medium mb-2">
+                  <div className="mt-4 sm:mt-6 p-3 sm:p-4 border rounded-lg">
+                    <h5 className="text-sm sm:text-base font-medium mb-2">
                       {COORDINATION_MODES[config.coordinationMode].name} Mode
                     </h5>
                     <p className="text-sm text-muted-foreground mb-3">
                       {COORDINATION_MODES[config.coordinationMode].description}
                     </p>
-                    <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                       <div>
                         <div className="font-medium text-green-600 mb-1">Advantages:</div>
                         <ul className="space-y-1">
@@ -729,7 +736,7 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
                     Risk Management & Targets
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                       <Label htmlFor="targetDailyProfit">Target Daily Profit ($)</Label>
                       <Input
@@ -911,7 +918,7 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
                   {/* Trading Symbols */}
                   <div className="mt-6">
                     <Label>Trading Symbols</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2">
                       {availableSymbols.map(symbol => (
                         <TooltipProvider key={symbol}>
                           <Tooltip>
@@ -962,7 +969,7 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between items-center mt-8 pt-6 border-t">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mt-8 pt-6 border-t">
             <Button
               variant="outline"
               onClick={handleBack}
@@ -972,7 +979,7 @@ export function RealFarmCreationWizard({ onFarmCreated, className }: RealFarmCre
               Back
             </Button>
 
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground order-first sm:order-none">
               Step {step} of 3
             </div>
 

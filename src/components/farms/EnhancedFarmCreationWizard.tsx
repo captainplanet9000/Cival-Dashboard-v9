@@ -858,7 +858,8 @@ export function EnhancedFarmCreationWizard({ onFarmCreated, className }: Enhance
         open={isOpen}
         onCancel={() => setIsOpen(false)}
         footer={null}
-        width={1000}
+        width="95vw"
+        style={{ maxWidth: '1000px' }}
         className="farm-creation-modal"
       >
         <Spin spinning={isCreating} tip="Creating farm and agents...">
