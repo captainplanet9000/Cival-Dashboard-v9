@@ -27,6 +27,12 @@ export interface AIDecisionRequest {
     performance: any
     lessons: string[]
   }
+  goals?: {
+    activeGoals: any[]
+    totalGoals: number
+    completedGoals: number
+    priorities: any
+  }
   context?: string
 }
 
@@ -42,6 +48,7 @@ export interface AIDecision {
   stopLoss?: number
   takeProfit?: number
   timeframe: string
+  goalAlignment?: string // Which goals this decision supports
   metadata?: any
 }
 
@@ -116,6 +123,21 @@ class OpenAIProvider implements LLMProvider {
   }
   
   private buildPrompt(request: AIDecisionRequest): string {
+    const goalsSection = request.goals && request.goals.activeGoals.length > 0 ? `
+
+ACTIVE GOALS - IMPORTANT: Consider these goals when making decisions:
+${request.goals.activeGoals.map(goal => 
+  `• ${goal.type.toUpperCase()}: ${goal.description} (Target: ${goal.target}, Progress: ${goal.progress.toFixed(1)}%, Priority: ${goal.priority})`
+).join('\n')}
+
+Goal Strategy Guidelines:
+- Prioritize HIGH priority goals in decision making
+- For profit_target goals: Focus on trades likely to improve P&L
+- For win_rate goals: Make conservative, high-confidence trades
+- For trade_count goals: Look for valid trading opportunities
+- For risk_management goals: Ensure trades stay within risk limits
+- Balance goal achievement with overall portfolio health` : ''
+
     return `
 Agent Type: ${request.agent.type}
 Portfolio: $${request.portfolio.totalValue.toFixed(2)} total, $${request.portfolio.cash.toFixed(2)} cash
@@ -124,18 +146,19 @@ Current P&L: ${request.portfolio.pnl >= 0 ? '+' : ''}$${request.portfolio.pnl.to
 Market Data:
 ${request.marketData.map(d => `${d.symbol}: $${d.price} (${d.change >= 0 ? '+' : ''}${d.change.toFixed(2)}%)`).join('\n')}
 
-Recent Performance: ${request.memory.performance ? JSON.stringify(request.memory.performance) : 'No data'}
+Recent Performance: ${request.memory.performance ? JSON.stringify(request.memory.performance) : 'No data'}${goalsSection}
 
-Make a trading decision and respond with JSON:
+Make a goal-aware trading decision and respond with JSON:
 {
   "action": "buy|sell|hold|reduce|increase",
   "symbol": "symbol if trading",
   "quantity": number,
-  "reasoning": "detailed explanation",
+  "reasoning": "detailed explanation including how this helps achieve goals",
   "confidence": 0.1-1.0,
   "riskLevel": "low|medium|high",
   "expectedOutcome": "what you expect to happen",
-  "timeframe": "how long to hold"
+  "timeframe": "how long to hold",
+  "goalAlignment": "which goals this decision supports"
 }
 `
   }

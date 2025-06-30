@@ -11,6 +11,10 @@ export interface AgentWithData extends Agent {
   liveThoughts: string[]
   tradingActivity: any[]
   isActive: boolean
+  assignedGoals: any[]
+  goalProgress: Record<string, number>
+  completedGoals: any[]
+  goalDrivenActions: any[]
 }
 
 export function useAgentData() {
@@ -40,13 +44,72 @@ export function useAgentData() {
           // Get trading activity
           const transactions = await agentWalletManager.getTransactions(agent.id)
           
+          // Get assigned goals from localStorage goals system
+          const allGoals = JSON.parse(localStorage.getItem('trading_goals') || '[]')
+          const assignedGoals = allGoals.filter((goal: any) => 
+            goal.assigned_agents?.includes(agent.id) || goal.individual_agent === agent.id
+          )
+          
+          // Calculate goal progress based on agent performance
+          const goalProgress: Record<string, number> = {}
+          const goalDrivenActions: any[] = []
+          
+          assignedGoals.forEach((goal: any) => {
+            let progress = 0
+            
+            // Calculate progress based on goal type
+            switch(goal.goal_type) {
+              case 'profit_target':
+                const currentPnL = wallet ? wallet.realizedPnL + wallet.unrealizedPnL : 0
+                progress = Math.min((currentPnL / goal.target_amount) * 100, 100)
+                break
+              case 'win_rate':
+                const winRate = agent.performance.totalDecisions > 0 ? 
+                  (agent.performance.successfulDecisions / agent.performance.totalDecisions) * 100 : 0
+                progress = Math.min((winRate / goal.target_amount) * 100, 100)
+                break
+              case 'trade_count':
+                progress = Math.min((agent.performance.totalDecisions / goal.target_amount) * 100, 100)
+                break
+              case 'risk_management':
+                // Progress based on staying within risk limits
+                const maxDrawdown = wallet?.maxDrawdown || 0
+                progress = maxDrawdown <= goal.target_amount ? 100 : (goal.target_amount / Math.abs(maxDrawdown)) * 100
+                break
+              default:
+                progress = goal.progress || 0
+            }
+            
+            goalProgress[goal.id] = Math.max(0, Math.min(100, progress))
+            
+            // Track goal-driven actions
+            if (progress > (goal.last_progress || 0)) {
+              goalDrivenActions.push({
+                goalId: goal.id,
+                action: 'progress_made',
+                oldProgress: goal.last_progress || 0,
+                newProgress: progress,
+                timestamp: Date.now()
+              })
+            }
+          })
+          
+          // Get completed goals
+          const completedGoals = assignedGoals.filter((goal: any) => 
+            goalProgress[goal.id] >= 100 || goal.status === 'completed'
+          )
+          
           return {
             ...agent,
             wallet,
             recentDecisions,
             liveThoughts: thoughts.slice(-15), // Last 15 thoughts
             tradingActivity: transactions.slice(-20), // Last 20 trades
-            isActive: agent.status === 'active'
+            isActive: agent.status === 'active',
+            assignedGoals,
+            goalProgress,
+            completedGoals,
+            goalDrivenActions
           }
         })
       )

@@ -148,7 +148,10 @@ export class AgentDecisionLoop {
       // 3. Get recent memory and performance
       const memory = await this.getRecentMemory(agent.id)
       
-      // 4. Build decision request
+      // 4. Get assigned goals and current progress
+      const goalsContext = await this.getGoalsContext(agent.id)
+      
+      // 5. Build decision request with goals context
       const decisionRequest: AIDecisionRequest = {
         agent: {
           id: agent.id,
@@ -159,21 +162,22 @@ export class AgentDecisionLoop {
         marketData,
         portfolio,
         memory,
-        context: `Agent ${agent.name} making decision at ${new Date().toISOString()}`
+        goals: goalsContext, // Add goals to decision context
+        context: `Agent ${agent.name} making goal-driven decision at ${new Date().toISOString()}. Active goals: ${goalsContext.activeGoals.length}`
       }
       
-      // 5. Make LLM decision
+      // 6. Make LLM decision with goals awareness
       const decision = await unifiedLLMService.makeDecision(decisionRequest)
       console.log(`💡 Agent ${agent.id} decision:`, decision)
       
-      // 6. Validate and execute decision
+      // 7. Validate and execute decision
       if (this.validateDecision(decision, portfolio, agent.config)) {
         await this.executeDecision(agent.id, decision)
         
-        // 7. Update memory with successful decision
+        // 8. Update memory with successful decision
         await this.updateMemory(agent.id, decision, marketData, 'executed')
         
-        // 8. Update performance metrics
+        // 9. Update performance metrics and goal progress
         await this.updatePerformance(agent.id, decision, 'success')
         
       } else {
@@ -182,7 +186,10 @@ export class AgentDecisionLoop {
         await this.updatePerformance(agent.id, decision, 'validation_failed')
       }
       
-      // 9. Check for learning opportunities
+      // 10. Update goal progress based on decision results
+      await this.updateGoalProgress(agent.id, decision, portfolio)
+      
+      // 11. Check for learning opportunities
       await this.processLearning(agent.id, decision, marketData)
       
     } catch (error) {
@@ -703,6 +710,123 @@ export class AgentDecisionLoop {
     const activeAgents = this.getActiveAgents()
     for (const agentId of activeAgents) {
       await this.stopAgent(agentId)
+    }
+  }
+  
+  // Goals Integration Methods
+  private async getGoalsContext(agentId: string): Promise<any> {
+    try {
+      // Get all goals from localStorage goals system
+      const allGoals = JSON.parse(localStorage.getItem('trading_goals') || '[]')
+      const assignedGoals = allGoals.filter((goal: any) => 
+        goal.assigned_agents?.includes(agentId) || goal.individual_agent === agentId
+      )
+      
+      // Filter active goals
+      const activeGoals = assignedGoals.filter((goal: any) => 
+        goal.status === 'active' || goal.status === 'in_progress'
+      )
+      
+      // Get goal priorities and targets
+      const goalTargets = activeGoals.map((goal: any) => ({
+        id: goal.id,
+        type: goal.goal_type,
+        target: goal.target_amount,
+        priority: goal.priority || 'medium',
+        description: goal.description,
+        deadline: goal.deadline,
+        progress: goal.progress || 0
+      }))
+      
+      return {
+        activeGoals: goalTargets,
+        totalGoals: assignedGoals.length,
+        completedGoals: assignedGoals.filter((g: any) => g.status === 'completed').length,
+        priorities: {
+          high: goalTargets.filter(g => g.priority === 'high').length,
+          medium: goalTargets.filter(g => g.priority === 'medium').length,
+          low: goalTargets.filter(g => g.priority === 'low').length
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to get goals context:', error)
+      return { activeGoals: [], totalGoals: 0, completedGoals: 0, priorities: { high: 0, medium: 0, low: 0 } }
+    }
+  }
+  
+  private async updateGoalProgress(agentId: string, decision: AIDecision, portfolio: Portfolio): Promise<void> {
+    try {
+      // Get current goals
+      const allGoals = JSON.parse(localStorage.getItem('trading_goals') || '[]')
+      const assignedGoals = allGoals.filter((goal: any) => 
+        goal.assigned_agents?.includes(agentId) || goal.individual_agent === agentId
+      )
+      
+      let goalsUpdated = false
+      
+      // Update progress for each goal based on current portfolio state and decision
+      const updatedGoals = allGoals.map((goal: any) => {
+        if (!assignedGoals.find((g: any) => g.id === goal.id)) {
+          return goal // Not assigned to this agent
+        }
+        
+        let newProgress = goal.progress || 0
+        const oldProgress = newProgress
+        
+        // Calculate progress based on goal type and current state
+        switch(goal.goal_type) {
+          case 'profit_target':
+            newProgress = Math.min((portfolio.pnl / goal.target_amount) * 100, 100)
+            break
+          case 'win_rate':
+            const agent = this.agentStates.get(agentId)
+            if (agent && agent.performance.totalDecisions > 0) {
+              const winRate = (agent.performance.successfulDecisions / agent.performance.totalDecisions) * 100
+              newProgress = Math.min((winRate / goal.target_amount) * 100, 100)
+            }
+            break
+          case 'trade_count':
+            const currentAgent = this.agentStates.get(agentId)
+            if (currentAgent) {
+              newProgress = Math.min((currentAgent.performance.totalDecisions / goal.target_amount) * 100, 100)
+            }
+            break
+          case 'portfolio_value':
+            newProgress = Math.min((portfolio.totalValue / goal.target_amount) * 100, 100)
+            break
+        }
+        
+        // Update goal status based on progress
+        let newStatus = goal.status
+        if (newProgress >= 100 && goal.status !== 'completed') {
+          newStatus = 'completed'
+          console.log(`🎯 Goal completed by agent ${agentId}: ${goal.description}`)
+        } else if (newProgress > 0 && goal.status === 'active') {
+          newStatus = 'in_progress'
+        }
+        
+        if (newProgress !== oldProgress || newStatus !== goal.status) {
+          goalsUpdated = true
+          return {
+            ...goal,
+            progress: Math.max(0, Math.min(100, newProgress)),
+            status: newStatus,
+            last_updated: Date.now(),
+            last_updated_by: agentId
+          }
+        }
+        
+        return goal
+      })
+      
+      // Save updated goals if any changes were made
+      if (goalsUpdated) {
+        localStorage.setItem('trading_goals', JSON.stringify(updatedGoals))
+        console.log(`📊 Updated goal progress for agent ${agentId}`)
+      }
+      
+    } catch (error) {
+      console.error('Failed to update goal progress:', error)
     }
   }
 }
