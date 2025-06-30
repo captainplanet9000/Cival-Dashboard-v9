@@ -7,9 +7,13 @@
 
 import { config } from 'dotenv'
 import fetch from 'node-fetch'
+import { existsSync } from 'fs'
 
-// Load environment variables
-config()
+// Load environment variables from multiple sources
+config() // Load .env
+if (existsSync('.env.local')) {
+  config({ path: '.env.local' }) // Load .env.local
+}
 
 interface ConfigTest {
   name: string
@@ -113,7 +117,13 @@ class RailwayConfigVerifier {
         if (!key) return false
         
         try {
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: 'test' }] }]
+            })
+          })
           return response.ok
         } catch {
           return false

@@ -47,7 +47,8 @@
     "railway:start:backend": "cd python-ai-services && python main_consolidated.py",
     "verify:config": "tsx scripts/verify-railway-config.ts",
     "setup:railway": "tsx scripts/setup-railway-env.ts",
-    "test:ai": "tsx scripts/test-ai-providers.ts"
+    "test:ai": "tsx scripts/test-ai-providers.ts",
+    "setup:complete": "tsx scripts/complete-setup.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",
