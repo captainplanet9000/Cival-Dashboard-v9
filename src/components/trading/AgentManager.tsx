@@ -43,6 +43,7 @@ import {
 
 // AG-UI Protocol integration
 import { subscribe, emit, type AgentEvents, type TradingEvents } from '@/lib/ag-ui-protocol-v2'
+import { useAGUI } from '@/lib/hooks/useAGUI'
 
 // Agent Types
 interface TradingAgent {
@@ -146,6 +147,9 @@ export function AgentManager() {
   const [conversations, setConversations] = useState<AgentConversation[]>([])
   const [decisions, setDecisions] = useState<CoordinationDecision[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
+  // AG-UI Protocol integration for real-time agent events
+  const { sendEvent, events, isConnected: aguiConnected } = useAGUI()
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   
   // Communication State
@@ -288,6 +292,20 @@ export function AgentManager() {
       const response = await fetch(`/api/agents/${agentId}/start`, { method: 'POST' })
       if (response.ok) {
         emit('agent.started', { agent_id: agentId, timestamp: Date.now() })
+        
+        // Enhanced AG-UI event emission
+        if (typeof sendEvent === 'function') {
+          sendEvent({
+            type: 'agent.status_change',
+            data: {
+              agentId,
+              status: 'started',
+              action: 'Agent activated for trading',
+              timestamp: Date.now()
+            }
+          })
+        }
+        
         await fetchAgentData()
       }
     } catch (error) {
@@ -300,6 +318,20 @@ export function AgentManager() {
       const response = await fetch(`/api/agents/${agentId}/stop`, { method: 'POST' })
       if (response.ok) {
         emit('agent.stopped', { agent_id: agentId, reason: 'Manual stop', timestamp: Date.now() })
+        
+        // Enhanced AG-UI event emission
+        if (typeof sendEvent === 'function') {
+          sendEvent({
+            type: 'agent.status_change',
+            data: {
+              agentId,
+              status: 'stopped',
+              action: 'Agent deactivated',
+              timestamp: Date.now()
+            }
+          })
+        }
+        
         await fetchAgentData()
       }
     } catch (error) {

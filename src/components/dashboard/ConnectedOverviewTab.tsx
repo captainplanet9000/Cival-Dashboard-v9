@@ -25,6 +25,8 @@ import RealNotificationSystem from '@/components/notifications/RealNotificationS
 import { Statistic } from '@/components/ui/data-display/statistic'
 import { Space } from '@/components/ui/layout/space'
 import { useAgentData } from '@/hooks/useAgentData'
+import { useAGUI } from '@/lib/hooks/useAGUI'
+import { subscribe, emit } from '@/lib/ag-ui-protocol-v2'
 
 interface ConnectedOverviewTabProps {
   className?: string
@@ -38,6 +40,53 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
   
   // Use live agent data
   const { agents, loading: agentsLoading } = useAgentData()
+  
+  // AG-UI Protocol integration for real-time updates
+  const { sendEvent, events, isConnected } = useAGUI()
+  
+  // Listen for AG-UI events
+  useEffect(() => {
+    const portfolioSubscription = subscribe('portfolio.value_updated', (event) => {
+      console.log('📊 Portfolio update received:', event)
+      // Update chart data with real-time portfolio changes
+      setChartData(prev => [...prev.slice(-29), {
+        time: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value: event.data.total_value,
+        pnl: event.data.change_24h
+      }])
+    })
+    
+    const tradingSubscription = subscribe('trade.executed', (event) => {
+      console.log('💹 Trade executed:', event)
+      // Emit success notification
+      sendEvent({
+        type: 'generative_ui',
+        data: {
+          type: 'success',
+          title: 'Trade Executed',
+          message: `${event.data.action.toUpperCase()} ${event.data.quantity} ${event.data.symbol} at $${event.data.price}`,
+          timestamp: Date.now()
+        }
+      })
+    })
+    
+    const agentSubscription = subscribe('agent.decision_made', (event) => {
+      console.log('🤖 Agent decision:', event)
+      // Update performance data with agent decision results
+      setPerformanceData(prev => [...prev.slice(-29), {
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        winRate: event.data.success_rate || 0,
+        trades: event.data.total_decisions || 0,
+        pnl: event.data.portfolio_impact || 0
+      }])
+    })
+    
+    return () => {
+      portfolioSubscription.unsubscribe()
+      tradingSubscription.unsubscribe()
+      agentSubscription.unsubscribe()
+    }
+  }, [sendEvent])
   
   // Calculate live metrics from agent data
   const liveMetrics = React.useMemo(() => {
@@ -187,6 +236,9 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
           </span>
           <Badge variant="outline" className="text-xs">
             {safeState.totalDecisions} Decisions Made
+          </Badge>
+          <Badge variant={isConnected ? "default" : "destructive"} className="text-xs">
+            AG-UI: {isConnected ? 'Connected' : 'Disconnected'}
           </Badge>
           <Badge variant="outline" className="text-xs">
             Last Update: {safeState.lastUpdate.toLocaleTimeString()}

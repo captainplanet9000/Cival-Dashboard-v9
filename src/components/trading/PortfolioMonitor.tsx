@@ -28,6 +28,7 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 
 // AG-UI Protocol integration
 import { subscribe, emit, type TradingEvents, type WalletEvents } from '@/lib/ag-ui-protocol-v2'
+import { useAGUI } from '@/lib/hooks/useAGUI'
 
 // Live agent data integration
 import { useAgentData } from '@/hooks/useAgentData'
@@ -91,6 +92,9 @@ export function PortfolioMonitor() {
 
   // Live agent data integration
   const { agents, loading: agentsLoading } = useAgentData()
+  
+  // AG-UI Protocol integration for real-time updates
+  const { sendEvent, events, isConnected: aguiConnected } = useAGUI()
 
   // Convert agent wallet data to portfolio format
   useEffect(() => {
@@ -192,6 +196,19 @@ export function PortfolioMonitor() {
     const tradeSub = subscribe('trade.executed', (event) => {
       // Trigger portfolio refresh when trades are executed
       fetchPortfolioData()
+      
+      // Emit AG-UI event for trade execution
+      if (typeof sendEvent === 'function') {
+        sendEvent({
+          type: 'trading_signal',
+          data: {
+            action: 'trade_executed',
+            symbol: event.data.symbol,
+            impact: 'portfolio_updated',
+            timestamp: Date.now()
+          }
+        })
+      }
     })
 
     return () => {
@@ -310,6 +327,9 @@ export function PortfolioMonitor() {
             <Activity className="h-4 w-4 mr-2" />
             {autoRefresh ? 'Live' : 'Paused'}
           </Button>
+          <Badge variant={aguiConnected ? "default" : "outline"} className="text-xs">
+            AG-UI: {aguiConnected ? '🟢 Live' : '🔴 Off'}
+          </Badge>
           <Button
             variant="outline"
             size="sm"

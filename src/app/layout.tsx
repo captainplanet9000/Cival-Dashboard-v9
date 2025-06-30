@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import MinimalErrorBoundary from "@/lib/error-handling/minimal-error-boundary";
+import { AGUIProvider } from "@/components/ag-ui/AGUIProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,9 +33,11 @@ export default function RootLayout({
           themes={['light', 'dark', 'trading-green', 'trading-blue', 'trading-modern', 'high-contrast']}
           disableTransitionOnChange={false}
         >
-          <MinimalErrorBoundary>
-            {children}
-          </MinimalErrorBoundary>
+          <AGUIProvider endpoint="http://localhost:8000/api/v1/agui">
+            <MinimalErrorBoundary>
+              {children}
+            </MinimalErrorBoundary>
+          </AGUIProvider>
         </ThemeProvider>
       </body>
     </html>
