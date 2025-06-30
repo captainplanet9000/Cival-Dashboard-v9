@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {   Bot,  Plus,  Settings,  MessageSquare,  Brain,  Network,  Cloud,  Zap,  Users,  Database,  Activity,  CheckCircle2,  AlertCircle,  Clock,  Trash2,  Edit,  Copy,  Play,  Pause,  RotateCcw,  Shield,  Code,  Globe,  Cpu,  HardDrive} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel';
+import { useAgentData, useAgentThoughts } from '@/hooks/useAgentData';
+import { EnhancedTable } from '@/components/ui/enhanced-table';
+import { Badge } from '@/components/ui/badge';
 
 // Agent types and configurations
 const agentTemplates = [
@@ -193,17 +196,44 @@ export default function AgentsPage() {
   const [showCreateAgent, setShowCreateAgent] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [agentName, setAgentName] = useState('');
+  
+  // Use our live agent data hooks
+  const { agents, loading, createAgent, pauseAgent, stopAgent, resumeAgent } = useAgentData();
 
-  const handleCreateAgent = () => {
+  const handleCreateAgent = async () => {
     if (!selectedTemplate || !agentName) {
       toast.error('Please select a template and enter an agent name');
       return;
     }
 
-    toast.success(`Creating agent: ${agentName}`);
-    setShowCreateAgent(false);
-    setSelectedTemplate('');
-    setAgentName('');
+    try {
+      const template = agentTemplates.find(t => t.id === selectedTemplate);
+      if (!template) {
+        toast.error('Invalid template selected');
+        return;
+      }
+
+      toast.loading('Creating agent...');
+      
+      const agentId = await createAgent({
+        name: agentName,
+        type: template.name,
+        strategy: { type: selectedTemplate },
+        symbols: ['BTC/USD', 'ETH/USD', 'SOL/USD'],
+        maxRiskPerTrade: 0.05,
+        decisionInterval: 30000 // 30 seconds
+      });
+
+      toast.dismiss();
+      toast.success(`Agent created successfully: ${agentName}`);
+      setShowCreateAgent(false);
+      setSelectedTemplate('');
+      setAgentName('');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to create agent');
+      console.error('Agent creation failed:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -269,11 +299,189 @@ export default function AgentsPage() {
       </Card>
 
       {/* Agent Management Tabs */}
-      <Tabs defaultValue="expert-agents" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="live-agents" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="live-agents">Live Agents</TabsTrigger>
           <TabsTrigger value="expert-agents">Expert Agents</TabsTrigger>
           <TabsTrigger value="general-agents">General Agents</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="live-agents" className="mt-6">
+          <div className="space-y-6">
+            {/* Live Agents Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-green-500" />
+                    <div className="text-sm font-medium">Active Agents</div>
+                  </div>
+                  <div className="text-2xl font-bold">{agents.filter(a => a.isActive).length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-blue-500" />
+                    <div className="text-sm font-medium">Total Agents</div>
+                  </div>
+                  <div className="text-2xl font-bold">{agents.length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-purple-500" />
+                    <div className="text-sm font-medium">Decisions Today</div>
+                  </div>
+                  <div className="text-2xl font-bold">
+                    {agents.reduce((sum, a) => sum + a.performance.totalDecisions, 0)}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    <div className="text-sm font-medium">Total Portfolio</div>
+                  </div>
+                  <div className="text-2xl font-bold">
+                    ${agents.reduce((sum, a) => sum + (a.wallet?.totalValue || 0), 0).toFixed(0)}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Live Agents Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Live Trading Agents</CardTitle>
+                <CardDescription>
+                  Real-time status and performance of active AI trading agents
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-muted-foreground">Loading agents...</div>
+                  </div>
+                ) : (
+                  <EnhancedTable
+                    data={agents.map(agent => ({
+                      id: agent.id,
+                      name: agent.name,
+                      type: agent.type,
+                      status: agent.isActive ? 'Active' : 'Inactive',
+                      balance: agent.wallet ? `$${agent.wallet.balance.toFixed(2)}` : '$0.00',
+                      totalValue: agent.wallet ? `$${agent.wallet.totalValue.toFixed(2)}` : '$0.00',
+                      pnl: agent.wallet ? `$${(agent.wallet.realizedPnL + agent.wallet.unrealizedPnL).toFixed(2)}` : '$0.00',
+                      decisions: agent.performance.totalDecisions,
+                      winRate: agent.performance.totalDecisions > 0 ? 
+                        `${((agent.performance.successfulDecisions / agent.performance.totalDecisions) * 100).toFixed(1)}%` : '0%',
+                      lastThought: agent.liveThoughts[agent.liveThoughts.length - 1] || 'No thoughts yet',
+                      positions: agent.wallet?.positions.length || 0,
+                      actions: agent.id
+                    }))}
+                    columns={[
+                      { key: 'name', label: 'Agent Name', sortable: true },
+                      { key: 'type', label: 'Type', sortable: true },
+                      { 
+                        key: 'status', 
+                        label: 'Status', 
+                        sortable: true,
+                        render: (value) => (
+                          <Badge variant={value === 'Active' ? 'default' : 'secondary'}>
+                            {value}
+                          </Badge>
+                        )
+                      },
+                      { key: 'totalValue', label: 'Portfolio Value', sortable: true },
+                      { key: 'pnl', label: 'P&L', sortable: true },
+                      { key: 'decisions', label: 'Decisions', sortable: true },
+                      { key: 'winRate', label: 'Win Rate', sortable: true },
+                      { key: 'positions', label: 'Positions', sortable: true },
+                      { 
+                        key: 'lastThought', 
+                        label: 'Latest Thought',
+                        render: (value) => (
+                          <div className="max-w-xs truncate text-sm text-muted-foreground">
+                            {value}
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'actions',
+                        label: 'Actions',
+                        render: (value) => (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                const agent = agents.find(a => a.id === value);
+                                if (agent?.isActive) {
+                                  pauseAgent(value);
+                                } else {
+                                  resumeAgent(value);
+                                }
+                              }}
+                            >
+                              {agents.find(a => a.id === value)?.isActive ? (
+                                <Pause className="h-3 w-3" />
+                              ) : (
+                                <Play className="h-3 w-3" />
+                              )}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => stopAgent(value)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )
+                      }
+                    ]}
+                    searchable={true}
+                    pageSize={10}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Agent Thoughts Stream */}
+            {agents.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Live Agent Thoughts</CardTitle>
+                  <CardDescription>
+                    Real-time thought processes from active agents
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {agents.flatMap(agent => 
+                      agent.liveThoughts.slice(-5).map((thought, index) => (
+                        <div key={`${agent.id}-${index}`} className="flex gap-3 p-3 rounded-lg bg-muted/50">
+                          <Badge variant="outline" className="shrink-0">
+                            {agent.name}
+                          </Badge>
+                          <div className="text-sm">{thought}</div>
+                        </div>
+                      ))
+                    )}
+                    {agents.every(a => a.liveThoughts.length === 0) && (
+                      <div className="text-center text-muted-foreground py-8">
+                        No agent thoughts yet. Create and start an agent to see live thought processes.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
 
         <TabsContent value="expert-agents" className="mt-6">
           <ExpertAgentsPanel />

@@ -2,6 +2,7 @@
 
 import { unifiedLLMService, type AIDecisionRequest, type AIDecision } from '@/lib/ai/unified-llm-service'
 import { backendApi } from '@/lib/api/backend-client'
+import { agentWalletManager, type AgentWallet } from './agent-wallet-manager'
 
 export interface Agent {
   id: string
@@ -22,9 +23,17 @@ export interface Agent {
     totalDecisions: number
   }
   memory: {
-    recentDecisions: any[]
+    recentDecisions: AIDecision[]
     lessons: string[]
     performance: any
+    thoughts: string[]
+    context: string
+    lastUpdate: number
+  }
+  wallet?: {
+    address: string
+    balance: number
+    positions: any[]
   }
 }
 
@@ -296,7 +305,24 @@ export class AgentDecisionLoop {
   
   private async getPortfolioState(agentId: string): Promise<Portfolio> {
     try {
-      // Try backend first
+      // Try to get real wallet data first
+      const wallet = await agentWalletManager.getWallet(agentId)
+      if (wallet) {
+        return {
+          totalValue: wallet.totalValue,
+          cash: wallet.balance,
+          positions: wallet.positions.map(pos => ({
+            symbol: pos.symbol,
+            quantity: pos.quantity,
+            avgPrice: pos.avgPrice,
+            currentPrice: pos.currentPrice,
+            unrealizedPnL: pos.unrealizedPnL
+          })),
+          pnl: wallet.realizedPnL + wallet.unrealizedPnL
+        }
+      }
+      
+      // Try backend second
       const response = await backendApi.get(`/api/v1/agents/${agentId}/portfolio`)
       if (response.data) {
         return response.data
@@ -305,7 +331,7 @@ export class AgentDecisionLoop {
       console.warn('Backend portfolio data failed, using mock:', error)
     }
     
-    // Mock portfolio data
+    // Mock portfolio data as fallback
     return {
       totalValue: 10000 + Math.random() * 5000,
       cash: 5000 + Math.random() * 2000,
@@ -368,7 +394,44 @@ export class AgentDecisionLoop {
     try {
       console.log(`📈 Executing decision for agent ${agentId}:`, decision)
       
-      // Try backend execution first
+      // Ensure agent has a wallet
+      let wallet = await agentWalletManager.getWallet(agentId)
+      if (!wallet) {
+        console.log(`💳 Creating wallet for agent ${agentId}`)
+        wallet = await agentWalletManager.createWalletForAgent(agentId, 10000)
+      }
+      
+      // Execute through wallet system if it's a trading decision
+      if ((decision.action === 'buy' || decision.action === 'sell') && decision.symbol && decision.quantity) {
+        try {
+          const transaction = await agentWalletManager.executeOrder(agentId, {
+            symbol: decision.symbol,
+            action: decision.action,
+            quantity: decision.quantity,
+            price: decision.price,
+            orderType: 'market'
+          })
+          
+          console.log(`✅ Trading decision executed via wallet system:`, transaction)
+          
+          // Update agent state with wallet info
+          const agent = this.agentStates.get(agentId)
+          if (agent) {
+            agent.wallet = {
+              address: wallet.address,
+              balance: wallet.balance,
+              positions: wallet.positions
+            }
+            this.agentStates.set(agentId, agent)
+          }
+          
+          return
+        } catch (walletError) {
+          console.warn('Wallet execution failed, falling back to mock:', walletError)
+        }
+      }
+      
+      // Try backend execution for non-trading decisions
       try {
         await backendApi.post(`/api/v1/agents/${agentId}/execute-decision`, {
           decision,
@@ -380,7 +443,7 @@ export class AgentDecisionLoop {
         console.warn('Backend execution failed, using mock:', error)
       }
       
-      // Mock execution
+      // Mock execution fallback
       const executionResult = {
         orderId: `order_${Date.now()}`,
         status: 'filled',
@@ -412,19 +475,24 @@ export class AgentDecisionLoop {
     marketData: MarketData[], 
     status: 'executed' | 'rejected'
   ): Promise<void> {
+    // Generate agent thoughts based on decision and market conditions
+    const thoughts = await this.generateAgentThoughts(agentId, decision, marketData, status)
+    
     const memoryEntry = {
       timestamp: Date.now(),
       decision,
       marketData,
       status,
       confidence: decision.confidence,
-      reasoning: decision.reasoning
+      reasoning: decision.reasoning,
+      thoughts: thoughts,
+      context: this.generateContextDescription(marketData, decision)
     }
     
     try {
       await backendApi.post(`/api/v1/agents/${agentId}/memory`, memoryEntry)
     } catch (error) {
-      // Store in localStorage as fallback
+      // Store in localStorage as fallback with thoughts
       const memories = JSON.parse(localStorage.getItem(`memory_${agentId}`) || '[]')
       memories.push(memoryEntry)
       // Keep only last 100 memories
@@ -432,7 +500,98 @@ export class AgentDecisionLoop {
         memories.splice(0, memories.length - 100)
       }
       localStorage.setItem(`memory_${agentId}`, JSON.stringify(memories))
+      
+      // Also store latest thoughts separately for dashboard access
+      const agentThoughts = JSON.parse(localStorage.getItem(`thoughts_${agentId}`) || '[]')
+      agentThoughts.push(...thoughts)
+      if (agentThoughts.length > 50) {
+        agentThoughts.splice(0, agentThoughts.length - 50)
+      }
+      localStorage.setItem(`thoughts_${agentId}`, JSON.stringify(agentThoughts))
     }
+    
+    // Update agent state with latest memory
+    const agent = this.agentStates.get(agentId)
+    if (agent) {
+      agent.memory.recentDecisions.push(decision)
+      agent.memory.thoughts.push(...thoughts)
+      agent.memory.lastUpdate = Date.now()
+      agent.memory.context = memoryEntry.context
+      
+      // Keep memory manageable
+      if (agent.memory.recentDecisions.length > 20) {
+        agent.memory.recentDecisions.splice(0, agent.memory.recentDecisions.length - 20)
+      }
+      if (agent.memory.thoughts.length > 30) {
+        agent.memory.thoughts.splice(0, agent.memory.thoughts.length - 30)
+      }
+      
+      this.agentStates.set(agentId, agent)
+    }
+  }
+
+  private async generateAgentThoughts(
+    agentId: string, 
+    decision: AIDecision, 
+    marketData: MarketData[], 
+    status: string
+  ): Promise<string[]> {
+    const agent = this.agentStates.get(agentId)
+    const thoughts: string[] = []
+    
+    // Generate contextual thoughts based on decision
+    if (status === 'executed') {
+      thoughts.push(`✅ Executed ${decision.action} decision for ${decision.symbol} with ${decision.confidence * 100}% confidence`)
+      thoughts.push(`💭 Reasoning: ${decision.reasoning}`)
+      
+      if (decision.action === 'buy') {
+        thoughts.push(`📈 Going long on ${decision.symbol} - expecting price increase`)
+        thoughts.push(`💰 Risk management: Position size limited to ${((agent?.config.maxRiskPerTrade || 0.05) * 100).toFixed(1)}% of portfolio`)
+      } else if (decision.action === 'sell') {
+        thoughts.push(`📉 Selling ${decision.symbol} - taking profits or cutting losses`)
+        thoughts.push(`⚖️ Portfolio rebalancing based on market conditions`)
+      } else if (decision.action === 'hold') {
+        thoughts.push(`⏳ Holding position - waiting for better market conditions`)
+        thoughts.push(`📊 Current market volatility: ${this.calculateVolatility(marketData)}`)
+      }
+    } else {
+      thoughts.push(`❌ Decision rejected: ${decision.reasoning}`)
+      thoughts.push(`🔍 Need to reassess market conditions and risk parameters`)
+    }
+    
+    // Add market analysis thoughts
+    const marketTrend = this.analyzeMarketTrend(marketData)
+    thoughts.push(`📈 Market trend analysis: ${marketTrend}`)
+    
+    // Add performance reflection
+    if (agent?.performance) {
+      const winRate = (agent.performance.successfulDecisions / Math.max(agent.performance.totalDecisions, 1)) * 100
+      thoughts.push(`🎯 Current success rate: ${winRate.toFixed(1)}% (${agent.performance.successfulDecisions}/${agent.performance.totalDecisions})`)
+    }
+    
+    return thoughts
+  }
+
+  private generateContextDescription(marketData: MarketData[], decision: AIDecision): string {
+    const prices = marketData.map(m => `${m.symbol}: $${m.price.toFixed(2)} (${m.change > 0 ? '+' : ''}${m.change.toFixed(2)}%)`).join(', ')
+    return `Market: ${prices} | Action: ${decision.action} | Confidence: ${(decision.confidence * 100).toFixed(1)}%`
+  }
+
+  private calculateVolatility(marketData: MarketData[]): string {
+    const avgChange = marketData.reduce((sum, m) => sum + Math.abs(m.change), 0) / marketData.length
+    if (avgChange > 5) return 'HIGH'
+    if (avgChange > 2) return 'MEDIUM'
+    return 'LOW'
+  }
+
+  private analyzeMarketTrend(marketData: MarketData[]): string {
+    const positiveCount = marketData.filter(m => m.change > 0).length
+    const ratio = positiveCount / marketData.length
+    
+    if (ratio > 0.7) return 'STRONG BULLISH'
+    if (ratio > 0.5) return 'BULLISH'
+    if (ratio > 0.3) return 'BEARISH'
+    return 'STRONG BEARISH'
   }
   
   private async updatePerformance(
