@@ -1,16 +1,16 @@
 /**
- * Cival Dashboard V9 - Enhanced with Redis & Supabase Integration
- * Features: Real-time data, live connections, enhanced UI
+ * Cival Dashboard V4 - Enhanced with Redis & Supabase Integration
+ * Features: Original working dashboard + real-time data connections
  */
 
 'use client'
 
 import React from 'react'
-import ModernDashboardV9 from '@/components/dashboard/ModernDashboardV9'
+import ModernDashboardV4 from '@/components/dashboard/_archived/ModernDashboardV4'
 
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic'
 
 export default function DashboardPage() {
-  return <ModernDashboardV9 />
+  return <ModernDashboardV4 />
 }

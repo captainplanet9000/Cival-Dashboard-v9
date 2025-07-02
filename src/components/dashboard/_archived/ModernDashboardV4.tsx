@@ -54,6 +54,10 @@ import { useAgentData } from '@/hooks/useAgentData'
 import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
 import { Switch } from '@/components/ui/switch'
 
+// Import Redis & Supabase real-time hooks
+import { useRedisRealtime } from '@/hooks/use-redis-realtime'
+import { useSupabaseRealtime } from '@/hooks/use-supabase-realtime'
+
 // Import new ShadCN migration components
 import TradingCharts from '../TradingCharts'
 import AdvancedAnalytics from '../AdvancedAnalytics'
@@ -214,6 +218,10 @@ export function ModernDashboardV4() {
   // Use live agent data
   const { agents, loading: agentsLoading } = useAgentData()
   
+  // Redis & Supabase real-time connections
+  const { data: redisData, connected: redisConnected } = useRedisRealtime(['portfolio', 'agents', 'trades'])
+  const { data: supabaseData, connected: supabaseConnected } = useSupabaseRealtime('trading')
+  
   // Calculate live metrics from agent data
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalValue: 125847.32,
@@ -264,7 +272,14 @@ export function ModernDashboardV4() {
       id: 'overview',
       label: 'Overview',
       icon: <BarChart3 className="h-4 w-4" />,
-      component: <ConnectedOverviewTab />
+      component: <OverviewTab 
+        metrics={metrics} 
+        chartData={chartData} 
+        redisData={redisData}
+        supabaseData={supabaseData}
+        redisConnected={redisConnected}
+        supabaseConnected={supabaseConnected}
+      />
     },
     {
       id: 'agents',
@@ -366,6 +381,21 @@ export function ModernDashboardV4() {
                 <div className="badge-success-dark hidden sm:flex">
                   Live
                 </div>
+                {/* Redis & Supabase Connection Status */}
+                <div className="hidden lg:flex items-center gap-2">
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                    redisConnected ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${redisConnected ? 'bg-red-500' : 'bg-gray-400'}`} />
+                    Redis
+                  </div>
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                    supabaseConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${supabaseConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    Supabase
+                  </div>
+                </div>
                 <button 
                   className="btn-secondary-dark hidden lg:flex"
                   onClick={() => setCommandPaletteOpen(true)}
@@ -425,7 +455,14 @@ export function ModernDashboardV4() {
 }
 
 // Enhanced Overview Tab with Real Trading Functionality
-function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartData: ChartDataPoint[] }) {
+function OverviewTab({ metrics, chartData, redisData, supabaseData, redisConnected, supabaseConnected }: { 
+  metrics: DashboardMetrics; 
+  chartData: ChartDataPoint[];
+  redisData?: any;
+  supabaseData?: any;
+  redisConnected: boolean;
+  supabaseConnected: boolean;
+}) {
   const [overviewTab, setOverviewTab] = useState('dashboard')
   
   const overviewSubTabs = [
@@ -439,6 +476,77 @@ function OverviewTab({ metrics, chartData }: { metrics: DashboardMetrics; chartD
   
   return (
     <div className="space-y-6">
+      {/* Redis & Supabase Real-time Connections */}
+      <Card className="modern-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Real-time Data Connections
+          </CardTitle>
+          <CardDescription>Live connections to Redis cache and Supabase database</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Redis Connection */}
+            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${redisConnected ? 'bg-red-500' : 'bg-gray-400'}`} />
+                <div>
+                  <h4 className="font-medium text-red-900">Redis Cache</h4>
+                  <p className="text-sm text-red-700">
+                    {redisConnected ? 'Connected - Streaming live data' : 'Offline - Using mock data'}
+                  </p>
+                </div>
+              </div>
+              <Badge variant={redisConnected ? 'default' : 'secondary'}>
+                {redisData ? Object.keys(redisData).length : 0} keys
+              </Badge>
+            </div>
+            
+            {/* Supabase Connection */}
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${supabaseConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <div>
+                  <h4 className="font-medium text-green-900">Supabase Database</h4>
+                  <p className="text-sm text-green-700">
+                    {supabaseConnected ? 'Connected - Real-time sync active' : 'Offline - Using mock data'}
+                  </p>
+                </div>
+              </div>
+              <Badge variant={supabaseConnected ? 'default' : 'secondary'}>
+                {supabaseData ? Object.keys(supabaseData).length : 0} tables
+              </Badge>
+            </div>
+          </div>
+          
+          {/* Live Data Preview */}
+          {(redisData || supabaseData) && (
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3">Live Data Stream</h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {redisData && (
+                  <div className="bg-gray-50 p-3 rounded">
+                    <h5 className="text-sm font-medium text-red-700 mb-2">Redis Data</h5>
+                    <pre className="text-xs text-gray-600 overflow-auto max-h-32">
+                      {JSON.stringify(redisData, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                {supabaseData && (
+                  <div className="bg-gray-50 p-3 rounded">
+                    <h5 className="text-sm font-medium text-green-700 mb-2">Supabase Data</h5>
+                    <pre className="text-xs text-gray-600 overflow-auto max-h-32">
+                      {JSON.stringify(supabaseData, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Live Market Ticker */}
       <Card className="modern-card">
         <CardContent className="p-4">
