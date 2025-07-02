@@ -31,6 +31,9 @@ import MemoryAnalyticsDashboard from './MemoryAnalyticsDashboard'
 import { useAgentRealtime } from '@/hooks/use-agent-realtime'
 import { usePaperTradingRealtime } from '@/hooks/use-paper-trading-realtime'
 
+// Import autonomous agent creation service
+import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creation-service'
+
 // Agent Overview Panel showing expert agents
 function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string, any> }) {
   const { createAgent } = useAgentRealtime()
@@ -357,6 +360,255 @@ function TradingStrategiesPanel() {
   )
 }
 
+// Autonomous Agent Creation Panel
+function AutonomousAgentCreationPanel() {
+  const [creatingAgent, setCreatingAgent] = useState(false)
+  const [agentConfig, setAgentConfig] = useState({
+    name: '',
+    strategy: 'darvas_box',
+    capital: 10000,
+    enableMemory: true,
+    enableLearning: true,
+    enableVault: true,
+    enableWallet: true,
+    mcpTools: true
+  })
+
+  const strategies = [
+    { id: 'darvas_box', name: 'Darvas Box', description: 'Box breakout pattern trading', agents: 8, efficiency: 92 },
+    { id: 'williams_alligator', name: 'Williams Alligator', description: 'Trend following with alligator lines', agents: 10, efficiency: 87 },
+    { id: 'renko_breakout', name: 'Renko Breakout', description: 'Price brick breakout trading', agents: 12, efficiency: 94 },
+    { id: 'heikin_ashi', name: 'Heikin Ashi', description: 'Modified candlestick trend analysis', agents: 10, efficiency: 89 },
+    { id: 'elliott_wave', name: 'Elliott Wave', description: 'Wave pattern recognition trading', agents: 5, efficiency: 91 }
+  ]
+
+  const createAutonomousAgent = async () => {
+    if (!agentConfig.name.trim()) {
+      toast.error('Agent name is required')
+      return
+    }
+
+    setCreatingAgent(true)
+    try {
+      const config = {
+        name: agentConfig.name,
+        strategy: agentConfig.strategy,
+        initialCapital: agentConfig.capital,
+        
+        // Autonomous features
+        autonomousConfig: {
+          enabled: true,
+          decisionFrequency: 10, // 10 second cycles
+          adaptiveParameters: true,
+          learningEnabled: agentConfig.enableLearning
+        },
+        
+        // Memory system
+        memoryConfig: {
+          enabled: agentConfig.enableMemory,
+          patternRecognition: true,
+          experienceStorage: true,
+          adaptiveLearning: true
+        },
+        
+        // Wallet integration
+        walletConfig: {
+          createDedicatedWallet: agentConfig.enableWallet,
+          walletType: 'hot' as const,
+          vaultIntegration: agentConfig.enableVault,
+          backupToVault: true
+        },
+        
+        // Vault security
+        vaultConfig: {
+          enabled: agentConfig.enableVault,
+          encryptionLevel: 'high' as const,
+          accessLevel: 'write' as const
+        },
+        
+        // MCP Tools
+        mcpConfig: {
+          enabled: agentConfig.mcpTools,
+          toolSuite: 'comprehensive' as const,
+          permissionLevel: 'trading' as const
+        },
+        
+        // LLM Integration
+        llmConfig: {
+          provider: 'gemini',
+          model: 'gemini-pro',
+          contextWindow: 'strategy_specific',
+          decisionReasoning: true
+        },
+        
+        // Paper Trading
+        paperTradingConfig: {
+          enabled: true,
+          initialBalance: agentConfig.capital,
+          realTimeExecution: true
+        }
+      }
+
+      const agentId = await enhancedAgentCreationService.createAutonomousAgent(config)
+      
+      if (agentId) {
+        toast.success(`Autonomous agent "${agentConfig.name}" created with full capabilities`)
+        setAgentConfig(prev => ({ ...prev, name: '', capital: 10000 }))
+      } else {
+        toast.error('Failed to create autonomous agent')
+      }
+    } catch (error) {
+      console.error('Error creating autonomous agent:', error)
+      toast.error('Error creating autonomous agent')
+    } finally {
+      setCreatingAgent(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Autonomous Agent Creation</h3>
+        <p className="text-sm text-muted-foreground">
+          Create fully autonomous agents with memory, learning, and real-time decision making
+        </p>
+      </div>
+
+      {/* Strategy Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-600" />
+            Technical Analysis Strategies
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {strategies.map((strategy) => (
+              <Card 
+                key={strategy.id} 
+                className={`cursor-pointer transition-all ${
+                  agentConfig.strategy === strategy.id 
+                    ? 'ring-2 ring-purple-500 bg-purple-50' 
+                    : 'hover:shadow-md'
+                }`}
+                onClick={() => setAgentConfig(prev => ({ ...prev, strategy: strategy.id }))}
+              >
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">{strategy.name}</h4>
+                      <Badge variant="outline">{strategy.efficiency}% efficiency</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{strategy.description}</p>
+                    <div className="text-xs text-muted-foreground">
+                      {strategy.agents} active agents
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Agent Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent Configuration</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="agent-name">Agent Name</Label>
+              <Input
+                id="agent-name"
+                placeholder="Enter agent name"
+                value={agentConfig.name}
+                onChange={(e) => setAgentConfig(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="agent-capital">Initial Capital ($)</Label>
+              <Input
+                id="agent-capital"
+                type="number"
+                min="1000"
+                max="500000"
+                step="1000"
+                value={agentConfig.capital}
+                onChange={(e) => setAgentConfig(prev => ({ ...prev, capital: parseInt(e.target.value) || 10000 }))}
+              />
+            </div>
+          </div>
+          
+          {/* Autonomous Features */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enable-memory"
+                checked={agentConfig.enableMemory}
+                onCheckedChange={(checked) => setAgentConfig(prev => ({ ...prev, enableMemory: checked }))}
+              />
+              <Label htmlFor="enable-memory" className="text-sm">Memory System</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enable-learning"
+                checked={agentConfig.enableLearning}
+                onCheckedChange={(checked) => setAgentConfig(prev => ({ ...prev, enableLearning: checked }))}
+              />
+              <Label htmlFor="enable-learning" className="text-sm">Adaptive Learning</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enable-vault"
+                checked={agentConfig.enableVault}
+                onCheckedChange={(checked) => setAgentConfig(prev => ({ ...prev, enableVault: checked }))}
+              />
+              <Label htmlFor="enable-vault" className="text-sm">Vault Security</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enable-wallet"
+                checked={agentConfig.enableWallet}
+                onCheckedChange={(checked) => setAgentConfig(prev => ({ ...prev, enableWallet: checked }))}
+              />
+              <Label htmlFor="enable-wallet" className="text-sm">Dedicated Wallet</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="mcp-tools"
+                checked={agentConfig.mcpTools}
+                onCheckedChange={(checked) => setAgentConfig(prev => ({ ...prev, mcpTools: checked }))}
+              />
+              <Label htmlFor="mcp-tools" className="text-sm">MCP Tools</Label>
+            </div>
+          </div>
+
+          <Button 
+            onClick={createAutonomousAgent}
+            disabled={creatingAgent || !agentConfig.name.trim()}
+            className="w-full"
+          >
+            {creatingAgent ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Creating Autonomous Agent...
+              </>
+            ) : (
+              <>
+                <Brain className="mr-2 h-4 w-4" />
+                Create Autonomous Agent
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 interface ConnectedAgentsTabProps {
   className?: string
 }
@@ -411,6 +663,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   const agentSubTabs = [
     { id: 'agent-management', label: 'Management', component: <RealAgentManagement /> },
     { id: 'agent-creation', label: 'Create Agent', component: <RealAgentCreation /> },
+    { id: 'autonomous-creation', label: 'Autonomous', component: <AutonomousAgentCreationPanel /> },
     { id: 'expert-agents', label: 'Expert Agents', component: <AgentOverviewPanel agentPerformance={agentPerformanceMap} /> },
     { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel agentPerformance={agentPerformanceMap} /> },
     { id: 'memory-analytics', label: 'Memory Analytics', component: <MemoryAnalyticsDashboard /> },

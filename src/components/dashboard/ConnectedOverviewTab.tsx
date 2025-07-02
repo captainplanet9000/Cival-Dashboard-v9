@@ -28,6 +28,12 @@ import { useAgentData } from '@/hooks/useAgentData'
 import { useAGUI } from '@/lib/hooks/useAGUI'
 import { subscribe, emit } from '@/lib/ag-ui-protocol-v2'
 
+// Import autonomous system hooks
+import { useAgentRealtime } from '@/hooks/use-agent-realtime'
+import { useFarmRealtime } from '@/hooks/use-farm-realtime'
+import { useRedisRealtime } from '@/hooks/use-redis-realtime'
+import { useSupabaseRealtime } from '@/hooks/use-supabase-realtime'
+
 interface ConnectedOverviewTabProps {
   className?: string
 }
@@ -43,6 +49,28 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
   
   // AG-UI Protocol integration for real-time updates
   const { sendEvent, events, isConnected } = useAGUI()
+  
+  // Autonomous system real-time data
+  const {
+    totalAgents,
+    activeAgents,
+    totalPortfolioValue,
+    totalPnL,
+    avgWinRate,
+    connected: autonomousConnected
+  } = useAgentRealtime()
+  
+  const {
+    totalFarms,
+    activeFarms,
+    totalValue: farmValue,
+    avgPerformance: farmPerformance,
+    connected: farmsConnected
+  } = useFarmRealtime()
+  
+  // Backend connection status
+  const { connected: redisConnected } = useRedisRealtime(['portfolio', 'agents', 'trades'])
+  const { connected: supabaseConnected } = useSupabaseRealtime('trading')
   
   // Listen for AG-UI events
   useEffect(() => {
@@ -179,9 +207,158 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
     setPerformanceData(perfData)
   }, [state?.portfolioValue, state?.totalPnL, state?.winRate])
 
+  // Autonomous System Status Component
+  const AutonomousSystemStatus = () => (
+    <div className="space-y-6">
+      {/* Autonomous System Header */}
+      <Card className="border-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Brain className="h-6 w-6 text-purple-600" />
+                Autonomous Trading System
+              </CardTitle>
+              <CardDescription className="text-lg mt-1">
+                Complete AI-powered trading platform with memory, learning & farm coordination
+              </CardDescription>
+            </div>
+            <Badge variant={autonomousConnected && farmsConnected ? "default" : "secondary"}>
+              {autonomousConnected && farmsConnected ? "All Systems Online" : "Partial Systems"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+              <div className="p-2 bg-blue-500 rounded-full">
+                <Bot className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Agents</p>
+                <p className="text-xl font-bold">{totalAgents}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+              <div className="p-2 bg-emerald-500 rounded-full">
+                <Zap className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Active Farms</p>
+                <p className="text-xl font-bold">{activeFarms}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+              <div className="p-2 bg-purple-500 rounded-full">
+                <PieChart className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Value</p>
+                <p className="text-xl font-bold">${(totalPortfolioValue + farmValue).toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+              <div className={`p-2 rounded-full ${totalPnL >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
+                <TrendingUp className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total P&L</p>
+                <p className={`text-xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${totalPnL.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Technical Analysis Strategies */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-blue-600" />
+            Technical Analysis Strategy Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {[
+              { name: 'Darvas Box', agents: 8, performance: 92 },
+              { name: 'Williams Alligator', agents: 10, performance: 87 },
+              { name: 'Renko Breakout', agents: 12, performance: 94 },
+              { name: 'Heikin Ashi', agents: 10, performance: 89 },
+              { name: 'Elliott Wave', agents: 5, performance: 91 }
+            ].map((strategy) => (
+              <div key={strategy.name} className="p-4 bg-muted/30 rounded-lg">
+                <h4 className="font-medium text-sm mb-2">{strategy.name}</h4>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Agents</span>
+                    <span className="font-medium">{strategy.agents}</span>
+                  </div>
+                  <Progress value={strategy.performance} className="mt-2" />
+                  <span className="text-xs text-muted-foreground">{strategy.performance}% efficiency</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Connection Status */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${supabaseConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="font-medium">Supabase</span>
+              <Badge variant={supabaseConnected ? "default" : "secondary"}>
+                {supabaseConnected ? 'Connected' : 'Offline'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${redisConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="font-medium">Redis</span>
+              <Badge variant={redisConnected ? "default" : "secondary"}>
+                {redisConnected ? 'Connected' : 'Offline'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${autonomousConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="font-medium">Agent Network</span>
+              <Badge variant={autonomousConnected ? "default" : "secondary"}>
+                {autonomousConnected ? 'Connected' : 'Offline'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${farmsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="font-medium">Farm Network</span>
+              <Badge variant={farmsConnected ? "default" : "secondary"}>
+                {farmsConnected ? 'Connected' : 'Offline'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+
   // Overview sub-tabs with safe components
   const overviewSubTabs = [
     { id: 'dashboard', label: 'Dashboard', component: <LiveDashboardOrchestrator /> },
+    { id: 'autonomous', label: 'Autonomous', component: <AutonomousSystemStatus /> },
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'trading', label: 'Trading', component: <RealTradingInterface /> },
     { id: 'analytics', label: 'Analytics', component: <RealTimeDashboard /> },
@@ -227,26 +404,74 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Connection Status Bar */}
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-        <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${safeState.activeAgents > 0 ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
-          <span className="text-sm font-medium text-gray-700">
-            {safeState.activeAgents > 0 ? `${safeState.activeAgents} Active Agents Trading` : 'No Active Agents'}
-          </span>
-          <Badge variant="outline" className="text-xs">
-            {safeState.totalDecisions} Decisions Made
-          </Badge>
-          <Badge variant={isConnected ? "default" : "destructive"} className="text-xs">
-            AG-UI: {isConnected ? 'Connected' : 'Disconnected'}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            Last Update: {safeState.lastUpdate.toLocaleTimeString()}
-          </Badge>
+      {/* Enhanced Connection Status Bar with Autonomous System */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${safeState.activeAgents > 0 ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+            <span className="text-sm font-medium text-gray-700">
+              {safeState.activeAgents > 0 ? `${safeState.activeAgents} Active Agents Trading` : 'No Active Agents'}
+            </span>
+            <Badge variant="outline" className="text-xs">
+              {safeState.totalDecisions} Decisions Made
+            </Badge>
+            <Badge variant={isConnected ? "default" : "destructive"} className="text-xs">
+              AG-UI: {isConnected ? 'Connected' : 'Disconnected'}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              Last Update: {safeState.lastUpdate.toLocaleTimeString()}
+            </Badge>
+          </div>
+          <Button size="sm" variant="ghost" onClick={actions?.refresh}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
-        <Button size="sm" variant="ghost" onClick={actions?.refresh}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        
+        {/* Autonomous System Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+            <Bot className="h-4 w-4 text-blue-600" />
+            <div>
+              <div className="text-xs text-blue-600 font-medium">Autonomous Agents</div>
+              <div className="text-sm font-bold">{totalAgents}/{activeAgents}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg">
+            <Zap className="h-4 w-4 text-emerald-600" />
+            <div>
+              <div className="text-xs text-emerald-600 font-medium">Active Farms</div>
+              <div className="text-sm font-bold">{activeFarms}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+            <TrendingUp className="h-4 w-4 text-purple-600" />
+            <div>
+              <div className="text-xs text-purple-600 font-medium">Win Rate</div>
+              <div className="text-sm font-bold">{avgWinRate.toFixed(1)}%</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${supabaseConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <div>
+              <div className="text-xs text-green-600 font-medium">Supabase</div>
+              <div className="text-xs">{supabaseConnected ? 'Connected' : 'Offline'}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${redisConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <div>
+              <div className="text-xs text-red-600 font-medium">Redis</div>
+              <div className="text-xs">{redisConnected ? 'Connected' : 'Offline'}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+            <Brain className="h-4 w-4 text-gray-600" />
+            <div>
+              <div className="text-xs text-gray-600 font-medium">System</div>
+              <div className="text-xs">{autonomousConnected && farmsConnected ? 'Online' : 'Partial'}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Live Market Ticker */}
