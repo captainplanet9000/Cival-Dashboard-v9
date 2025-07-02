@@ -242,4 +242,363 @@ export const dbHelpers = {
   }
 }
 
+// Premium component database helpers
+export const premiumDbHelpers = {
+  // Advanced Portfolio Analytics
+  async getAdvancedPortfolioMetrics(userId?: string, timeframe: string = '1d') {
+    const { data, error } = await supabase
+      .from('portfolio_analytics')
+      .select(`
+        *,
+        portfolio_positions(
+          symbol,
+          quantity,
+          avg_cost,
+          current_price,
+          unrealized_pnl,
+          realized_pnl
+        )
+      `)
+      .eq('user_id', userId || 'default')
+      .eq('timeframe', timeframe)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  // Advanced Trading Data
+  async getAdvancedOrderBook(symbol: string) {
+    const { data, error } = await supabase
+      .from('order_book_snapshots')
+      .select('*')
+      .eq('symbol', symbol)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async createAdvancedOrder(orderData: any) {
+    const { data, error } = await supabase
+      .from('advanced_orders')
+      .insert([{
+        ...orderData,
+        id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Chart Data
+  async getAdvancedChartData(symbol: string, timeframe: string, limit: number = 1000) {
+    const { data, error } = await supabase
+      .from('market_data_ohlcv')
+      .select('*')
+      .eq('symbol', symbol)
+      .eq('timeframe', timeframe)
+      .order('timestamp', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    return data?.reverse() // Return chronological order
+  },
+
+  async storeTechnicalIndicators(symbol: string, indicators: any) {
+    const { data, error } = await supabase
+      .from('technical_indicators')
+      .upsert([{
+        symbol,
+        indicators_data: indicators,
+        calculated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Agent Management
+  async getAgentOrchestrationStatus() {
+    const { data, error } = await supabase
+      .from('agent_orchestration')
+      .select(`
+        *,
+        agents(
+          id,
+          name,
+          status,
+          strategy_type,
+          current_capital,
+          total_pnl
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async updateAgentOrchestration(config: any) {
+    const { data, error } = await supabase
+      .from('agent_orchestration')
+      .upsert([{
+        configuration: config,
+        status: 'active',
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Risk Management
+  async getRiskMetrics(portfolioId?: string) {
+    const { data, error } = await supabase
+      .from('risk_metrics')
+      .select('*')
+      .eq('portfolio_id', portfolioId || 'default')
+      .order('calculated_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async updateRiskLimits(riskLimits: any, portfolioId?: string) {
+    const { data, error } = await supabase
+      .from('risk_limits')
+      .upsert([{
+        portfolio_id: portfolioId || 'default',
+        limits: riskLimits,
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Strategy Management
+  async getVisualStrategies(userId?: string) {
+    const { data, error } = await supabase
+      .from('visual_strategies')
+      .select(`
+        *,
+        strategy_nodes(*),
+        strategy_connections(*)
+      `)
+      .eq('user_id', userId || 'default')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data
+  },
+
+  async createVisualStrategy(strategyData: any, userId?: string) {
+    const { data, error } = await supabase
+      .from('visual_strategies')
+      .insert([{
+        ...strategyData,
+        user_id: userId || 'default',
+        id: `strategy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Notifications
+  async getNotifications(userId?: string, limit: number = 50) {
+    const { data, error } = await supabase
+      .from('premium_notifications')
+      .select('*')
+      .eq('user_id', userId || 'default')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    return data
+  },
+
+  async createNotification(notification: any, userId?: string) {
+    const { data, error } = await supabase
+      .from('premium_notifications')
+      .insert([{
+        ...notification,
+        user_id: userId || 'default',
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Performance Tracking
+  async getComponentPerformanceMetrics() {
+    const { data, error } = await supabase
+      .from('component_performance')
+      .select('*')
+      .order('recorded_at', { ascending: false })
+      .limit(100)
+    
+    if (error) throw error
+    return data
+  },
+
+  async recordComponentPerformance(metrics: any) {
+    const { data, error } = await supabase
+      .from('component_performance')
+      .insert([{
+        ...metrics,
+        recorded_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Sortable Data Management
+  async getSortableConfiguration(configType: string, userId?: string) {
+    const { data, error } = await supabase
+      .from('sortable_configurations')
+      .select('*')
+      .eq('config_type', configType)
+      .eq('user_id', userId || 'default')
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async updateSortableConfiguration(configType: string, configuration: any, userId?: string) {
+    const { data, error } = await supabase
+      .from('sortable_configurations')
+      .upsert([{
+        config_type: configType,
+        user_id: userId || 'default',
+        configuration,
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Real-time Subscriptions
+  subscribeToPortfolioUpdates(userId: string, callback: (payload: any) => void) {
+    return supabase
+      .channel(`portfolio:${userId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'agent_portfolios',
+        filter: `agent_id=eq.${userId}`
+      }, callback)
+      .subscribe()
+  },
+
+  subscribeToAgentUpdates(agentId: string, callback: (payload: any) => void) {
+    return supabase
+      .channel(`agent:${agentId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'agents',
+        filter: `id=eq.${agentId}`
+      }, callback)
+      .subscribe()
+  },
+
+  subscribeToMarketData(symbol: string, callback: (payload: any) => void) {
+    return supabase
+      .channel(`market:${symbol}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'market_data_live',
+        filter: `symbol=eq.${symbol}`
+      }, callback)
+      .subscribe()
+  },
+
+  // Premium Data Aggregation
+  async getAggregatedPortfolioData(userId?: string, timeRange?: string) {
+    const { data, error } = await supabase
+      .rpc('get_aggregated_portfolio_data', {
+        p_user_id: userId || 'default',
+        p_time_range: timeRange || '24h'
+      })
+    
+    if (error) throw error
+    return data
+  },
+
+  async getAggregatedAgentPerformance(timeRange?: string) {
+    const { data, error } = await supabase
+      .rpc('get_aggregated_agent_performance', {
+        p_time_range: timeRange || '7d'
+      })
+    
+    if (error) throw error
+    return data
+  },
+
+  // Premium Feature Flags
+  async getFeatureFlags(userId?: string) {
+    const { data, error } = await supabase
+      .from('feature_flags')
+      .select('*')
+      .or(`user_id.eq.${userId || 'default'},user_id.is.null`)
+      .order('priority', { ascending: false })
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateFeatureFlag(flagName: string, enabled: boolean, userId?: string) {
+    const { data, error } = await supabase
+      .from('feature_flags')
+      .upsert([{
+        flag_name: flagName,
+        enabled,
+        user_id: userId || null,
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+}
+
 export default supabase

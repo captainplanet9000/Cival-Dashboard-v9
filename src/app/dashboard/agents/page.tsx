@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {   Bot,  Plus,  Settings,  MessageSquare,  Brain,  Network,  Cloud,  Zap,  Users,  Database,  Activity,  CheckCircle2,  AlertCircle,  Clock,  Trash2,  Edit,  Copy,  Play,  Pause,  RotateCcw,  Shield,  Code,  Globe,  Cpu,  HardDrive} from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { ExpertAgentsPanel } from '@/components/agent-trading/ExpertAgentsPanel';
+import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents';
+import { AgentOrchestration } from '@/components/premium-ui/agents/ai-agent-orchestration';
 import { useAgentData, useAgentThoughts } from '@/hooks/useAgentData';
 import { EnhancedTable } from '@/components/ui/enhanced-table';
 import { Badge } from '@/components/ui/badge';
@@ -484,7 +485,37 @@ export default function AgentsPage() {
         </TabsContent>
 
         <TabsContent value="expert-agents" className="mt-6">
-          <ExpertAgentsPanel />
+          <div className="space-y-6">
+            {/* Premium Expert Agents */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Premium Expert Agents</CardTitle>
+                <CardDescription>
+                  Advanced specialist agents with premium features and real-time coordination
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EnhancedExpertAgents />
+              </CardContent>
+            </Card>
+
+            {/* Agent Orchestration */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Agent Orchestration</CardTitle>
+                <CardDescription>
+                  Multi-agent coordination system with advanced management features
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AgentOrchestration
+                  maxAgents={20}
+                  autoScaling={true}
+                  loadBalancing={true}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="general-agents" className="mt-6">

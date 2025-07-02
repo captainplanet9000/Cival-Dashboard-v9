@@ -1,12 +1,12 @@
 /**
  * AI Agent Farm Management Page
- * Complete agent farm with paper trading, goals, and graduation system
+ * Premium enhanced expert agents with multi-agent coordination
  */
 
-import AgentFarmDashboard from '@/components/paper-trading/AgentFarmDashboard'
+import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
 
 export default function AgentsPage() {
-  return <AgentFarmDashboard />
+  return <EnhancedExpertAgents />
 }
 
 export const metadata = {

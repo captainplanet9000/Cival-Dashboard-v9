@@ -39,7 +39,7 @@ import { StrategySortable } from '../sortable/StrategySortable'
 import { AdvancedDataTable, createStatusColumn, createChangeColumn } from '../tables/advanced-data-table'
 import { AutoForm, StrategyConfigSchema } from '../forms/auto-form'
 import { TradingSymbolSelector } from '../expansions/trading-symbol-selector'
-import { ProgressWithValue } from '../expansions/progress-with-value'
+import { ProgressWithValue } from '../../expansions/progress-with-value'
 
 // Import enhanced clients
 import { enhancedBackendClient } from '@/lib/api/enhanced-backend-client'

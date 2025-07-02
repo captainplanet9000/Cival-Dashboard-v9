@@ -719,14 +719,12 @@ export class PremiumWebSocketClient {
 // ===== SINGLETON INSTANCE =====
 
 // TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
-// export const premiumWebSocketClient = new PremiumWebSocketClient()
+export const premiumWebSocketClient = new PremiumWebSocketClient()
 
 // ===== LEGACY COMPATIBILITY =====
 
-// TEMPORARILY DISABLED: Legacy export depends on disabled premiumWebSocketClient
-// export const websocketClient = premiumWebSocketClient
-// TEMPORARILY DISABLED: Default export depends on disabled premiumWebSocketClient
-// export default premiumWebSocketClient
+export const websocketClient = premiumWebSocketClient
+export default premiumWebSocketClient
 
 // ===== EXPORTS =====
 

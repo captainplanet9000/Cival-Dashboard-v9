@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import {
   Target, Users, Settings, Play, Pause, Trash2, Plus, 
   RefreshCw, TrendingUp, DollarSign, Activity, Brain,
-  BarChart3, Shield, Zap, Star, Bot, Coins, Calendar
+  BarChart3, Shield, Zap, Star, Bot, Coins, Calendar, Network
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
@@ -37,6 +37,9 @@ import RealAnalyticsDashboard from '@/components/analytics/RealAnalyticsDashboar
 
 // Import risk management
 import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
+
+// Import multi-chain farm coordination
+import MultiChainFarmCoordinator from '@/components/farms/MultiChainFarmCoordinator'
 
 interface Farm {
   id: string
@@ -349,7 +352,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
 
       {/* Comprehensive Farm Management Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 bg-emerald-50 gap-1">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-7 bg-emerald-50 gap-1">
           <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-100">
             <Target className="h-4 w-4 mr-1" />
             Overview
@@ -369,6 +372,10 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
           <TabsTrigger value="wallets" className="data-[state=active]:bg-emerald-100">
             <Coins className="h-4 w-4 mr-1" />
             Wallets
+          </TabsTrigger>
+          <TabsTrigger value="multichain" className="data-[state=active]:bg-emerald-100">
+            <Network className="h-4 w-4 mr-1" />
+            Multi-Chain
           </TabsTrigger>
           <TabsTrigger value="goals" className="data-[state=active]:bg-emerald-100">
             <Star className="h-4 w-4 mr-1" />
@@ -612,6 +619,11 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
         {/* Wallets Tab - Comprehensive Wallet Management */}
         <TabsContent value="wallets" className="space-y-4">
           <ComprehensiveWalletDashboard />
+        </TabsContent>
+
+        {/* Multi-Chain Tab - Cross-Chain Farm Coordination */}
+        <TabsContent value="multichain" className="space-y-4">
+          <MultiChainFarmCoordinator />
         </TabsContent>
 
         {/* Goals Tab - Farm Goal Management */}

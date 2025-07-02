@@ -1958,6 +1958,360 @@ class BackendApiClient {
     }
   }
 
+  // ==========================================
+  // PREMIUM COMPONENT API METHODS
+  // ==========================================
+
+  // Premium Trading Interface
+  async getAdvancedOrderBook(symbol: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/trading/advanced-orderbook/${symbol}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get advanced order book',
+        status: 0,
+      };
+    }
+  }
+
+  async createAdvancedOrder(orderData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/trading/advanced-orders`, {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create advanced order',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Portfolio Analytics
+  async getAdvancedPortfolioAnalytics(timeframe?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = timeframe ? `?timeframe=${timeframe}` : '';
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/advanced-analytics${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get advanced portfolio analytics',
+        status: 0,
+      };
+    }
+  }
+
+  async getPortfolioRiskMetrics(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/risk-metrics`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get portfolio risk metrics',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Charts Data
+  async getAdvancedChartData(symbol: string, timeframe: string, indicators?: string[]): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams({ symbol, timeframe });
+      if (indicators && indicators.length > 0) {
+        params.append('indicators', indicators.join(','));
+      }
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/charts/advanced-data?${params.toString()}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get advanced chart data',
+        status: 0,
+      };
+    }
+  }
+
+  async getTechnicalIndicators(symbol: string, indicators: string[]): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/charts/technical-indicators`, {
+        method: 'POST',
+        body: JSON.stringify({ symbol, indicators })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get technical indicators',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium AI Agent Orchestration
+  async getAgentOrchestrationStatus(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/orchestration/status`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent orchestration status',
+        status: 0,
+      };
+    }
+  }
+
+  async configureAgentOrchestration(config: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/orchestration/configure`, {
+        method: 'POST',
+        body: JSON.stringify(config)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to configure agent orchestration',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Risk Management
+  async getRiskManagementSuite(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/risk/management-suite`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get risk management suite',
+        status: 0,
+      };
+    }
+  }
+
+  async updateRiskLimits(riskLimits: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/risk/limits`, {
+        method: 'PUT',
+        body: JSON.stringify(riskLimits)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to update risk limits',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Strategy Builder
+  async getVisualStrategyBuilder(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/visual-builder`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get visual strategy builder',
+        status: 0,
+      };
+    }
+  }
+
+  async createVisualStrategy(strategyConfig: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/visual-create`, {
+        method: 'POST',
+        body: JSON.stringify(strategyConfig)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create visual strategy',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Notifications
+  async getNotificationSystem(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications/system`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get notification system',
+        status: 0,
+      };
+    }
+  }
+
+  async sendNotification(notification: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications/send`, {
+        method: 'POST',
+        body: JSON.stringify(notification)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to send notification',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Data Tables
+  async getAdvancedTableData(tableType: string, filters?: any): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams({ table_type: tableType });
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            params.append(key, String(value));
+          }
+        });
+      }
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/data/advanced-tables?${params.toString()}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get advanced table data',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Sortable Components Data
+  async getSortablePortfolioData(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/sortable-data`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get sortable portfolio data',
+        status: 0,
+      };
+    }
+  }
+
+  async updateSortableOrder(itemType: string, orderedIds: string[]): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/data/sortable-order`, {
+        method: 'PUT',
+        body: JSON.stringify({ item_type: itemType, ordered_ids: orderedIds })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to update sortable order',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Form Components
+  async validateFormData(formType: string, formData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/forms/validate`, {
+        method: 'POST',
+        body: JSON.stringify({ form_type: formType, form_data: formData })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to validate form data',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Real-time Updates
+  async subscribeToRealtimeUpdates(subscriptions: string[]): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/realtime/subscribe`, {
+        method: 'POST',
+        body: JSON.stringify({ subscriptions })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to subscribe to realtime updates',
+        status: 0,
+      };
+    }
+  }
+
+  async unsubscribeFromRealtimeUpdates(subscriptions: string[]): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/realtime/unsubscribe`, {
+        method: 'POST',
+        body: JSON.stringify({ subscriptions })
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to unsubscribe from realtime updates',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium Performance Monitoring
+  async getComponentPerformanceMetrics(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/performance/components`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get component performance metrics',
+        status: 0,
+      };
+    }
+  }
+
+  async reportComponentPerformance(metrics: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/performance/report`, {
+        method: 'POST',
+        body: JSON.stringify(metrics)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to report component performance',
+        status: 0,
+      };
+    }
+  }
+
+  // Premium WebSocket Management
+  async getWebSocketStatus(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/websocket/status`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get WebSocket status',
+        status: 0,
+      };
+    }
+  }
+
+  async initializeWebSocketConnection(config: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/websocket/initialize`, {
+        method: 'POST',
+        body: JSON.stringify(config)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to initialize WebSocket connection',
+        status: 0,
+      };
+    }
+  }
+
   // Generic HTTP methods for backward compatibility
   async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
     try {

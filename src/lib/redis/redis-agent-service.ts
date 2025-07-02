@@ -1,6 +1,7 @@
 'use client'
 
 import { EventEmitter } from 'events'
+import redisConfig, { cacheKeys, cacheTTL, wsEventTypes } from './redis-config'
 
 export interface AgentState {
   id: string

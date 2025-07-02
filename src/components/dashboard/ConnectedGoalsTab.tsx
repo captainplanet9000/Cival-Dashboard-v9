@@ -25,18 +25,21 @@ import {
 import {
   Target, TrendingUp, DollarSign, Activity, Trophy, 
   Plus, RefreshCw, CheckCircle2, Clock, Calendar,
-  History, BarChart3, Award, Filter
+  History, BarChart3, Award, Filter, Shield, Network, Wallet
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { toast } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, addDays, differenceInDays } from 'date-fns'
 
+// Import blockchain integration
+import { alchemyService } from '@/lib/blockchain/alchemy-service'
+
 interface Goal {
   id: string
   name: string
   description: string
-  type: 'profit' | 'winRate' | 'trades' | 'drawdown' | 'sharpe'
+  type: 'profit' | 'winRate' | 'trades' | 'drawdown' | 'sharpe' | 'blockchain'
   target: number
   current: number
   progress: number
@@ -46,6 +49,11 @@ interface Goal {
   createdAt: string
   completedAt?: string
   reward?: string
+  // Blockchain verification fields
+  blockchainVerified?: boolean
+  verificationTxHash?: string
+  chainId?: number
+  smartContractAddress?: string
 }
 
 interface ConnectedGoalsTabProps {
@@ -722,6 +730,95 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Blockchain Achievements */}
+      <Card className="border shadow-sm bg-gradient-to-r from-green-50 to-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-green-600" />
+            Blockchain-Verified Achievements
+            <Badge variant={alchemyService.connected ? 'default' : 'secondary'}>
+              {alchemyService.connected ? 'Live Verification' : 'Mock Mode'}
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            On-chain verification of trading milestones and achievements
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Sample blockchain achievements */}
+            <Card className="border-green-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">First Profit Milestone</div>
+                    <div className="text-xs text-muted-foreground">Verified on Ethereum Sepolia</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-xs">Verified</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Network className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">Multi-Chain Trader</div>
+                    <div className="text-xs text-muted-foreground">Active on {alchemyService.availableChains.length} chains</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span className="text-xs">Active</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-purple-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">Wallet Master</div>
+                    <div className="text-xs text-muted-foreground">Managing {goals.filter(g => g.type === 'blockchain').length} blockchain goals</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="w-2 h-2 rounded-full bg-purple-500" />
+                      <span className="text-xs">Tracking</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                Achievements are automatically verified on testnet when goals are completed
+              </span>
+              <Button size="sm" variant="outline" onClick={() => {
+                setNewGoal({ ...newGoal, type: 'blockchain' })
+                setShowCreateDialog(true)
+              }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Blockchain Goal
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
         </>
       )}
 
