@@ -1,16 +1,16 @@
 /**
- * Cival Dashboard V7 - Original Shadcn Tabs Layout
- * Dashboard with tabs: Dashboard, Trading, Agents, Farms, Goals, Vault, etc.
+ * Cival Dashboard V9 - Enhanced with Redis & Supabase Integration
+ * Features: Real-time data, live connections, enhanced UI
  */
 
 'use client'
 
 import React from 'react'
-import ModernDashboardV4 from '@/components/dashboard/_archived/ModernDashboardV4'
+import ModernDashboardV9 from '@/components/dashboard/ModernDashboardV9'
 
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic'
 
 export default function DashboardPage() {
-  return <ModernDashboardV4 />
+  return <ModernDashboardV9 />
 }
