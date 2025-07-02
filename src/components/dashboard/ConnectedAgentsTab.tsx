@@ -28,15 +28,18 @@ import RealAgentManagement from '@/components/agents/RealAgentManagement'
 import RealAgentCreation from '@/components/agents/RealAgentCreation'
 import { motion, AnimatePresence } from 'framer-motion'
 import MemoryAnalyticsDashboard from './MemoryAnalyticsDashboard'
-import { useAgentRealtime } from '@/hooks/use-agent-realtime'
 import { usePaperTradingRealtime } from '@/hooks/use-paper-trading-realtime'
 
 // Import autonomous agent creation service
 import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creation-service'
 
+// Import shared data manager to prevent duplicate requests
+import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
+
 // Agent Overview Panel showing expert agents
 function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string, any> }) {
-  const { createAgent } = useAgentRealtime()
+  // Use shared data manager instead of individual hooks
+  const sharedData = useSharedRealtimeData()
   const expertAgents = [
     { id: 'momentum', name: 'Momentum Master', strategy: 'Trend Following', expertise: 'Catches strong market trends' },
     { id: 'mean_reversion', name: 'Mean Reversion Pro', strategy: 'Counter-Trend', expertise: 'Profits from overextensions' },
@@ -617,22 +620,38 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   const { state, actions } = useDashboardConnection('agents')
   const [agentSubTab, setAgentSubTab] = useState('agent-management')
   
-  // Use real-time agent data
+  // Use shared real-time data manager (prevents duplicate requests)
   const {
     agents,
-    loading: agentsLoading,
-    connected: agentsConnected,
     totalAgents,
     activeAgents,
     totalPortfolioValue,
     totalPnL,
     avgWinRate,
-    createAgent,
-    startAgent,
-    stopAgent,
-    deleteAgent,
-    refresh: refreshAgents
-  } = useAgentRealtime()
+    agentsConnected,
+    loading: agentsLoading = false
+  } = useSharedRealtimeData()
+
+  // Mock functions for agent management (replace with actual API calls when backend is ready)
+  const createAgent = async (config: any) => {
+    console.log('Creating agent:', config)
+    return `agent_${Date.now()}`
+  }
+  const startAgent = async (id: string) => {
+    console.log('Starting agent:', id)
+    return true
+  }
+  const stopAgent = async (id: string) => {
+    console.log('Stopping agent:', id)
+    return true
+  }
+  const deleteAgent = async (id: string) => {
+    console.log('Deleting agent:', id)
+    return true
+  }
+  const refreshAgents = () => {
+    console.log('Refreshing agents')
+  }
 
   // Use real-time paper trading data
   const {

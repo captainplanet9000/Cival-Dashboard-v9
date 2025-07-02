@@ -54,9 +54,8 @@ import { useAgentData } from '@/hooks/useAgentData'
 import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
 import { Switch } from '@/components/ui/switch'
 
-// Import Redis & Supabase real-time hooks
-import { useRedisRealtime } from '@/hooks/use-redis-realtime'
-import { useSupabaseRealtime } from '@/hooks/use-supabase-realtime'
+// Import shared data manager to prevent duplicate requests
+import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
 // Import new ShadCN migration components
 import TradingCharts from './TradingCharts'
@@ -218,9 +217,8 @@ export function ModernDashboardV4() {
   // Use live agent data
   const { agents, loading: agentsLoading } = useAgentData()
   
-  // Redis & Supabase real-time connections
-  const { data: redisData, connected: redisConnected } = useRedisRealtime(['portfolio', 'agents', 'trades'])
-  const { data: supabaseData, connected: supabaseConnected } = useSupabaseRealtime('trading')
+  // Use shared real-time data manager (prevents duplicate requests)
+  const { redisConnected, supabaseConnected } = useSharedRealtimeData()
   
   // Calculate live metrics from agent data
   const [metrics, setMetrics] = useState<DashboardMetrics>({

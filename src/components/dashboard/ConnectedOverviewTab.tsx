@@ -28,11 +28,8 @@ import { useAgentData } from '@/hooks/useAgentData'
 import { useAGUI } from '@/lib/hooks/useAGUI'
 import { subscribe, emit } from '@/lib/ag-ui-protocol-v2'
 
-// Import autonomous system hooks
-import { useAgentRealtime } from '@/hooks/use-agent-realtime'
-import { useFarmRealtime } from '@/hooks/use-farm-realtime'
-import { useRedisRealtime } from '@/hooks/use-redis-realtime'
-import { useSupabaseRealtime } from '@/hooks/use-supabase-realtime'
+// Import shared data manager to prevent duplicate requests
+import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
 interface ConnectedOverviewTabProps {
   className?: string
@@ -50,27 +47,22 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
   // AG-UI Protocol integration for real-time updates
   const { sendEvent, events, isConnected } = useAGUI()
   
-  // Autonomous system real-time data
+  // Use shared real-time data manager (prevents duplicate requests)
   const {
     totalAgents,
     activeAgents,
     totalPortfolioValue,
     totalPnL,
     avgWinRate,
-    connected: autonomousConnected
-  } = useAgentRealtime()
-  
-  const {
     totalFarms,
     activeFarms,
-    totalValue: farmValue,
-    avgPerformance: farmPerformance,
-    connected: farmsConnected
-  } = useFarmRealtime()
-  
-  // Backend connection status
-  const { connected: redisConnected } = useRedisRealtime(['portfolio', 'agents', 'trades'])
-  const { connected: supabaseConnected } = useSupabaseRealtime('trading')
+    farmTotalValue,
+    redisConnected,
+    supabaseConnected,
+    agentsConnected,
+    farmsConnected,
+    lastUpdate
+  } = useSharedRealtimeData()
   
   // Listen for AG-UI events
   useEffect(() => {
@@ -254,7 +246,7 @@ export function ConnectedOverviewTab({ className }: ConnectedOverviewTabProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-xl font-bold">${(totalPortfolioValue + farmValue).toLocaleString()}</p>
+                <p className="text-xl font-bold">${(totalPortfolioValue + farmTotalValue).toLocaleString()}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
