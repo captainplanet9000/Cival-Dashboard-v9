@@ -273,8 +273,6 @@ export function ModernDashboardV4() {
       component: <OverviewTab 
         metrics={metrics} 
         chartData={chartData} 
-        redisData={redisData}
-        supabaseData={supabaseData}
         redisConnected={redisConnected}
         supabaseConnected={supabaseConnected}
       />
@@ -453,11 +451,9 @@ export function ModernDashboardV4() {
 }
 
 // Enhanced Overview Tab with Real Trading Functionality
-function OverviewTab({ metrics, chartData, redisData, supabaseData, redisConnected, supabaseConnected }: { 
+function OverviewTab({ metrics, chartData, redisConnected, supabaseConnected }: { 
   metrics: DashboardMetrics; 
   chartData: ChartDataPoint[];
-  redisData?: any;
-  supabaseData?: any;
   redisConnected: boolean;
   supabaseConnected: boolean;
 }) {
@@ -497,7 +493,7 @@ function OverviewTab({ metrics, chartData, redisData, supabaseData, redisConnect
                 </div>
               </div>
               <Badge variant={redisConnected ? 'default' : 'secondary'}>
-                {redisData ? Object.keys(redisData).length : 0} keys
+                {redisConnected ? 'Active' : 'Offline'}
               </Badge>
             </div>
             
@@ -513,30 +509,26 @@ function OverviewTab({ metrics, chartData, redisData, supabaseData, redisConnect
                 </div>
               </div>
               <Badge variant={supabaseConnected ? 'default' : 'secondary'}>
-                {supabaseData ? Object.keys(supabaseData).length : 0} tables
+                {supabaseConnected ? 'Active' : 'Offline'}
               </Badge>
             </div>
           </div>
           
           {/* Live Data Preview */}
-          {(redisData || supabaseData) && (
+          {(redisConnected || supabaseConnected) && (
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Live Data Stream</h4>
+              <h4 className="font-medium mb-3">Live Connection Status</h4>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {redisData && (
-                  <div className="bg-gray-50 p-3 rounded">
-                    <h5 className="text-sm font-medium text-red-700 mb-2">Redis Data</h5>
-                    <pre className="text-xs text-gray-600 overflow-auto max-h-32">
-                      {JSON.stringify(redisData, null, 2)}
-                    </pre>
+                {redisConnected && (
+                  <div className="bg-red-50 p-3 rounded border border-red-200">
+                    <h5 className="text-sm font-medium text-red-700 mb-2">Redis Cache Active</h5>
+                    <p className="text-xs text-red-600">Real-time data streaming and caching enabled</p>
                   </div>
                 )}
-                {supabaseData && (
-                  <div className="bg-gray-50 p-3 rounded">
-                    <h5 className="text-sm font-medium text-green-700 mb-2">Supabase Data</h5>
-                    <pre className="text-xs text-gray-600 overflow-auto max-h-32">
-                      {JSON.stringify(supabaseData, null, 2)}
-                    </pre>
+                {supabaseConnected && (
+                  <div className="bg-green-50 p-3 rounded border border-green-200">
+                    <h5 className="text-sm font-medium text-green-700 mb-2">Supabase Database Active</h5>
+                    <p className="text-xs text-green-600">Real-time database synchronization enabled</p>
                   </div>
                 )}
               </div>
