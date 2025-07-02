@@ -407,20 +407,69 @@ export function AgentCreationWizard({
                   <Slider
                     value={[config.initialCapital]}
                     onValueChange={([value]) => updateConfig({ initialCapital: value })}
-                    max={100000}
-                    min={1000}
-                    step={1000}
+                    max={500000}
+                    min={10000}
+                    step={5000}
                     className="w-full"
                   />
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>$1,000</span>
+                    <span>$10,000</span>
                     <span className="font-medium">${config.initialCapital.toLocaleString()}</span>
-                    <span>$100,000</span>
+                    <span>$500,000</span>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Virtual capital for paper trading simulation
+                  Capital for autonomous trading agent with real-time execution
                 </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Memory & Learning</Label>
+                    <p className="text-xs text-muted-foreground">Enable adaptive learning</p>
+                  </div>
+                  <Switch
+                    checked={config.enableMemorySystem}
+                    onCheckedChange={(checked) => updateConfig({ 
+                      enableMemorySystem: checked,
+                      enableLearning: checked 
+                    })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Autonomous Trading</Label>
+                    <p className="text-xs text-muted-foreground">Fully automated execution</p>
+                  </div>
+                  <Switch
+                    checked={config.autonomousTrading}
+                    onCheckedChange={(checked) => updateConfig({ autonomousTrading: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Vault Integration</Label>
+                    <p className="text-xs text-muted-foreground">Secure backup storage</p>
+                  </div>
+                  <Switch
+                    checked={config.enableVaultIntegration}
+                    onCheckedChange={(checked) => updateConfig({ enableVaultIntegration: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>MCP Tools</Label>
+                    <p className="text-xs text-muted-foreground">Advanced agent capabilities</p>
+                  </div>
+                  <Switch
+                    checked={config.enableMCPTools}
+                    onCheckedChange={(checked) => updateConfig({ enableMCPTools: checked })}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -470,6 +519,13 @@ export function AgentCreationWizard({
                 <p className="text-sm text-muted-foreground mt-1">
                   {AGENT_TYPES.find(t => t.id === config.type)?.description}
                 </p>
+                {config.type === 'multi_strategy' && (
+                  <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded">
+                    <p className="text-xs text-emerald-700 font-medium">
+                      🚀 This will create a complete multi-strategy farm with coordinated agents, cross-strategy signals, and shared learning!
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

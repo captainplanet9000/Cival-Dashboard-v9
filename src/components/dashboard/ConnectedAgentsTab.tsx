@@ -28,9 +28,12 @@ import RealAgentManagement from '@/components/agents/RealAgentManagement'
 import RealAgentCreation from '@/components/agents/RealAgentCreation'
 import { motion, AnimatePresence } from 'framer-motion'
 import MemoryAnalyticsDashboard from './MemoryAnalyticsDashboard'
+import { useAgentRealtime } from '@/hooks/use-agent-realtime'
+import { usePaperTradingRealtime } from '@/hooks/use-paper-trading-realtime'
 
 // Agent Overview Panel showing expert agents
 function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string, any> }) {
+  const { createAgent } = useAgentRealtime()
   const expertAgents = [
     { id: 'momentum', name: 'Momentum Master', strategy: 'Trend Following', expertise: 'Catches strong market trends' },
     { id: 'mean_reversion', name: 'Mean Reversion Pro', strategy: 'Counter-Trend', expertise: 'Profits from overextensions' },
@@ -93,20 +96,29 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
                   <Button 
                     className="w-full" 
                     size="sm"
-                    onClick={() => {
-                      const agent = paperTradingEngine.createAgent({
+                    onClick={async () => {
+                      const agentId = await createAgent({
                         name: expert.name,
                         strategy: expert.id,
-                        capital: 10000,
-                        config: {
+                        initialCapital: 10000,
+                        riskLimits: {
+                          maxPositionSize: 5,
+                          maxDailyLoss: 500,
+                          stopLossEnabled: true,
+                          takeProfitEnabled: true
+                        },
+                        parameters: {
                           riskPerTrade: 0.02,
                           maxPositions: 5,
                           stopLoss: 0.05,
                           takeProfit: 0.1
                         }
                       })
-                      paperTradingEngine.startAgent(agent.id)
-                      toast.success(`${expert.name} deployed successfully`)
+                      if (agentId) {
+                        toast.success(`${expert.name} deployed successfully`)
+                      } else {
+                        toast.error(`Failed to deploy ${expert.name}`)
+                      }
                     }}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -353,11 +365,54 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   const { state, actions } = useDashboardConnection('agents')
   const [agentSubTab, setAgentSubTab] = useState('agent-management')
   
+  // Use real-time agent data
+  const {
+    agents,
+    loading: agentsLoading,
+    connected: agentsConnected,
+    totalAgents,
+    activeAgents,
+    totalPortfolioValue,
+    totalPnL,
+    avgWinRate,
+    createAgent,
+    startAgent,
+    stopAgent,
+    deleteAgent,
+    refresh: refreshAgents
+  } = useAgentRealtime()
+
+  // Use real-time paper trading data
+  const {
+    data: paperTradingData,
+    loading: paperTradingLoading,
+    connected: paperTradingConnected,
+    engineRunning,
+    startEngine,
+    stopEngine
+  } = usePaperTradingRealtime()
+  
+  // Convert agent data to the format expected by legacy components
+  const agentPerformanceMap = new Map(
+    agents.map(agent => [
+      agent.agentId,
+      {
+        agentId: agent.agentId,
+        name: agent.name,
+        status: agent.status,
+        portfolioValue: agent.portfolioValue,
+        pnl: agent.totalPnL,
+        winRate: agent.winRate,
+        tradeCount: agent.totalTrades
+      }
+    ])
+  )
+
   const agentSubTabs = [
     { id: 'agent-management', label: 'Management', component: <RealAgentManagement /> },
     { id: 'agent-creation', label: 'Create Agent', component: <RealAgentCreation /> },
-    { id: 'expert-agents', label: 'Expert Agents', component: <AgentOverviewPanel agentPerformance={state.agentPerformance} /> },
-    { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel agentPerformance={state.agentPerformance} /> },
+    { id: 'expert-agents', label: 'Expert Agents', component: <AgentOverviewPanel agentPerformance={agentPerformanceMap} /> },
+    { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel agentPerformance={agentPerformanceMap} /> },
     { id: 'memory-analytics', label: 'Memory Analytics', component: <MemoryAnalyticsDashboard /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> }
   ]
@@ -372,14 +427,14 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               Agent Management System
             </CardTitle>
             <CardDescription>
-              {state.activeAgents} active agents • {state.totalAgents} total • ${state.portfolioValue.toLocaleString()} managed
+              {activeAgents} active agents • {totalAgents} total • ${totalPortfolioValue.toLocaleString()} managed
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
-              {state.isConnected ? 'Connected' : 'Disconnected'}
+              {agentsConnected ? 'Connected' : 'Disconnected'}
             </Badge>
-            <Button size="sm" variant="ghost" onClick={actions.refresh}>
+            <Button size="sm" variant="ghost" onClick={refreshAgents}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -393,8 +448,8 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Total P&L</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${state.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${state.totalPnL.toFixed(2)}
+              <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${totalPnL.toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -404,7 +459,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Avg Win Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{state.winRate.toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{avgWinRate.toFixed(1)}%</div>
             </CardContent>
           </Card>
           
@@ -413,7 +468,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Total Trades</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{state.executedOrders.length}</div>
+              <div className="text-2xl font-bold">{paperTradingData?.recentTrades.length || 0}</div>
             </CardContent>
           </Card>
           
@@ -422,7 +477,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Active Positions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{state.openPositions.length}</div>
+              <div className="text-2xl font-bold">{agents.reduce((sum, agent) => sum + agent.openPositions, 0)}</div>
             </CardContent>
           </Card>
         </div>

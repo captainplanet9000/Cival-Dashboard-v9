@@ -2022,6 +2022,7 @@ class BackendApiClient {
 
 // Export singleton instance
 export const backendApi = new BackendApiClient();
+export const backendClient = backendApi; // Alias for compatibility
 
 // Export class for testing
 export { BackendApiClient };
