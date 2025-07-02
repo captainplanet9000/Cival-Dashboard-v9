@@ -47,6 +47,13 @@ Cival Dashboard v8 represents the pinnacle of AI trading platform development, f
 
 ## 🚀 Features
 
+### Backend Integration (NEW)
+- **FastAPI Backend**: Python-based high-performance API server
+- **AI Services**: OpenAI/Claude integration for intelligent trading
+- **Real-time WebSocket**: Live data streaming and updates
+- **Database Support**: PostgreSQL with Redis caching
+- **Mock Mode**: Development without external dependencies
+
 ### Core Trading Features
 - **Paper Trading Engine** - Risk-free strategy testing with realistic market simulation
 - **Real-time Market Data** - Live price feeds with WebSocket connections
@@ -121,12 +128,25 @@ npm run redis:start
 npm run redis:logs
 ```
 
-### 4. Development Mode
+### 4. Start Backend (NEW)
 ```bash
-# Start the dashboard in development mode
+# Option 1: Start both frontend and backend together
+npm run dev:full
+
+# Option 2: Start backend separately
+npm run backend:start
+
+# Check if backend is healthy
+npm run backend:check
+```
+
+### 5. Development Mode
+```bash
+# Start the dashboard in development mode (frontend only)
 npm run dev
 
-# Dashboard will be available at http://localhost:5000
+# Dashboard will be available at http://localhost:3000
+# Backend API will be at http://localhost:8000
 ```
 
 ## 🐳 Docker Deployment

@@ -4,8 +4,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import OpenAI from 'openai'
 
 // Mock AI recommendations for development - using unified LLM service approach
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || 'dummy-key-for-development'
+})
 
 export async function POST(request: NextRequest) {
   try {

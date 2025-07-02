@@ -383,11 +383,11 @@ export default function AgentsPage() {
                       actions: agent.id
                     }))}
                     columns={[
-                      { key: 'name', label: 'Agent Name', sortable: true },
-                      { key: 'type', label: 'Type', sortable: true },
+                      { key: 'name', title: 'Agent Name', sortable: true },
+                      { key: 'type', title: 'Type', sortable: true },
                       { 
                         key: 'status', 
-                        label: 'Status', 
+                        title: 'Status', 
                         sortable: true,
                         render: (value) => (
                           <Badge variant={value === 'Active' ? 'default' : 'secondary'}>
@@ -395,14 +395,14 @@ export default function AgentsPage() {
                           </Badge>
                         )
                       },
-                      { key: 'totalValue', label: 'Portfolio Value', sortable: true },
-                      { key: 'pnl', label: 'P&L', sortable: true },
-                      { key: 'decisions', label: 'Decisions', sortable: true },
-                      { key: 'winRate', label: 'Win Rate', sortable: true },
-                      { key: 'positions', label: 'Positions', sortable: true },
+                      { key: 'totalValue', title: 'Portfolio Value', sortable: true },
+                      { key: 'pnl', title: 'P&L', sortable: true },
+                      { key: 'decisions', title: 'Decisions', sortable: true },
+                      { key: 'winRate', title: 'Win Rate', sortable: true },
+                      { key: 'positions', title: 'Positions', sortable: true },
                       { 
                         key: 'lastThought', 
-                        label: 'Latest Thought',
+                        title: 'Latest Thought',
                         render: (value) => (
                           <div className="max-w-xs truncate text-sm text-muted-foreground">
                             {value}
@@ -411,7 +411,7 @@ export default function AgentsPage() {
                       },
                       {
                         key: 'actions',
-                        label: 'Actions',
+                        title: 'Actions',
                         render: (value) => (
                           <div className="flex gap-2">
                             <Button 

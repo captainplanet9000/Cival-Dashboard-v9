@@ -149,16 +149,13 @@ export default function VaultPage() {
       setError(null);
 
       // Load all vaults
-      const vaultsResponse = await backendApi.fetchWithTimeout(
-        `${backendApi.getBackendUrl()}/api/v1/vaults`
-      );
+      const vaultsResponse = await backendApi.get('/api/v1/vaults');
       
-      if (vaultsResponse.ok) {
-        const vaultsData = await vaultsResponse.json();
-        setVaults(vaultsData.vaults || []);
+      if (!vaultsResponse.error && vaultsResponse.data) {
+        setVaults(vaultsResponse.data.vaults || []);
         
         // Find master vault (hierarchy_level = 0)
-        const master = vaultsData.vaults?.find((v: VaultData) => v.hierarchy_level === 0);
+        const master = vaultsResponse.data.vaults?.find((v: VaultData) => v.hierarchy_level === 0);
         setMasterVault(master || null);
       } else {
         // Use fallback mock data
@@ -168,38 +165,29 @@ export default function VaultPage() {
       }
 
       // Load recent transactions
-      const txResponse = await backendApi.fetchWithTimeout(
-        `${backendApi.getBackendUrl()}/api/v1/vaults/transactions?limit=10`
-      );
+      const txResponse = await backendApi.get('/api/v1/vaults/transactions?limit=10');
       
-      if (txResponse.ok) {
-        const txData = await txResponse.json();
-        setTransactions(txData.transactions || []);
+      if (!txResponse.error && txResponse.data) {
+        setTransactions(txResponse.data.transactions || []);
       } else {
         setTransactions(generateMockTransactions());
       }
 
       // Load allocations  
-      const allocResponse = await backendApi.fetchWithTimeout(
-        `${backendApi.getBackendUrl()}/api/v1/vaults/allocations`
-      );
+      const allocResponse = await backendApi.get('/api/v1/vaults/allocations');
       
-      if (allocResponse.ok) {
-        const allocData = await allocResponse.json();
-        setAllocations(allocData.allocations || []);
+      if (!allocResponse.error && allocResponse.data) {
+        setAllocations(allocResponse.data.allocations || []);
       } else {
         setAllocations([]);
       }
 
       // Load performance data
-      const perfResponse = await backendApi.fetchWithTimeout(
-        `${backendApi.getBackendUrl()}/api/v1/vaults/performance`
-      );
+      const perfResponse = await backendApi.get('/api/v1/vaults/performance');
       
-      if (perfResponse.ok) {
-        const perfData = await perfResponse.json();
+      if (!perfResponse.error && perfResponse.data) {
         const perfMap: Record<string, VaultPerformance> = {};
-        perfData.performance?.forEach((p: VaultPerformance) => {
+        perfResponse.data.performance?.forEach((p: VaultPerformance) => {
           perfMap[p.vault_id] = p;
         });
         setPerformance(perfMap);
@@ -286,21 +274,13 @@ export default function VaultPage() {
 
   const createVault = async (vaultData: any) => {
     try {
-      const response = await backendApi.fetchWithTimeout(
-        `${backendApi.getBackendUrl()}/api/v1/vaults`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(vaultData)
-        }
-      );
+      const response = await backendApi.post('/api/v1/vaults', vaultData);
       
-      if (response.ok) {
-        const newVault = await response.json();
-        setVaults([...vaults, newVault]);
+      if (!response.error && response.data) {
+        setVaults([...vaults, response.data]);
         toast.success('Vault created successfully');
       } else {
-        toast.error('Failed to create vault');
+        toast.error(response.error || 'Failed to create vault');
       }
     } catch (error) {
       console.error('Error creating vault:', error);
@@ -310,25 +290,18 @@ export default function VaultPage() {
 
   const transferFunds = async (fromVaultId: string, toVaultId: string, amount: number) => {
     try {
-      const response = await backendApi.fetchWithTimeout(
-        `${backendApi.getBackendUrl()}/api/v1/vaults/transfer`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from_vault_id: fromVaultId,
-            to_vault_id: toVaultId,
-            asset_symbol: 'USD',
-            amount: amount
-          })
-        }
-      );
+      const response = await backendApi.post('/api/v1/vaults/transfer', {
+        from_vault_id: fromVaultId,
+        to_vault_id: toVaultId,
+        asset_symbol: 'USD',
+        amount: amount
+      });
       
-      if (response.ok) {
+      if (!response.error && response.data) {
         toast.success('Transfer completed successfully');
         loadVaultData(); // Reload data
       } else {
-        toast.error('Transfer failed');
+        toast.error(response.error || 'Transfer failed');
       }
     } catch (error) {
       console.error('Error transferring funds:', error);

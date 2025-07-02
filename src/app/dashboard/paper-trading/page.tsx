@@ -82,7 +82,7 @@ export default function PaperTradingDashboard() {
   }, [])
 
   const initializeMemorySystem = () => {
-    const agentPersonalities = memoryService.simpleMemory.getAllAgents()
+    const agentPersonalities = memoryService.getAllAgents()
     if (agentPersonalities.length > 0 && !selectedAgent) {
       setSelectedAgent(agentPersonalities[0].agentId)
     }
@@ -278,7 +278,7 @@ export default function PaperTradingDashboard() {
                 <CardTitle>Execute Trade</CardTitle>
                 {selectedAgent && (
                   <p className="text-sm text-muted-foreground">
-                    AI Agent: {memoryService.simpleMemory.getAgentPersonality(selectedAgent)?.name} is learning from trades
+                    AI Agent: {memoryService.getAgentPersonality(selectedAgent)?.name} is learning from trades
                   </p>
                 )}
               </CardHeader>
@@ -290,7 +290,7 @@ export default function PaperTradingDashboard() {
                       <SelectValue placeholder="Select AI Agent" />
                     </SelectTrigger>
                     <SelectContent>
-                      {memoryService.simpleMemory.getAllAgents().map(agent => (
+                      {memoryService.getAllAgents().map(agent => (
                         <SelectItem key={agent.agentId} value={agent.agentId}>
                           {agent.name}
                         </SelectItem>
@@ -590,7 +590,7 @@ export default function PaperTradingDashboard() {
                   {memoryUpdates.map((update, index) => (
                     <div key={index} className="p-2 text-xs border rounded">
                       <div className="flex justify-between items-center">
-                        <Badge size="sm" variant="outline">
+                        <Badge variant="outline" className="text-xs">
                           {update.type.replace('_', ' ')}
                         </Badge>
                         <span className="text-muted-foreground">
@@ -598,7 +598,7 @@ export default function PaperTradingDashboard() {
                         </span>
                       </div>
                       <div className="mt-1 text-muted-foreground">
-                        Agent: {memoryService.simpleMemory.getAgentPersonality(update.agentId)?.name || update.agentId}
+                        Agent: {memoryService.getAgentPersonality(update.agentId)?.name || update.agentId}
                       </div>
                     </div>
                   ))}

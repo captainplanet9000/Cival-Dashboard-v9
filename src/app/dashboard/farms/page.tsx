@@ -95,6 +95,7 @@ export default function FarmsPage() {
   const [metrics, setMetrics] = useState<FarmMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
+  const [showCreateFarm, setShowCreateFarm] = useState(false);
 
   // Load farms data on component mount and set up real-time updates
   useEffect(() => {
@@ -191,17 +192,14 @@ export default function FarmsPage() {
           const farmId = `farm_${strategyType}`;
           
           // Convert TradingAgents to FarmAgents
-          agentsMap[farmId] = agents.map(agent => ({
+          agentsMap[farmId] = agents.map((agent, index) => ({
             agent_id: agent.id,
+            farm_id: farmId,
             agent_name: agent.name,
+            allocation_percentage: 100 / agents.length,
+            role: 'trader',
             status: agent.status,
-            strategy_type: agent.strategy.type,
-            allocated_capital: agent.portfolio.totalValue,
-            current_pnl: agent.portfolio.totalValue - 10000,
-            win_rate: agent.performance.winRate || 0,
-            total_trades: agent.performance.totalTrades || 0,
-            last_trade_at: agent.performance.lastTradeTime?.toISOString() || new Date().toISOString(),
-            created_at: new Date().toISOString()
+            assigned_at: new Date().toISOString()
           }));
 
           // Calculate farm performance
@@ -211,12 +209,12 @@ export default function FarmsPage() {
           
           performanceMap[farmId] = {
             farm_id: farmId,
-            total_pnl: totalPnL,
-            total_pnl_percentage: (totalPnL / totalInitial) * 100,
-            daily_pnl: totalPnL * 0.1, // Mock daily P&L as 10% of total
+            total_profit_loss: totalPnL,
+            daily_profit_loss: totalPnL * 0.1, // Mock daily P&L as 10% of total
             win_rate: agents.reduce((sum, agent) => sum + (agent.performance.winRate || 0), 0) / agents.length,
             total_trades: agents.reduce((sum, agent) => sum + (agent.performance.totalTrades || 0), 0),
-            active_positions: agents.reduce((sum, agent) => sum + agent.portfolio.positions.length, 0),
+            successful_trades: Math.floor(agents.reduce((sum, agent) => sum + (agent.performance.totalTrades || 0), 0) * agents.reduce((sum, agent) => sum + (agent.performance.winRate || 0), 0) / agents.length),
+            average_trade_duration: 3600,
             sharpe_ratio: 1.2 + Math.random() * 0.8, // Mock Sharpe ratio
             max_drawdown: Math.random() * 0.15, // Mock max drawdown
             last_updated: new Date().toISOString()
@@ -229,12 +227,12 @@ export default function FarmsPage() {
         // Use fallback mock data when no agents exist
         console.log('No agents found, using mock data');
         const mockFarms = generateMockFarms();
-        const mockAgents = generateMockAgents();
-        const mockPerformance = generateMockPerformance();
+        const mockAgents = generateMockAgents('farm-1');
+        const mockPerformance = generateMockPerformance('farm-1');
         
         setFarms(mockFarms);
-        setAgents(mockAgents);
-        setPerformance(mockPerformance);
+        setAgents({ 'farm-1': mockAgents });
+        setPerformance({ 'farm-1': mockPerformance });
       }
     } catch (error) {
       console.error('Error loading farms data:', error);
@@ -242,12 +240,12 @@ export default function FarmsPage() {
       
       // Use mock data on error
       const mockFarms = generateMockFarms();
-      const mockAgents = generateMockAgents();
-      const mockPerformance = generateMockPerformance();
+      const mockAgents = generateMockAgents('farm-1');
+      const mockPerformance = generateMockPerformance('farm-1');
       
       setFarms(mockFarms);
-      setAgents(mockAgents);
-      setPerformance(mockPerformance);
+      setAgents({ 'farm-1': mockAgents });
+      setPerformance({ 'farm-1': mockPerformance });
     } finally {
       setIsLoading(false);
     }

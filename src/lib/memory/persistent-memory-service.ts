@@ -768,6 +768,21 @@ class PersistentMemoryService {
     return result
   }
 
+  // Get all agent personalities
+  getAllAgents() {
+    return this.simpleMemory.getAllAgents()
+  }
+
+  // Get specific agent personality
+  getAgentPersonality(agentId: string) {
+    return this.simpleMemory.getAgentPersonality(agentId)
+  }
+
+  // Get agent memories with filters
+  getAgentMemories(agentId: string, type?: string, limit?: number) {
+    return this.simpleMemory.retrieveMemories(agentId, type as any, undefined, limit)
+  }
+
   // Real-time memory statistics
   getMemorySystemStats() {
     const agents = this.simpleMemory.getAllAgents()

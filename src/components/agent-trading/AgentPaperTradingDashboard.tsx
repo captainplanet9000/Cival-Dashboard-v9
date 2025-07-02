@@ -107,12 +107,25 @@ export function AgentPaperTradingDashboard({ agentId, agentName }: AgentPaperTra
         portfolioManager.getPortfolioSummary().catch(() => null)
       ]);
 
+      // Convert risk alerts to AgentPaperTradingAlert format
+      const convertedAlerts: AgentPaperTradingAlert[] = (portfolioSummary?.riskMetrics?.alerts || []).map((alert: any, index: number) => ({
+        id: `alert-${Date.now()}-${index}`,
+        agent_id: agentId,
+        account_id: accounts[0]?.account_id || '',
+        alert_type: alert.type === 'risk' ? 'risk_limit' : 'performance',
+        severity: alert.severity || 'medium',
+        title: alert.type || 'Alert',
+        message: alert.message || '',
+        triggered_at: new Date(),
+        acknowledged: false
+      }));
+
       setData({
         account: accounts[0] || null,
         positions,
         orders,
         performance,
-        alerts: portfolioSummary?.riskMetrics?.alerts || [],
+        alerts: convertedAlerts,
         decisions: [], // Would load from decision history
         portfolioHealth: portfolioSummary ? await portfolioManager.getPortfolioHealth() : null,
         riskMetrics: portfolioSummary?.riskMetrics || null
