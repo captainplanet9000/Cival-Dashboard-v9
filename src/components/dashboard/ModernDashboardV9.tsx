@@ -24,17 +24,21 @@ import {
 
 // Import dashboard components
 import OverviewTab from '@/components/dashboard/tabs/OverviewTab'
-import AgentsTab from '@/components/dashboard/tabs/AgentsTab'
 import TradingTab from '@/components/dashboard/tabs/TradingTab'
 import PortfolioTab from '@/components/dashboard/tabs/PortfolioTab'
 import AnalyticsTab from '@/components/dashboard/tabs/AnalyticsTab'
 import RiskTab from '@/components/dashboard/tabs/RiskTab'
 import SettingsTab from '@/components/dashboard/tabs/SettingsTab'
 
-// Import advanced components with Redis/Supabase
-import AdvancedFarmsManager from '@/components/farms/AdvancedFarmsManager'
-import AdvancedGoalsManager from '@/components/goals/AdvancedGoalsManager'
+// Import enhanced autonomous agent components
+import { ConnectedAgentsTab } from '@/components/dashboard/ConnectedAgentsTab'
+import { ConnectedFarmsTab } from '@/components/dashboard/ConnectedFarmsTab'
+import { ConnectedGoalsTab } from '@/components/dashboard/ConnectedGoalsTab'
+import { AutonomousOverviewTab } from '@/components/dashboard/AutonomousOverviewTab'
 import FileManagerDashboard from '@/components/files/FileManagerDashboard'
+
+// Import comprehensive wallet system
+import { ComprehensiveWalletDashboard } from '@/components/wallet/ComprehensiveWalletDashboard'
 
 // Import real-time services
 import { useRedisRealtime } from '@/hooks/use-redis-realtime'
@@ -84,15 +88,43 @@ const ConnectedOverviewTab: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Real-time Data Connections
+            <Bot className="h-5 w-5" />
+            Autonomous Trading System Status
           </CardTitle>
           <CardDescription>
-            Live connections to Redis cache and Supabase database
+            Complete autonomous agent creation system with memory, learning & farm coordination
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Bot className="h-4 w-4 text-emerald-600" />
+                <span className="font-medium text-emerald-800">Agent Memory System</span>
+              </div>
+              <p className="text-sm text-emerald-700">Learning, adaptation & pattern recognition</p>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-blue-800">Multi-Strategy Farms</span>
+              </div>
+              <p className="text-sm text-blue-700">45-agent coordinated trading with cross-strategy signals</p>
+            </div>
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-purple-600" />
+                <span className="font-medium text-purple-800">Autonomous Trading</span>
+              </div>
+              <p className="text-sm text-purple-700">High-frequency execution with real-time decisions</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <ConnectionStatus 
+              service="Supabase" 
+              connected={supabaseConnected} 
+              data={supabaseData}
+            />
             <ConnectionStatus 
               service="Redis" 
               connected={redisConnected} 
@@ -150,31 +182,7 @@ const ConnectedOverviewTab: React.FC = () => {
   )
 }
 
-// Enhanced Agents Tab with real-time agent data
-const ConnectedAgentsTab: React.FC = () => {
-  const { data: agentData, connected } = useRedisRealtime(['agents', 'agent_performance'])
-  
-  return (
-    <div className="space-y-4">
-      {connected && agentData && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wifi className="h-4 w-4 text-green-500" />
-              Live Agent Data
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="outline">
-              {Object.keys(agentData).length} live connections
-            </Badge>
-          </CardContent>
-        </Card>
-      )}
-      <AgentsTab />
-    </div>
-  )
-}
+// Use the enhanced autonomous components directly
 
 export default function ModernDashboardV9() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -192,30 +200,37 @@ export default function ModernDashboardV9() {
       id: 'overview', 
       label: 'Overview', 
       icon: <Activity className="h-4 w-4" />, 
-      component: <ConnectedOverviewTab />,
-      description: 'Real-time dashboard with Redis & Supabase'
+      component: <AutonomousOverviewTab />,
+      description: 'Complete autonomous trading system status & capabilities'
     },
     { 
       id: 'agents', 
       label: 'Agents', 
       icon: <Bot className="h-4 w-4" />, 
       component: <ConnectedAgentsTab />, 
-      badge: portfolioConnected ? '4' : '0',
-      description: 'AI agents with live performance data'
+      badge: portfolioConnected ? '45' : '0',
+      description: 'Autonomous AI agents with memory, learning & real-time execution'
     },
     { 
       id: 'farms', 
       label: 'Farms', 
       icon: <Zap className="h-4 w-4" />, 
-      component: <AdvancedFarmsManager />,
-      description: 'Agent farms with Redis coordination'
+      component: <ConnectedFarmsTab />,
+      description: 'Multi-strategy farms with cross-agent coordination & shared learning'
     },
     { 
       id: 'goals', 
       label: 'Goals', 
       icon: <Target className="h-4 w-4" />, 
-      component: <AdvancedGoalsManager />,
-      description: 'Smart goals with Supabase persistence'
+      component: <ConnectedGoalsTab />,
+      description: 'Intelligent goal tracking with AI optimization & progress insights'
+    },
+    { 
+      id: 'wallet', 
+      label: 'Wallet', 
+      icon: <Database className="h-4 w-4" />, 
+      component: <ComprehensiveWalletDashboard />,
+      description: 'Multi-chain wallets, vault banking & master wallet coordination'
     },
     { 
       id: 'trading', 
