@@ -8,7 +8,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { agentLifecycleManager, type LiveAgent } from '@/lib/agents/agent-lifecycle-manager'
-import { redisAgentService } from '@/lib/redis/redis-agent-service'
 import { strategyService } from '@/lib/supabase/strategy-service'
 import { createClient } from '@supabase/supabase-js'
 
@@ -124,19 +123,8 @@ class RealtimeDataManager {
       this.fetchAllData()
     })
 
-    // Listen to Redis events for faster updates
-    redisAgentService.on('thought', () => {
-      // Don't fetch all data for thoughts, just notify subscribers
-      this.notifySubscribers()
-    })
-
-    redisAgentService.on('decision', () => {
-      this.notifySubscribers()
-    })
-
-    redisAgentService.on('performance', () => {
-      this.fetchAllData()
-    })
+    // Real-time updates will be handled via API polling for now
+    // TODO: Replace with WebSocket or Server-Sent Events for real-time updates
   }
 
   private stopPolling() {
@@ -188,7 +176,7 @@ class RealtimeDataManager {
       const connectionStatus = {
         agents: true,
         farms: true,
-        redis: redisAgentService.isConnected,
+        redis: false, // Redis temporarily disabled
         supabase: !!supabase
       }
 
@@ -197,7 +185,7 @@ class RealtimeDataManager {
         agents,
         farms: mockFarms,
         redisData: { 
-          connected: redisAgentService.isConnected,
+          connected: false, // Redis temporarily disabled
           cacheSize: agents.length * 10 + Math.floor(Math.random() * 100)
         },
         supabaseData: { 

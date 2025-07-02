@@ -50,13 +50,12 @@ export interface AgentPerformance {
   lastUpdated: string
 }
 
-class RedisAgentService extends EventEmitter {
+class RedisAgentServiceMock extends EventEmitter {
   private connected = false
   private mockMode = true
 
   constructor() {
     super()
-    console.log('🔴 Redis: Running in browser-safe mock mode')
     // Simulate connection after a short delay
     setTimeout(() => {
       this.connected = true
@@ -210,7 +209,7 @@ class RedisAgentService extends EventEmitter {
 }
 
 // Export singleton instance
-export const redisAgentService = new RedisAgentService()
+export const redisAgentService = new RedisAgentServiceMock()
 
 // Export types
-export type { RedisAgentService }
+export type { RedisAgentServiceMock as RedisAgentService }

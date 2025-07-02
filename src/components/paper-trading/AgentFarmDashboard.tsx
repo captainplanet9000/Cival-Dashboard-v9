@@ -42,7 +42,6 @@ import {
   Network,
   MessageSquare,
   Cpu,
-  TrendingUpDown,
   TestTube,
   Rocket,
   Radio,
@@ -462,7 +461,7 @@ export function AgentFarmDashboard() {
                   <span>Coordination</span>
                 </TabsTrigger>
                 <TabsTrigger value="trading" className="flex items-center space-x-2">
-                  <TrendingUpDown className="h-4 w-4" />
+                  <Activity className="h-4 w-4" />
                   <span>Trading Loop</span>
                 </TabsTrigger>
                 <TabsTrigger value="system" className="flex items-center space-x-2">

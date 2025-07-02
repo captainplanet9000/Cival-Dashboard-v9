@@ -21,7 +21,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, subDays, subHours } from 'date-fns'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
-import { redisAgentService } from '@/lib/redis/redis-agent-service'
 import AgentMemoryViewer from './AgentMemoryViewer'
 
 interface MemoryEntry {
@@ -93,8 +92,27 @@ export function MemoryAnalyticsDashboard() {
       
       // Generate agent memory profiles from real data
       const profiles = await Promise.all(agents.map(async (agent) => {
-        const memory = await redisAgentService.getMemory(agent.id)
-        const performance = await redisAgentService.getPerformance(agent.id)
+        // Get memory from API
+        let memory = null
+        try {
+          const memoryResponse = await fetch(`/api/agents/${agent.id}/memory`)
+          if (memoryResponse.ok) {
+            memory = await memoryResponse.json()
+          }
+        } catch (error) {
+          console.log('Memory data not available')
+        }
+        
+        // Get performance from API
+        let performance = null
+        try {
+          const perfResponse = await fetch(`/api/agents/${agent.id}/performance`)
+          if (perfResponse.ok) {
+            performance = await perfResponse.json()
+          }
+        } catch (error) {
+          console.log('Performance data not available')
+        }
         
         return {
           agentId: agent.id,
@@ -128,9 +146,27 @@ export function MemoryAnalyticsDashboard() {
       const allMemories: MemoryEntry[] = []
       
       for (const agent of agents) {
-        // Get thoughts as memories
-        const thoughts = await redisAgentService.getRecentThoughts(agent.id, 50)
-        const decisions = await redisAgentService.getRecentDecisions(agent.id, 50)
+        // Get thoughts as memories from API
+        let thoughts = []
+        try {
+          const thoughtsResponse = await fetch(`/api/agents/${agent.id}/thoughts`)
+          if (thoughtsResponse.ok) {
+            thoughts = await thoughtsResponse.json()
+          }
+        } catch (error) {
+          console.log('Thoughts data not available')
+        }
+        
+        // Get decisions from API
+        let decisions = []
+        try {
+          const decisionsResponse = await fetch(`/api/agents/${agent.id}/decisions`)
+          if (decisionsResponse.ok) {
+            decisions = await decisionsResponse.json()
+          }
+        } catch (error) {
+          console.log('Decisions data not available')
+        }
         
         // Convert thoughts to memory entries
         thoughts.forEach((thought, index) => {

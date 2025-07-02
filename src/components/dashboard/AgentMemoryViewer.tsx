@@ -23,7 +23,6 @@ import {
   Download
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { redisAgentService } from '@/lib/redis/redis-agent-service'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
 
 interface PatternMemory {
@@ -118,8 +117,16 @@ export function AgentMemoryViewer({ agentId, className }: AgentMemoryViewerProps
     try {
       setLoading(true)
       
-      // Get memory from Redis
-      const memory = await redisAgentService.getMemory(agentId)
+      // Get memory from API
+      let memory = null
+      try {
+        const response = await fetch(`/api/agents/${agentId}/memory`)
+        if (response.ok) {
+          memory = await response.json()
+        }
+      } catch (error) {
+        console.log('Memory API not available')
+      }
       
       if (memory) {
         setMemoryData(memory)

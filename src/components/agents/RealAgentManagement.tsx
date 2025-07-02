@@ -57,7 +57,6 @@ import {
   Transaction
 } from '@/lib/trading/real-paper-trading-engine'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
-import { redisAgentService } from '@/lib/redis/redis-agent-service'
 
 interface RealAgentManagementProps {
   className?: string

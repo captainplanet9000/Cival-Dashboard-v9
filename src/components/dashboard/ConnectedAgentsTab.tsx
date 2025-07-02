@@ -29,7 +29,6 @@ import RealAgentCreation from '@/components/agents/RealAgentCreation'
 import { motion, AnimatePresence } from 'framer-motion'
 import MemoryAnalyticsDashboard from './MemoryAnalyticsDashboard'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
-import { redisAgentService } from '@/lib/redis/redis-agent-service'
 import { strategyService } from '@/lib/supabase/strategy-service'
 import { usePaperTradingRealtime } from '@/hooks/use-paper-trading-realtime'
 
@@ -41,6 +40,10 @@ import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
 // Import new autonomous expert agents panel
 import { AutonomousExpertAgentsPanel } from './AutonomousExpertAgentsPanel'
+
+// Import blockchain wallet integration
+import BlockchainAgentWallet from '@/components/agents/BlockchainAgentWallet'
+import BlockchainWalletsPanel from '@/components/agents/BlockchainWalletsPanel'
 
 // Agent Overview Panel showing expert agents
 function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string, any> }) {
@@ -172,12 +175,20 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
         try {
           performance = await strategyService.getStrategyPerformance(agent.strategy_type, timeframe)
         } catch (error) {
-          console.log(`No performance data for agent ${agent.name}, using Redis data`)
-          performance = await redisAgentService.getPerformance(agent.id)
+          console.log(`No performance data for agent ${agent.name}, using mock data`)
+          performance = null
         }
         
-        // Get real-time state from Redis
-        const state = await redisAgentService.getAgentState(agent.id)
+        // Get real-time state from API
+        let state = null
+        try {
+          const response = await fetch(`/api/agents/${agent.id}/state`)
+          if (response.ok) {
+            state = await response.json()
+          }
+        } catch (error) {
+          console.log('Agent state not available, using mock data')
+        }
         
         // Combine data sources
         const combinedData = {
@@ -837,6 +848,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   const agentSubTabs = [
     { id: 'agent-management', label: 'Management', component: <RealAgentManagement /> },
     { id: 'agent-creation', label: 'Create Agent', component: <RealAgentCreation /> },
+    { id: 'blockchain-wallets', label: 'Blockchain Wallets', component: <BlockchainWalletsPanel /> },
     { id: 'expert-strategies', label: 'Expert Strategies', component: <AutonomousExpertAgentsPanel /> },
     { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel agentPerformance={agentPerformanceMap} /> },
     { id: 'memory-analytics', label: 'Memory Analytics', component: <MemoryAnalyticsDashboard /> },
@@ -910,7 +922,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
         
         {/* Sub-tabs */}
         <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
             {agentSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
