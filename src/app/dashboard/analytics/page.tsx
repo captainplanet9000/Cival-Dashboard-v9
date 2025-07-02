@@ -8,10 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {   BarChart3,   TrendingUp,   TrendingDown,   Activity,   Target,   AlertTriangle,   Zap,  RefreshCw,  Settings,  Download,  Maximize2,  LineChart,  PieChart,  Calendar,  Filter} from 'lucide-react';
-import { PortfolioPerformanceChart } from '@/components/charts/portfolio-performance-chart';
-import { CandlestickChart } from '@/components/charts/candlestick-chart';
-import { StrategyComparisonChart } from '@/components/charts/strategy-comparison-chart';
-import { BaseChart } from '@/components/charts/base-chart';
+import { 
+  PremiumTradingChart, 
+  PortfolioPerformanceChart,
+  AssetAllocationChart,
+  PnLChart 
+} from '@/components/premium-ui/charts/premium-trading-charts';
+import { AdvancedPortfolioAnalytics } from '@/components/premium-ui/portfolio/advanced-portfolio-analytics';
+import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table';
 import { visualizationClient } from '@/lib/api/visualization-client';
 import { toast } from 'react-hot-toast';
 import { formatPrice, formatPercentage } from "@/lib/utils";
@@ -480,7 +484,12 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading chart...</div>}>
-                <StrategyComparisonChart />
+                <AdvancedPortfolioAnalytics
+                  showAdvancedMetrics={true}
+                  showCorrelationMatrix={true}
+                  enableOptimization={true}
+                  timeHorizon="1M"
+                />
               </Suspense>
             </CardContent>
           </Card>
