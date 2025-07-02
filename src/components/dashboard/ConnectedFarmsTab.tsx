@@ -316,7 +316,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
         <div>
           <h2 className="text-2xl font-bold">Advanced Trading Farms</h2>
           <p className="text-muted-foreground">
-            Real-time multi-agent coordination with Supabase/Redis backend • ${totalValue.toLocaleString()} managed
+            Real-time multi-agent coordination with Supabase/Redis backend • ${(totalValue || 0).toLocaleString()} managed
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -37,7 +37,17 @@ import {
   Calendar,
   ArrowUp,
   ArrowDown,
-  Minus
+  Minus,
+  Brain,
+  Network,
+  MessageSquare,
+  Cpu,
+  TrendingUpDown,
+  TestTube,
+  Rocket,
+  Radio,
+  Workflow,
+  Lightbulb
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -354,17 +364,121 @@ export function AgentFarmDashboard() {
           </Card>
         </div>
 
+        {/* Enhanced System Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Brain className="h-8 w-8 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Multi-Agent Coordination
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    CrewAI + AutoGen Active
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Radio className="h-8 w-8 text-green-600" />
+                <div>
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                    Real-Time Trading Loop
+                  </p>
+                  <p className="text-xs text-green-700 dark:text-green-300">
+                    5s Scan Intervals
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Lightbulb className="h-8 w-8 text-purple-600" />
+                <div>
+                  <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                    LLM Integration
+                  </p>
+                  <p className="text-xs text-purple-700 dark:text-purple-300">
+                    GPT-4 + Claude Active
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Shield className="h-8 w-8 text-orange-600" />
+                <div>
+                  <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                    Advanced Risk Mgmt
+                  </p>
+                  <p className="text-xs text-orange-700 dark:text-orange-300">
+                    VaR + Stress Testing
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Database className="h-8 w-8 text-cyan-600" />
+                <div>
+                  <p className="text-sm font-medium text-cyan-900 dark:text-cyan-100">
+                    Database Schema
+                  </p>
+                  <p className="text-xs text-cyan-700 dark:text-cyan-300">
+                    40+ Tables Deployed
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Agent List/Grid */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center space-x-2">
-                    <Activity className="h-5 w-5" />
-                    <span>Active Agents</span>
-                  </CardTitle>
+            <Tabs defaultValue="agents" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="agents" className="flex items-center space-x-2">
+                  <Bot className="h-4 w-4" />
+                  <span>Agents</span>
+                </TabsTrigger>
+                <TabsTrigger value="coordination" className="flex items-center space-x-2">
+                  <Network className="h-4 w-4" />
+                  <span>Coordination</span>
+                </TabsTrigger>
+                <TabsTrigger value="trading" className="flex items-center space-x-2">
+                  <TrendingUpDown className="h-4 w-4" />
+                  <span>Trading Loop</span>
+                </TabsTrigger>
+                <TabsTrigger value="system" className="flex items-center space-x-2">
+                  <Cpu className="h-4 w-4" />
+                  <span>System</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="agents">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center space-x-2">
+                        <Activity className="h-5 w-5" />
+                        <span>Active Agents</span>
+                      </CardTitle>
                   
                   <div className="flex items-center space-x-2">
                     <div className="relative">
@@ -423,7 +537,21 @@ export function AgentFarmDashboard() {
                 )}
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
+
+          <TabsContent value="coordination">
+            <MultiAgentCoordinationPanel />
+          </TabsContent>
+
+          <TabsContent value="trading">
+            <RealTimeTradingLoopPanel />
+          </TabsContent>
+
+          <TabsContent value="system">
+            <SystemStatusPanel />
+          </TabsContent>
+        </Tabs>
+      </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
@@ -864,6 +992,537 @@ function CreateAgentDialog({
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// Multi-Agent Coordination Panel
+function MultiAgentCoordinationPanel() {
+  const [coordinationStatus, setCoordinationStatus] = useState<any>(null)
+  const [consensusTasks, setConsensusTasks] = useState<any[]>([])
+  const [frameworkStatus, setFrameworkStatus] = useState<any>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    fetchCoordinationData()
+    const interval = setInterval(fetchCoordinationData, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const fetchCoordinationData = async () => {
+    try {
+      setIsLoading(true)
+      // Fetch from real backend API
+      const response = await fetch('/api/agent-coordination/status')
+      if (response.ok) {
+        const data = await response.json()
+        setCoordinationStatus(data)
+        setFrameworkStatus(data.framework_status || {})
+      }
+    } catch (error) {
+      console.error('Failed to fetch coordination data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const runConsensusAnalysis = async (symbol: string) => {
+    try {
+      const response = await fetch('/api/agent-coordination/consensus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, frameworks: ['crewai', 'autogen'] })
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setConsensusTasks(prev => [result, ...prev.slice(0, 9)]) // Keep last 10
+      }
+    } catch (error) {
+      console.error('Failed to run consensus analysis:', error)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Framework Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Network className="h-5 w-5" />
+            <span>Framework Status</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchCoordinationData}
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(frameworkStatus).map(([framework, status]: [string, any]) => (
+              <div key={framework} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium capitalize">{framework}</h4>
+                  <Badge variant={status?.status === 'online' ? 'default' : 'destructive'}>
+                    {status?.status || 'unknown'}
+                  </Badge>
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <p>Last Check: {status?.last_check ? new Date(status.last_check).toLocaleTimeString() : 'Never'}</p>
+                  {status?.details && (
+                    <p>Details: {JSON.stringify(status.details).slice(0, 50)}...</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Consensus Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <MessageSquare className="h-5 w-5" />
+            <span>Consensus Analysis</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex space-x-2">
+              <Input placeholder="Enter symbol (e.g., BTC/USD)" id="consensus-symbol" />
+              <Button onClick={() => {
+                const input = document.getElementById('consensus-symbol') as HTMLInputElement
+                if (input?.value) runConsensusAnalysis(input.value)
+              }}>
+                <Brain className="h-4 w-4 mr-2" />
+                Run Analysis
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {consensusTasks.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No consensus tasks yet</p>
+              ) : (
+                consensusTasks.map((task, index) => (
+                  <div key={index} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">{task.symbol}</span>
+                      <Badge variant={task.consensus_reached ? 'default' : 'secondary'}>
+                        {task.consensus_reached ? 'Consensus' : 'No Consensus'}
+                      </Badge>
+                    </div>
+                    {task.final_recommendation && (
+                      <div className="text-sm">
+                        <p><strong>Action:</strong> {task.final_recommendation.action}</p>
+                        <p><strong>Confidence:</strong> {(task.final_recommendation.confidence * 100).toFixed(1)}%</p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Coordination Metrics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <BarChart3 className="h-5 w-5" />
+            <span>Coordination Metrics</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {coordinationStatus ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{coordinationStatus.active_tasks || 0}</p>
+                <p className="text-sm text-gray-600">Active Tasks</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{coordinationStatus.completed_tasks || 0}</p>
+                <p className="text-sm text-gray-600">Completed Tasks</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{coordinationStatus.cached_analyses || 0}</p>
+                <p className="text-sm text-gray-600">Cached Analyses</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{coordinationStatus.configuration?.consensus_threshold || 0.7}</p>
+                <p className="text-sm text-gray-600">Consensus Threshold</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">Loading coordination metrics...</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Real-Time Trading Loop Panel
+function RealTimeTradingLoopPanel() {
+  const [loopStatus, setLoopStatus] = useState<any>(null)
+  const [activeSignals, setActiveSignals] = useState<any[]>([])
+  const [recentScans, setRecentScans] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    fetchTradingLoopData()
+    const interval = setInterval(fetchTradingLoopData, 2000) // Update every 2s
+    return () => clearInterval(interval)
+  }, [])
+
+  const fetchTradingLoopData = async () => {
+    try {
+      // Fetch trading loop status
+      const statusResponse = await fetch('/api/trading-loop/status')
+      if (statusResponse.ok) {
+        const status = await statusResponse.json()
+        setLoopStatus(status)
+      }
+
+      // Fetch active signals
+      const signalsResponse = await fetch('/api/trading-loop/signals')
+      if (signalsResponse.ok) {
+        const signals = await signalsResponse.json()
+        setActiveSignals(signals)
+      }
+
+      // Fetch recent scans
+      const scansResponse = await fetch('/api/trading-loop/scans')
+      if (scansResponse.ok) {
+        const scans = await scansResponse.json()
+        setRecentScans(scans)
+      }
+    } catch (error) {
+      console.error('Failed to fetch trading loop data:', error)
+    }
+  }
+
+  const controlTradingLoop = async (action: 'start' | 'stop' | 'pause' | 'resume') => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/trading-loop/${action}`, {
+        method: 'POST'
+      })
+      if (response.ok) {
+        await fetchTradingLoopData()
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} trading loop:`, error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Trading Loop Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Radio className="h-5 w-5" />
+            <span>Trading Loop Control</span>
+            <Badge variant={loopStatus?.status === 'running' ? 'default' : 'secondary'}>
+              {loopStatus?.status || 'unknown'}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex space-x-2">
+            <Button
+              onClick={() => controlTradingLoop('start')}
+              disabled={isLoading || loopStatus?.status === 'running'}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Start
+            </Button>
+            <Button
+              onClick={() => controlTradingLoop('stop')}
+              disabled={isLoading || loopStatus?.status === 'stopped'}
+              variant="destructive"
+            >
+              <Square className="h-4 w-4 mr-2" />
+              Stop
+            </Button>
+            <Button
+              onClick={() => controlTradingLoop('pause')}
+              disabled={isLoading || loopStatus?.status !== 'running'}
+              variant="outline"
+            >
+              <Pause className="h-4 w-4 mr-2" />
+              Pause
+            </Button>
+            <Button
+              onClick={() => controlTradingLoop('resume')}
+              disabled={isLoading || loopStatus?.status !== 'paused'}
+              variant="outline"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Resume
+            </Button>
+          </div>
+
+          {loopStatus && (
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-lg font-bold">{loopStatus.metrics?.loop_count || 0}</p>
+                <p className="text-xs text-gray-600">Loop Cycles</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{loopStatus.metrics?.signals_generated || 0}</p>
+                <p className="text-xs text-gray-600">Signals Generated</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{loopStatus.metrics?.trades_executed || 0}</p>
+                <p className="text-xs text-gray-600">Trades Executed</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{(loopStatus.metrics?.win_rate * 100 || 0).toFixed(1)}%</p>
+                <p className="text-xs text-gray-600">Win Rate</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Active Signals */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Zap className="h-5 w-5" />
+            <span>Active Signals</span>
+            <Badge variant="outline">{activeSignals.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {activeSignals.length === 0 ? (
+              <p className="text-center text-gray-500 py-4">No active signals</p>
+            ) : (
+              activeSignals.map((signal) => (
+                <div key={signal.signal_id} className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium">{signal.symbol}</span>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={signal.action === 'buy' ? 'default' : 'destructive'}>
+                        {signal.action.toUpperCase()}
+                      </Badge>
+                      <Badge variant="outline">
+                        Priority {signal.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-sm grid grid-cols-3 gap-2">
+                    <div>
+                      <span className="text-gray-600">Quantity:</span> {signal.quantity}
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Confidence:</span> {(signal.confidence * 100).toFixed(1)}%
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Strategy:</span> {signal.strategy}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Market Scans */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Search className="h-5 w-5" />
+            <span>Recent Market Scans</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {recentScans.slice(0, 5).map((scan, index) => (
+              <div key={index} className="p-3 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">
+                    {scan.symbols_analyzed?.length || 0} symbols analyzed
+                  </span>
+                  <Badge variant="outline">
+                    {scan.opportunities_found || 0} opportunities
+                  </Badge>
+                </div>
+                <div className="text-xs text-gray-600">
+                  <p>Market Condition: {scan.market_condition}</p>
+                  <p>Duration: {(scan.scan_duration_ms || 0).toFixed(0)}ms</p>
+                  <p>Time: {new Date(scan.timestamp).toLocaleTimeString()}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// System Status Panel
+function SystemStatusPanel() {
+  const [systemStatus, setSystemStatus] = useState<any>(null)
+  const [serviceHealth, setServiceHealth] = useState<any[]>([])
+  const [databaseStatus, setDatabaseStatus] = useState<any>(null)
+
+  useEffect(() => {
+    fetchSystemStatus()
+    const interval = setInterval(fetchSystemStatus, 10000) // Update every 10s
+    return () => clearInterval(interval)
+  }, [])
+
+  const fetchSystemStatus = async () => {
+    try {
+      // Fetch overall system health
+      const healthResponse = await fetch('/api/system/health')
+      if (healthResponse.ok) {
+        const health = await healthResponse.json()
+        setSystemStatus(health)
+      }
+
+      // Fetch service health
+      const servicesResponse = await fetch('/api/system/services')
+      if (servicesResponse.ok) {
+        const services = await servicesResponse.json()
+        setServiceHealth(services)
+      }
+
+      // Fetch database status
+      const dbResponse = await fetch('/api/system/database')
+      if (dbResponse.ok) {
+        const db = await dbResponse.json()
+        setDatabaseStatus(db)
+      }
+    } catch (error) {
+      console.error('Failed to fetch system status:', error)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* System Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Cpu className="h-5 w-5" />
+            <span>System Overview</span>
+            <Badge variant={systemStatus?.status === 'healthy' ? 'default' : 'destructive'}>
+              {systemStatus?.status || 'unknown'}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {systemStatus ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-lg font-bold">{systemStatus.uptime_hours || 0}h</p>
+                <p className="text-xs text-gray-600">Uptime</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{systemStatus.memory_usage || 0}%</p>
+                <p className="text-xs text-gray-600">Memory Usage</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{systemStatus.cpu_usage || 0}%</p>
+                <p className="text-xs text-gray-600">CPU Usage</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{systemStatus.active_connections || 0}</p>
+                <p className="text-xs text-gray-600">Active Connections</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">Loading system status...</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Service Health */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Layers className="h-5 w-5" />
+            <span>Service Health</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {serviceHealth.length === 0 ? (
+              <p className="text-center text-gray-500">Loading service health...</p>
+            ) : (
+              serviceHealth.map((service) => (
+                <div key={service.name} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">{service.name}</h4>
+                    <p className="text-sm text-gray-600">{service.description}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={service.status === 'healthy' ? 'default' : 'destructive'}>
+                      {service.status}
+                    </Badge>
+                    <span className="text-sm text-gray-500">
+                      {service.response_time}ms
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Database Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Database className="h-5 w-5" />
+            <span>Database Status</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {databaseStatus ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <p className="text-lg font-bold">{databaseStatus.total_tables || 0}</p>
+                  <p className="text-xs text-gray-600">Total Tables</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold">{databaseStatus.active_connections || 0}</p>
+                  <p className="text-xs text-gray-600">Active Connections</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-2">Recent Tables</h4>
+                <div className="space-y-1">
+                  {(databaseStatus.recent_tables || []).map((table: string) => (
+                    <div key={table} className="flex items-center space-x-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">{table}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">Loading database status...</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

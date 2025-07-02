@@ -56,14 +56,18 @@ import {
   Order,
   Transaction
 } from '@/lib/trading/real-paper-trading-engine'
+import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
+import { redisAgentService } from '@/lib/redis/redis-agent-service'
 
 interface RealAgentManagementProps {
   className?: string
 }
 
+type AgentWithSource = TradingAgent & { source: string }
+
 export function RealAgentManagement({ className }: RealAgentManagementProps) {
-  const [agents, setAgents] = useState<TradingAgent[]>([])
-  const [selectedAgent, setSelectedAgent] = useState<TradingAgent | null>(null)
+  const [agents, setAgents] = useState<AgentWithSource[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<AgentWithSource | null>(null)
   const [marketPrices, setMarketPrices] = useState<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(false)
 
@@ -78,7 +82,8 @@ export function RealAgentManagement({ className }: RealAgentManagementProps) {
 
     // Listen for engine events
     const handleAgentCreated = (agent: TradingAgent) => {
-      setAgents(prev => [...prev, agent])
+      const agentWithSource: AgentWithSource = { ...agent, source: 'paper' }
+      setAgents(prev => [...prev, agentWithSource])
     }
 
     const handlePricesUpdated = (prices: any[]) => {
@@ -96,9 +101,20 @@ export function RealAgentManagement({ className }: RealAgentManagementProps) {
       loadAgents() // Refresh agents when orders are filled
     }
 
+    // Handle lifecycle manager events
+    const handleLifecycleAgentEvent = () => {
+      loadAgents() // Refresh agents when lifecycle events occur
+    }
+
     paperTradingEngine.on('agentCreated', handleAgentCreated)
     paperTradingEngine.on('pricesUpdated', handlePricesUpdated)
     paperTradingEngine.on('orderFilled', handleOrderFilled)
+    
+    // Listen to lifecycle manager events
+    agentLifecycleManager.on('agentCreated', handleLifecycleAgentEvent)
+    agentLifecycleManager.on('agentStarted', handleLifecycleAgentEvent)
+    agentLifecycleManager.on('agentStopped', handleLifecycleAgentEvent)
+    agentLifecycleManager.on('agentDeleted', handleLifecycleAgentEvent)
 
     // Update agents every 5 seconds
     const interval = setInterval(loadAgents, 5000)
@@ -107,26 +123,140 @@ export function RealAgentManagement({ className }: RealAgentManagementProps) {
       paperTradingEngine.off('agentCreated', handleAgentCreated)
       paperTradingEngine.off('pricesUpdated', handlePricesUpdated)
       paperTradingEngine.off('orderFilled', handleOrderFilled)
+      
+      // Remove lifecycle manager listeners
+      agentLifecycleManager.off('agentCreated', handleLifecycleAgentEvent)
+      agentLifecycleManager.off('agentStarted', handleLifecycleAgentEvent)
+      agentLifecycleManager.off('agentStopped', handleLifecycleAgentEvent)
+      agentLifecycleManager.off('agentDeleted', handleLifecycleAgentEvent)
+      
       clearInterval(interval)
     }
   }, [])
 
-  const loadAgents = () => {
-    const allAgents = paperTradingEngine.getAllAgents()
-    setAgents(allAgents)
+  const loadAgents = async () => {
+    try {
+      // Load agents from both sources
+      const paperAgents = paperTradingEngine.getAllAgents()
+      const lifecycleAgents = await agentLifecycleManager.getAllAgents()
+      
+      // Convert lifecycle agents to TradingAgent format for display
+      const convertedLifecycleAgents = lifecycleAgents.map(agent => ({
+        id: agent.id,
+        name: agent.name,
+        status: agent.status as TradingAgent['status'],
+        strategy: agent.strategy_type,
+        strategyParams: {},
+        portfolio: {
+          cash: agent.current_capital,
+          totalValue: agent.current_capital,
+          positions: agent.realTimeState?.currentPositions || [],
+          unrealizedPnL: agent.realTimeState?.totalPnL || 0,
+          realizedPnL: 0
+        },
+        performance: {
+          totalTrades: agent.performance?.totalTrades || 0,
+          winningTrades: agent.performance?.winningTrades || 0,
+          losingTrades: agent.performance?.losingTrades || 0,
+          totalPnL: agent.realTimeState?.totalPnL || (agent.current_capital - agent.initial_capital),
+          winRate: agent.realTimeState?.winRate || 0,
+          sharpeRatio: agent.performance?.sharpeRatio || 0,
+          maxDrawdown: agent.performance?.maxDrawdown || 0,
+          averageWin: agent.performance?.avgWinAmount || 0,
+          averageLoss: agent.performance?.avgLossAmount || 0
+        },
+        riskManagement: {
+          maxPositionSize: 1000,
+          stopLossPercentage: 0.02,
+          takeProfitPercentage: 0.05,
+          maxDailyLoss: 500,
+          maxOpenPositions: 3
+        },
+        riskLimits: {
+          maxPositionSize: 1000,
+          maxDailyLoss: 500,
+          maxDrawdown: 0.15,
+          maxLeverage: 1
+        },
+        createdAt: new Date(agent.created_at),
+        lastActive: new Date(agent.updated_at),
+        isActive: agent.status === 'active',
+        executionCount: agent.realTimeState?.currentPositions?.length || 0,
+        lastDecision: agent.recentDecisions?.[0] || null,
+        currentPositions: agent.realTimeState?.currentPositions || [],
+        pendingOrders: agent.realTimeState?.pendingOrders || [],
+        // Add agent source identifier
+        source: 'lifecycle'
+      })) as unknown as AgentWithSource[]
+      
+      // Mark paper trading agents
+      const markedPaperAgents = paperAgents.map(agent => ({
+        ...agent,
+        source: 'paper'
+      })) as unknown as AgentWithSource[]
+      
+      // Combine agents (avoid duplicates by checking IDs)
+      const allAgents: AgentWithSource[] = [...markedPaperAgents]
+      
+      // Add lifecycle agents that aren't already in paper trading
+      convertedLifecycleAgents.forEach(agent => {
+        if (!allAgents.find(a => a.id === agent.id)) {
+          allAgents.push(agent)
+        }
+      })
+      
+      console.log(`📊 Loaded ${allAgents.length} agents (${paperAgents.length} paper, ${convertedLifecycleAgents.length} lifecycle)`)
+      setAgents(allAgents)
+      
+    } catch (error) {
+      console.error('Error loading agents:', error)
+      // Fallback to just paper trading agents
+      const paperAgents = paperTradingEngine.getAllAgents()
+      const agentsWithSource = paperAgents.map(agent => ({ ...agent, source: 'paper' })) as unknown as AgentWithSource[]
+      setAgents(agentsWithSource)
+    }
   }
 
-  const handleAgentAction = (agentId: string, action: 'start' | 'pause' | 'stop') => {
-    const agent = paperTradingEngine.getAgent(agentId)
-    if (!agent) return
-
-    // Update agent status
-    agent.status = action === 'start' ? 'active' : action === 'pause' ? 'paused' : 'stopped'
-    agent.lastActive = new Date()
-    
-    setAgents(prev => prev.map(a => a.id === agentId ? agent : a))
-    
-    console.log(`🎮 Agent ${agent.name} ${action}ed`)
+  const handleAgentAction = async (agentId: string, action: 'start' | 'pause' | 'stop') => {
+    try {
+      // Try to find the agent in paper trading engine first
+      const paperAgent = paperTradingEngine.getAgent(agentId)
+      
+      if (paperAgent) {
+        // Handle paper trading agent
+        paperAgent.status = action === 'start' ? 'active' : action === 'pause' ? 'paused' : 'stopped'
+        paperAgent.lastActive = new Date()
+        const updatedAgent: AgentWithSource = { ...paperAgent, source: 'paper' }
+        setAgents(prev => prev.map(a => a.id === agentId ? updatedAgent : a))
+        console.log(`🎮 Paper Agent ${paperAgent.name} ${action}ed`)
+      } else {
+        // Handle lifecycle manager agent
+        let success = false
+        
+        switch (action) {
+          case 'start':
+            success = await agentLifecycleManager.startAgent(agentId)
+            break
+          case 'stop':
+            success = await agentLifecycleManager.stopAgent(agentId)
+            break
+          case 'pause':
+            // For now, treat pause as stop in lifecycle manager
+            success = await agentLifecycleManager.stopAgent(agentId)
+            break
+        }
+        
+        if (success) {
+          // Reload agents to reflect the changes
+          await loadAgents()
+          console.log(`🎮 Lifecycle Agent ${agentId} ${action}ed`)
+        } else {
+          console.error(`Failed to ${action} agent ${agentId}`)
+        }
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing agent:`, error)
+    }
   }
 
   const calculatePortfolioChange = (agent: TradingAgent): { value: number; percentage: number } => {
