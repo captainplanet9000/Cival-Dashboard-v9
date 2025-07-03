@@ -352,7 +352,7 @@ export function useWorkflowMonitoring() {
       } catch (error) {
         console.error('Error monitoring executions:', error)
       }
-    }, 10000) // Every 10 seconds
+    }, 60000) // Every 60 seconds (reduced from 10 seconds)
 
     return () => clearInterval(interval)
   }, [])

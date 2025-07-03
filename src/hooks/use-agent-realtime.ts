@@ -320,7 +320,7 @@ export function useAgentRealtime(): UseAgentRealtimeReturn {
     // Initial fetch
     fetchAgents()
 
-    // Use smart poller with exponential backoff
+    // Use smart poller with exponential backoff (increased intervals to prevent DB overload)
     globalPoller.startPolling(
       'agents_realtime',
       async () => {
@@ -329,8 +329,8 @@ export function useAgentRealtime(): UseAgentRealtimeReturn {
         }
       },
       {
-        initialInterval: 8000, // Start with 8 seconds to reduce load
-        maxInterval: 30000, // Max 30 seconds
+        initialInterval: 30000, // Start with 30 seconds (increased from 8 seconds)
+        maxInterval: 120000, // Max 2 minutes (increased from 30 seconds)
         backoffFactor: 1.5,
         onError: (error) => {
           console.warn('Agent polling error:', error)

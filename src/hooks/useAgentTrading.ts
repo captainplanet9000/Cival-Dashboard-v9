@@ -45,11 +45,11 @@ export function useAgentTrading() {
 
     loadData()
 
-    // Periodic refresh
+    // Periodic refresh (reduced frequency to prevent DB overload)
     const interval = setInterval(() => {
       const agents = enhancedAgentTrading.getAgents()
       updateState(agents)
-    }, 5000) // Every 5 seconds
+    }, 30000) // Every 30 seconds (reduced from 5 seconds)
 
     return () => clearInterval(interval)
   }, [])
@@ -247,7 +247,7 @@ export function useAgentPerformance(agentId?: string) {
 
     updateData()
 
-    const interval = setInterval(updateData, 3000) // Every 3 seconds
+    const interval = setInterval(updateData, 30000) // Every 30 seconds (reduced from 3 seconds)
     return () => clearInterval(interval)
   }, [agentId])
 
@@ -333,7 +333,7 @@ export function useAgentMonitoring() {
     }
 
     checkForAlerts()
-    const interval = setInterval(checkForAlerts, 10000) // Every 10 seconds
+    const interval = setInterval(checkForAlerts, 60000) // Every 60 seconds (reduced from 10 seconds)
 
     return () => clearInterval(interval)
   }, [])

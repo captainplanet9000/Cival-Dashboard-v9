@@ -122,10 +122,10 @@ export function useAgentData() {
     }
   }, [])
 
-  // Auto-refresh data every 5 seconds
+  // Auto-refresh data every 30 seconds (reduced from 5 seconds to prevent DB overload)
   useEffect(() => {
     refreshAgentData()
-    const interval = setInterval(refreshAgentData, 5000)
+    const interval = setInterval(refreshAgentData, 30000)
     return () => clearInterval(interval)
   }, [refreshAgentData])
 
