@@ -431,6 +431,13 @@ class GoalsService {
       }
     })
 
+    // Broadcast real-time update via WebSocket
+    await this.broadcastGoalUpdate(goalId, { 
+      progress: goal.progress, 
+      status: goal.status, 
+      currentValue: goal.current 
+    })
+
     this.saveGoals()
     return true
   }
@@ -445,8 +452,45 @@ class GoalsService {
       goal.completedAt = new Date().toISOString()
     }
 
+    // Broadcast real-time update via WebSocket
+    await this.broadcastGoalUpdate(goalId, { 
+      status: goal.status, 
+      progress: goal.progress, 
+      currentValue: goal.current 
+    })
+
     this.saveGoals()
     return true
+  }
+
+  // WebSocket integration for real-time updates
+  private async broadcastGoalUpdate(goalId: string, updates: { progress?: number; status?: Goal['status']; currentValue?: number }) {
+    try {
+      // Import WebSocket service dynamically to avoid circular dependencies
+      const { getWebSocketClient } = await import('@/lib/realtime/websocket')
+      
+      const client = getWebSocketClient()
+      if (client.connected) {
+        const goal = this.goals.find(g => g.id === goalId)
+        if (goal) {
+          // Send WebSocket message for goal update
+          client.send({ 
+            type: 'goal_update', 
+            data: {
+              goalId,
+              progress: updates.progress ?? goal.progress,
+              status: updates.status ?? goal.status,
+              currentValue: updates.currentValue ?? goal.current,
+              targetValue: goal.target,
+              timestamp: Date.now()
+            }
+          })
+          console.log(`🎯 Goal update broadcast: ${goalId}`)
+        }
+      }
+    } catch (error) {
+      console.log('🟡 WebSocket not available for goal updates')
+    }
   }
 
   async deleteGoal(goalId: string): Promise<boolean> {

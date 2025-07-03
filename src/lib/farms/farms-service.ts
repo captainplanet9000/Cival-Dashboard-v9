@@ -46,10 +46,26 @@ class FarmsService {
   private farms: Farm[] = []
   private subscribers = new Set<() => void>()
   private useSupabase = false
+  private useRedisCache = false
 
   private constructor() {
     this.loadFarms()
     this.checkSupabaseAvailability()
+    this.initializeRedisCache()
+  }
+
+  private async initializeRedisCache() {
+    try {
+      // Check if Redis is available
+      const { redisService } = await import('@/lib/services/redis-service')
+      if (redisService.isHealthy()) {
+        console.log('🟢 Farms service: Redis caching enabled')
+        this.useRedisCache = true
+      }
+    } catch (error) {
+      console.log('🟡 Farms service: Redis not available, no caching')
+      this.useRedisCache = false
+    }
   }
 
   private async checkSupabaseAvailability() {
@@ -287,6 +303,9 @@ class FarmsService {
         
         // Refresh local data
         await this.loadFromSupabase()
+        
+        // Broadcast status update
+        await this.broadcastFarmUpdate(farmId, { status })
         return true
       } catch (error) {
         console.error('Failed to update farm status in Supabase, falling back to localStorage:', error)
@@ -305,6 +324,9 @@ class FarmsService {
     } else {
       farm.performance.activeAgents = 0
     }
+
+    // Broadcast real-time update via WebSocket
+    await this.broadcastFarmUpdate(farmId, { status, performance: farm.performance })
 
     this.saveFarms()
     return true
@@ -371,8 +393,52 @@ class FarmsService {
     if (!farm) return false
 
     farm.performance = { ...farm.performance, ...performance }
+    
+    // Cache performance data in Redis
+    if (this.useRedisCache) {
+      try {
+        const { redisService } = await import('@/lib/services/redis-service')
+        await redisService.cacheFarmPerformance(farmId, farm.performance, 60) // Cache for 1 minute
+      } catch (error) {
+        console.error('Failed to cache farm performance:', error)
+      }
+    }
+    
+    // Broadcast real-time update via WebSocket
+    await this.broadcastFarmUpdate(farmId, { performance: farm.performance, status: farm.status })
+    
     this.saveFarms()
     return true
+  }
+
+  // WebSocket integration for real-time updates
+  private async broadcastFarmUpdate(farmId: string, updates: Partial<Farm>) {
+    try {
+      // Import WebSocket service dynamically to avoid circular dependencies
+      const { getWebSocketClient } = await import('@/lib/realtime/websocket')
+      
+      const client = getWebSocketClient()
+      if (client.connected) {
+        // Send WebSocket message for farm update
+        client.send({ 
+          type: 'farm_update', 
+          data: {
+            farmId,
+            status: updates.status || 'active',
+            performance: updates.performance || {
+              totalValue: 0,
+              totalPnL: 0,
+              winRate: 0,
+              activeAgents: 0
+            },
+            timestamp: Date.now()
+          }
+        })
+        console.log(`🔄 Farm update broadcast: ${farmId}`)
+      }
+    } catch (error) {
+      console.log('🟡 WebSocket not available for farm updates')
+    }
   }
 
   getActiveFarms(): Farm[] {
@@ -393,6 +459,48 @@ class FarmsService {
     
     const totalWinRate = activeFarms.reduce((sum, farm) => sum + farm.performance.winRate, 0)
     return totalWinRate / activeFarms.length
+  }
+
+  async getFarmStats(): Promise<{
+    totalFarms: number
+    activeFarms: number
+    totalValue: number
+    totalPnL: number
+    averageWinRate: number
+  }> {
+    // Try to get cached stats first
+    if (this.useRedisCache) {
+      try {
+        const { redisService } = await import('@/lib/services/redis-service')
+        const cached = await redisService.getCachedPerformanceMetrics<any>('farms')
+        if (cached) {
+          return cached
+        }
+      } catch (error) {
+        console.error('Failed to get cached farm stats:', error)
+      }
+    }
+
+    // Calculate fresh stats
+    const stats = {
+      totalFarms: this.farms.length,
+      activeFarms: this.getActiveFarms().length,
+      totalValue: this.getTotalFarmValue(),
+      totalPnL: this.getTotalFarmPnL(),
+      averageWinRate: this.getAverageWinRate()
+    }
+
+    // Cache the stats
+    if (this.useRedisCache) {
+      try {
+        const { redisService } = await import('@/lib/services/redis-service')
+        await redisService.cachePerformanceMetrics('farms', stats, 60) // Cache for 1 minute
+      } catch (error) {
+        console.error('Failed to cache farm stats:', error)
+      }
+    }
+
+    return stats
   }
 }
 

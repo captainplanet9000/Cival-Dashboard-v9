@@ -185,12 +185,29 @@ class MarketDataService {
     'BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOT/USD', 
     'AVAX/USD', 'MATIC/USD', 'LINK/USD'
   ]): Promise<MarketPrice[]> {
-    const cacheKey = symbols.join(',')
-    const cached = this.cache.get(cacheKey)
+    const cacheKey = symbols.sort().join(',')
     
-    // Return cached data if still fresh
-    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      return cached.data
+    // Try Redis cache first
+    try {
+      const { redisService } = await import('@/lib/services/redis-service')
+      if (redisService.isHealthy()) {
+        const cached = await redisService.getCachedMarketData<MarketPrice[]>(cacheKey)
+        if (cached && cached.length > 0) {
+          console.log('📊 Using Redis cached market data')
+          // Notify subscribers
+          this.updateCallbacks.forEach(callback => callback(cached))
+          return cached
+        }
+      }
+    } catch (redisError) {
+      // Fall back to local cache if Redis fails
+      console.log('🟡 Redis cache failed, using local cache')
+    }
+    
+    // Try local cache
+    const localCached = this.cache.get(cacheKey)
+    if (localCached && Date.now() - localCached.timestamp < this.cacheTimeout) {
+      return localCached.data
     }
 
     // Try providers in order until one succeeds
@@ -200,8 +217,18 @@ class MarketDataService {
         const prices = await provider.fetchPrices(symbols)
         
         if (prices.length > 0) {
-          // Cache the results
+          // Cache in both Redis and local cache
           this.cache.set(cacheKey, { data: prices, timestamp: Date.now() })
+          
+          // Cache in Redis
+          try {
+            const { redisService } = await import('@/lib/services/redis-service')
+            if (redisService.isHealthy()) {
+              await redisService.cacheMarketData(cacheKey, prices, 30) // 30 seconds TTL
+            }
+          } catch (redisError) {
+            console.warn('Failed to cache market data in Redis:', redisError)
+          }
           
           // Notify subscribers
           this.updateCallbacks.forEach(callback => callback(prices))

@@ -69,12 +69,35 @@ export interface RiskAlert {
   timestamp: number;
 }
 
+export interface FarmUpdate {
+  farmId: string;
+  status: 'active' | 'paused' | 'stopped';
+  performance: {
+    totalValue: number;
+    totalPnL: number;
+    winRate: number;
+    activeAgents: number;
+  };
+  timestamp: number;
+}
+
+export interface GoalUpdate {
+  goalId: string;
+  progress: number;
+  status: 'active' | 'completed' | 'failed' | 'paused';
+  currentValue: number;
+  targetValue: number;
+  timestamp: number;
+}
+
 export type WebSocketMessage = 
   | { type: 'market_data'; data: MarketData }
   | { type: 'portfolio_update'; data: PortfolioUpdate }
   | { type: 'agent_update'; data: AgentUpdate }
   | { type: 'trading_signal'; data: TradingSignal }
   | { type: 'risk_alert'; data: RiskAlert }
+  | { type: 'farm_update'; data: FarmUpdate }
+  | { type: 'goal_update'; data: GoalUpdate }
   | { type: 'heartbeat'; timestamp: number }
   | { type: 'error'; message: string };
 
@@ -258,6 +281,12 @@ export class TradingWebSocketClient {
         break;
       case 'risk_alert':
         this.emit('risk_alert', message.data);
+        break;
+      case 'farm_update':
+        this.emit('farm_update', message.data);
+        break;
+      case 'goal_update':
+        this.emit('goal_update', message.data);
         break;
       case 'heartbeat':
         // Heartbeat received, connection is alive
@@ -477,4 +506,74 @@ export function useRiskAlerts() {
   }, [client, isConnected]);
 
   return alerts;
+}
+
+// Farm updates hook
+export function useFarmUpdates() {
+  const { client, isConnected } = useWebSocket();
+  const [farmUpdates, setFarmUpdates] = useState<FarmUpdate[]>([]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleFarmUpdate = (data: FarmUpdate) => {
+      setFarmUpdates(prev => {
+        const existingIndex = prev.findIndex(f => f.farmId === data.farmId);
+        if (existingIndex >= 0) {
+          // Update existing farm
+          const updated = [...prev];
+          updated[existingIndex] = data;
+          return updated;
+        } else {
+          // Add new farm
+          return [data, ...prev.slice(0, 19)]; // Keep last 20 updates
+        }
+      });
+    };
+
+    client.on('farm_update', handleFarmUpdate);
+    client.subscribe('farm_updates');
+
+    return () => {
+      client.off('farm_update', handleFarmUpdate);
+      client.unsubscribe('farm_updates');
+    };
+  }, [client, isConnected]);
+
+  return farmUpdates;
+}
+
+// Goal updates hook
+export function useGoalUpdates() {
+  const { client, isConnected } = useWebSocket();
+  const [goalUpdates, setGoalUpdates] = useState<GoalUpdate[]>([]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleGoalUpdate = (data: GoalUpdate) => {
+      setGoalUpdates(prev => {
+        const existingIndex = prev.findIndex(g => g.goalId === data.goalId);
+        if (existingIndex >= 0) {
+          // Update existing goal
+          const updated = [...prev];
+          updated[existingIndex] = data;
+          return updated;
+        } else {
+          // Add new goal
+          return [data, ...prev.slice(0, 19)]; // Keep last 20 updates
+        }
+      });
+    };
+
+    client.on('goal_update', handleGoalUpdate);
+    client.subscribe('goal_updates');
+
+    return () => {
+      client.off('goal_update', handleGoalUpdate);
+      client.unsubscribe('goal_updates');
+    };
+  }, [client, isConnected]);
+
+  return goalUpdates;
 }

@@ -1,34 +1,73 @@
-import Redis from 'ioredis';
+// Only import Redis in server environment
+let Redis: any = null
+if (typeof window === 'undefined') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Redis = require('ioredis')
+  } catch (error) {
+    console.warn('ioredis not available, Redis functionality disabled')
+  }
+}
 
 class RedisService {
-  private client: Redis;
+  private client: any;
   private isConnected: boolean = false;
+  private isServerSide: boolean = typeof window === 'undefined';
 
   constructor() {
-    this.client = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      maxRetriesPerRequest: 3,
-      lazyConnect: true,
-    });
+    // Only initialize Redis on server side
+    if (!this.isServerSide || !Redis) {
+      console.log('🟡 Redis: Client-side mode, using in-memory fallback')
+      this.client = null
+      this.isConnected = false
+      return
+    }
 
-    this.client.on('connect', () => {
-      console.log('Redis connected');
-      this.isConnected = true;
-    });
+    // Use Redis Cloud URL from environment or fallback to local
+    const redisUrl = process.env.REDIS_URL || process.env.NEXT_PUBLIC_REDIS_URL
+    
+    if (redisUrl) {
+      // Parse Redis Cloud URL: redis://default:password@host:port
+      this.client = new Redis(redisUrl, {
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+        retryDelayOnFailover: 100,
+        enableReadyCheck: false,
+        connectTimeout: 10000,
+        commandTimeout: 5000,
+      })
+      console.log('🔧 Redis: Configured with Redis Cloud URL')
+    } else {
+      // Fallback to local Redis
+      this.client = new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+      })
+      console.log('🔧 Redis: Configured for local development')
+    }
 
-    this.client.on('error', (error) => {
-      console.error('Redis connection error:', error);
-      this.isConnected = false;
-    });
+    if (this.client) {
+      this.client.on('connect', () => {
+        console.log('Redis connected');
+        this.isConnected = true;
+      });
 
-    this.client.on('close', () => {
-      console.log('Redis connection closed');
-      this.isConnected = false;
-    });
+      this.client.on('error', (error) => {
+        console.error('Redis connection error:', error);
+        this.isConnected = false;
+      });
+
+      this.client.on('close', () => {
+        console.log('Redis connection closed');
+        this.isConnected = false;
+      });
+    }
   }
 
   async connect(): Promise<void> {
+    if (!this.client) return;
     try {
       await this.client.connect();
     } catch (error) {
@@ -38,11 +77,13 @@ class RedisService {
   }
 
   async disconnect(): Promise<void> {
+    if (!this.client) return;
     await this.client.quit();
   }
 
   // Basic operations
   async get(key: string): Promise<string | null> {
+    if (!this.client) return null;
     try {
       return await this.client.get(key);
     } catch (error) {
@@ -52,6 +93,7 @@ class RedisService {
   }
 
   async set(key: string, value: string, ttl?: number): Promise<boolean> {
+    if (!this.client) return false;
     try {
       if (ttl) {
         await this.client.setex(key, ttl, value);
@@ -66,6 +108,7 @@ class RedisService {
   }
 
   async del(key: string): Promise<boolean> {
+    if (!this.client) return false;
     try {
       const result = await this.client.del(key);
       return result > 0;
@@ -76,6 +119,7 @@ class RedisService {
   }
 
   async exists(key: string): Promise<boolean> {
+    if (!this.client) return false;
     try {
       const result = await this.client.exists(key);
       return result === 1;
@@ -248,6 +292,7 @@ class RedisService {
 
   // Pattern operations
   async keys(pattern: string): Promise<string[]> {
+    if (!this.client) return [];
     try {
       return await this.client.keys(pattern);
     } catch (error) {
@@ -279,6 +324,7 @@ class RedisService {
 
   // Utility methods
   async ping(): Promise<boolean> {
+    if (!this.client) return false;
     try {
       const result = await this.client.ping();
       return result === 'PONG';
@@ -309,16 +355,141 @@ class RedisService {
 
   // Connection status
   isHealthy(): boolean {
-    return this.isConnected && this.client.status === 'ready';
+    return this.client ? (this.isConnected && this.client.status === 'ready') : false;
   }
 
   getConnectionInfo() {
+    if (!this.client) {
+      return {
+        status: 'disconnected',
+        connected: false,
+        host: 'n/a',
+        port: 'n/a',
+        mode: 'client-side'
+      };
+    }
+    
     return {
       status: this.client.status,
       connected: this.isConnected,
-      host: this.client.options.host,
-      port: this.client.options.port,
+      host: this.client.options?.host || 'unknown',
+      port: this.client.options?.port || 'unknown',
+      mode: 'server-side'
     };
+  }
+
+  // Farm-specific cache methods
+  async cacheFarmData(farmId: string, data: any, ttl: number = 300): Promise<boolean> {
+    const key = `farm:${farmId}:data`
+    return await this.setJSON(key, data, ttl)
+  }
+
+  async getCachedFarmData<T = any>(farmId: string): Promise<T | null> {
+    const key = `farm:${farmId}:data`
+    return await this.getJSON<T>(key)
+  }
+
+  async cacheFarmPerformance(farmId: string, performance: any, ttl: number = 60): Promise<boolean> {
+    const key = `farm:${farmId}:performance`
+    return await this.setJSON(key, performance, ttl)
+  }
+
+  async getCachedFarmPerformance<T = any>(farmId: string): Promise<T | null> {
+    const key = `farm:${farmId}:performance`
+    return await this.getJSON<T>(key)
+  }
+
+  async invalidateFarmCache(farmId?: string): Promise<number> {
+    const pattern = farmId ? `farm:${farmId}:*` : 'farm:*'
+    const keys = await this.keys(pattern)
+    let deleted = 0
+    
+    for (const key of keys) {
+      if (await this.del(key)) {
+        deleted++
+      }
+    }
+    
+    return deleted
+  }
+
+  // Goal-specific cache methods
+  async cacheGoalData(goalId: string, data: any, ttl: number = 300): Promise<boolean> {
+    const key = `goal:${goalId}:data`
+    return await this.setJSON(key, data, ttl)
+  }
+
+  async getCachedGoalData<T = any>(goalId: string): Promise<T | null> {
+    const key = `goal:${goalId}:data`
+    return await this.getJSON<T>(key)
+  }
+
+  async cacheGoalProgress(goalId: string, progress: any, ttl: number = 60): Promise<boolean> {
+    const key = `goal:${goalId}:progress`
+    return await this.setJSON(key, progress, ttl)
+  }
+
+  async getCachedGoalProgress<T = any>(goalId: string): Promise<T | null> {
+    const key = `goal:${goalId}:progress`
+    return await this.getJSON<T>(key)
+  }
+
+  async invalidateGoalCache(goalId?: string): Promise<number> {
+    const pattern = goalId ? `goal:${goalId}:*` : 'goal:*'
+    const keys = await this.keys(pattern)
+    let deleted = 0
+    
+    for (const key of keys) {
+      if (await this.del(key)) {
+        deleted++
+      }
+    }
+    
+    return deleted
+  }
+
+  // Performance metrics cache
+  async cachePerformanceMetrics(type: 'farms' | 'goals', data: any, ttl: number = 60): Promise<boolean> {
+    const key = `performance:${type}:metrics`
+    return await this.setJSON(key, data, ttl)
+  }
+
+  async getCachedPerformanceMetrics<T = any>(type: 'farms' | 'goals'): Promise<T | null> {
+    const key = `performance:${type}:metrics`
+    return await this.getJSON<T>(key)
+  }
+
+  // Market data cache
+  async cacheMarketData(symbol: string, data: any, ttl: number = 30): Promise<boolean> {
+    const key = `market:${symbol}:data`
+    return await this.setJSON(key, data, ttl)
+  }
+
+  async getCachedMarketData<T = any>(symbol: string): Promise<T | null> {
+    const key = `market:${symbol}:data`
+    return await this.getJSON<T>(key)
+  }
+
+  // Real-time data streams cache
+  async cacheStreamData(streamId: string, data: any, ttl: number = 10): Promise<boolean> {
+    const key = `stream:${streamId}:data`
+    return await this.setJSON(key, data, ttl)
+  }
+
+  async getCachedStreamData<T = any>(streamId: string): Promise<T | null> {
+    const key = `stream:${streamId}:data`
+    return await this.getJSON<T>(key)
+  }
+
+  // Dashboard aggregations cache
+  async cacheDashboardStats(data: any, ttl: number = 120): Promise<boolean> {
+    const key = 'dashboard:stats'
+    return await this.setJSON(key, data, ttl)
+  }
+
+  async getCachedDashboardStats<T = any>(): Promise<T | null> {
+    const key = 'dashboard:stats'
+    return await this.getJSON<T>(key)
   }
 }
 
@@ -343,6 +514,38 @@ export const redisService = {
   exists: (key: string) => redisService.instance.exists(key),
   keys: (pattern: string) => redisService.instance.keys(pattern),
   flushall: () => redisService.instance.flushall(),
-  getStatus: () => redisService.instance.getStatus()
+  ping: () => redisService.instance.ping(),
+  isHealthy: () => redisService.instance.isHealthy(),
+  getConnectionInfo: () => redisService.instance.getConnectionInfo(),
+  
+  // JSON operations
+  setJSON: <T>(key: string, value: T, ttl?: number) => redisService.instance.setJSON(key, value, ttl),
+  getJSON: <T>(key: string) => redisService.instance.getJSON<T>(key),
+  
+  // Farm cache methods
+  cacheFarmData: (farmId: string, data: any, ttl?: number) => redisService.instance.cacheFarmData(farmId, data, ttl),
+  getCachedFarmData: <T = any>(farmId: string) => redisService.instance.getCachedFarmData<T>(farmId),
+  cacheFarmPerformance: (farmId: string, performance: any, ttl?: number) => redisService.instance.cacheFarmPerformance(farmId, performance, ttl),
+  getCachedFarmPerformance: <T = any>(farmId: string) => redisService.instance.getCachedFarmPerformance<T>(farmId),
+  invalidateFarmCache: (farmId?: string) => redisService.instance.invalidateFarmCache(farmId),
+  
+  // Goal cache methods
+  cacheGoalData: (goalId: string, data: any, ttl?: number) => redisService.instance.cacheGoalData(goalId, data, ttl),
+  getCachedGoalData: <T = any>(goalId: string) => redisService.instance.getCachedGoalData<T>(goalId),
+  cacheGoalProgress: (goalId: string, progress: any, ttl?: number) => redisService.instance.cacheGoalProgress(goalId, progress, ttl),
+  getCachedGoalProgress: <T = any>(goalId: string) => redisService.instance.getCachedGoalProgress<T>(goalId),
+  invalidateGoalCache: (goalId?: string) => redisService.instance.invalidateGoalCache(goalId),
+  
+  // Performance metrics cache
+  cachePerformanceMetrics: (type: 'farms' | 'goals', data: any, ttl?: number) => redisService.instance.cachePerformanceMetrics(type, data, ttl),
+  getCachedPerformanceMetrics: <T = any>(type: 'farms' | 'goals') => redisService.instance.getCachedPerformanceMetrics<T>(type),
+  
+  // Market data cache
+  cacheMarketData: (symbol: string, data: any, ttl?: number) => redisService.instance.cacheMarketData(symbol, data, ttl),
+  getCachedMarketData: <T = any>(symbol: string) => redisService.instance.getCachedMarketData<T>(symbol),
+  
+  // Dashboard cache
+  cacheDashboardStats: (data: any, ttl?: number) => redisService.instance.cacheDashboardStats(data, ttl),
+  getCachedDashboardStats: <T = any>() => redisService.instance.getCachedDashboardStats<T>()
 };
 export default redisService; 

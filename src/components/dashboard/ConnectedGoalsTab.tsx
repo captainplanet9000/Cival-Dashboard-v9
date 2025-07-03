@@ -28,6 +28,8 @@ import {
   History, BarChart3, Award, Filter, Shield, Network, Wallet
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
+// Import WebSocket hooks for real-time updates
+import { useGoalUpdates } from '@/lib/realtime/websocket'
 import { toast } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, addDays, differenceInDays } from 'date-fns'
@@ -49,6 +51,9 @@ interface ConnectedGoalsTabProps {
 
 export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   const { state, actions } = useDashboardConnection('goals')
+  
+  // Use WebSocket for real-time goal updates
+  const goalUpdates = useGoalUpdates()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [activeTab, setActiveTab] = useState<'goals' | 'history' | 'performance'>('goals')
   const [historyData, setHistoryData] = useState<any[]>([])

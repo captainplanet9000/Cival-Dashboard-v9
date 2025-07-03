@@ -16,6 +16,8 @@ import { toast } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 // Import shared data manager to prevent duplicate requests
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
+// Import WebSocket hooks for real-time updates
+import { useFarmUpdates } from '@/lib/realtime/websocket'
 
 // Simple farm interface
 interface Farm {
@@ -59,6 +61,9 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
     agentsConnected,
     farmsConnected
   } = useSharedRealtimeData()
+
+  // Use WebSocket for real-time farm updates
+  const farmUpdates = useFarmUpdates()
 
   // Mock farms data with safe fallbacks
   const [farms, setFarms] = useState<Farm[]>([])
