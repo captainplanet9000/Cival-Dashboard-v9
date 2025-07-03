@@ -2312,6 +2312,265 @@ class BackendApiClient {
     }
   }
 
+  // ===============================================
+  // ENHANCED DATABASE API METHODS
+  // ===============================================
+
+  // Dashboard Summary
+  async getEnhancedDashboardSummary(): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/dashboard/enhanced-summary`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get enhanced dashboard summary',
+        status: 0,
+      };
+    }
+  }
+
+  // Blockchain Wallets
+  async getBlockchainWallets(userId: string = 'solo_operator'): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/wallets?user_id=${userId}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get blockchain wallets',
+        status: 0,
+      };
+    }
+  }
+
+  async createBlockchainWallet(walletData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/wallets`, {
+        method: 'POST',
+        body: JSON.stringify(walletData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create blockchain wallet',
+        status: 0,
+      };
+    }
+  }
+
+  // Blockchain Transactions
+  async getWalletTransactions(walletId: string, limit: number = 50): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/transactions/${walletId}?limit=${limit}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get wallet transactions',
+        status: 0,
+      };
+    }
+  }
+
+  async createBlockchainTransaction(transactionData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/transactions`, {
+        method: 'POST',
+        body: JSON.stringify(transactionData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create blockchain transaction',
+        status: 0,
+      };
+    }
+  }
+
+  // Notifications
+  async getUserNotifications(userId: string = 'solo_operator', unreadOnly: boolean = false, limit: number = 50): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams({
+        user_id: userId,
+        unread_only: unreadOnly.toString(),
+        limit: limit.toString()
+      });
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications?${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get user notifications',
+        status: 0,
+      };
+    }
+  }
+
+  async createNotification(notificationData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications`, {
+        method: 'POST',
+        body: JSON.stringify(notificationData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create notification',
+        status: 0,
+      };
+    }
+  }
+
+  async markNotificationRead(notificationId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications/${notificationId}/read`, {
+        method: 'PUT'
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to mark notification as read',
+        status: 0,
+      };
+    }
+  }
+
+  // System Events
+  async getUnprocessedEvents(limit: number = 100): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/events/unprocessed?limit=${limit}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get unprocessed events',
+        status: 0,
+      };
+    }
+  }
+
+  async createSystemEvent(eventData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/events`, {
+        method: 'POST',
+        body: JSON.stringify(eventData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create system event',
+        status: 0,
+      };
+    }
+  }
+
+  // Real-time Metrics
+  async getRealtimeMetrics(sourceType?: string, sourceId?: string, metricName?: string, hours: number = 24): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams({ hours: hours.toString() });
+      if (sourceType) params.append('source_type', sourceType);
+      if (sourceId) params.append('source_id', sourceId);
+      if (metricName) params.append('metric_name', metricName);
+      
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/metrics/realtime?${params}`);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get realtime metrics',
+        status: 0,
+      };
+    }
+  }
+
+  async recordRealtimeMetric(metricData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/metrics/realtime`, {
+        method: 'POST',
+        body: JSON.stringify(metricData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to record realtime metric',
+        status: 0,
+      };
+    }
+  }
+
+  // ML Predictions
+  async getActivePredictions(predictionType?: string, modelName?: string): Promise<ApiResponse<any>> {
+    try {
+      const params = new URLSearchParams();
+      if (predictionType) params.append('prediction_type', predictionType);
+      if (modelName) params.append('model_name', modelName);
+      
+      const queryString = params.toString();
+      const url = queryString ? `${this.baseUrl}/api/v1/predictions/active?${queryString}` : `${this.baseUrl}/api/v1/predictions/active`;
+      
+      const response = await this.fetchWithTimeout(url);
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get active predictions',
+        status: 0,
+      };
+    }
+  }
+
+  async createMLPrediction(predictionData: any): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/predictions`, {
+        method: 'POST',
+        body: JSON.stringify(predictionData)
+      });
+      return this.handleResponse(response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to create ML prediction',
+        status: 0,
+      };
+    }
+  }
+
+  // ===============================================
+  // ENHANCED DASHBOARD ANALYTICS
+  // ===============================================
+
+  async getPortfolioAnalytics(userId: string = 'solo_operator'): Promise<ApiResponse<any>> {
+    try {
+      // Combine multiple API calls for comprehensive analytics
+      const [summary, wallets, notifications, metrics] = await Promise.all([
+        this.getEnhancedDashboardSummary(),
+        this.getBlockchainWallets(userId),
+        this.getUserNotifications(userId, true, 10), // Get unread notifications
+        this.getRealtimeMetrics('portfolio', userId, undefined, 24)
+      ]);
+
+      return {
+        data: {
+          summary: summary.data,
+          wallets: wallets.data,
+          notifications: notifications.data,
+          metrics: metrics.data
+        },
+        status: 200
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get portfolio analytics',
+        status: 0,
+      };
+    }
+  }
+
+  async getAgentPerformanceMetrics(agentId: string): Promise<ApiResponse<any>> {
+    try {
+      const metrics = await this.getRealtimeMetrics('agent', agentId, undefined, 168); // 7 days
+      return metrics;
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'Failed to get agent performance metrics',
+        status: 0,
+      };
+    }
+  }
+
   // Generic HTTP methods for backward compatibility
   async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
     try {

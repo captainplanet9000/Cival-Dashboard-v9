@@ -41,6 +41,13 @@ from models.paper_trading_models import CreatePaperTradeOrderRequest
 from models.execution_models import ExecutionRequest
 from models.hyperliquid_models import HyperliquidAccountSnapshot
 
+# Enhanced Database Service imports
+from services.enhanced_database_service import (
+    get_enhanced_database_service, EnhancedDatabaseService,
+    BlockchainWalletModel, BlockchainTransactionModel, SystemEventModel,
+    NotificationModel, MLPredictionModel, RealtimeMetricModel, AuditLogModel
+)
+
 # Trading Farm Brain imports
 from services.trading_farm_brain_service import (
     get_trading_farm_brain_service,
@@ -7630,6 +7637,229 @@ async def dashboard_home(request: Request):
         return HTMLResponse(content=html_content)
     except Exception as e:
         return HTMLResponse(content=f"<html><body><h1>Dashboard Error</h1><p>{str(e)}</p></body></html>")
+
+# ===============================================
+# ENHANCED DATABASE API ENDPOINTS
+# ===============================================
+
+@app.get("/api/v1/dashboard/enhanced-summary")
+async def get_enhanced_dashboard_summary(
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Get comprehensive dashboard summary using enhanced database"""
+    try:
+        # Use solo operator as default user for now
+        user_id = "solo_operator"
+        summary = await enhanced_db.get_dashboard_summary(user_id)
+        return {"success": True, "data": summary}
+    except Exception as e:
+        logger.error(f"Error getting enhanced dashboard summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Dashboard summary error: {str(e)}")
+
+@app.get("/api/v1/blockchain/wallets")
+async def get_blockchain_wallets(
+    user_id: str = "solo_operator",
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Get all blockchain wallets for a user"""
+    try:
+        wallets = await enhanced_db.get_user_wallets(user_id)
+        return {"success": True, "wallets": wallets}
+    except Exception as e:
+        logger.error(f"Error getting blockchain wallets: {e}")
+        raise HTTPException(status_code=500, detail=f"Wallets error: {str(e)}")
+
+@app.post("/api/v1/blockchain/wallets")
+async def create_blockchain_wallet(
+    wallet_data: BlockchainWalletModel,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Create a new blockchain wallet"""
+    try:
+        result = await enhanced_db.create_blockchain_wallet(wallet_data)
+        if result['success']:
+            return {"success": True, "wallet": result}
+        else:
+            raise HTTPException(status_code=400, detail=result['error'])
+    except Exception as e:
+        logger.error(f"Error creating blockchain wallet: {e}")
+        raise HTTPException(status_code=500, detail=f"Wallet creation error: {str(e)}")
+
+@app.get("/api/v1/blockchain/transactions/{wallet_id}")
+async def get_wallet_transactions(
+    wallet_id: str,
+    limit: int = 50,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Get transactions for a specific wallet"""
+    try:
+        transactions = await enhanced_db.get_wallet_transactions(wallet_id, limit)
+        return {"success": True, "transactions": transactions}
+    except Exception as e:
+        logger.error(f"Error getting wallet transactions: {e}")
+        raise HTTPException(status_code=500, detail=f"Transactions error: {str(e)}")
+
+@app.post("/api/v1/blockchain/transactions")
+async def create_blockchain_transaction(
+    transaction_data: BlockchainTransactionModel,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Create a new blockchain transaction"""
+    try:
+        result = await enhanced_db.create_blockchain_transaction(transaction_data)
+        if result['success']:
+            return {"success": True, "transaction": result}
+        else:
+            raise HTTPException(status_code=400, detail=result['error'])
+    except Exception as e:
+        logger.error(f"Error creating blockchain transaction: {e}")
+        raise HTTPException(status_code=500, detail=f"Transaction creation error: {str(e)}")
+
+@app.get("/api/v1/notifications")
+async def get_user_notifications(
+    user_id: str = "solo_operator",
+    unread_only: bool = False,
+    limit: int = 50,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Get notifications for a user"""
+    try:
+        notifications = await enhanced_db.get_user_notifications(user_id, unread_only, limit)
+        return {"success": True, "notifications": notifications}
+    except Exception as e:
+        logger.error(f"Error getting notifications: {e}")
+        raise HTTPException(status_code=500, detail=f"Notifications error: {str(e)}")
+
+@app.post("/api/v1/notifications")
+async def create_notification(
+    notification_data: NotificationModel,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Create a new notification"""
+    try:
+        notification_id = await enhanced_db.create_notification(notification_data)
+        if notification_id:
+            return {"success": True, "notification_id": notification_id}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create notification")
+    except Exception as e:
+        logger.error(f"Error creating notification: {e}")
+        raise HTTPException(status_code=500, detail=f"Notification creation error: {str(e)}")
+
+@app.put("/api/v1/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Mark a notification as read"""
+    try:
+        success = await enhanced_db.mark_notification_read(notification_id)
+        if success:
+            return {"success": True, "message": "Notification marked as read"}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to mark notification as read")
+    except Exception as e:
+        logger.error(f"Error marking notification read: {e}")
+        raise HTTPException(status_code=500, detail=f"Notification update error: {str(e)}")
+
+@app.get("/api/v1/events/unprocessed")
+async def get_unprocessed_events(
+    limit: int = 100,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Get unprocessed system events for real-time streaming"""
+    try:
+        events = await enhanced_db.get_unprocessed_events(limit)
+        return {"success": True, "events": events}
+    except Exception as e:
+        logger.error(f"Error getting unprocessed events: {e}")
+        raise HTTPException(status_code=500, detail=f"Events error: {str(e)}")
+
+@app.post("/api/v1/events")
+async def create_system_event(
+    event_data: SystemEventModel,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Create a new system event"""
+    try:
+        event_id = await enhanced_db.create_system_event(
+            event_data.event_type,
+            event_data.event_source,
+            event_data.source_id,
+            event_data.event_data,
+            event_data.target_users,
+            event_data.broadcast,
+            event_data.event_priority
+        )
+        if event_id:
+            return {"success": True, "event_id": event_id}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create system event")
+    except Exception as e:
+        logger.error(f"Error creating system event: {e}")
+        raise HTTPException(status_code=500, detail=f"Event creation error: {str(e)}")
+
+@app.get("/api/v1/metrics/realtime")
+async def get_realtime_metrics(
+    source_type: str = None,
+    source_id: str = None,
+    metric_name: str = None,
+    hours: int = 24,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Get real-time metrics with optional filtering"""
+    try:
+        metrics = await enhanced_db.get_recent_metrics(source_type, source_id, metric_name, hours)
+        return {"success": True, "metrics": metrics}
+    except Exception as e:
+        logger.error(f"Error getting realtime metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Metrics error: {str(e)}")
+
+@app.post("/api/v1/metrics/realtime")
+async def record_realtime_metric(
+    metric_data: RealtimeMetricModel,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Record a new real-time metric"""
+    try:
+        success = await enhanced_db.record_realtime_metric(metric_data)
+        if success:
+            return {"success": True, "message": "Metric recorded successfully"}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to record metric")
+    except Exception as e:
+        logger.error(f"Error recording realtime metric: {e}")
+        raise HTTPException(status_code=500, detail=f"Metric recording error: {str(e)}")
+
+@app.get("/api/v1/predictions/active")
+async def get_active_ml_predictions(
+    prediction_type: str = None,
+    model_name: str = None,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Get active ML predictions with optional filtering"""
+    try:
+        predictions = await enhanced_db.get_active_predictions(prediction_type, model_name)
+        return {"success": True, "predictions": predictions}
+    except Exception as e:
+        logger.error(f"Error getting ML predictions: {e}")
+        raise HTTPException(status_code=500, detail=f"Predictions error: {str(e)}")
+
+@app.post("/api/v1/predictions")
+async def create_ml_prediction(
+    prediction_data: MLPredictionModel,
+    enhanced_db: EnhancedDatabaseService = Depends(get_enhanced_database_service)
+):
+    """Create a new ML prediction"""
+    try:
+        prediction_id = await enhanced_db.create_ml_prediction(prediction_data)
+        if prediction_id:
+            return {"success": True, "prediction_id": prediction_id}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create prediction")
+    except Exception as e:
+        logger.error(f"Error creating ML prediction: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction creation error: {str(e)}")
 
 @app.get("/dashboard/api/overview")
 async def dashboard_overview():

@@ -96,7 +96,7 @@ import ConnectedVaultTab from '@/components/dashboard/ConnectedVaultTab'
 import ConnectedCalendarTab from '@/components/dashboard/ConnectedCalendarTab'
 import ConnectedAdvancedTab from '@/components/dashboard/ConnectedAdvancedTab'
 
-// Import Premium Components
+// Import Premium Components (Available Components Integration)
 import { EnhancedTradingInterface } from '@/components/premium-ui/trading/enhanced-trading-interface'
 import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
 import { AgentOrchestration } from '@/components/premium-ui/agents/ai-agent-orchestration'
@@ -107,8 +107,29 @@ import {
   PnLChart 
 } from '@/components/premium-ui/charts/premium-trading-charts'
 import { AdvancedPortfolioAnalytics } from '@/components/premium-ui/portfolio/advanced-portfolio-analytics'
+import { EnhancedPortfolioMonitor } from '@/components/premium-ui/portfolio/enhanced-portfolio-monitor'
 import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
 import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
+import { AdvancedOrderBook } from '@/components/premium-ui/trading/advanced-orderbook'
+import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'
+import { VisualStrategyBuilder } from '@/components/premium-ui/strategy/visual-strategy-builder'
+import { NotificationSystem } from '@/components/premium-ui/notifications/notification-system'
+import { TradingAnimations } from '@/components/premium-ui/motion/trading-animations'
+import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
+import { CommandPaletteUI } from '@/components/premium-ui/command/command-palette'
+import { MultiSelect } from '@/components/premium-ui/inputs/multi-select'
+import { TagInput } from '@/components/premium-ui/inputs/tag-input'
+import { DateRangePicker } from '@/components/premium-ui/inputs/date-range-picker'
+// import { RichTextEditor } from '@/components/premium-ui/editors/rich-text-editor' // Requires @tiptap dependencies
+import { AutoForm } from '@/components/premium-ui/forms/auto-form'
+import { MultipleSelector } from '@/components/premium-ui/expansions/multiple-selector'
+import { TradingSymbolSelector } from '@/components/premium-ui/expansions/trading-symbol-selector'
+import { DualRangeSlider } from '@/components/premium-ui/expansions/dual-range-slider'
+import { PriceRangeSlider } from '@/components/premium-ui/expansions/price-range-slider'
+import { SortableList } from '@/components/premium-ui/sortable/sortable-list'
+import { WatchlistSortable } from '@/components/premium-ui/sortable/WatchlistSortable'
+import { PortfolioSortable } from '@/components/premium-ui/sortable/PortfolioSortable'
+import { StrategySortable } from '@/components/premium-ui/sortable/StrategySortable'
 import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
@@ -292,7 +313,7 @@ export function ModernDashboardV4() {
       id: 'agents',
       label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <ConnectedAgentsTab />
+      component: <EnhancedAgentsTab />
     },
     {
       id: 'farms',
@@ -316,7 +337,7 @@ export function ModernDashboardV4() {
       id: 'trading',
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
-      component: <ConnectedTradingTab />
+      component: <EnhancedTradingTab />
     },
     // Removed autonomous tab
     // {
@@ -335,7 +356,7 @@ export function ModernDashboardV4() {
       id: 'analytics',
       label: 'Analytics',
       icon: <PieChart className="h-4 w-4" />,
-      component: <ConnectedAnalyticsTab />
+      component: <EnhancedAnalyticsTab />
     },
     {
       id: 'history',
@@ -359,7 +380,7 @@ export function ModernDashboardV4() {
       id: 'advanced',
       label: 'Advanced',
       icon: <Settings className="h-4 w-4" />,
-      component: <ConnectedAdvancedTab />
+      component: <EnhancedAdvancedTab />
     }
   ]
 
@@ -378,9 +399,9 @@ export function ModernDashboardV4() {
               <div className="flex items-center gap-4">
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold text-primary">
-                    Cival Dashboard
+                    Cival Dashboard <Badge variant="secondary" className="ml-2">Premium</Badge>
                   </h1>
-                  <p className="text-xs sm:text-sm text-secondary hidden sm:block">Advanced AI Trading Platform</p>
+                  <p className="text-xs sm:text-sm text-secondary hidden sm:block">29+ Premium Components • Advanced AI Trading Platform</p>
                 </div>
               </div>
               
@@ -2783,6 +2804,371 @@ export default function ModernDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  )
+}
+
+// ========================================
+// ENHANCED TAB COMPONENTS WITH PREMIUM INTEGRATION
+// ========================================
+
+// Enhanced Agents Tab with Premium Components
+function EnhancedAgentsTab() {
+  const [agentTab, setAgentTab] = useState('enhanced')
+  
+  const agentSubTabs = [
+    { id: 'enhanced', label: 'Enhanced Agents', component: <EnhancedExpertAgents /> },
+    { id: 'orchestration', label: 'Orchestration', component: <AgentOrchestration /> },
+    { id: 'strategy', label: 'Strategy Builder', component: <VisualStrategyBuilder /> },
+    { id: 'notifications', label: 'Notifications', component: <NotificationSystem /> },
+    { id: 'original', label: 'Original View', component: <ConnectedAgentsTab /> }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Enhanced Agent Management</h2>
+        <Badge variant="secondary">5 Premium Components</Badge>
+      </div>
+      
+      <Tabs value={agentTab} onValueChange={setAgentTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          {agentSubTabs.map(subTab => (
+            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {agentSubTabs.map(subTab => (
+          <TabsContent key={subTab.id} value={subTab.id}>
+            {subTab.component}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  )
+}
+
+// Enhanced Trading Tab with Premium Components
+function EnhancedTradingTab() {
+  const [tradingTab, setTradingTab] = useState('enhanced')
+  
+  const tradingSubTabs = [
+    { id: 'enhanced', label: 'Enhanced Interface', component: <EnhancedTradingInterface /> },
+    { id: 'orderbook', label: 'Advanced Order Book', component: <AdvancedOrderBook /> },
+    { id: 'order-entry', label: 'Advanced Order Entry', component: <AdvancedOrderEntry /> },
+    { id: 'animations', label: 'Trading Animations', component: <TradingAnimations /> },
+    { id: 'original', label: 'Original View', component: <ConnectedTradingTab /> }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Enhanced Trading Interface</h2>
+        <Badge variant="secondary">5 Premium Components</Badge>
+      </div>
+      
+      <Tabs value={tradingTab} onValueChange={setTradingTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          {tradingSubTabs.map(subTab => (
+            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {tradingSubTabs.map(subTab => (
+          <TabsContent key={subTab.id} value={subTab.id}>
+            {subTab.component}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  )
+}
+
+// Enhanced Analytics Tab with Premium Charts
+function EnhancedAnalyticsTab() {
+  const [analyticsTab, setAnalyticsTab] = useState('premium-charts')
+  
+  const analyticsSubTabs = [
+    { id: 'premium-charts', label: 'Premium Charts', component: <PremiumChartsGrid /> },
+    { id: 'portfolio-analytics', label: 'Portfolio Analytics', component: <AdvancedPortfolioAnalytics /> },
+    { id: 'portfolio-monitor', label: 'Portfolio Monitor', component: <EnhancedPortfolioMonitor /> },
+    { id: 'data-table', label: 'Advanced Data Table', component: <AdvancedDataTable /> },
+    { id: 'original', label: 'Original View', component: <ConnectedAnalyticsTab /> }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Enhanced Analytics Suite</h2>
+        <Badge variant="secondary">5 Premium Components</Badge>
+      </div>
+      
+      <Tabs value={analyticsTab} onValueChange={setAnalyticsTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          {analyticsSubTabs.map(subTab => (
+            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {analyticsSubTabs.map(subTab => (
+          <TabsContent key={subTab.id} value={subTab.id}>
+            {subTab.component}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  )
+}
+
+// Enhanced Advanced Tab with Premium Features
+function EnhancedAdvancedTab() {
+  const [advancedTab, setAdvancedTab] = useState('inputs')
+  
+  const advancedSubTabs = [
+    { id: 'inputs', label: 'Advanced Inputs', component: <AdvancedInputsDemo /> },
+    { id: 'sortable', label: 'Sortable Lists', component: <SortableDemo /> },
+    { id: 'risk', label: 'Risk Management', component: <RiskManagementSuite /> },
+    { id: 'dashboard-grid', label: 'Dashboard Grid', component: <DashboardGrid /> },
+    { id: 'command', label: 'Command Palette', component: <CommandPaletteUI /> },
+    { id: 'original', label: 'Original View', component: <ConnectedAdvancedTab /> }
+  ]
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Enhanced Advanced Features</h2>
+        <Badge variant="secondary">6 Premium Components</Badge>
+      </div>
+      
+      <Tabs value={advancedTab} onValueChange={setAdvancedTab}>
+        <TabsList className="grid w-full grid-cols-6">
+          {advancedSubTabs.map(subTab => (
+            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {advancedSubTabs.map(subTab => (
+          <TabsContent key={subTab.id} value={subTab.id}>
+            {subTab.component}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  )
+}
+
+// Premium Charts Grid Component
+function PremiumChartsGrid() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Premium Trading Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PremiumTradingChart />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Portfolio Performance Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PortfolioPerformanceChart />
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Asset Allocation Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AssetAllocationChart />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>P&L Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PnLChart />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Enterprise Features Component (Placeholder)
+function EnterpriseFeatures() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Enterprise Features</CardTitle>
+          <CardDescription>Advanced enterprise-grade features for trading platforms</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <Settings className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">Enterprise Dashboard</h3>
+            <p className="text-gray-600 mt-2">Load balancing, multi-tenancy, and system health monitoring</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Compliance & Risk Suite Component
+function ComplianceRiskSuite() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Risk Management Suite</CardTitle>
+          <CardDescription>Comprehensive risk management and compliance monitoring</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RiskManagementSuite />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Multi-Asset Trading Component (Placeholder)
+function MultiAssetTrading() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Multi-Asset Trading</CardTitle>
+          <CardDescription>Global portfolio management across multiple asset classes</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <Coins className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">Multi-Asset Dashboard</h3>
+            <p className="text-gray-600 mt-2">Currency hedging, arbitrage detection, and global exposure mapping</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Demo Components for Advanced Inputs
+function AdvancedInputsDemo() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Multi-Select Input</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MultiSelect />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Tag Input</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TagInput />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Date Range Picker</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DateRangePicker />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Trading Symbol Selector</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TradingSymbolSelector />
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Price Range Slider</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PriceRangeSlider />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Rich Text Editor</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-gray-600">Rich Text Editor (requires @tiptap dependencies)</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Demo Components for Sortable Lists
+function SortableDemo() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Watchlist Sortable</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WatchlistSortable />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Portfolio Sortable</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PortfolioSortable />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Strategy Sortable</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StrategySortable />
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>General Sortable List</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SortableList />
+        </CardContent>
+      </Card>
     </div>
   )
 }

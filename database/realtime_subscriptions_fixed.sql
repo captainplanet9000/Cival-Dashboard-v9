@@ -1,6 +1,6 @@
--- Real-time Subscriptions Configuration for Enhanced Database Schema
+-- Real-time Subscriptions Configuration for Enhanced Database Schema - FIXED VERSION
 -- This script enables real-time features for all relevant tables
--- Created: 2025-01-02
+-- Created: 2025-01-02 - Fixed to avoid column reference issues
 
 -- ===============================================
 -- ENABLE REAL-TIME ON RELEVANT TABLES
@@ -28,22 +28,6 @@ ALTER publication supabase_realtime ADD TABLE public.system_health;
 
 -- Enable real-time on ML predictions for live updates
 ALTER publication supabase_realtime ADD TABLE public.ml_predictions;
-
--- ===============================================
--- REAL-TIME FILTERS FOR SECURITY
--- ===============================================
-
--- Create real-time filters to ensure users only get updates for their data
--- These filters work in conjunction with RLS policies
-
--- Blockchain wallets: Only send updates for user's wallets
--- This is handled by RLS policies automatically
-
--- System events: Only send broadcast events or targeted events
--- This is handled by RLS policies automatically
-
--- Notifications: Only send to the specific user
--- This is handled by RLS policies automatically
 
 -- ===============================================
 -- REAL-TIME EVENT TRIGGERS
@@ -151,62 +135,6 @@ CREATE TRIGGER system_health_realtime_trigger
     FOR EACH ROW EXECUTE FUNCTION emit_realtime_event();
 
 -- ===============================================
--- CUSTOM REAL-TIME CHANNELS
--- ===============================================
-
--- Function to subscribe to custom channels based on user context
-CREATE OR REPLACE FUNCTION subscribe_to_user_channels(user_uuid UUID)
-RETURNS VOID AS $$
-DECLARE
-    agent_ids UUID[];
-    farm_ids UUID[];
-BEGIN
-    -- Get user's agent IDs
-    SELECT ARRAY(SELECT id FROM public.agents WHERE user_id = user_uuid) INTO agent_ids;
-    
-    -- Get user's farm IDs - try different possible column names
-    SELECT ARRAY(
-        SELECT CASE 
-            WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farms' AND column_name = 'created_by') 
-            THEN (SELECT array_agg(farm_id) FROM public.farms WHERE created_by = user_uuid)
-            WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farms' AND column_name = 'user_id') 
-            THEN (SELECT array_agg(farm_id) FROM public.farms WHERE user_id = user_uuid)
-            ELSE ARRAY[]::UUID[]
-        END
-    ) INTO farm_ids;
-    
-    -- Create subscription record for real-time filtering
-    INSERT INTO public.event_subscriptions (
-        user_id,
-        event_types,
-        filters,
-        is_active
-    ) VALUES (
-        user_uuid,
-        ARRAY[
-            'blockchain_wallets.*',
-            'blockchain_transactions.*',
-            'blockchain_achievements.*',
-            'notifications.*',
-            'system_events.*',
-            'realtime_metrics.*',
-            'performance_benchmarks.*',
-            'ml_predictions.*',
-            'system_health.*'
-        ],
-        json_build_object(
-            'agent_ids', agent_ids,
-            'farm_ids', farm_ids,
-            'user_id', user_uuid
-        ),
-        true
-    ) ON CONFLICT (user_id) DO UPDATE SET
-        filters = EXCLUDED.filters,
-        updated_at = NOW();
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- ===============================================
 -- REAL-TIME CLEANUP FUNCTIONS
 -- ===============================================
 
@@ -218,14 +146,9 @@ BEGIN
     DELETE FROM public.system_events 
     WHERE created_at < NOW() - INTERVAL '24 hours' AND processed = true;
     
-    -- Clean up old real-time metrics (keep based on retention policy)
+    -- Clean up old real-time metrics (keep last 7 days by default)
     DELETE FROM public.realtime_metrics 
-    WHERE timestamp < NOW() - (
-        SELECT (config_value || ' hours')::INTERVAL 
-        FROM public.system_configuration 
-        WHERE config_key = 'realtime_metrics_retention_hours'
-        LIMIT 1
-    );
+    WHERE timestamp < NOW() - INTERVAL '7 days';
     
     -- Clean up old performance benchmarks (keep last 30 days)
     DELETE FROM public.performance_benchmarks 
@@ -238,35 +161,6 @@ BEGIN
     -- Clean up old market analysis (keep last 7 days)
     DELETE FROM public.enhanced_market_analysis 
     WHERE expires_at < NOW() OR created_at < NOW() - INTERVAL '7 days';
-    
-    -- Log cleanup completion
-    INSERT INTO public.system_events (
-        event_type,
-        event_source,
-        event_data,
-        processed
-    ) VALUES (
-        'system.cleanup_completed',
-        'system',
-        json_build_object(
-            'cleanup_type', 'realtime_data',
-            'timestamp', extract(epoch from now())
-        ),
-        true
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- ===============================================
--- SCHEDULED CLEANUP JOB
--- ===============================================
-
--- Create a function to be called by pg_cron or external scheduler
-CREATE OR REPLACE FUNCTION schedule_realtime_cleanup()
-RETURNS VOID AS $$
-BEGIN
-    -- This would be called by a cron job every hour
-    PERFORM cleanup_realtime_data();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -307,16 +201,15 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ===============================================
--- REAL-TIME DASHBOARD FUNCTIONS
+-- BASIC DASHBOARD DATA FUNCTION
 -- ===============================================
 
--- Function to get live dashboard data
-CREATE OR REPLACE FUNCTION get_live_dashboard_data(user_uuid UUID)
+-- Simplified function to get live dashboard data
+CREATE OR REPLACE FUNCTION get_basic_dashboard_data(user_uuid UUID)
 RETURNS JSON AS $$
 DECLARE
     result JSON;
     agent_count INTEGER;
-    farm_count INTEGER;
     total_portfolio DECIMAL;
     active_alerts INTEGER;
     recent_events INTEGER;
@@ -324,17 +217,6 @@ BEGIN
     -- Get user's agent count
     SELECT COUNT(*) INTO agent_count
     FROM public.agents WHERE user_id = user_uuid;
-    
-    -- Get user's farm count
-    SELECT COUNT(*) INTO farm_count
-    FROM public.farms WHERE 
-        (CASE 
-            WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farms' AND column_name = 'created_by') 
-            THEN created_by = user_uuid
-            WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'farms' AND column_name = 'user_id') 
-            THEN user_id = user_uuid
-            ELSE false
-        END);
     
     -- Get total portfolio value from blockchain wallets
     SELECT COALESCE(SUM(balance + native_balance), 0) INTO total_portfolio
@@ -357,7 +239,6 @@ BEGIN
     result := json_build_object(
         'timestamp', extract(epoch from now()),
         'agent_count', agent_count,
-        'farm_count', farm_count,
         'total_portfolio_value', total_portfolio,
         'active_alerts', active_alerts,
         'recent_events', recent_events,
@@ -375,17 +256,14 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 COMMENT ON FUNCTION emit_realtime_event() IS 
 'Trigger function that emits real-time events for table changes';
 
-COMMENT ON FUNCTION subscribe_to_user_channels() IS 
-'Subscribe user to relevant real-time channels based on their entities';
-
 COMMENT ON FUNCTION cleanup_realtime_data() IS 
 'Clean up old real-time data based on retention policies';
 
 COMMENT ON FUNCTION aggregate_realtime_metrics() IS 
 'Aggregate real-time metrics for dashboard display';
 
-COMMENT ON FUNCTION get_live_dashboard_data() IS 
-'Get live dashboard data for a specific user';
+COMMENT ON FUNCTION get_basic_dashboard_data() IS 
+'Get basic live dashboard data for a specific user';
 
 -- Real-time setup completed successfully
 SELECT 'Real-time subscriptions configured successfully!' as status;
