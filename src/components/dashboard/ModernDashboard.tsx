@@ -57,10 +57,11 @@ import { Switch } from '@/components/ui/switch'
 // Import Redis & Supabase real-time hooks
 import { useRedisRealtime } from '@/hooks/use-redis-realtime'
 import { useSupabaseRealtime } from '@/hooks/use-supabase-realtime'
+import { useRedisCache } from '@/hooks/useRedisCache'
 
 // Import new ShadCN migration components
-import TradingCharts from '../TradingCharts'
-import AdvancedAnalytics from '../AdvancedAnalytics'
+import TradingCharts from './TradingCharts'
+import AdvancedAnalytics from './AdvancedAnalytics'
 import { AnimatedMetrics } from '@/components/motion/animated-metrics'
 import { TradingForm } from '@/components/forms/trading-form'
 import { CommandPalette } from '@/components/expansions/command-palette'
@@ -221,6 +222,9 @@ export function ModernDashboardV4() {
   // Redis & Supabase real-time connections
   const { data: redisData, connected: redisConnected } = useRedisRealtime(['portfolio', 'agents', 'trades'])
   const { data: supabaseData, connected: supabaseConnected } = useSupabaseRealtime('trading')
+  
+  // Enhanced Redis cache integration
+  const { status: redisStatus, operations: cacheOps } = useRedisCache()
   
   // Calculate live metrics from agent data
   const [metrics, setMetrics] = useState<DashboardMetrics>({
