@@ -125,8 +125,9 @@ export function useAgentData() {
   // Auto-refresh data every 30 seconds (reduced from 5 seconds to prevent DB overload)
   useEffect(() => {
     refreshAgentData()
-    const interval = setInterval(refreshAgentData, 30000)
-    return () => clearInterval(interval)
+    // TEMPORARILY DISABLED to stop Supabase request flood
+    // const interval = setInterval(refreshAgentData, 30000)
+    // return () => clearInterval(interval)
   }, [refreshAgentData])
 
   const createAgent = useCallback(async (agentConfig: {
@@ -244,8 +245,9 @@ export function useAgentThoughts(agentId: string) {
 
   useEffect(() => {
     refreshThoughts()
-    const interval = setInterval(refreshThoughts, 3000) // Refresh every 3 seconds
-    return () => clearInterval(interval)
+    // TEMPORARILY DISABLED to stop Supabase request flood
+    // const interval = setInterval(refreshThoughts, 3000) // Refresh every 3 seconds
+    // return () => clearInterval(interval)
   }, [refreshThoughts])
 
   return { thoughts, loading, refreshThoughts }
@@ -276,8 +278,9 @@ export function useAgentDecisions(agentId: string) {
 
   useEffect(() => {
     refreshDecisions()
-    const interval = setInterval(refreshDecisions, 2000) // Refresh every 2 seconds
-    return () => clearInterval(interval)
+    // TEMPORARILY DISABLED to stop Supabase request flood
+    // const interval = setInterval(refreshDecisions, 2000) // Refresh every 2 seconds
+    // return () => clearInterval(interval)
   }, [refreshDecisions])
 
   return { decisions, loading, refreshDecisions }
@@ -307,8 +310,9 @@ export function useWalletData(agentId: string) {
 
   useEffect(() => {
     refreshWalletData()
-    const interval = setInterval(refreshWalletData, 5000) // Refresh every 5 seconds
-    return () => clearInterval(interval)
+    // TEMPORARILY DISABLED to stop Supabase request flood
+    // const interval = setInterval(refreshWalletData, 5000) // Refresh every 5 seconds
+    // return () => clearInterval(interval)
   }, [refreshWalletData])
 
   return { wallet, transactions, loading, refreshWalletData }

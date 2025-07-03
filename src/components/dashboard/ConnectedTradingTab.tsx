@@ -170,10 +170,10 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${state.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {state.totalPnL >= 0 ? '+' : ''}{state.totalPnL.toFixed(2)}
+              {state.totalPnL >= 0 ? '+' : ''}{(state.totalPnL || 0).toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {((state.totalPnL / (state.totalAgents * 10000)) * 100).toFixed(2)}% return
+              {(((state.totalPnL || 0) / Math.max(((state.totalAgents || 0) * 10000), 1)) * 100).toFixed(2)}% return
             </p>
           </CardContent>
         </Card>
@@ -195,7 +195,7 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
             <CardTitle className="text-sm">Win Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{state.winRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{(state.winRate || 0).toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               {state.executedOrders.length} total trades
             </p>
@@ -286,7 +286,7 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
                 <SelectContent>
                   {Array.from(state.agentPerformance.values()).map(agent => (
                     <SelectItem key={agent.agentId} value={agent.agentId}>
-                      {agent.name} (${agent.portfolioValue.toFixed(2)})
+                      {agent.name} (${(agent.portfolioValue || 0).toFixed(2)})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -337,8 +337,8 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
                 <div className="space-y-1">
                   {orderBook.bids.slice(0, 8).map((bid, i) => (
                     <div key={i} className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{bid.size.toFixed(4)}</span>
-                      <span className="font-medium text-green-600">${bid.price.toFixed(2)}</span>
+                      <span className="text-muted-foreground">{(bid.size || 0).toFixed(4)}</span>
+                      <span className="font-medium text-green-600">${(bid.price || 0).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -350,8 +350,8 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
                 <div className="space-y-1">
                   {orderBook.asks.slice(0, 8).map((ask, i) => (
                     <div key={i} className="flex justify-between text-xs">
-                      <span className="font-medium text-red-600">${ask.price.toFixed(2)}</span>
-                      <span className="text-muted-foreground">{ask.size.toFixed(4)}</span>
+                      <span className="font-medium text-red-600">${(ask.price || 0).toFixed(2)}</span>
+                      <span className="text-muted-foreground">{(ask.size || 0).toFixed(4)}</span>
                     </div>
                   ))}
                 </div>
@@ -364,14 +364,14 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
                 <span className="text-muted-foreground">Spread</span>
                 <span className="font-medium">
                   ${orderBook.asks[0] && orderBook.bids[0] 
-                    ? (orderBook.asks[0].price - orderBook.bids[0].price).toFixed(2)
+                    ? ((orderBook.asks[0].price || 0) - (orderBook.bids[0].price || 0)).toFixed(2)
                     : '0.00'}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="text-muted-foreground">Market Price</span>
                 <span className="font-medium">
-                  ${state.marketPrices.get(orderForm.symbol)?.toFixed(2) || '0.00'}
+                  ${(state.marketPrices.get(orderForm.symbol) || 0).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -418,9 +418,9 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{order.quantity} @ ${order.price.toFixed(2)}</div>
+                      <div className="font-medium">{order.quantity} @ ${(order.price || 0).toFixed(2)}</div>
                       <div className="text-xs text-muted-foreground">
-                        Total: ${(order.quantity * order.price).toFixed(2)}
+                        Total: ${((order.quantity || 0) * (order.price || 0)).toFixed(2)}
                       </div>
                     </div>
                   </motion.div>
@@ -441,8 +441,8 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
           const strategyAgents = Array.from(state.agentPerformance.values()).filter(
             agent => agent.name.toLowerCase().includes(strategy.toLowerCase())
           )
-          const totalValue = strategyAgents.reduce((sum, agent) => sum + agent.portfolioValue, 0)
-          const totalPnL = strategyAgents.reduce((sum, agent) => sum + agent.pnl, 0)
+          const totalValue = strategyAgents.reduce((sum, agent) => sum + (agent.portfolioValue || 0), 0)
+          const totalPnL = strategyAgents.reduce((sum, agent) => sum + (agent.pnl || 0), 0)
           
           return (
             <Card key={strategy}>
@@ -454,19 +454,19 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Total Value</span>
-                    <span className="font-medium">${totalValue.toFixed(2)}</span>
+                    <span className="font-medium">${(totalValue || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">P&L</span>
                     <span className={`font-medium ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {totalPnL >= 0 ? '+' : ''}{totalPnL.toFixed(2)}
+                      {totalPnL >= 0 ? '+' : ''}{(totalPnL || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Avg Win Rate</span>
                     <span className="font-medium">
                       {strategyAgents.length > 0 
-                        ? (strategyAgents.reduce((sum, a) => sum + a.winRate, 0) / strategyAgents.length).toFixed(1)
+                        ? (strategyAgents.reduce((sum, a) => sum + (a.winRate || 0), 0) / Math.max(strategyAgents.length, 1)).toFixed(1)
                         : '0.0'}%
                     </span>
                   </div>
@@ -490,7 +490,7 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{strategy}</span>
                     <span className={`text-sm ${performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {performance >= 0 ? '+' : ''}{performance.toFixed(2)}%
+                      {performance >= 0 ? '+' : ''}{(performance || 0).toFixed(2)}%
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">

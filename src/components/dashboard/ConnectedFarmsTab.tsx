@@ -20,54 +20,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 // Import shared data manager to prevent duplicate requests
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
-// Import all the powerful farm management components
-import { EnhancedFarmCreationWizard } from '@/components/farms/EnhancedFarmCreationWizard'
-import EnhancedFarmDashboard from '@/components/farm/EnhancedFarmDashboard'
-import RealAgentManagement from '@/components/agents/RealAgentManagement'
+// Import farms service
+import { useFarms, Farm, FarmCreateConfig } from '@/lib/farms/farms-service'
+
+// Import agent data
 import { useAgentData } from '@/hooks/useAgentData'
 
-// Import goal integration - component is available but with different export
-// import { NaturalLanguageGoalCreator } from '@/components/goals/NaturalLanguageGoalCreator'
+// Import form components
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
-// Import wallet integration
-import { ComprehensiveWalletDashboard } from '@/components/wallet/ComprehensiveWalletDashboard'
-
-// Import analytics components
-import RealAnalyticsDashboard from '@/components/analytics/RealAnalyticsDashboard'
-
-// Import risk management
-import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
-
-// Import multi-chain farm coordination
-import MultiChainFarmCoordinator from '@/components/farms/MultiChainFarmCoordinator'
-
-// Import premium components for enhanced functionality
-import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
-import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
-import { VisualStrategyBuilder } from '@/components/premium-ui/strategy/visual-strategy-builder'
-import { NotificationCenter } from '@/components/premium-ui/notifications/notification-system'
-import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
-
-interface Farm {
-  id: string
-  name: string
-  description: string
-  strategy: string
-  agentCount: number
-  totalCapital: number
-  coordinationMode: 'independent' | 'coordinated' | 'hierarchical'
-  status: 'active' | 'paused' | 'stopped'
-  createdAt: string
-  agents: string[]
-  performance: {
-    totalValue: number
-    totalPnL: number
-    winRate: number
-    tradeCount: number
-  }
-  goals?: any[]
-  walletAllocations?: any[]
-}
+// Farm interface is now imported from farms-service
 
 interface ConnectedFarmsTabProps {
   className?: string
@@ -77,219 +43,88 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
   const { state, actions } = useDashboardConnection('farms')
   const { agents, loading: agentsLoading } = useAgentData()
   
-  // Use shared real-time data manager (prevents duplicate requests)
+  // Use farms service for real farm management
   const {
     farms,
-    totalFarms,
+    loading: farmsLoading,
     activeFarms,
-    farmTotalValue: totalValue,
+    totalFarms,
+    totalValue,
+    totalPnL,
+    averageWinRate,
+    createFarm,
+    updateFarmStatus,
+    deleteFarm,
+    addAgentToFarm,
+    removeAgentFromFarm
+  } = useFarms()
+  
+  // Use shared real-time data for additional context
+  const {
     agents: realtimeAgents,
-    farmsConnected,
     agentsConnected,
-    loading: farmsLoading = false,
-    totalPnL
+    farmsConnected
   } = useSharedRealtimeData()
 
-  // Mock farm management functions (replace with actual API calls when backend is ready)
-  const createFarm = async (config: any) => {
-    console.log('Creating farm:', config)
-    return `farm_${Date.now()}`
-  }
-  const startFarm = async (id: string) => {
-    console.log('Starting farm:', id)
-    return true
-  }
-  const stopFarm = async (id: string) => {
-    console.log('Stopping farm:', id)
-    return true
-  }
-  const deleteFarm = async (id: string) => {
-    console.log('Deleting farm:', id)
-    return true
-  }
-  const addAgentToFarm = async (farmId: string, agentId: string) => {
-    console.log('Adding agent to farm:', farmId, agentId)
-    return true
-  }
-  const removeAgentFromFarm = async (farmId: string, agentId: string) => {
-    console.log('Removing agent from farm:', farmId, agentId)
-    return true
-  }
-  const rebalanceFarm = async (farmId: string) => {
-    console.log('Rebalancing farm:', farmId)
-    return true
-  }
-  const refreshFarms = () => {
-    console.log('Refreshing farms')
-  }
-  const avgPerformance = 85 // Mock performance
-  const realtimeAgentsLoading = false
+  // Farm management state
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [newFarmConfig, setNewFarmConfig] = useState<Partial<FarmCreateConfig>>({
+    name: '',
+    description: '',
+    strategy: 'darvas_box',
+    targetAllocation: 10000,
+    farmType: 'strategy'
+  })
   
   const [activeTab, setActiveTab] = useState('overview')
-  const [selectedFarm, setSelectedFarm] = useState<any>(null)
-  const [showCreateGoal, setShowCreateGoal] = useState(false)
+  const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null)
 
-  // Enhanced farm management with real-time hooks
-  const handleCreateFarm = async (farmConfig: any) => {
+  // Farm management functions
+  const handleCreateFarm = async () => {
     try {
-      const farmId = await createFarm({
-        name: farmConfig.name,
-        description: farmConfig.description,
-        farmType: farmConfig.farmType,
-        targetAllocation: farmConfig.targetAllocation,
-        strategy: {
-          approach: farmConfig.strategy,
-          parameters: farmConfig.parameters || {}
-        },
-        riskLimits: farmConfig.riskLimits || {
-          maxDrawdown: 0.05,
-          maxConcentration: 0.3,
-          maxLeverage: 1
-        }
-      })
-
-      if (farmId) {
-        toast.success(`Farm "${farmConfig.name}" created successfully`)
-      } else {
-        toast.error('Failed to create farm')
+      if (!newFarmConfig.name || !newFarmConfig.strategy) {
+        toast.error('Please fill in all required fields')
+        return
       }
+
+      const farmId = await createFarm(newFarmConfig as FarmCreateConfig)
+      toast.success(`Farm "${newFarmConfig.name}" created successfully`)
+      setShowCreateDialog(false)
+      setNewFarmConfig({
+        name: '',
+        description: '',
+        strategy: 'darvas_box',
+        targetAllocation: 10000,
+        farmType: 'strategy'
+      })
     } catch (error) {
       console.error('Error creating farm:', error)
       toast.error('Failed to create farm')
     }
   }
 
-  const loadFarmsData = async () => {
-    try {
-      const storedFarms = localStorage.getItem('trading_farms')
-      const farmsData = storedFarms ? JSON.parse(storedFarms) : []
-      
-      // Enhanced farms with real agent data and wallet integration
-      const updatedFarms = await Promise.all(farmsData.map(async (farm: any) => {
-        // Get real agent performance data
-        const farmAgents = Array.from(state.agentPerformance.values()).filter(
-          agent => farm.agents?.includes(agent.agentId)
-        )
-        
-        // Get wallet allocations for the farm
-        const walletAllocations = await getFarmWalletAllocations(farm.farm_id || farm.id)
-        
-        // Get assigned goals for the farm
-        const farmGoals = await getFarmGoals(farm.farm_id || farm.id)
-        
-        // Calculate comprehensive performance metrics
-        const performance = await calculateFarmPerformance(farm, farmAgents, walletAllocations)
-        
-        return {
-          id: farm.farm_id || farm.id,
-          name: farm.farm_name || farm.name,
-          description: farm.description,
-          strategy: farm.strategy_type || farm.strategy,
-          agentCount: farm.metadata?.agent_count || farm.agents?.length || 0,
-          totalCapital: farm.total_allocated_capital || farm.totalCapital || 0,
-          coordinationMode: farm.coordination_mode || farm.coordinationMode || 'coordinated',
-          status: farm.status || 'active',
-          createdAt: farm.created_at || farm.createdAt || new Date().toISOString(),
-          agents: farm.agents || [],
-          performance,
-          goals: farmGoals,
-          walletAllocations
-        }
-      }))
-      
-      setFarms(updatedFarms)
-    } catch (error) {
-      console.error('Error loading farms data:', error)
-    }
-  }
-
-  const getFarmWalletAllocations = async (farmId: string) => {
-    try {
-      // Get wallet allocations for all farm agents
-      const allocations: any[] = []
-      const farm = farms.find(f => f.id === farmId)
-      if (!farm) return []
-
-      for (const agentId of farm.agents) {
-        const wallet = await agentWalletManager.getWallet(agentId)
-        if (wallet) {
-          allocations.push({
-            agentId,
-            walletAddress: wallet.address,
-            balance: wallet.balance,
-            totalValue: wallet.totalValue,
-            pnl: wallet.realizedPnL + wallet.unrealizedPnL,
-            positions: wallet.positions.length
-          })
-        }
-      }
-      return allocations
-    } catch (error) {
-      console.warn('Failed to get wallet allocations:', error)
-      return []
-    }
-  }
-
-  const getFarmGoals = async (farmId: string) => {
-    try {
-      const allGoals = JSON.parse(localStorage.getItem('trading_goals') || '[]')
-      return allGoals.filter((goal: any) => 
-        goal.farm_id === farmId || goal.assigned_farms?.includes(farmId)
-      )
-    } catch (error) {
-      console.warn('Failed to get farm goals:', error)
-      return []
-    }
-  }
-
-  const calculateFarmPerformance = async (farm: any, farmAgents: any[], walletAllocations: any[]) => {
-    try {
-      // Aggregate performance from all sources
-      const totalValue = walletAllocations.reduce((sum, wallet) => sum + wallet.totalValue, 0) || farm.total_allocated_capital || 0
-      const totalPnL = walletAllocations.reduce((sum, wallet) => sum + wallet.pnl, 0) || 0
-      const totalTrades = farmAgents.reduce((sum, agent) => sum + agent.tradeCount, 0) || 0
-      const successfulTrades = farmAgents.reduce((sum, agent) => sum + (agent.tradeCount * agent.winRate / 100), 0) || 0
-      const winRate = totalTrades > 0 ? (successfulTrades / totalTrades) * 100 : 0
-
-      return {
-        totalValue,
-        totalPnL,
-        winRate,
-        tradeCount: totalTrades,
-        roiPercent: totalValue > 0 ? (totalPnL / totalValue) * 100 : 0,
-        activeAgents: farmAgents.filter(a => a.status === 'active').length,
-        avgAgentPerformance: farmAgents.length > 0 ? farmAgents.reduce((sum, a) => sum + a.pnl, 0) / farmAgents.length : 0
-      }
-    } catch (error) {
-      console.warn('Failed to calculate performance:', error)
-      return {
-        totalValue: 0,
-        totalPnL: 0,
-        winRate: 0,
-        tradeCount: 0,
-        roiPercent: 0,
-        activeAgents: 0,
-        avgAgentPerformance: 0
-      }
-    }
-  }
+  // Strategy options
+  const strategyOptions = [
+    { value: 'darvas_box', label: 'Darvas Box', description: 'Breakout pattern recognition' },
+    { value: 'williams_alligator', label: 'Williams Alligator', description: 'Trend identification system' },
+    { value: 'renko_breakout', label: 'Renko Breakout', description: 'Price movement analysis' },
+    { value: 'heikin_ashi', label: 'Heikin Ashi', description: 'Smoothed candlestick patterns' },
+    { value: 'elliott_wave', label: 'Elliott Wave', description: 'Wave pattern analysis' }
+  ]
 
   const toggleFarmStatus = async (farmId: string) => {
     try {
-      const farm = farms.find(f => f.farmId === farmId)
+      const farm = farms.find(f => f.id === farmId)
       if (!farm) return
 
       const newStatus = farm.status === 'active' ? 'paused' : 'active'
       
-      // Use real-time hooks for farm management
-      if (newStatus === 'active') {
-        await startFarm(farmId)
-        toast.success(`Farm "${farm.name}" started`)
+      const success = await updateFarmStatus(farmId, newStatus)
+      if (success) {
+        toast.success(`Farm "${farm.name}" ${newStatus === 'active' ? 'started' : 'paused'}`)
       } else {
-        await stopFarm(farmId)
-        toast.success(`Farm "${farm.name}" paused`)
+        toast.error('Failed to update farm status')
       }
-      
     } catch (error) {
       console.error('Error toggling farm status:', error)
       toast.error('Failed to update farm status')
@@ -298,10 +133,9 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
 
   const handleDeleteFarm = async (farmId: string) => {
     try {
-      const farm = farms.find(f => f.farmId === farmId)
+      const farm = farms.find(f => f.id === farmId)
       if (!farm) return
 
-      // Use real-time hook to delete farm
       const success = await deleteFarm(farmId)
       if (success) {
         toast.success(`Farm "${farm.name}" deleted successfully`)
@@ -312,11 +146,6 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
       console.error('Error deleting farm:', error)
       toast.error('Failed to delete farm')
     }
-  }
-
-  const createFarmGoal = (farmId: string) => {
-    setSelectedFarm(farms.find(f => f.farmId === farmId) || null)
-    setShowCreateGoal(true)
   }
 
   return (
@@ -434,7 +263,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                 <div className={`text-2xl font-bold ${
                   totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  ${totalPnL.toFixed(2)}
+                  ${(totalPnL || 0).toFixed(2)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Real-time from backend
@@ -448,7 +277,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {avgPerformance.toFixed(1)}%
+                  {(avgPerformance || 0).toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Real-time win rate
@@ -534,23 +363,23 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Total Value:</span>
-                              <span className="font-medium">${farm.performance.totalValue.toFixed(2)}</span>
+                              <span className="font-medium">${(farm.performance?.totalValue || 0).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">P&L:</span>
                               <span className={`font-medium ${
-                                farm.performance.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                                (farm.performance?.totalPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                               }`}>
-                                {farm.performance.totalPnL >= 0 ? '+' : ''}{farm.performance.totalPnL.toFixed(2)}
+                                {(farm.performance?.totalPnL || 0) >= 0 ? '+' : ''}{(farm.performance?.totalPnL || 0).toFixed(2)}
                               </span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Win Rate:</span>
-                              <span className="font-medium">{farm.performance.winRate.toFixed(1)}%</span>
+                              <span className="font-medium">{(farm.performance?.winRate || 0).toFixed(1)}%</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Trades:</span>
-                              <span className="font-medium">{farm.performance.tradeCount}</span>
+                              <span className="font-medium">{farm.performance?.tradeCount || 0}</span>
                             </div>
                             {farm.goals && farm.goals.length > 0 && (
                               <div className="flex justify-between text-sm">
@@ -564,10 +393,10 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                           <div>
                             <div className="flex justify-between text-xs mb-1">
                               <span>Performance</span>
-                              <span>{((farm.performance.totalPnL / farm.totalCapital) * 100).toFixed(1)}%</span>
+                              <span>{(((farm.performance?.totalPnL || 0) / Math.max((farm.totalCapital || 1), 1)) * 100).toFixed(1)}%</span>
                             </div>
                             <Progress 
-                              value={Math.min(Math.abs((farm.performance.totalPnL / farm.totalCapital) * 100), 100)} 
+                              value={Math.min(Math.abs(((farm.performance?.totalPnL || 0) / Math.max((farm.totalCapital || 1), 1)) * 100), 100)} 
                               className="h-2"
                             />
                           </div>

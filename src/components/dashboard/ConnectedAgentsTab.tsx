@@ -98,17 +98,17 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Portfolio Value</span>
-                      <span className="font-medium">${agentData.portfolioValue.toFixed(2)}</span>
+                      <span className="font-medium">${(agentData.portfolioValue || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">P&L</span>
-                      <span className={`font-medium ${agentData.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {agentData.pnl >= 0 ? '+' : ''}{agentData.pnl.toFixed(2)}
+                      <span className={`font-medium ${(agentData.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {(agentData.pnl || 0) >= 0 ? '+' : ''}{(agentData.pnl || 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Win Rate</span>
-                      <span className="font-medium">{agentData.winRate.toFixed(1)}%</span>
+                      <span className="font-medium">{(agentData.winRate || 0).toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Trades</span>
@@ -382,7 +382,7 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
                         {(agent.pnl || 0) >= 0 ? '+' : ''}{(agent.pnl || 0).toFixed(2)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {(((agent.pnl || 0) / (agent.portfolioValue || 10000)) * 100).toFixed(2)}% return
+                        {(((agent.pnl || 0) / Math.max((agent.portfolioValue || 10000), 1)) * 100).toFixed(2)}% return
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Max DD: {((agent.maxDrawdown || 0) * 100).toFixed(1)}%
@@ -393,10 +393,10 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
                   <div className="mt-3 space-y-2">
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>Portfolio Growth</span>
-                      <span>{((agent.portfolioValue || 0) / 10000 * 100).toFixed(0)}%</span>
+                      <span>{((agent.portfolioValue || 0) / Math.max(10000, 1) * 100).toFixed(0)}%</span>
                     </div>
                     <Progress 
-                      value={Math.min(Math.max((agent.portfolioValue || 0) / 10000 * 100, 0), 200)} 
+                      value={Math.min(Math.max((agent.portfolioValue || 0) / Math.max(10000, 1) * 100, 0), 200)} 
                       className="h-2"
                     />
                   </div>

@@ -178,23 +178,24 @@ export function useSupabaseRealtime(table: string = 'dashboard'): UseSupabaseRea
   useEffect(() => {
     checkSupabaseConnection()
 
+    // TEMPORARILY DISABLED to stop Supabase request flood
     // Set up mock data polling for development (reduced frequency to prevent DB overload)
-    const interval = setInterval(() => {
-      if (!connected) {
-        const mockData = generateMockData(currentTable)
-        setData(mockData)
-      }
-    }, 60000) // Update every 60 seconds (reduced from 3 seconds)
+    // const interval = setInterval(() => {
+    //   if (!connected) {
+    //     const mockData = generateMockData(currentTable)
+    //     setData(mockData)
+    //   }
+    // }, 60000) // Update every 60 seconds (reduced from 3 seconds)
 
-    // Initial data load
+    // Initial data load only
     const initialData = generateMockData(currentTable)
     setData(initialData)
 
-    // Subscribe to real-time updates
-    subscribe(currentTable)
+    // TEMPORARILY DISABLED - Subscribe to real-time updates
+    // subscribe(currentTable)
 
     return () => {
-      clearInterval(interval)
+      // clearInterval(interval)
       unsubscribe()
     }
   }, [currentTable, connected, generateMockData, subscribe, unsubscribe, checkSupabaseConnection])

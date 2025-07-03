@@ -196,7 +196,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
                 ? (currentPrice - order.price) * order.quantity
                 : (order.price - currentPrice) * order.quantity
               return pnl > 0
-            }).length / symbolOrders.length) * 100
+            }).length / Math.max(symbolOrders.length, 1)) * 100
           : 0
       }
     })
@@ -232,10 +232,10 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${state.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {((state.totalPnL / (state.totalAgents * 10000)) * 100).toFixed(2)}%
+              {((state.totalPnL / Math.max((state.totalAgents * 10000), 1)) * 100).toFixed(2)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {state.totalPnL >= 0 ? '+' : ''}{state.totalPnL.toFixed(2)} USD
+              {state.totalPnL >= 0 ? '+' : ''}{(state.totalPnL || 0).toFixed(2)} USD
             </p>
           </CardContent>
         </Card>
@@ -245,7 +245,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
             <CardTitle className="text-sm">Sharpe Ratio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.riskMetrics.sharpeRatio.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{(analyticsData.riskMetrics.sharpeRatio || 0).toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Risk-adjusted return
             </p>
@@ -258,7 +258,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              -{analyticsData.riskMetrics.maxDrawdown.toFixed(1)}%
+              -{(analyticsData.riskMetrics.maxDrawdown || 0).toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground">
               Largest loss period
@@ -272,7 +272,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              ${analyticsData.riskMetrics.varDaily.toFixed(0)}
+              ${(analyticsData.riskMetrics.varDaily || 0).toFixed(0)}
             </div>
             <p className="text-xs text-muted-foreground">
               95% confidence
@@ -368,7 +368,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
                       <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: any) => [`$${value.toFixed(2)}`, 'Portfolio Value']} />
+                  <Tooltip formatter={(value: any) => [`$${(value || 0).toFixed(2)}`, 'Portfolio Value']} />
                 </RechartsPieChart>
               </ResponsiveContainer>
             </div>
@@ -410,7 +410,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-orange-600">
-              {analyticsData.riskMetrics.portfolioVolatility.toFixed(1)}%
+              {(analyticsData.riskMetrics.portfolioVolatility || 0).toFixed(1)}%
             </div>
             <Progress value={analyticsData.riskMetrics.portfolioVolatility} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-1">
@@ -428,7 +428,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">
-              {analyticsData.riskMetrics.sharpeRatio.toFixed(2)}
+              {(analyticsData.riskMetrics.sharpeRatio || 0).toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Sharpe ratio
@@ -467,7 +467,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
             agent => agent.name.toLowerCase().includes(strategy.toLowerCase())
           )
           const avgPerformance = strategyAgents.length > 0 
-            ? strategyAgents.reduce((sum, agent) => sum + ((agent.pnl / 10000) * 100), 0) / strategyAgents.length
+            ? strategyAgents.reduce((sum, agent) => sum + (((agent.pnl || 0) / Math.max(10000, 1)) * 100), 0) / Math.max(strategyAgents.length, 1)
             : 0
           
           return (
@@ -477,7 +477,7 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
               </CardHeader>
               <CardContent>
                 <div className={`text-2xl font-bold ${avgPerformance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {avgPerformance >= 0 ? '+' : ''}{avgPerformance.toFixed(1)}%
+                  {avgPerformance >= 0 ? '+' : ''}{(avgPerformance || 0).toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {strategyAgents.length} agents active
