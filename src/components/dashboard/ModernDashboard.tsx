@@ -54,12 +54,13 @@ import { useAgentData } from '@/hooks/useAgentData'
 import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
 import { Switch } from '@/components/ui/switch'
 
-// Import shared data manager to prevent duplicate requests
-import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
+// Import Redis & Supabase real-time hooks
+import { useRedisRealtime } from '@/hooks/use-redis-realtime'
+import { useSupabaseRealtime } from '@/hooks/use-supabase-realtime'
 
 // Import new ShadCN migration components
-import TradingCharts from './TradingCharts'
-import AdvancedAnalytics from './AdvancedAnalytics'
+import TradingCharts from '../TradingCharts'
+import AdvancedAnalytics from '../AdvancedAnalytics'
 import { AnimatedMetrics } from '@/components/motion/animated-metrics'
 import { TradingForm } from '@/components/forms/trading-form'
 import { CommandPalette } from '@/components/expansions/command-palette'
@@ -96,40 +97,8 @@ import ConnectedVaultTab from '@/components/dashboard/ConnectedVaultTab'
 import ConnectedCalendarTab from '@/components/dashboard/ConnectedCalendarTab'
 import ConnectedAdvancedTab from '@/components/dashboard/ConnectedAdvancedTab'
 
-// Import Premium Components (Available Components Integration)
-import { EnhancedTradingInterface } from '@/components/premium-ui/trading/enhanced-trading-interface'
-import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
-import { AgentOrchestration } from '@/components/premium-ui/agents/ai-agent-orchestration'
-import { 
-  PremiumTradingChart, 
-  PortfolioPerformanceChart,
-  AssetAllocationChart,
-  PnLChart 
-} from '@/components/premium-ui/charts/premium-trading-charts'
-import { AdvancedPortfolioAnalytics } from '@/components/premium-ui/portfolio/advanced-portfolio-analytics'
-import { EnhancedPortfolioMonitor } from '@/components/premium-ui/portfolio/enhanced-portfolio-monitor'
-import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
-import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
-import { AdvancedOrderBook } from '@/components/premium-ui/trading/advanced-orderbook'
-import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'
-import { VisualStrategyBuilder } from '@/components/premium-ui/strategy/visual-strategy-builder'
-import { NotificationSystem } from '@/components/premium-ui/notifications/notification-system'
-import { TradingAnimations } from '@/components/premium-ui/motion/trading-animations'
-import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
-import { CommandPaletteUI } from '@/components/premium-ui/command/command-palette'
-import { MultiSelect } from '@/components/premium-ui/inputs/multi-select'
-import { TagInput } from '@/components/premium-ui/inputs/tag-input'
-import { DateRangePicker } from '@/components/premium-ui/inputs/date-range-picker'
-// import { RichTextEditor } from '@/components/premium-ui/editors/rich-text-editor' // Requires @tiptap dependencies
-import { AutoForm } from '@/components/premium-ui/forms/auto-form'
-import { MultipleSelector } from '@/components/premium-ui/expansions/multiple-selector'
-import { TradingSymbolSelector } from '@/components/premium-ui/expansions/trading-symbol-selector'
-import { DualRangeSlider } from '@/components/premium-ui/expansions/dual-range-slider'
-import { PriceRangeSlider } from '@/components/premium-ui/expansions/price-range-slider'
-import { SortableList } from '@/components/premium-ui/sortable/sortable-list'
-import { WatchlistSortable } from '@/components/premium-ui/sortable/WatchlistSortable'
-import { PortfolioSortable } from '@/components/premium-ui/sortable/PortfolioSortable'
-import { StrategySortable } from '@/components/premium-ui/sortable/StrategySortable'
+// Import Premium Components
+// import AutonomousTradingDashboard from '@/components/autonomous/AutonomousTradingDashboard' // Removed autonomous tab
 import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
@@ -249,8 +218,9 @@ export function ModernDashboardV4() {
   // Use live agent data
   const { agents, loading: agentsLoading } = useAgentData()
   
-  // Use shared real-time data manager (prevents duplicate requests)
-  const { redisConnected, supabaseConnected } = useSharedRealtimeData()
+  // Redis & Supabase real-time connections
+  const { data: redisData, connected: redisConnected } = useRedisRealtime(['portfolio', 'agents', 'trades'])
+  const { data: supabaseData, connected: supabaseConnected } = useSupabaseRealtime('trading')
   
   // Calculate live metrics from agent data
   const [metrics, setMetrics] = useState<DashboardMetrics>({
@@ -305,6 +275,8 @@ export function ModernDashboardV4() {
       component: <OverviewTab 
         metrics={metrics} 
         chartData={chartData} 
+        redisData={redisData}
+        supabaseData={supabaseData}
         redisConnected={redisConnected}
         supabaseConnected={supabaseConnected}
       />
@@ -313,7 +285,7 @@ export function ModernDashboardV4() {
       id: 'agents',
       label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <EnhancedAgentsTab />
+      component: <ConnectedAgentsTab />
     },
     {
       id: 'farms',
@@ -337,7 +309,7 @@ export function ModernDashboardV4() {
       id: 'trading',
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
-      component: <EnhancedTradingTab />
+      component: <ConnectedTradingTab />
     },
     // Removed autonomous tab
     // {
@@ -356,7 +328,7 @@ export function ModernDashboardV4() {
       id: 'analytics',
       label: 'Analytics',
       icon: <PieChart className="h-4 w-4" />,
-      component: <EnhancedAnalyticsTab />
+      component: <ConnectedAnalyticsTab />
     },
     {
       id: 'history',
@@ -380,7 +352,7 @@ export function ModernDashboardV4() {
       id: 'advanced',
       label: 'Advanced',
       icon: <Settings className="h-4 w-4" />,
-      component: <EnhancedAdvancedTab />
+      component: <ConnectedAdvancedTab />
     }
   ]
 
@@ -399,9 +371,9 @@ export function ModernDashboardV4() {
               <div className="flex items-center gap-4">
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold text-primary">
-                    Cival Dashboard <Badge variant="secondary" className="ml-2">Premium</Badge>
+                    Cival Dashboard
                   </h1>
-                  <p className="text-xs sm:text-sm text-secondary hidden sm:block">29+ Premium Components • Advanced AI Trading Platform</p>
+                  <p className="text-xs sm:text-sm text-secondary hidden sm:block">Advanced AI Trading Platform</p>
                 </div>
               </div>
               
@@ -483,9 +455,11 @@ export function ModernDashboardV4() {
 }
 
 // Enhanced Overview Tab with Real Trading Functionality
-function OverviewTab({ metrics, chartData, redisConnected, supabaseConnected }: { 
+function OverviewTab({ metrics, chartData, redisData, supabaseData, redisConnected, supabaseConnected }: { 
   metrics: DashboardMetrics; 
   chartData: ChartDataPoint[];
+  redisData?: any;
+  supabaseData?: any;
   redisConnected: boolean;
   supabaseConnected: boolean;
 }) {
@@ -525,7 +499,7 @@ function OverviewTab({ metrics, chartData, redisConnected, supabaseConnected }: 
                 </div>
               </div>
               <Badge variant={redisConnected ? 'default' : 'secondary'}>
-                {redisConnected ? 'Active' : 'Offline'}
+                {redisData ? Object.keys(redisData).length : 0} keys
               </Badge>
             </div>
             
@@ -541,26 +515,30 @@ function OverviewTab({ metrics, chartData, redisConnected, supabaseConnected }: 
                 </div>
               </div>
               <Badge variant={supabaseConnected ? 'default' : 'secondary'}>
-                {supabaseConnected ? 'Active' : 'Offline'}
+                {supabaseData ? Object.keys(supabaseData).length : 0} tables
               </Badge>
             </div>
           </div>
           
           {/* Live Data Preview */}
-          {(redisConnected || supabaseConnected) && (
+          {(redisData || supabaseData) && (
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Live Connection Status</h4>
+              <h4 className="font-medium mb-3">Live Data Stream</h4>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {redisConnected && (
-                  <div className="bg-red-50 p-3 rounded border border-red-200">
-                    <h5 className="text-sm font-medium text-red-700 mb-2">Redis Cache Active</h5>
-                    <p className="text-xs text-red-600">Real-time data streaming and caching enabled</p>
+                {redisData && (
+                  <div className="bg-gray-50 p-3 rounded">
+                    <h5 className="text-sm font-medium text-red-700 mb-2">Redis Data</h5>
+                    <pre className="text-xs text-gray-600 overflow-auto max-h-32">
+                      {JSON.stringify(redisData, null, 2)}
+                    </pre>
                   </div>
                 )}
-                {supabaseConnected && (
-                  <div className="bg-green-50 p-3 rounded border border-green-200">
-                    <h5 className="text-sm font-medium text-green-700 mb-2">Supabase Database Active</h5>
-                    <p className="text-xs text-green-600">Real-time database synchronization enabled</p>
+                {supabaseData && (
+                  <div className="bg-gray-50 p-3 rounded">
+                    <h5 className="text-sm font-medium text-green-700 mb-2">Supabase Data</h5>
+                    <pre className="text-xs text-gray-600 overflow-auto max-h-32">
+                      {JSON.stringify(supabaseData, null, 2)}
+                    </pre>
                   </div>
                 )}
               </div>
@@ -578,7 +556,7 @@ function OverviewTab({ metrics, chartData, redisConnected, supabaseConnected }: 
 
       {/* Overview Sub-Navigation */}
       <Tabs value={overviewTab} onValueChange={setOverviewTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 bg-emerald-50 gap-2">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-7 bg-emerald-50 gap-2">
           {overviewSubTabs.map((tab) => (
             <TabsTrigger
               key={tab.id}
@@ -2633,542 +2611,4 @@ function LoadingScreen() {
 }
 
 
-// Main Dashboard Component with Premium Integration
-export default function ModernDashboard() {
-  const [currentTab, setCurrentTab] = useState('overview')
-  
-  const mainTabs = [
-    { id: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
-    { id: 'premium-trading', label: 'Premium Trading', icon: <TrendingUp className="h-4 w-4" /> },
-    { id: 'premium-agents', label: 'Premium Agents', icon: <Bot className="h-4 w-4" /> },
-    { id: 'premium-analytics', label: 'Premium Analytics', icon: <PieChart className="h-4 w-4" /> },
-    { id: 'premium-portfolio', label: 'Premium Portfolio', icon: <Wallet className="h-4 w-4" /> },
-    { id: 'premium-risk', label: 'Premium Risk', icon: <Shield className="h-4 w-4" /> },
-    { id: 'advanced', label: 'Advanced', icon: <Settings className="h-4 w-4" /> }
-  ]
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-violet-50 to-amber-50">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-              Premium Trading Dashboard
-            </h1>
-            <p className="text-muted-foreground">
-              Professional-grade trading platform with 43+ premium components
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <ThemeToggle />
-            <Button size="sm" variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </div>
-
-        {/* Main Navigation Tabs */}
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-white/80 backdrop-blur-sm border border-emerald-200/50">
-            {mainTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900"
-              >
-                {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value="overview">
-            <OverviewTab />
-          </TabsContent>
-
-          <TabsContent value="premium-trading">
-            <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
-                  Premium Trading Interface
-                </CardTitle>
-                <CardDescription>
-                  Advanced trading with multi-exchange routing and real-time analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[600px] bg-muted/20 rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">Enhanced Trading Interface Component</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="premium-agents">
-            <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-emerald-600" />
-                  Premium Agent Management
-                </CardTitle>
-                <CardDescription>
-                  Advanced AI agent orchestration with multi-agent coordination
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="h-[300px] bg-muted/20 rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">Enhanced Expert Agents Component</p>
-                  </div>
-                  <div className="h-[300px] bg-muted/20 rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">Agent Orchestration Component</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="premium-analytics">
-            <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5 text-emerald-600" />
-                  Premium Analytics Suite
-                </CardTitle>
-                <CardDescription>
-                  Advanced trading charts with technical indicators and real-time data
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="h-[300px] bg-muted/20 rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">Premium Trading Chart</p>
-                  </div>
-                  <div className="h-[300px] bg-muted/20 rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">Portfolio Performance Chart</p>
-                  </div>
-                  <div className="h-[300px] bg-muted/20 rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">Asset Allocation Chart</p>
-                  </div>
-                  <div className="h-[300px] bg-muted/20 rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">P&L Analysis Chart</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="premium-portfolio">
-            <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wallet className="h-5 w-5 text-emerald-600" />
-                  Premium Portfolio Analytics
-                </CardTitle>
-                <CardDescription>
-                  Advanced portfolio analysis with risk assessment and optimization
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[600px] bg-muted/20 rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">Advanced Portfolio Analytics Component</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="premium-risk">
-            <Card className="bg-white/80 backdrop-blur-sm border-emerald-200/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-emerald-600" />
-                  Premium Risk Management
-                </CardTitle>
-                <CardDescription>
-                  Enterprise-grade risk monitoring with compliance tracking
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[600px] bg-muted/20 rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">Risk Management Suite Component</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="advanced">
-            <AdvancedTab />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  )
-}
-
-// ========================================
-// ENHANCED TAB COMPONENTS WITH PREMIUM INTEGRATION
-// ========================================
-
-// Enhanced Agents Tab with Premium Components
-function EnhancedAgentsTab() {
-  const [agentTab, setAgentTab] = useState('enhanced')
-  
-  const agentSubTabs = [
-    { id: 'enhanced', label: 'Enhanced Agents', component: <EnhancedExpertAgents /> },
-    { id: 'orchestration', label: 'Orchestration', component: <AgentOrchestration /> },
-    { id: 'strategy', label: 'Strategy Builder', component: <VisualStrategyBuilder /> },
-    { id: 'notifications', label: 'Notifications', component: <NotificationSystem /> },
-    { id: 'original', label: 'Original View', component: <ConnectedAgentsTab /> }
-  ]
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Enhanced Agent Management</h2>
-        <Badge variant="secondary">5 Premium Components</Badge>
-      </div>
-      
-      <Tabs value={agentTab} onValueChange={setAgentTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          {agentSubTabs.map(subTab => (
-            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {agentSubTabs.map(subTab => (
-          <TabsContent key={subTab.id} value={subTab.id}>
-            {subTab.component}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
-  )
-}
-
-// Enhanced Trading Tab with Premium Components
-function EnhancedTradingTab() {
-  const [tradingTab, setTradingTab] = useState('enhanced')
-  
-  const tradingSubTabs = [
-    { id: 'enhanced', label: 'Enhanced Interface', component: <EnhancedTradingInterface /> },
-    { id: 'orderbook', label: 'Advanced Order Book', component: <AdvancedOrderBook /> },
-    { id: 'order-entry', label: 'Advanced Order Entry', component: <AdvancedOrderEntry /> },
-    { id: 'animations', label: 'Trading Animations', component: <TradingAnimations /> },
-    { id: 'original', label: 'Original View', component: <ConnectedTradingTab /> }
-  ]
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Enhanced Trading Interface</h2>
-        <Badge variant="secondary">5 Premium Components</Badge>
-      </div>
-      
-      <Tabs value={tradingTab} onValueChange={setTradingTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          {tradingSubTabs.map(subTab => (
-            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {tradingSubTabs.map(subTab => (
-          <TabsContent key={subTab.id} value={subTab.id}>
-            {subTab.component}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
-  )
-}
-
-// Enhanced Analytics Tab with Premium Charts
-function EnhancedAnalyticsTab() {
-  const [analyticsTab, setAnalyticsTab] = useState('premium-charts')
-  
-  const analyticsSubTabs = [
-    { id: 'premium-charts', label: 'Premium Charts', component: <PremiumChartsGrid /> },
-    { id: 'portfolio-analytics', label: 'Portfolio Analytics', component: <AdvancedPortfolioAnalytics /> },
-    { id: 'portfolio-monitor', label: 'Portfolio Monitor', component: <EnhancedPortfolioMonitor /> },
-    { id: 'data-table', label: 'Advanced Data Table', component: <AdvancedDataTable /> },
-    { id: 'original', label: 'Original View', component: <ConnectedAnalyticsTab /> }
-  ]
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Enhanced Analytics Suite</h2>
-        <Badge variant="secondary">5 Premium Components</Badge>
-      </div>
-      
-      <Tabs value={analyticsTab} onValueChange={setAnalyticsTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          {analyticsSubTabs.map(subTab => (
-            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {analyticsSubTabs.map(subTab => (
-          <TabsContent key={subTab.id} value={subTab.id}>
-            {subTab.component}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
-  )
-}
-
-// Enhanced Advanced Tab with Premium Features
-function EnhancedAdvancedTab() {
-  const [advancedTab, setAdvancedTab] = useState('inputs')
-  
-  const advancedSubTabs = [
-    { id: 'inputs', label: 'Advanced Inputs', component: <AdvancedInputsDemo /> },
-    { id: 'sortable', label: 'Sortable Lists', component: <SortableDemo /> },
-    { id: 'risk', label: 'Risk Management', component: <RiskManagementSuite /> },
-    { id: 'dashboard-grid', label: 'Dashboard Grid', component: <DashboardGrid /> },
-    { id: 'command', label: 'Command Palette', component: <CommandPaletteUI /> },
-    { id: 'original', label: 'Original View', component: <ConnectedAdvancedTab /> }
-  ]
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Enhanced Advanced Features</h2>
-        <Badge variant="secondary">6 Premium Components</Badge>
-      </div>
-      
-      <Tabs value={advancedTab} onValueChange={setAdvancedTab}>
-        <TabsList className="grid w-full grid-cols-6">
-          {advancedSubTabs.map(subTab => (
-            <TabsTrigger key={subTab.id} value={subTab.id}>{subTab.label}</TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {advancedSubTabs.map(subTab => (
-          <TabsContent key={subTab.id} value={subTab.id}>
-            {subTab.component}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
-  )
-}
-
-// Premium Charts Grid Component
-function PremiumChartsGrid() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Premium Trading Chart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PremiumTradingChart />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Portfolio Performance Chart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PortfolioPerformanceChart />
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Asset Allocation Chart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AssetAllocationChart />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>P&L Chart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PnLChart />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
-}
-
-// Enterprise Features Component (Placeholder)
-function EnterpriseFeatures() {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Enterprise Features</CardTitle>
-          <CardDescription>Advanced enterprise-grade features for trading platforms</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <Settings className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">Enterprise Dashboard</h3>
-            <p className="text-gray-600 mt-2">Load balancing, multi-tenancy, and system health monitoring</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Compliance & Risk Suite Component
-function ComplianceRiskSuite() {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Risk Management Suite</CardTitle>
-          <CardDescription>Comprehensive risk management and compliance monitoring</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RiskManagementSuite />
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Multi-Asset Trading Component (Placeholder)
-function MultiAssetTrading() {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Multi-Asset Trading</CardTitle>
-          <CardDescription>Global portfolio management across multiple asset classes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <Coins className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">Multi-Asset Dashboard</h3>
-            <p className="text-gray-600 mt-2">Currency hedging, arbitrage detection, and global exposure mapping</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Demo Components for Advanced Inputs
-function AdvancedInputsDemo() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Multi-Select Input</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MultiSelect />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Tag Input</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TagInput />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Date Range Picker</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DateRangePicker />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Trading Symbol Selector</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TradingSymbolSelector />
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Price Range Slider</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PriceRangeSlider />
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Rich Text Editor</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-600">Rich Text Editor (requires @tiptap dependencies)</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Demo Components for Sortable Lists
-function SortableDemo() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Watchlist Sortable</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WatchlistSortable />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Portfolio Sortable</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PortfolioSortable />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Strategy Sortable</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StrategySortable />
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>General Sortable List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SortableList />
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
+export default ModernDashboardV4
