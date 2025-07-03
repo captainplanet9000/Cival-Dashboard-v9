@@ -30,6 +30,64 @@ import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDa
 import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// Import premium trading components (existing only)
+import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'
+import { AdvancedOrderBook } from '@/components/premium-ui/trading/advanced-orderbook'
+import { EnhancedTradingInterface } from '@/components/premium-ui/trading/enhanced-trading-interface'
+import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
+import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
+
+// Placeholder components for missing premium trading features
+const TradingDashboard = () => (
+  <div className="space-y-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>Premium Trading Dashboard</CardTitle>
+        <CardDescription>Advanced trading interface with real-time data</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">Premium trading dashboard coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+)
+
+const TradingTerminal = () => (
+  <Card>
+    <CardHeader>
+      <CardTitle>Trading Terminal</CardTitle>
+      <CardDescription>Professional trading terminal interface</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <p className="text-muted-foreground">Trading terminal coming soon...</p>
+    </CardContent>
+  </Card>
+)
+
+const PositionManager = () => (
+  <Card>
+    <CardHeader>
+      <CardTitle>Position Manager</CardTitle>
+      <CardDescription>Advanced position management tools</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <p className="text-muted-foreground">Position manager coming soon...</p>
+    </CardContent>
+  </Card>
+)
+
+const RealTimeCharts = () => (
+  <Card>
+    <CardHeader>
+      <CardTitle>Real-time Charts</CardTitle>
+      <CardDescription>Live market data visualization</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <p className="text-muted-foreground">Real-time charts coming soon...</p>
+    </CardContent>
+  </Card>
+)
+
 interface ConnectedTradingTabProps {
   className?: string
 }
@@ -451,9 +509,17 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
   )
   
   const tradingSubTabs = [
+    { id: 'trading-dashboard', label: 'Premium Dashboard', component: <TradingDashboard /> },
+    { id: 'enhanced-trading', label: 'Enhanced Trading', component: <EnhancedTradingInterface /> },
+    { id: 'advanced-order', label: 'Advanced Orders', component: <AdvancedOrderEntry /> },
+    { id: 'advanced-orderbook', label: 'Advanced OrderBook', component: <AdvancedOrderBook /> },
+    { id: 'trading-terminal', label: 'Trading Terminal', component: <TradingTerminal /> },
+    { id: 'position-manager', label: 'Position Manager', component: <PositionManager /> },
+    { id: 'realtime-charts', label: 'Real-time Charts', component: <RealTimeCharts /> },
+    { id: 'premium-risk', label: 'Premium Risk', component: <RiskManagementSuite /> },
+    { id: 'advanced-data', label: 'Advanced Data', component: <AdvancedDataTable /> },
     { id: 'real-trading', label: 'Real Trading', component: <RealTradingInterface /> },
     { id: 'charts', label: 'Charts', component: <TradingCharts /> },
-    { id: 'order-form', label: 'Order Form', component: <TradingForm /> },
     { id: 'live-trading', label: 'Live Trading', component: <TradingInterface /> },
     { id: 'paper-trading', label: 'Paper Trading', component: <PaperTradingPanel /> },
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
@@ -468,17 +534,18 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-green-600" />
           Unified Trading Interface
+          <Badge variant="secondary" className="text-xs">Premium Enhanced</Badge>
         </CardTitle>
-        <CardDescription>Live trading, paper trading, and strategy management connected to {state.activeAgents} active agents</CardDescription>
+        <CardDescription>Live trading, paper trading, and strategy management connected to {state.activeAgents} active agents • Premium Components Integrated</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={tradingSubTab} onValueChange={setTradingSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-1 bg-green-50">
             {tradingSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs"
+                className="data-[state=active]:bg-green-100 data-[state=active]:text-green-900 text-xs"
               >
                 {tab.label}
               </TabsTrigger>

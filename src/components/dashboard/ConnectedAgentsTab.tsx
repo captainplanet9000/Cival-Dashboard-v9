@@ -45,6 +45,14 @@ import { AutonomousExpertAgentsPanel } from './AutonomousExpertAgentsPanel'
 import BlockchainAgentWallet from '@/components/agents/BlockchainAgentWallet'
 import BlockchainWalletsPanel from '@/components/agents/BlockchainWalletsPanel'
 
+// Import premium components for enhanced agent functionality
+import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
+import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
+import { VisualStrategyBuilder } from '@/components/premium-ui/strategy/visual-strategy-builder'
+import { NotificationCenter } from '@/components/premium-ui/notifications/notification-system'
+import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
+import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
+
 // Agent Overview Panel showing expert agents
 function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string, any> }) {
   // Use shared data manager instead of individual hooks
@@ -848,11 +856,17 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   const agentSubTabs = [
     { id: 'agent-management', label: 'Management', component: <RealAgentManagement /> },
     { id: 'agent-creation', label: 'Create Agent', component: <RealAgentCreation /> },
+    { id: 'enhanced-agents', label: 'Premium Agents', component: <EnhancedExpertAgents /> },
+    { id: 'strategy-builder', label: 'Strategy Builder', component: <VisualStrategyBuilder /> },
     { id: 'blockchain-wallets', label: 'Blockchain Wallets', component: <BlockchainWalletsPanel /> },
-    { id: 'expert-strategies', label: 'Expert Strategies', component: <AutonomousExpertAgentsPanel /> },
     { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel agentPerformance={agentPerformanceMap} /> },
+    { id: 'advanced-data', label: 'Advanced Data', component: <AdvancedDataTable /> },
+    { id: 'notifications', label: 'Notifications', component: <NotificationCenter /> },
+    { id: 'risk-mgmt', label: 'Risk Management', component: <RiskManagementSuite /> },
+    { id: 'premium-grid', label: 'Premium Grid', component: <DashboardGrid /> },
     { id: 'memory-analytics', label: 'Memory Analytics', component: <MemoryAnalyticsDashboard /> },
-    { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> }
+    { id: 'expert-strategies', label: 'Expert Strategies', component: <AutonomousExpertAgentsPanel /> },
+    { id: 'strategies', label: 'Classic Strategies', component: <TradingStrategiesPanel /> }
   ]
   
   return (
@@ -863,9 +877,10 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
             <CardTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-purple-600" />
               Agent Management System
+              <Badge variant="secondary" className="text-xs">Premium Enhanced</Badge>
             </CardTitle>
             <CardDescription>
-              {activeAgents} active agents • {totalAgents} total • ${(totalPortfolioValue || 0).toLocaleString()} managed
+              {activeAgents} active agents • {totalAgents} total • ${(totalPortfolioValue || 0).toLocaleString()} managed • Premium Components Integrated
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -922,12 +937,12 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
         
         {/* Sub-tabs */}
         <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-1 bg-purple-50">
             {agentSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 text-xs"
               >
                 {tab.label}
               </TabsTrigger>

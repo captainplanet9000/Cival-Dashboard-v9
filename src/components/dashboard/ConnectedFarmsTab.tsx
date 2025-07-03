@@ -41,6 +41,13 @@ import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-man
 // Import multi-chain farm coordination
 import MultiChainFarmCoordinator from '@/components/farms/MultiChainFarmCoordinator'
 
+// Import premium components for enhanced functionality
+import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
+import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
+import { VisualStrategyBuilder } from '@/components/premium-ui/strategy/visual-strategy-builder'
+import { NotificationCenter } from '@/components/premium-ui/notifications/notification-system'
+import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
+
 interface Farm {
   id: string
   name: string
@@ -350,9 +357,9 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
         </div>
       </div>
 
-      {/* Comprehensive Farm Management Tabs */}
+      {/* Comprehensive Farm Management Tabs - Enhanced with Premium Components */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-7 bg-emerald-50 gap-1">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-8 bg-emerald-50 gap-1">
           <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-100">
             <Target className="h-4 w-4 mr-1" />
             Overview
@@ -380,6 +387,10 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
           <TabsTrigger value="goals" className="data-[state=active]:bg-emerald-100">
             <Star className="h-4 w-4 mr-1" />
             Goals
+          </TabsTrigger>
+          <TabsTrigger value="premium" className="data-[state=active]:bg-emerald-100">
+            <Zap className="h-4 w-4 mr-1" />
+            Premium
           </TabsTrigger>
         </TabsList>
 
@@ -606,14 +617,77 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
           </div>
         </TabsContent>
 
-        {/* Agents Tab - Real Agent Management Integration */}
+        {/* Agents Tab - Enhanced with Premium Agent Components */}
         <TabsContent value="agents" className="space-y-4">
-          <RealAgentManagement />
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Farm Agent Management</h3>
+                <p className="text-muted-foreground">Premium agent coordination for trading farms</p>
+              </div>
+              <Badge variant="secondary">Premium Enhanced</Badge>
+            </div>
+            
+            {/* Enhanced Agent Management with Premium Components */}
+            <Tabs defaultValue="enhanced" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="enhanced">Enhanced Agents</TabsTrigger>
+                <TabsTrigger value="strategy">Strategy Builder</TabsTrigger>
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                <TabsTrigger value="classic">Classic View</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="enhanced">
+                <EnhancedExpertAgents />
+              </TabsContent>
+              
+              <TabsContent value="strategy">
+                <VisualStrategyBuilder />
+              </TabsContent>
+              
+              <TabsContent value="notifications">
+                <NotificationCenter />
+              </TabsContent>
+              
+              <TabsContent value="classic">
+                <RealAgentManagement />
+              </TabsContent>
+            </Tabs>
+          </div>
         </TabsContent>
 
-        {/* Analytics Tab - Real Analytics Dashboard */}
+        {/* Analytics Tab - Enhanced with Premium Analytics */}
         <TabsContent value="analytics" className="space-y-4">
-          <RealAnalyticsDashboard />
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Farm Analytics & Performance</h3>
+                <p className="text-muted-foreground">Advanced analytics with premium data visualization</p>
+              </div>
+              <Badge variant="secondary">Premium Analytics</Badge>
+            </div>
+            
+            {/* Enhanced Analytics with Premium Tables */}
+            <Tabs defaultValue="dashboard" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="dashboard">Analytics Dashboard</TabsTrigger>
+                <TabsTrigger value="data-table">Advanced Data</TabsTrigger>
+                <TabsTrigger value="risk">Risk Management</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="dashboard">
+                <RealAnalyticsDashboard />
+              </TabsContent>
+              
+              <TabsContent value="data-table">
+                <AdvancedDataTable />
+              </TabsContent>
+              
+              <TabsContent value="risk">
+                <RiskManagementSuite />
+              </TabsContent>
+            </Tabs>
+          </div>
         </TabsContent>
 
         {/* Wallets Tab - Comprehensive Wallet Management */}
@@ -664,6 +738,73 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                 )
               ))}
             </div>
+          </div>
+        </TabsContent>
+
+        {/* Premium Tab - Advanced Premium Features */}
+        <TabsContent value="premium" className="space-y-4">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Premium Farm Features</h3>
+                <p className="text-muted-foreground">Advanced premium components for farm management</p>
+              </div>
+              <Badge variant="default">Premium Only</Badge>
+            </div>
+            
+            {/* Premium Features Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dashboard Grid Layout</CardTitle>
+                  <CardDescription>Advanced grid layout for farm monitoring</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DashboardGrid />
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Farm Notifications</CardTitle>
+                  <CardDescription>Real-time farm notifications and alerts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NotificationCenter />
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Advanced Data Management</CardTitle>
+                  <CardDescription>Premium data tables for farm analytics</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdvancedDataTable />
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Risk Management Suite</CardTitle>
+                  <CardDescription>Comprehensive risk management for farms</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RiskManagementSuite />
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Premium Strategy Builder */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Visual Strategy Builder</CardTitle>
+                <CardDescription>Create and manage farm strategies visually</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VisualStrategyBuilder />
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>

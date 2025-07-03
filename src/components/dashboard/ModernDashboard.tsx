@@ -38,6 +38,9 @@ import { AgentDataBrowser } from '@/components/agent/AgentDataBrowser'
 import AgentKnowledgeInterface from '@/components/knowledge/AgentKnowledgeInterface'
 import { StrategyCreationModal } from '@/components/trading/strategies/StrategyCreationModal'
 
+// Import enhanced agent trading components
+import { AgentTradingDashboard } from '@/components/agents/AgentTradingDashboard'
+
 // Import additional page components for consolidated tabs
 // Using dynamic imports to prevent auto-loading issues
 import dynamic from 'next/dynamic'
@@ -315,13 +318,12 @@ export function ModernDashboardV4() {
       icon: <TrendingUp className="h-4 w-4" />,
       component: <ConnectedTradingTab />
     },
-    // Removed autonomous tab
-    // {
-    //   id: 'autonomous',
-    //   label: 'Autonomous',
-    //   icon: <Zap className="h-4 w-4" />,
-    //   component: <AutonomousTradingDashboard />
-    // },
+    {
+      id: 'agents',
+      label: 'AI Agents',
+      icon: <Bot className="h-4 w-4" />,
+      component: <AgentTradingDashboard />
+    },
     {
       id: 'defi',
       label: 'DeFi',
