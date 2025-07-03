@@ -45,9 +45,69 @@ class FarmsService {
   private static instance: FarmsService
   private farms: Farm[] = []
   private subscribers = new Set<() => void>()
+  private useSupabase = false
 
   private constructor() {
     this.loadFarms()
+    this.checkSupabaseAvailability()
+  }
+
+  private async checkSupabaseAvailability() {
+    try {
+      // Check if Supabase is configured and available
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (supabaseUrl && supabaseKey) {
+        // Try to dynamically import and use Supabase service
+        const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+        if (supabaseFarmsService) {
+          this.useSupabase = true
+          console.log('🟢 Farms service: Using Supabase for persistence')
+          // Load farms from Supabase
+          await this.loadFromSupabase()
+        }
+      } else {
+        console.log('🟡 Farms service: Using localStorage (Supabase not configured)')
+      }
+    } catch (error) {
+      console.log('🟡 Farms service: Supabase unavailable, using localStorage fallback')
+      this.useSupabase = false
+    }
+  }
+
+  private async loadFromSupabase() {
+    try {
+      const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+      const supabaseFarms = await supabaseFarmsService.getAllFarms()
+      
+      // Convert Supabase farms to local format
+      this.farms = supabaseFarms.map(sf => ({
+        id: sf.farm_id,
+        name: sf.name,
+        description: sf.description || '',
+        strategy: sf.farm_type,
+        agentCount: sf.agent_count,
+        totalCapital: Number(sf.total_allocated_usd),
+        coordinationMode: 'coordinated' as const,
+        status: sf.is_active ? 'active' as const : 'paused' as const,
+        createdAt: sf.created_at,
+        agents: [],
+        performance: {
+          totalValue: Number(sf.total_allocated_usd),
+          totalPnL: (sf.performance_metrics as any)?.totalPnL || 0,
+          winRate: (sf.performance_metrics as any)?.winRate || 0,
+          tradeCount: (sf.performance_metrics as any)?.tradeCount || 0,
+          roiPercent: (sf.performance_metrics as any)?.roiPercent || 0,
+          activeAgents: sf.is_active ? sf.agent_count : 0,
+          avgAgentPerformance: (sf.performance_metrics as any)?.avgAgentPerformance || 0
+        }
+      }))
+      
+      this.notifySubscribers()
+    } catch (error) {
+      console.error('Failed to load farms from Supabase:', error)
+    }
   }
 
   static getInstance(): FarmsService {
@@ -60,7 +120,7 @@ class FarmsService {
   private loadFarms() {
     try {
       const stored = localStorage.getItem('trading_farms')
-      if (stored) {
+      if (stored && stored.trim() !== '') {
         this.farms = JSON.parse(stored)
       } else {
         // Initialize with default farms if none exist
@@ -70,6 +130,7 @@ class FarmsService {
     } catch (error) {
       console.error('Failed to load farms:', error)
       this.farms = this.createDefaultFarms()
+      this.saveFarms()
     }
   }
 
@@ -168,6 +229,26 @@ class FarmsService {
   }
 
   async createFarm(config: FarmCreateConfig): Promise<string> {
+    if (this.useSupabase) {
+      try {
+        const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+        const supabaseFarm = await supabaseFarmsService.createFarm({
+          name: config.name,
+          description: config.description,
+          farm_type: config.strategy,
+          total_allocated_usd: config.targetAllocation,
+          agent_count: config.agents?.length || 0
+        })
+        
+        // Refresh local data
+        await this.loadFromSupabase()
+        return supabaseFarm.farm_id
+      } catch (error) {
+        console.error('Failed to create farm in Supabase, falling back to localStorage:', error)
+      }
+    }
+
+    // Fallback to localStorage
     const farmId = `farm_${config.strategy}_${Date.now()}`
     
     const newFarm: Farm = {
@@ -199,6 +280,20 @@ class FarmsService {
   }
 
   async updateFarmStatus(farmId: string, status: Farm['status']): Promise<boolean> {
+    if (this.useSupabase) {
+      try {
+        const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+        await supabaseFarmsService.updateFarmStatus(farmId, status === 'active')
+        
+        // Refresh local data
+        await this.loadFromSupabase()
+        return true
+      } catch (error) {
+        console.error('Failed to update farm status in Supabase, falling back to localStorage:', error)
+      }
+    }
+
+    // Fallback to localStorage
     const farm = this.farms.find(f => f.id === farmId)
     if (!farm) return false
 
@@ -216,6 +311,20 @@ class FarmsService {
   }
 
   async deleteFarm(farmId: string): Promise<boolean> {
+    if (this.useSupabase) {
+      try {
+        const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+        await supabaseFarmsService.deleteFarm(farmId)
+        
+        // Refresh local data
+        await this.loadFromSupabase()
+        return true
+      } catch (error) {
+        console.error('Failed to delete farm in Supabase, falling back to localStorage:', error)
+      }
+    }
+
+    // Fallback to localStorage
     const index = this.farms.findIndex(f => f.id === farmId)
     if (index === -1) return false
 

@@ -35,26 +35,13 @@ import { format, addDays, differenceInDays } from 'date-fns'
 // Import blockchain integration
 import { alchemyService } from '@/lib/blockchain/alchemy-service'
 
-interface Goal {
-  id: string
-  name: string
-  description: string
-  type: 'profit' | 'winRate' | 'trades' | 'drawdown' | 'sharpe' | 'blockchain'
-  target: number
-  current: number
-  progress: number
-  status: 'active' | 'completed' | 'failed' | 'paused'
-  priority: 'low' | 'medium' | 'high'
-  deadline?: string
-  createdAt: string
-  completedAt?: string
-  reward?: string
-  // Blockchain verification fields
-  blockchainVerified?: boolean
-  verificationTxHash?: string
-  chainId?: number
-  smartContractAddress?: string
-}
+// Import goals service
+import { useGoals, Goal, GoalCreateConfig } from '@/lib/goals/goals-service'
+
+// Import farms service for integration
+import { useFarms } from '@/lib/farms/farms-service'
+
+// Goal interface is now imported from goals-service
 
 interface ConnectedGoalsTabProps {
   className?: string
@@ -62,182 +49,148 @@ interface ConnectedGoalsTabProps {
 
 export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   const { state, actions } = useDashboardConnection('goals')
-  const [goals, setGoals] = useState<Goal[]>([])
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [activeTab, setActiveTab] = useState<'goals' | 'history' | 'performance'>('goals')
   const [historyData, setHistoryData] = useState<any[]>([])
   const [performanceHistory, setPerformanceHistory] = useState<any[]>([])
   
+  // Use goals service for real goal management
+  const {
+    goals,
+    loading: goalsLoading,
+    activeGoals,
+    completedGoals,
+    stats,
+    createGoal,
+    updateGoalProgress,
+    updateGoalStatus,
+    deleteGoal,
+    getGoalsByCategory,
+    getGoalsByFarmId
+  } = useGoals()
+  
+  // Use farms service for farm integration
+  const { farms } = useFarms()
+  
   // Goal creation form state
-  const [newGoal, setNewGoal] = useState({
+  const [newGoal, setNewGoal] = useState<Partial<GoalCreateConfig>>({
     name: '',
     description: '',
-    type: 'profit' as Goal['type'],
+    type: 'profit',
     target: 1000,
-    priority: 'medium' as Goal['priority'],
+    priority: 'medium',
     deadline: '',
-    reward: ''
+    reward: '',
+    category: 'trading',
+    farmId: '',
+    tags: []
   })
 
-  // Load goals data and history
+  // Load performance data and history
   useEffect(() => {
-    loadGoalsData()
     loadHistoryData()
     loadPerformanceHistory()
     const interval = setInterval(() => {
-      updateGoalProgress()
       updateHistoryData()
     }, 5000) // Update every 5 seconds
     return () => clearInterval(interval)
-  }, [state])
+  }, [state, goals])
 
-  const loadGoalsData = () => {
+  // Goals are now loaded automatically by the goals service
+
+  // Real-time goal progress updates
+  useEffect(() => {
+    const updateGoalProgress = async () => {
+      // Update profit goals based on portfolio P&L
+      const profitGoals = goals.filter(g => g.type === 'profit' && g.status === 'active')
+      for (const goal of profitGoals) {
+        await updateGoalProgress(goal.id, state?.totalPnL || 0)
+      }
+      
+      // Update win rate goals
+      const winRateGoals = goals.filter(g => g.type === 'winRate' && g.status === 'active')
+      for (const goal of winRateGoals) {
+        await updateGoalProgress(goal.id, state?.winRate || 0)
+      }
+      
+      // Update trade count goals
+      const tradeGoals = goals.filter(g => g.type === 'trades' && g.status === 'active')
+      for (const goal of tradeGoals) {
+        await updateGoalProgress(goal.id, state?.executedOrders?.length || 0)
+      }
+      
+      // Update farm-specific goals
+      const farmGoals = goals.filter(g => g.type === 'farm' && g.farmId && g.status === 'active')
+      for (const goal of farmGoals) {
+        const farm = farms.find(f => f.id === goal.farmId)
+        if (farm) {
+          await updateGoalProgress(goal.id, farm.performance.winRate)
+        }
+      }
+    }
+    
+    if (goals.length > 0) {
+      updateGoalProgress()
+    }
+  }, [state?.totalPnL, state?.winRate, state?.executedOrders?.length, farms])
+
+  const handleCreateGoal = async () => {
     try {
-      const storedGoals = localStorage.getItem('trading_goals')
-      const goalsData = storedGoals ? JSON.parse(storedGoals) : []
-      setGoals(goalsData)
-    } catch (error) {
-      console.error('Error loading goals data:', error)
-    }
-  }
+      if (!newGoal.name?.trim() || !newGoal.type) {
+        toast.error('Please fill in all required fields')
+        return
+      }
 
-  const updateGoalProgress = () => {
-    const allAgents = Array.from(state.agentPerformance.values())
-    
-    setGoals(prevGoals => 
-      prevGoals.map(goal => {
-        let current = 0
-        let progress = 0
-        
-        switch (goal.type) {
-          case 'profit':
-            current = state.totalPnL
-            progress = Math.max(0, Math.min((current / goal.target) * 100, 100))
-            break
-            
-          case 'winRate':
-            current = state.winRate
-            progress = Math.min((current / goal.target) * 100, 100)
-            break
-            
-          case 'trades':
-            current = state.executedOrders.length
-            progress = Math.min((current / goal.target) * 100, 100)
-            break
-            
-          case 'drawdown':
-            // Mock drawdown calculation (inverse - lower is better)
-            current = Math.random() * 10 // 0-10% drawdown
-            progress = Math.max(0, ((goal.target - current) / goal.target) * 100)
-            break
-            
-          case 'sharpe':
-            // Mock Sharpe ratio calculation
-            current = 1.2 + Math.random() * 0.8 // 1.2-2.0 range
-            progress = Math.min((current / goal.target) * 100, 100)
-            break
-        }
-        
-        // Check if goal is completed
-        const wasCompleted = goal.status === 'completed'
-        const isCompleted = progress >= 100 && goal.status === 'active'
-        
-        if (isCompleted && !wasCompleted) {
-          toast.success(`🎉 Goal "${goal.name}" completed!`)
-        }
-        
-        // Check if goal failed (deadline passed)
-        const isDeadlinePassed = goal.deadline && new Date() > new Date(goal.deadline)
-        const shouldFail = isDeadlinePassed && progress < 100 && goal.status === 'active'
-        
-        return {
-          ...goal,
-          current,
-          progress,
-          status: isCompleted ? 'completed' : shouldFail ? 'failed' : goal.status,
-          completedAt: isCompleted && !wasCompleted ? new Date().toISOString() : goal.completedAt
-        }
+      const goalId = await createGoal(newGoal as GoalCreateConfig)
+      toast.success(`Goal "${newGoal.name}" created successfully`)
+      
+      // Reset form and close dialog
+      setNewGoal({
+        name: '',
+        description: '',
+        type: 'profit',
+        target: 1000,
+        priority: 'medium',
+        deadline: '',
+        reward: '',
+        category: 'trading',
+        farmId: '',
+        tags: []
       })
-    )
+      setShowCreateDialog(false)
+    } catch (error) {
+      console.error('Error creating goal:', error)
+      toast.error('Failed to create goal')
+    }
   }
 
-  const createGoal = async () => {
-    if (!newGoal.name.trim()) {
-      toast.error('Please enter a goal name')
-      return
-    }
-
-    const goalId = `goal_${Date.now()}`
-    const goal: Goal = {
-      id: goalId,
-      name: newGoal.name,
-      description: newGoal.description,
-      type: newGoal.type,
-      target: newGoal.target,
-      current: 0,
-      progress: 0,
-      status: 'active',
-      priority: newGoal.priority,
-      deadline: newGoal.deadline || undefined,
-      createdAt: new Date().toISOString(),
-      reward: newGoal.reward || undefined
-    }
-
-    // Store goal
-    const existingGoals = localStorage.getItem('trading_goals')
-    const allGoals = existingGoals ? JSON.parse(existingGoals) : []
-    allGoals.push(goal)
-    localStorage.setItem('trading_goals', JSON.stringify(allGoals))
-
-    // Reset form and close dialog
-    setNewGoal({
-      name: '',
-      description: '',
-      type: 'profit',
-      target: 1000,
-      priority: 'medium',
-      deadline: '',
-      reward: ''
-    })
-    setShowCreateDialog(false)
-    
-    toast.success(`Goal "${goal.name}" created successfully`)
-    loadGoalsData()
-  }
-
-  const toggleGoalStatus = (goalId: string) => {
+  const toggleGoalStatus = async (goalId: string) => {
     try {
       const goal = goals.find(g => g.id === goalId)
       if (!goal) return
 
       const newStatus = goal.status === 'active' ? 'paused' : 'active'
       
-      // Update goal status in storage
-      const storedGoals = localStorage.getItem('trading_goals')
-      const allGoals = storedGoals ? JSON.parse(storedGoals) : []
-      const updatedGoals = allGoals.map((g: any) => 
-        g.id === goalId ? { ...g, status: newStatus } : g
-      )
-      localStorage.setItem('trading_goals', JSON.stringify(updatedGoals))
-      
-      toast.success(`Goal ${newStatus === 'active' ? 'resumed' : 'paused'}`)
-      loadGoalsData()
+      const success = await updateGoalStatus(goalId, newStatus)
+      if (success) {
+        toast.success(`Goal ${newStatus === 'active' ? 'resumed' : 'paused'}`)
+      } else {
+        toast.error('Failed to update goal status')
+      }
     } catch (error) {
       console.error('Error toggling goal status:', error)
       toast.error('Failed to update goal status')
     }
   }
 
-  const deleteGoal = (goalId: string) => {
+  const handleDeleteGoal = async (goalId: string) => {
     try {
-      // Remove goal from storage
-      const storedGoals = localStorage.getItem('trading_goals')
-      const allGoals = storedGoals ? JSON.parse(storedGoals) : []
-      const updatedGoals = allGoals.filter((g: any) => g.id !== goalId)
-      localStorage.setItem('trading_goals', JSON.stringify(updatedGoals))
-      
-      toast.success('Goal deleted successfully')
-      loadGoalsData()
+      const success = await deleteGoal(goalId)
+      if (success) {
+        toast.success('Goal deleted successfully')
+      } else {
+        toast.error('Failed to delete goal')
+      }
     } catch (error) {
       console.error('Error deleting goal:', error)
       toast.error('Failed to delete goal')
@@ -487,7 +440,25 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                   />
                 </div>
                 
-                <Button onClick={createGoal} className="w-full">
+                {newGoal.type === 'farm' && (
+                  <div>
+                    <Label>Associated Farm</Label>
+                    <Select value={newGoal.farmId} onValueChange={(v) => setNewGoal({...newGoal, farmId: v})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a farm" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {farms.map(farm => (
+                          <SelectItem key={farm.id} value={farm.id}>
+                            {farm.name} - {farm.strategy.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
+                <Button onClick={handleCreateGoal} className="w-full">
                   Create Goal
                 </Button>
               </div>
@@ -537,9 +508,9 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
             <CardTitle className="text-sm">Active Goals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{goals.filter(g => g.status === 'active').length}</div>
+            <div className="text-2xl font-bold">{stats.active}</div>
             <p className="text-xs text-muted-foreground">
-              {goals.length} total goals
+              {stats.total} total goals
             </p>
           </CardContent>
         </Card>
@@ -550,10 +521,10 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {goals.filter(g => g.status === 'completed').length}
+              {stats.completed}
             </div>
             <p className="text-xs text-muted-foreground">
-              {goals.length > 0 ? ((goals.filter(g => g.status === 'completed').length / goals.length) * 100).toFixed(0) : 0}% success rate
+              {stats.completionRate.toFixed(0)}% success rate
             </p>
           </CardContent>
         </Card>
@@ -578,10 +549,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {goals.length > 0 
-                ? (goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length).toFixed(0)
-                : '0'
-              }%
+              {stats.averageProgress.toFixed(0)}%
             </div>
             <p className="text-xs text-muted-foreground">
               Across all goals
