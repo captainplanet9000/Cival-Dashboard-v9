@@ -157,9 +157,9 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
             <CardTitle className="text-sm">Virtual Balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${state.portfolioValue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${(state.portfolioValue || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Initial: ${(state.totalAgents * 10000).toLocaleString()}
+              Initial: ${((state.totalAgents || 0) * 10000).toLocaleString()}
             </p>
           </CardContent>
         </Card>

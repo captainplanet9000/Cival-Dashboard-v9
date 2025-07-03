@@ -342,9 +342,9 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
             <CardTitle className="text-sm">Portfolio Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${state.portfolioValue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${(state.portfolioValue || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {state.totalPnL >= 0 ? '+' : ''}{((state.totalPnL / state.portfolioValue) * 100).toFixed(1)}% return
+              {(state.totalPnL || 0) >= 0 ? '+' : ''}{(((state.totalPnL || 0) / (state.portfolioValue || 1)) * 100).toFixed(1)}% return
             </p>
           </CardContent>
         </Card>

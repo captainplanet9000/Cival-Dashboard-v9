@@ -526,7 +526,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                             </div>
                             <div>
                               <span className="text-muted-foreground">Capital:</span>
-                              <div className="font-medium">${farm.totalCapital.toLocaleString()}</div>
+                              <div className="font-medium">${(farm.totalCapital || 0).toLocaleString()}</div>
                             </div>
                           </div>
                           

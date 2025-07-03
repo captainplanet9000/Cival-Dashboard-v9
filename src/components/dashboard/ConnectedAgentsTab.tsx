@@ -359,7 +359,7 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
                         <div className="grid grid-cols-2 gap-4 mt-1 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <DollarSign className="h-3 w-3" />
-                            ${agent.portfolioValue?.toLocaleString() || '0'}
+                            ${(agent.portfolioValue || 0).toLocaleString()}
                           </span>
                           <span className="flex items-center gap-1">
                             <Activity className="h-3 w-3" />
@@ -880,7 +880,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <Badge variant="secondary" className="text-xs">Premium Enhanced</Badge>
             </CardTitle>
             <CardDescription>
-              {activeAgents} active agents • {totalAgents} total • ${(totalPortfolioValue || 0).toLocaleString()} managed • Premium Components Integrated
+              {activeAgents} active agents • {totalAgents} total • ${((totalPortfolioValue || 0)).toLocaleString()} managed • Premium Components Integrated
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -901,8 +901,8 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Total P&L</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${totalPnL.toFixed(2)}
+              <div className={`text-2xl font-bold ${(totalPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${(totalPnL || 0).toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -912,7 +912,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Avg Win Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{avgWinRate.toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{(avgWinRate || 0).toFixed(1)}%</div>
             </CardContent>
           </Card>
           
