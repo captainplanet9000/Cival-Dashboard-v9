@@ -275,6 +275,66 @@ class ServiceInitializer:
             else:
                 return "skipped - service not available"
         
+        elif service_name == "realtime_price_aggregator":
+            try:
+                from services.realtime_price_aggregator import create_realtime_price_aggregator
+                service = create_realtime_price_aggregator()
+                registry.register_service("realtime_price_aggregator", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Real-time price aggregator dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "universal_dex_aggregator":
+            try:
+                from services.universal_dex_aggregator import create_universal_dex_aggregator
+                service = create_universal_dex_aggregator()
+                registry.register_service("universal_dex_aggregator", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Universal DEX aggregator dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "cross_chain_bridge":
+            try:
+                from services.cross_chain_bridge_service import create_cross_chain_bridge_service
+                service = create_cross_chain_bridge_service()
+                registry.register_service("cross_chain_bridge", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Cross-chain bridge dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "alchemy_integration":
+            try:
+                from services.alchemy_integration import create_alchemy_integration
+                service = create_alchemy_integration()
+                registry.register_service("alchemy_integration", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Alchemy integration dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "autonomous_agent_funding":
+            try:
+                from services.autonomous_agent_funding import create_autonomous_agent_funding
+                service = create_autonomous_agent_funding()
+                registry.register_service("autonomous_agent_funding", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Autonomous agent funding dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "cross_dex_arbitrage_engine":
+            try:
+                from services.cross_dex_arbitrage_engine import create_cross_dex_arbitrage_engine
+                service = create_cross_dex_arbitrage_engine()
+                registry.register_service("cross_dex_arbitrage_engine", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Cross-DEX arbitrage engine dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
         else:
             raise ValueError(f"Unknown service: {service_name}")
     

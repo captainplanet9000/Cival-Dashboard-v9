@@ -41,6 +41,9 @@ import { StrategyCreationModal } from '@/components/trading/strategies/StrategyC
 // Import enhanced agent trading components
 import { AgentTradingDashboard } from '@/components/agents/AgentTradingDashboard'
 
+// Import MCP dashboard
+import MCPDashboard from '@/components/mcp/MCPDashboard'
+
 // Import additional page components for consolidated tabs
 // Using dynamic imports to prevent auto-loading issues
 import dynamic from 'next/dynamic'
@@ -311,6 +314,12 @@ export function ModernDashboardV4() {
       label: 'AI Assistant',
       icon: <Brain className="h-4 w-4" />,
       component: <UnifiedAIAssistant />
+    },
+    {
+      id: 'mcp',
+      label: 'MCP',
+      icon: <Zap className="h-4 w-4" />,
+      component: <MCPDashboard />
     },
     {
       id: 'trading',
