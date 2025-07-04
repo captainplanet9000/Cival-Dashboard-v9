@@ -285,13 +285,8 @@ export function ModernDashboardV4() {
       id: 'overview',
       label: 'Overview',
       icon: <BarChart3 className="h-4 w-4" />,
-      component: <OverviewTab 
-        metrics={metrics} 
-        chartData={chartData} 
-        redisData={redisData}
-        supabaseData={supabaseData}
-        redisConnected={redisConnected}
-        supabaseConnected={supabaseConnected}
+      component: <ConnectedOverviewTab 
+        onNavigateToTab={(tabId) => setActiveTab(tabId)}
       />
     },
     {
