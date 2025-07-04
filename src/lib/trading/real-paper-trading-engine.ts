@@ -322,6 +322,34 @@ export class RealPaperTradingEngine extends EventEmitter {
     return this.agents.get(agentId)
   }
 
+  // Remove/delete agent
+  removeAgent(agentId: string): boolean {
+    const agent = this.agents.get(agentId)
+    if (!agent) return false
+    
+    // Cancel any pending orders
+    const pendingOrders = this.orderQueue.filter(order => order.agentId === agentId)
+    pendingOrders.forEach(order => {
+      order.status = 'cancelled'
+    })
+    
+    // Remove from queue
+    this.orderQueue = this.orderQueue.filter(order => order.agentId !== agentId)
+    
+    // Remove agent
+    this.agents.delete(agentId)
+    
+    console.log(`🗑️ Removed agent ${agent.name} from paper trading engine`)
+    this.emit('agentRemoved', agent)
+    
+    return true
+  }
+
+  // Alias for removeAgent
+  deleteAgent(agentId: string): boolean {
+    return this.removeAgent(agentId)
+  }
+
   // Get all agents
   getAllAgents(): TradingAgent[] {
     return Array.from(this.agents.values())

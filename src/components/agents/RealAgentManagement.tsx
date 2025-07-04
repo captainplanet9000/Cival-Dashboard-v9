@@ -47,7 +47,8 @@ import {
   Activity,
   PieChart,
   Target,
-  Zap
+  Zap,
+  Trash2
 } from 'lucide-react'
 import {
   paperTradingEngine,
