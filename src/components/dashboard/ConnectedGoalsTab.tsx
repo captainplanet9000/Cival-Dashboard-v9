@@ -61,11 +61,11 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   
   // Use goals service for real goal management
   const {
-    goals,
+    goals = [],
     loading: goalsLoading,
-    activeGoals,
-    completedGoals,
-    stats,
+    activeGoals = [],
+    completedGoals = [],
+    stats = { active: 0, completed: 0, total: 0, completionRate: 0, averageProgress: 0 },
     createGoal,
     updateGoalProgress,
     updateGoalStatus,
@@ -75,7 +75,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   } = useGoals()
   
   // Use farms service for farm integration
-  const { farms } = useFarms()
+  const { farms = [] } = useFarms()
   
   // Goal creation form state
   const [newGoal, setNewGoal] = useState<Partial<GoalCreateConfig>>({
@@ -128,8 +128,8 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
       const farmGoals = (goals || []).filter(g => g.type === 'farm' && g.farmId && g.status === 'active')
       for (const goal of farmGoals) {
         const farm = farms.find(f => f.id === goal.farmId)
-        if (farm) {
-          await updateGoalProgress(goal.id, farm.performance.winRate)
+        if (farm && farm.performance) {
+          await updateGoalProgress(goal.id, farm.performance.winRate || 0)
         }
       }
     }
@@ -238,15 +238,17 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
 
       // Agent activities
       Array.from(state?.agentPerformance?.values() || []).forEach(agent => {
-        tradingHistory.push({
-          id: `agent_${agent.agentId}`,
-          type: 'agent_activity',
-          action: `Agent ${agent.name} - ${agent.tradeCount} trades`,
-          timestamp: new Date(),
-          value: agent.portfolioValue,
-          pnl: agent.pnl,
-          status: agent.status
-        })
+        if (agent) {
+          tradingHistory.push({
+            id: `agent_${agent.agentId}`,
+            type: 'agent_activity',
+            action: `Agent ${agent.name || 'Unknown'} - ${agent.tradeCount || 0} trades`,
+            timestamp: new Date(),
+            value: agent.portfolioValue || 0,
+            pnl: agent.pnl || 0,
+            status: agent.status || 'unknown'
+          })
+        }
       })
 
       // Sort by timestamp (newest first)
@@ -455,7 +457,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                       <SelectContent>
                         {farms.map(farm => (
                           <SelectItem key={farm.id} value={farm.id}>
-                            {farm.name} - {farm.strategy.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {farm.name} - {(farm.strategy || '').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -710,8 +712,8 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-green-600" />
             Blockchain-Verified Achievements
-            <Badge variant={alchemyService.connected ? 'default' : 'secondary'}>
-              {alchemyService.connected ? 'Live Verification' : 'Mock Mode'}
+            <Badge variant={(alchemyService?.connected) ? 'default' : 'secondary'}>
+              {(alchemyService?.connected) ? 'Live Verification' : 'Mock Mode'}
             </Badge>
           </CardTitle>
           <CardDescription>
@@ -747,7 +749,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                   </div>
                   <div>
                     <div className="font-medium text-sm">Multi-Chain Trader</div>
-                    <div className="text-xs text-muted-foreground">Active on {alchemyService.availableChains.length} chains</div>
+                    <div className="text-xs text-muted-foreground">Active on {alchemyService?.availableChains?.length || 0} chains</div>
                     <div className="flex items-center gap-1 mt-1">
                       <div className="w-2 h-2 rounded-full bg-blue-500" />
                       <span className="text-xs">Active</span>
