@@ -8563,12 +8563,24 @@ async def orchestration_websocket(websocket: WebSocket):
 
 @app.websocket("/ws/agui")
 async def agui_websocket_endpoint(websocket: WebSocket):
-    """AG-UI Protocol v2 WebSocket endpoint for real-time agent communication"""
+    """AG-UI Protocol v2 WebSocket endpoint for real-time agent communication
+    
+    Handles exact database schema structures as specified:
+    - agent_decisions: UUID agent_id, user_id from auth.users, JSONB decision
+    - signals: VARCHAR agent_id, trading signals with metadata
+    - agent_paper_trades: UUID agent_id, TEXT account_id
+    - realtime_events: All AGUI events for broadcasting
+    """
     client_info = {
         "connection_time": datetime.now(timezone.utc),
         "client_type": "agui_client",
         "channels": []
     }
+    
+    # Default IDs from database verification
+    DEFAULT_AGENT_UUID = "32c1b842-f4f6-4275-9804-b8bddedfa56e"
+    DEFAULT_USER_UUID = "09c1de86-05fc-4326-a62b-fd5ff1c8b8f3"
+    DEFAULT_ACCOUNT_ID = "paper_acc_1751613589.944507_2581ab25"
     
     await websocket_manager.connect(websocket, client_info)
     
@@ -8592,16 +8604,26 @@ async def agui_websocket_endpoint(websocket: WebSocket):
                 try:
                     await asyncio.sleep(10)  # Send events every 10 seconds
                     
-                    # Generate mock agent decision
+                    # Generate mock agent decision with correct data structure
                     await websocket.send_json({
                         "id": f"agent_decision_{int(datetime.now().timestamp())}",
                         "type": "agent.decision_made",
                         "data": {
-                            "agent_id": "marcus_momentum",
+                            "agent_id": DEFAULT_AGENT_UUID,  # Correct UUID format
                             "agent_name": "Marcus Momentum",
-                            "decision": "Buy signal detected on BTC/USD",
-                            "action_taken": True,
+                            "symbol": "BTC/USD",
+                            "decision_type": "trade",
+                            "decision": {  # JSONB object, not string
+                                "action": "buy",
+                                "reasoning": "AGUI detected momentum signal with RSI oversold",
+                                "market_data": {
+                                    "price": 43250.50,
+                                    "rsi": 28.5,
+                                    "volume": 1250000
+                                }
+                            },
                             "confidence": 0.85,
+                            "action_taken": True,
                             "timestamp": datetime.now(timezone.utc).isoformat()
                         },
                         "timestamp": int(datetime.now().timestamp() * 1000),
@@ -8610,16 +8632,18 @@ async def agui_websocket_endpoint(websocket: WebSocket):
                     
                     await asyncio.sleep(15)  # Wait 15 seconds
                     
-                    # Generate mock trading signal
+                    # Generate mock trading signal with correct data structure
                     await websocket.send_json({
                         "id": f"trade_signal_{int(datetime.now().timestamp())}",
                         "type": "trade.signal_generated",
                         "data": {
+                            "agent_id": DEFAULT_AGENT_UUID,  # UUID format for conversion
                             "symbol": "BTC/USD",
-                            "side": "buy",
-                            "action": "market_entry",
+                            "action": "BUY",  # Will be stored as VARCHAR agent_id in signals table
                             "confidence": 0.78,
+                            "strength": 0.78,
                             "price": 45000 + (datetime.now().second * 10),
+                            "price_target": 46000.0,
                             "strategy": "momentum_following",
                             "timestamp": datetime.now(timezone.utc).isoformat()
                         },
@@ -8627,7 +8651,28 @@ async def agui_websocket_endpoint(websocket: WebSocket):
                         "source": "trading_engine"
                     })
                     
-                    await asyncio.sleep(20)  # Wait 20 seconds
+                    await asyncio.sleep(12)  # Wait 12 seconds
+                    
+                    # Generate mock paper trade with correct data structure
+                    await websocket.send_json({
+                        "id": f"paper_trade_{int(datetime.now().timestamp())}",
+                        "type": "trade.order_filled",
+                        "data": {
+                            "agent_id": DEFAULT_AGENT_UUID,  # UUID format
+                            "account_id": DEFAULT_ACCOUNT_ID,  # TEXT format
+                            "symbol": "BTC/USD",
+                            "side": "buy",
+                            "order_type": "market",
+                            "quantity": 0.01,
+                            "price": 43250.50,
+                            "status": "filled",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        },
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "trading_engine"
+                    })
+                    
+                    await asyncio.sleep(18)  # Wait 18 seconds
                     
                     # Generate mock portfolio update
                     await websocket.send_json({
@@ -8681,6 +8726,41 @@ async def agui_websocket_endpoint(websocket: WebSocket):
                         })
                 
                 elif message_type == "agent.decision_made":
+                    # Store agent decision in database
+                    try:
+                        enhanced_db = registry.get_service("enhanced_database")
+                        if enhanced_db:
+                            # Insert into agent_decisions table (UUID format)
+                            await enhanced_db.execute_query(
+                                """INSERT INTO agent_decisions 
+                                   (agent_id, user_id, symbol, decision_type, decision, confidence_score, executed) 
+                                   VALUES ($1, $2, $3, $4, $5, $6, $7)""",
+                                message_data.get("agent_id", DEFAULT_AGENT_UUID),  # UUID
+                                DEFAULT_USER_UUID,  # user_id from auth.users
+                                message_data.get("symbol", "BTC/USD"),
+                                message_data.get("decision_type", "trade"),
+                                message_data.get("decision", {"action": "buy", "reasoning": "AGUI signal"}),  # JSONB
+                                message_data.get("confidence", 0.85),
+                                message_data.get("action_taken", True)
+                            )
+                            
+                            # Also store in realtime_events for broadcasting
+                            await enhanced_db.execute_query(
+                                """INSERT INTO realtime_events 
+                                   (event_type, channel, payload, agent_id) 
+                                   VALUES ($1, $2, $3, $4)""",
+                                "AGUI_AGENT_DECISION",
+                                "agui_websocket",
+                                {
+                                    "agent_id": message_data.get("agent_id"),
+                                    "decision": message_data.get("decision"),
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                },
+                                message_data.get("agent_id", DEFAULT_AGENT_UUID)
+                            )
+                    except Exception as e:
+                        logger.error(f"Error storing agent decision: {e}")
+                    
                     # Broadcast agent decisions to other clients
                     await websocket_manager.broadcast({
                         "id": message_id,
@@ -8691,6 +8771,51 @@ async def agui_websocket_endpoint(websocket: WebSocket):
                     }, "agent_decision")
                     
                 elif message_type == "trade.signal_generated":
+                    # Store trading signal in database
+                    try:
+                        enhanced_db = registry.get_service("enhanced_database")
+                        if enhanced_db:
+                            # Convert UUID agent_id to VARCHAR format for signals table
+                            agent_uuid = message_data.get("agent_id", DEFAULT_AGENT_UUID)
+                            agent_varchar = f"alpha_trader_{agent_uuid[-3:]}" if len(agent_uuid) > 3 else "alpha_trader_001"
+                            
+                            # Insert into trading.signals table (VARCHAR format)
+                            await enhanced_db.execute_query(
+                                """INSERT INTO signals 
+                                   (agent_id, symbol, action, strength, confidence, price_target, metadata) 
+                                   VALUES ($1, $2, $3, $4, $5, $6, $7)""",
+                                agent_varchar,  # VARCHAR format
+                                message_data.get("symbol", "BTC/USD"),
+                                message_data.get("action", "BUY").upper(),
+                                message_data.get("confidence", 0.8),
+                                message_data.get("confidence", 0.8),
+                                message_data.get("price", 45000.0),
+                                {
+                                    "source": "AGUI_WebSocket",
+                                    "protocol": "v2",
+                                    "strategy": message_data.get("strategy", "momentum"),
+                                    "original_agent_id": agent_uuid
+                                }
+                            )
+                            
+                            # Store in realtime_events for broadcasting
+                            await enhanced_db.execute_query(
+                                """INSERT INTO realtime_events 
+                                   (event_type, channel, payload, agent_id) 
+                                   VALUES ($1, $2, $3, $4)""",
+                                "AGUI_TRADE_SIGNAL",
+                                "agui_websocket",
+                                {
+                                    "agent_id": agent_uuid,
+                                    "signal": message_data.get("action", "BUY"),
+                                    "symbol": message_data.get("symbol", "BTC/USD"),
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                },
+                                agent_uuid
+                            )
+                    except Exception as e:
+                        logger.error(f"Error storing trading signal: {e}")
+                    
                     # Handle trading signals
                     await websocket_manager.broadcast({
                         "id": message_id,
@@ -8699,6 +8824,54 @@ async def agui_websocket_endpoint(websocket: WebSocket):
                         "timestamp": int(datetime.now().timestamp() * 1000),
                         "source": "trading_engine"
                     }, "trading_signal")
+                    
+                elif message_type == "trade.order_placed" or message_type == "trade.order_filled":
+                    # Handle paper trades
+                    try:
+                        enhanced_db = registry.get_service("enhanced_database")
+                        if enhanced_db:
+                            # Insert into agent_paper_trades table (UUID format)
+                            await enhanced_db.execute_query(
+                                """INSERT INTO agent_paper_trades 
+                                   (agent_id, account_id, symbol, side, order_type, quantity, price, status) 
+                                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""",
+                                message_data.get("agent_id", DEFAULT_AGENT_UUID),  # UUID
+                                DEFAULT_ACCOUNT_ID,  # Default paper account
+                                message_data.get("symbol", "BTC/USD"),
+                                message_data.get("side", "buy"),
+                                message_data.get("order_type", "market"),
+                                message_data.get("quantity", 0.01),
+                                message_data.get("price", 45000.0),
+                                "filled" if message_type == "trade.order_filled" else "pending"
+                            )
+                            
+                            # Store in realtime_events
+                            await enhanced_db.execute_query(
+                                """INSERT INTO realtime_events 
+                                   (event_type, channel, payload, agent_id) 
+                                   VALUES ($1, $2, $3, $4)""",
+                                "AGUI_PAPER_TRADE",
+                                "agui_websocket",
+                                {
+                                    "agent_id": message_data.get("agent_id"),
+                                    "trade_type": message_type,
+                                    "symbol": message_data.get("symbol"),
+                                    "side": message_data.get("side"),
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                },
+                                message_data.get("agent_id", DEFAULT_AGENT_UUID)
+                            )
+                    except Exception as e:
+                        logger.error(f"Error storing paper trade: {e}")
+                    
+                    # Broadcast trade update
+                    await websocket_manager.broadcast({
+                        "id": message_id,
+                        "type": message_type,
+                        "data": message_data,
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "trading_engine"
+                    }, "trade_update")
                     
                 elif message_type == "portfolio.value_updated":
                     # Handle portfolio updates
