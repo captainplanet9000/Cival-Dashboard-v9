@@ -718,15 +718,19 @@ export const useActiveAgents = () => useAgentFarm(state =>
 )
 
 export const useFilteredAgents = () => useAgentFarm(state => {
-  const agents = Object.values(state.agents)
-  const filter = state.agentFilter
+  // Safely handle potentially undefined state values
+  const agents = Object.values(state.agents || {})
+  const filter = state.agentFilter || { status: [], type: [], performance: 'all', timeframe: 'all' }
   
   return agents.filter(agent => {
-    if (filter.status.length > 0 && !filter.status.includes(agent.status)) return false
-    if (filter.type.length > 0 && !filter.type.includes(agent.type)) return false
+    // Make sure agent and filter properties exist before accessing
+    if (!agent) return false
+    if (filter.status?.length > 0 && !filter.status.includes(agent.status)) return false
+    if (filter.type?.length > 0 && !filter.type.includes(agent.type)) return false
     
+    // Handle performance filtering
     if (filter.performance === 'top') {
-      return state.topPerformers.some(tp => tp.id === agent.id)
+      return (state.topPerformers || []).some(tp => tp?.id === agent.id)
     }
     if (filter.performance === 'bottom') {
       return state.worstPerformers.some(wp => wp.id === agent.id)
