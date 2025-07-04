@@ -339,7 +339,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-6 ${className || ''}`}>
       {/* Enhanced Header */}
       <div className="flex items-center justify-between">
         <div>
