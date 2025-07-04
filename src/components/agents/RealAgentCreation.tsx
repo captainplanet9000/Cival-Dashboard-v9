@@ -36,6 +36,9 @@ import {
   BarChart3
 } from 'lucide-react'
 import { paperTradingEngine, TradingAgent, TradingStrategy, RiskLimits } from '@/lib/trading/real-paper-trading-engine'
+import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creation-service'
+import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
+import { toast } from 'react-hot-toast'
 
 interface AgentCreationConfig {
   name: string
@@ -56,6 +59,77 @@ interface RealAgentCreationProps {
 }
 
 const STRATEGY_TEMPLATES = {
+  darvas_box: {
+    name: 'Darvas Box',
+    description: 'Box breakout pattern trading - identifies consolidation zones and trades breakouts',
+    defaultParams: {
+      volumeThreshold: 1.5,
+      breakoutConfirmation: 2,
+      boxMinHeight: 0.02,
+      boxMaxAge: 30,
+      stopLoss: 0.03,
+      takeProfit: 0.08
+    },
+    riskProfile: 'medium',
+    technicalType: 'pattern'
+  },
+  williams_alligator: {
+    name: 'Williams Alligator',
+    description: 'Trend following with alligator lines (jaw, teeth, lips) to identify feeding periods',
+    defaultParams: {
+      jawPeriod: 13,
+      jawShift: 8,
+      teethPeriod: 8,
+      teethShift: 5,
+      lipsPeriod: 5,
+      lipsShift: 3,
+      awakePeriod: 3
+    },
+    riskProfile: 'medium',
+    technicalType: 'trend'
+  },
+  renko_breakout: {
+    name: 'Renko Breakout',
+    description: 'Price brick breakout trading - filters noise and identifies clear directional moves',
+    defaultParams: {
+      brickSize: 0.001,
+      confirmationBricks: 2,
+      reversalBricks: 3,
+      volumeFilter: true,
+      stopLoss: 0.02,
+      takeProfit: 0.06
+    },
+    riskProfile: 'low',
+    technicalType: 'price-action'
+  },
+  heikin_ashi: {
+    name: 'Heikin Ashi',
+    description: 'Modified candlestick trend analysis - smooths price action for clearer trends',
+    defaultParams: {
+      trendStrength: 3,
+      reversalCandles: 2,
+      confirmationPeriod: 4,
+      dojiTolerance: 0.0001,
+      stopLoss: 0.025,
+      takeProfit: 0.075
+    },
+    riskProfile: 'low',
+    technicalType: 'candlestick'
+  },
+  elliott_wave: {
+    name: 'Elliott Wave',
+    description: 'Wave pattern recognition trading - identifies impulse and corrective waves',
+    defaultParams: {
+      waveDegree: 'minor',
+      fibonacciLevels: [0.236, 0.382, 0.5, 0.618, 0.786],
+      waveConfirmation: 0.8,
+      minimumWaveSize: 0.01,
+      stopLoss: 0.04,
+      takeProfit: 0.1
+    },
+    riskProfile: 'high',
+    technicalType: 'wave'
+  },
   momentum: {
     name: 'Momentum Trading',
     description: 'Follows price trends and momentum indicators',
@@ -66,7 +140,8 @@ const STRATEGY_TEMPLATES = {
       stopLoss: 0.05,
       takeProfit: 0.1
     },
-    riskProfile: 'medium'
+    riskProfile: 'medium',
+    technicalType: 'indicator'
   },
   mean_reversion: {
     name: 'Mean Reversion',
@@ -78,7 +153,8 @@ const STRATEGY_TEMPLATES = {
       holdingPeriod: 10,
       stopLoss: 0.04
     },
-    riskProfile: 'low'
+    riskProfile: 'low',
+    technicalType: 'statistical'
   },
   arbitrage: {
     name: 'Arbitrage Hunter',
@@ -89,35 +165,8 @@ const STRATEGY_TEMPLATES = {
       maxExposure: 0.1,
       feeThreshold: 0.001
     },
-    riskProfile: 'low'
-  },
-  grid: {
-    name: 'Grid Trading',
-    description: 'Places buy/sell orders at regular intervals',
-    defaultParams: {
-      gridSize: 0.01,
-      gridLevels: 10,
-      baseOrderSize: 0.1,
-      profitPercentage: 0.02
-    },
-    riskProfile: 'medium'
-  },
-  dca: {
-    name: 'Dollar Cost Averaging',
-    description: 'Regularly buys assets regardless of price',
-    defaultParams: {
-      interval: 3600, // 1 hour
-      amount: 100,
-      maxDeviation: 0.05,
-      pauseOnProfit: false
-    },
-    riskProfile: 'low'
-  },
-  custom: {
-    name: 'Custom Strategy',
-    description: 'Define your own trading parameters',
-    defaultParams: {},
-    riskProfile: 'high'
+    riskProfile: 'low',
+    technicalType: 'market-neutral'
   }
 }
 
@@ -131,9 +180,9 @@ export function RealAgentCreation({ onAgentCreated, className }: RealAgentCreati
     description: '',
     strategy: {
       name: '',
-      type: 'momentum',
-      parameters: STRATEGY_TEMPLATES.momentum.defaultParams,
-      description: STRATEGY_TEMPLATES.momentum.description
+      type: 'darvas_box',
+      parameters: STRATEGY_TEMPLATES.darvas_box.defaultParams,
+      description: STRATEGY_TEMPLATES.darvas_box.description
     },
     initialCapital: 10000,
     riskLimits: {
@@ -145,6 +194,17 @@ export function RealAgentCreation({ onAgentCreated, className }: RealAgentCreati
       stopLossEnabled: true,
       takeProfitEnabled: true
     }
+  })
+  
+  // Additional state for autonomous features
+  const [autonomousConfig, setAutonomousConfig] = useState({
+    enableLLM: true,
+    enableMemory: true,
+    enableLearning: true,
+    enableVault: false,
+    enableWallet: false,
+    llmProvider: 'gemini',
+    llmModel: 'gemini-pro'
   })
 
   const validateStep = (stepNumber: number): boolean => {
@@ -248,9 +308,79 @@ export function RealAgentCreation({ onAgentCreated, className }: RealAgentCreati
         paperTradingEngine.start()
       }
 
-      const agent = paperTradingEngine.createAgent(config)
-      
-      onAgentCreated?.(agent)
+      // Create autonomous agent configuration
+      const autonomousAgentConfig = {
+        name: config.name,
+        strategy: config.strategy.type as any,
+        initialCapital: config.initialCapital,
+        
+        // Autonomous features
+        autonomousConfig: {
+          enabled: autonomousConfig.enableLLM,
+          decisionFrequency: 10, // 10 second cycles
+          adaptiveParameters: true,
+          learningEnabled: autonomousConfig.enableLearning
+        },
+        
+        // Memory system
+        memoryConfig: {
+          enabled: autonomousConfig.enableMemory,
+          patternRecognition: true,
+          experienceStorage: true,
+          adaptiveLearning: autonomousConfig.enableLearning
+        },
+        
+        // LLM Integration
+        llmConfig: {
+          provider: autonomousConfig.llmProvider,
+          model: autonomousConfig.llmModel,
+          contextWindow: 'strategy_specific',
+          decisionReasoning: true
+        },
+        
+        // Paper Trading
+        paperTradingConfig: {
+          enabled: true,
+          initialBalance: config.initialCapital,
+          realTimeExecution: true
+        },
+        
+        // Risk Management
+        riskLimits: config.riskLimits,
+        
+        // Strategy parameters
+        parameters: config.strategy.parameters
+      }
+
+      // Create agent using enhanced creation service for autonomous features
+      if (autonomousConfig.enableLLM) {
+        const agentId = await enhancedAgentCreationService.createAutonomousAgent(autonomousAgentConfig)
+        
+        if (agentId) {
+          toast.success(`🤖 Autonomous agent "${config.name}" created with ${config.strategy.type} strategy`)
+          
+          // Also create in paper trading engine for immediate trading
+          const paperAgent = paperTradingEngine.createAgent(config)
+          onAgentCreated?.(paperAgent)
+        } else {
+          throw new Error('Failed to create autonomous agent')
+        }
+      } else {
+        // Create regular paper trading agent
+        const agent = paperTradingEngine.createAgent(config)
+        
+        // Also register with lifecycle manager
+        await agentLifecycleManager.createAgent({
+          name: config.name,
+          strategy: config.strategy.type,
+          initialCapital: config.initialCapital,
+          riskLimits: config.riskLimits,
+          parameters: config.strategy.parameters
+        })
+        
+        onAgentCreated?.(agent)
+        toast.success(`📊 Trading agent "${config.name}" created successfully`)
+      }
       
       // Reset form
       setConfig({
@@ -258,9 +388,9 @@ export function RealAgentCreation({ onAgentCreated, className }: RealAgentCreati
         description: '',
         strategy: {
           name: '',
-          type: 'momentum',
-          parameters: STRATEGY_TEMPLATES.momentum.defaultParams,
-          description: STRATEGY_TEMPLATES.momentum.description
+          type: 'darvas_box',
+          parameters: STRATEGY_TEMPLATES.darvas_box.defaultParams,
+          description: STRATEGY_TEMPLATES.darvas_box.description
         },
         initialCapital: 10000,
         riskLimits: {
@@ -275,9 +405,9 @@ export function RealAgentCreation({ onAgentCreated, className }: RealAgentCreati
       })
       setStep(1)
       
-      console.log('✅ Agent created successfully:', agent)
     } catch (error) {
       console.error('❌ Failed to create agent:', error)
+      toast.error('Failed to create agent. Please try again.')
       setErrors({ general: 'Failed to create agent. Please try again.' })
     } finally {
       setIsCreating(false)
@@ -589,6 +719,65 @@ export function RealAgentCreation({ onAgentCreated, className }: RealAgentCreati
                     />
                     <Label>Take Profit</Label>
                   </div>
+                </div>
+                
+                {/* Autonomous Features Section */}
+                <div className="mt-8 pt-6 border-t">
+                  <h4 className="font-medium mb-4 flex items-center">
+                    <Zap className="h-5 w-5 mr-2 text-purple-600" />
+                    Autonomous Features (AI-Powered)
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="enable-llm"
+                        checked={autonomousConfig.enableLLM}
+                        onCheckedChange={(checked) => setAutonomousConfig(prev => ({ ...prev, enableLLM: checked }))}
+                      />
+                      <Label htmlFor="enable-llm" className="text-sm cursor-pointer">
+                        <div>LLM Decisions</div>
+                        <div className="text-xs text-muted-foreground">AI-powered trading</div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="enable-memory"
+                        checked={autonomousConfig.enableMemory}
+                        onCheckedChange={(checked) => setAutonomousConfig(prev => ({ ...prev, enableMemory: checked }))}
+                      />
+                      <Label htmlFor="enable-memory" className="text-sm cursor-pointer">
+                        <div>Memory System</div>
+                        <div className="text-xs text-muted-foreground">Pattern recognition</div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="enable-learning"
+                        checked={autonomousConfig.enableLearning}
+                        onCheckedChange={(checked) => setAutonomousConfig(prev => ({ ...prev, enableLearning: checked }))}
+                      />
+                      <Label htmlFor="enable-learning" className="text-sm cursor-pointer">
+                        <div>Adaptive Learning</div>
+                        <div className="text-xs text-muted-foreground">Improves over time</div>
+                      </Label>
+                    </div>
+                  </div>
+                  
+                  {autonomousConfig.enableLLM && (
+                    <div className="mt-4 p-4 bg-purple-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Info className="h-4 w-4 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-900">LLM Configuration</span>
+                      </div>
+                      <p className="text-sm text-purple-700">
+                        Using {autonomousConfig.llmProvider} ({autonomousConfig.llmModel}) for intelligent trading decisions.
+                        The agent will analyze market data and make autonomous decisions every 10 seconds.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

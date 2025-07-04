@@ -1,5 +1,6 @@
 // ULTRA-NUCLEAR: Remove AgentMemoryProvider to eliminate all service dependencies
 // import { AgentMemoryProvider } from "@/components/agents/AgentMemoryProvider";
+import { NotificationProvider } from "@/components/premium-ui/notifications/notification-system";
 
 // Force dynamic rendering for all dashboard routes
 export const dynamic = 'force-dynamic'
@@ -11,9 +12,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    // ULTRA-NUCLEAR: Direct layout without any providers
-    <div className="min-h-screen">
-      {children}
-    </div>
+    // Add NotificationProvider to enable notifications throughout the dashboard
+    <NotificationProvider>
+      <div className="min-h-screen">
+        {children}
+      </div>
+    </NotificationProvider>
   );
 } 

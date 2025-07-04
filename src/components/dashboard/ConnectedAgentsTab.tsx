@@ -863,7 +863,6 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
     { id: 'advanced-data', label: 'Advanced Data', component: <AdvancedDataTable /> },
     { id: 'notifications', label: 'Notifications', component: <NotificationCenter /> },
     { id: 'risk-mgmt', label: 'Risk Management', component: <RiskManagementSuite /> },
-    { id: 'premium-grid', label: 'Premium Grid', component: <DashboardGrid /> },
     { id: 'memory-analytics', label: 'Memory Analytics', component: <MemoryAnalyticsDashboard /> },
     { id: 'expert-strategies', label: 'Expert Strategies', component: <AutonomousExpertAgentsPanel /> },
     { id: 'strategies', label: 'Classic Strategies', component: <TradingStrategiesPanel /> }
