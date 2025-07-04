@@ -61,11 +61,12 @@ import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
 
 interface RealAgentManagementProps {
   className?: string
+  onCreateAgent?: () => void
 }
 
 type AgentWithSource = TradingAgent & { source: string }
 
-export function RealAgentManagement({ className }: RealAgentManagementProps) {
+export function RealAgentManagement({ className, onCreateAgent }: RealAgentManagementProps) {
   const [agents, setAgents] = useState<AgentWithSource[]>([])
   const [selectedAgent, setSelectedAgent] = useState<AgentWithSource | null>(null)
   const [marketPrices, setMarketPrices] = useState<Record<string, number>>({})
@@ -418,7 +419,7 @@ export function RealAgentManagement({ className }: RealAgentManagementProps) {
               <Bot className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No agents created yet</h3>
               <p className="text-gray-600 mb-4">Create your first trading agent to get started</p>
-              <Button>Create Agent</Button>
+              <Button onClick={onCreateAgent}>Create Agent</Button>
             </CardContent>
           </Card>
         ) : (

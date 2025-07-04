@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creation-service'
+import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
 interface ExpertStrategy {
@@ -211,10 +212,35 @@ export function AutonomousExpertAgentsPanel() {
         }
       }
 
-      const agentId = await enhancedAgentCreationService.createAutonomousAgent(config)
+      // Try enhanced service first, fallback to persistent service
+      let agentId = null
+      try {
+        agentId = await enhancedAgentCreationService.createAutonomousAgent(config)
+      } catch (error) {
+        console.log('Enhanced service failed, using persistent service:', error)
+        // Fallback to persistent agent service with simplified config
+        agentId = await persistentAgentService.createAgent({
+          name: config.name,
+          strategy: config.strategy,
+          initialCapital: config.initialCapital,
+          riskLimits: {
+            maxPositionSize: 10,
+            maxDailyLoss: 1000,
+            stopLossEnabled: true,
+            takeProfitEnabled: true
+          },
+          parameters: config.strategyParameters
+        })
+      }
       
       if (agentId) {
-        toast.success(`${strategy.name} deployed successfully with ID: ${agentId}`)
+        // Start the agent immediately
+        try {
+          await persistentAgentService.startAgent(agentId)
+          toast.success(`${strategy.name} deployed and started successfully with ID: ${agentId}`)
+        } catch (startError) {
+          toast.success(`${strategy.name} deployed successfully with ID: ${agentId}`)
+        }
       } else {
         toast.error(`Failed to deploy ${strategy.name}`)
       }
