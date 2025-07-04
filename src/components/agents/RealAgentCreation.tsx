@@ -38,6 +38,7 @@ import {
 import { paperTradingEngine, TradingAgent, TradingStrategy, RiskLimits } from '@/lib/trading/real-paper-trading-engine'
 import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creation-service'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
+import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
 import { toast } from 'react-hot-toast'
 
 interface AgentCreationConfig {
@@ -308,78 +309,60 @@ export function RealAgentCreation({ onAgentCreated, className }: RealAgentCreati
         paperTradingEngine.start()
       }
 
-      // Create autonomous agent configuration
-      const autonomousAgentConfig = {
+      // Create comprehensive agent configuration
+      const agentConfig = {
         name: config.name,
-        strategy: config.strategy.type as any,
+        description: config.description,
+        strategy: config.strategy.type,
         initialCapital: config.initialCapital,
+        riskLimits: config.riskLimits,
+        parameters: config.strategy.parameters,
         
         // Autonomous features
-        autonomousConfig: {
-          enabled: autonomousConfig.enableLLM,
+        autonomousConfig: autonomousConfig.enableLLM ? {
+          enabled: true,
           decisionFrequency: 10, // 10 second cycles
           adaptiveParameters: true,
           learningEnabled: autonomousConfig.enableLearning
-        },
+        } : undefined,
         
         // Memory system
-        memoryConfig: {
-          enabled: autonomousConfig.enableMemory,
+        memoryConfig: autonomousConfig.enableMemory ? {
+          enabled: true,
           patternRecognition: true,
           experienceStorage: true,
           adaptiveLearning: autonomousConfig.enableLearning
-        },
+        } : undefined,
         
         // LLM Integration
-        llmConfig: {
+        llmConfig: autonomousConfig.enableLLM ? {
           provider: autonomousConfig.llmProvider,
           model: autonomousConfig.llmModel,
           contextWindow: 'strategy_specific',
           decisionReasoning: true
-        },
-        
-        // Paper Trading
-        paperTradingConfig: {
-          enabled: true,
-          initialBalance: config.initialCapital,
-          realTimeExecution: true
-        },
-        
-        // Risk Management
-        riskLimits: config.riskLimits,
-        
-        // Strategy parameters
-        parameters: config.strategy.parameters
+        } : undefined
       }
 
-      // Create agent using enhanced creation service for autonomous features
-      if (autonomousConfig.enableLLM) {
-        const agentId = await enhancedAgentCreationService.createAutonomousAgent(autonomousAgentConfig)
+      // Create persistent agent that will survive refreshes
+      const agentId = await persistentAgentService.createAgent(agentConfig)
+      
+      if (agentId) {
+        // Get the paper trading agent that was created
+        const tradingAgents = paperTradingEngine.getAllAgents()
+        const createdAgent = tradingAgents.find(a => a.name === config.name)
         
-        if (agentId) {
-          toast.success(`🤖 Autonomous agent "${config.name}" created with ${config.strategy.type} strategy`)
-          
-          // Also create in paper trading engine for immediate trading
-          const paperAgent = paperTradingEngine.createAgent(config)
-          onAgentCreated?.(paperAgent)
-        } else {
-          throw new Error('Failed to create autonomous agent')
+        if (createdAgent) {
+          onAgentCreated?.(createdAgent)
+        }
+        
+        // Auto-start agent if autonomous features are enabled
+        if (autonomousConfig.enableLLM) {
+          setTimeout(() => {
+            persistentAgentService.startAgent(agentId)
+          }, 1000)
         }
       } else {
-        // Create regular paper trading agent
-        const agent = paperTradingEngine.createAgent(config)
-        
-        // Also register with lifecycle manager
-        await agentLifecycleManager.createAgent({
-          name: config.name,
-          strategy: config.strategy.type,
-          initialCapital: config.initialCapital,
-          riskLimits: config.riskLimits,
-          parameters: config.strategy.parameters
-        })
-        
-        onAgentCreated?.(agent)
-        toast.success(`📊 Trading agent "${config.name}" created successfully`)
+        throw new Error('Failed to create agent')
       }
       
       // Reset form

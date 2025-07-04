@@ -57,6 +57,7 @@ import {
   Transaction
 } from '@/lib/trading/real-paper-trading-engine'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
+import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
 
 interface RealAgentManagementProps {
   className?: string
@@ -135,9 +136,86 @@ export function RealAgentManagement({ className }: RealAgentManagementProps) {
 
   const loadAgents = async () => {
     try {
-      // Load agents from both sources
+      // Load agents from all sources
       const paperAgents = paperTradingEngine.getAllAgents()
       const lifecycleAgents = await agentLifecycleManager.getAllAgents()
+      const persistentAgents = persistentAgentService.getAllAgents()
+      
+      // Start with paper trading agents
+      const allAgents: AgentWithSource[] = paperAgents.map(agent => ({
+        ...agent,
+        source: 'paper'
+      })) as unknown as AgentWithSource[]
+      
+      // Add persistent agents that might not be in paper trading yet
+      persistentAgents.forEach(pAgent => {
+        // Check if this persistent agent exists in paper trading
+        const existingAgent = allAgents.find(a => a.name === pAgent.name)
+        
+        if (!existingAgent) {
+          // Convert persistent agent to display format
+          const displayAgent: AgentWithSource = {
+            id: pAgent.id,
+            name: pAgent.name,
+            status: pAgent.status,
+            strategy: {
+              id: pAgent.strategy,
+              name: pAgent.strategy,
+              type: pAgent.strategy as any,
+              parameters: pAgent.config.parameters || {},
+              signals: [],
+              description: ''
+            },
+            portfolio: {
+              id: pAgent.id,
+              agentId: pAgent.id,
+              cash: pAgent.currentCapital,
+              totalValue: pAgent.currentCapital,
+              positions: [],
+              orders: [],
+              transactions: [],
+              performance: {
+                totalReturn: (pAgent.currentCapital - pAgent.initialCapital) / pAgent.initialCapital,
+                sharpeRatio: pAgent.performance.sharpeRatio,
+                maxDrawdown: 0,
+                winRate: pAgent.performance.winRate / 100,
+                totalTrades: pAgent.performance.totalTrades
+              }
+            },
+            performance: {
+              totalTrades: pAgent.performance.totalTrades,
+              winningTrades: Math.floor(pAgent.performance.totalTrades * pAgent.performance.winRate / 100),
+              losingTrades: Math.floor(pAgent.performance.totalTrades * (1 - pAgent.performance.winRate / 100)),
+              totalPnL: pAgent.performance.totalPnL,
+              winRate: pAgent.performance.winRate / 100,
+              sharpeRatio: pAgent.performance.sharpeRatio,
+              maxDrawdown: 0,
+              averageWin: 0,
+              averageLoss: 0
+            },
+            riskLimits: pAgent.config.riskLimits || {
+              maxPositionSize: 10,
+              maxDailyLoss: 500,
+              maxDrawdown: 20,
+              maxLeverage: 1,
+              allowedSymbols: ['BTC/USD', 'ETH/USD', 'SOL/USD'],
+              stopLossEnabled: true,
+              takeProfitEnabled: true
+            },
+            createdAt: new Date(pAgent.createdAt),
+            lastActive: new Date(pAgent.lastActive),
+            source: 'persistent'
+          } as any
+          
+          allAgents.push(displayAgent)
+        } else {
+          // Update existing agent with persistent data
+          existingAgent.portfolio.totalValue = pAgent.currentCapital
+          existingAgent.performance.totalPnL = pAgent.performance.totalPnL
+          existingAgent.performance.winRate = pAgent.performance.winRate / 100
+          existingAgent.performance.totalTrades = pAgent.performance.totalTrades
+        }
+      })
       
       // Convert lifecycle agents to TradingAgent format for display
       const convertedLifecycleAgents = lifecycleAgents.map(agent => ({
@@ -184,27 +262,17 @@ export function RealAgentManagement({ className }: RealAgentManagementProps) {
         lastDecision: agent.recentDecisions?.[0] || null,
         currentPositions: agent.realTimeState?.currentPositions || [],
         pendingOrders: agent.realTimeState?.pendingOrders || [],
-        // Add agent source identifier
         source: 'lifecycle'
       })) as unknown as AgentWithSource[]
       
-      // Mark paper trading agents
-      const markedPaperAgents = paperAgents.map(agent => ({
-        ...agent,
-        source: 'paper'
-      })) as unknown as AgentWithSource[]
-      
-      // Combine agents (avoid duplicates by checking IDs)
-      const allAgents: AgentWithSource[] = [...markedPaperAgents]
-      
-      // Add lifecycle agents that aren't already in paper trading
+      // Add lifecycle agents that aren't already in the list
       convertedLifecycleAgents.forEach(agent => {
-        if (!allAgents.find(a => a.id === agent.id)) {
+        if (!allAgents.find(a => a.id === agent.id || a.name === agent.name)) {
           allAgents.push(agent)
         }
       })
       
-      console.log(`📊 Loaded ${allAgents.length} agents (${paperAgents.length} paper, ${convertedLifecycleAgents.length} lifecycle)`)
+      console.log(`📊 Loaded ${allAgents.length} agents (${paperAgents.length} paper, ${persistentAgents.length} persistent, ${convertedLifecycleAgents.length} lifecycle)`)
       setAgents(allAgents)
       
     } catch (error) {
@@ -218,39 +286,66 @@ export function RealAgentManagement({ className }: RealAgentManagementProps) {
 
   const handleAgentAction = async (agentId: string, action: 'start' | 'pause' | 'stop') => {
     try {
-      // Try to find the agent in paper trading engine first
-      const paperAgent = paperTradingEngine.getAgent(agentId)
+      // Check if it's a persistent agent
+      const persistentAgent = persistentAgentService.getAgent(agentId)
       
-      if (paperAgent) {
-        // Handle paper trading agent
-        paperAgent.status = action === 'start' ? 'active' : action === 'pause' ? 'paused' : 'stopped'
-        paperAgent.lastActive = new Date()
-        const updatedAgent: AgentWithSource = { ...paperAgent, source: 'paper' }
-        setAgents(prev => prev.map(a => a.id === agentId ? updatedAgent : a))
-        console.log(`🎮 Paper Agent ${paperAgent.name} ${action}ed`)
-      } else {
-        // Handle lifecycle manager agent
+      if (persistentAgent) {
+        // Handle persistent agent
         let success = false
         
         switch (action) {
           case 'start':
-            success = await agentLifecycleManager.startAgent(agentId)
+            success = await persistentAgentService.startAgent(agentId)
             break
           case 'stop':
-            success = await agentLifecycleManager.stopAgent(agentId)
+            success = await persistentAgentService.stopAgent(agentId)
             break
           case 'pause':
-            // For now, treat pause as stop in lifecycle manager
-            success = await agentLifecycleManager.stopAgent(agentId)
+            // For now, treat pause as stop
+            success = await persistentAgentService.stopAgent(agentId)
             break
         }
         
         if (success) {
           // Reload agents to reflect the changes
           await loadAgents()
-          console.log(`🎮 Lifecycle Agent ${agentId} ${action}ed`)
+          console.log(`🎮 Persistent Agent ${persistentAgent.name} ${action}ed`)
+        }
+      } else {
+        // Try to find the agent in paper trading engine
+        const paperAgent = paperTradingEngine.getAgent(agentId)
+        
+        if (paperAgent) {
+          // Handle paper trading agent
+          paperAgent.status = action === 'start' ? 'active' : action === 'pause' ? 'paused' : 'stopped'
+          paperAgent.lastActive = new Date()
+          const updatedAgent: AgentWithSource = { ...paperAgent, source: 'paper' }
+          setAgents(prev => prev.map(a => a.id === agentId ? updatedAgent : a))
+          console.log(`🎮 Paper Agent ${paperAgent.name} ${action}ed`)
         } else {
-          console.error(`Failed to ${action} agent ${agentId}`)
+          // Handle lifecycle manager agent
+          let success = false
+          
+          switch (action) {
+            case 'start':
+              success = await agentLifecycleManager.startAgent(agentId)
+              break
+            case 'stop':
+              success = await agentLifecycleManager.stopAgent(agentId)
+              break
+            case 'pause':
+              // For now, treat pause as stop in lifecycle manager
+              success = await agentLifecycleManager.stopAgent(agentId)
+              break
+          }
+          
+          if (success) {
+            // Reload agents to reflect the changes
+            await loadAgents()
+            console.log(`🎮 Lifecycle Agent ${agentId} ${action}ed`)
+          } else {
+            console.error(`Failed to ${action} agent ${agentId}`)
+          }
         }
       }
     } catch (error) {
