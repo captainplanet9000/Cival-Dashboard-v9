@@ -110,7 +110,15 @@ class ServiceInitializer:
             
             # Phase 6: Agent Frameworks
             "crew_trading_analysis",
-            "autogen_trading_system"
+            "autogen_trading_system",
+            
+            # Phase 7: Orchestration Services
+            "farm_agent_orchestrator",
+            "goal_capital_manager",
+            "performance_attribution_engine",
+            "enhanced_event_propagation",
+            "orchestration_scheduler",
+            "orchestration_recovery"
         ]
     
     async def initialize_all_services(self) -> Dict[str, str]:
@@ -333,6 +341,69 @@ class ServiceInitializer:
                 return "initialized"
             except ImportError as e:
                 logger.warning(f"Cross-DEX arbitrage engine dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        # Orchestration Services
+        elif service_name == "farm_agent_orchestrator":
+            try:
+                from services.farm_agent_orchestrator import get_farm_agent_orchestrator
+                service = await get_farm_agent_orchestrator(registry)
+                registry.register_service("farm_agent_orchestrator", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Farm agent orchestrator dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "goal_capital_manager":
+            try:
+                from services.goal_capital_manager import get_goal_capital_manager
+                service = await get_goal_capital_manager(registry)
+                registry.register_service("goal_capital_manager", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Goal capital manager dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "performance_attribution_engine":
+            try:
+                from services.performance_attribution_engine import get_performance_attribution_engine
+                service = await get_performance_attribution_engine(registry)
+                registry.register_service("performance_attribution_engine", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Performance attribution engine dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "enhanced_event_propagation":
+            try:
+                from services.enhanced_event_propagation import get_enhanced_event_propagation
+                service = await get_enhanced_event_propagation(registry)
+                registry.register_service("enhanced_event_propagation", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Enhanced event propagation dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "orchestration_scheduler":
+            try:
+                from services.orchestration_scheduler import get_orchestration_scheduler
+                service = await get_orchestration_scheduler(registry)
+                # Start the scheduler
+                await service.start()
+                registry.register_service("orchestration_scheduler", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Orchestration scheduler dependencies not available: {e}")
+                return "skipped - dependencies not available"
+        
+        elif service_name == "orchestration_recovery":
+            try:
+                from services.orchestration_recovery import get_orchestration_recovery
+                service = await get_orchestration_recovery(registry)
+                registry.register_service("orchestration_recovery", service)
+                return "initialized"
+            except ImportError as e:
+                logger.warning(f"Orchestration recovery dependencies not available: {e}")
                 return "skipped - dependencies not available"
         
         else:

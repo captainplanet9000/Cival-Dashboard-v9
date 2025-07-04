@@ -2164,6 +2164,246 @@ async def allocate_capital_to_goal(goal_id: str, request: dict):
         logger.error(f"Failed to allocate capital: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================================
+# ADDITIONAL ORCHESTRATION API ENDPOINTS
+# ============================================================================
+
+@app.post("/api/v1/orchestration/farms/{farm_id}/assign-agent/{agent_id}")
+async def assign_agent_to_farm(farm_id: str, agent_id: str, request: dict = None):
+    """Assign a specific agent to a farm"""
+    try:
+        orchestrator = registry.get_service("farm_agent_orchestrator")
+        
+        if not orchestrator:
+            return {
+                "success": True,
+                "message": f"Agent {agent_id} assigned to farm {farm_id} (mock mode)",
+                "assignment_id": f"assign_{farm_id}_{agent_id}",
+                "capital_allocated": 25000,
+                "status": "active"
+            }
+        
+        assignment_request = {
+            "farm_id": farm_id,
+            "agent_id": agent_id,
+            "capital_amount": request.get("capital_amount", 25000) if request else 25000,
+            "assignment_type": request.get("assignment_type", "performance_based") if request else "performance_based"
+        }
+        
+        result = await orchestrator.assign_agent_to_farm(assignment_request)
+        
+        return {
+            "success": True,
+            "message": f"Agent {agent_id} successfully assigned to farm {farm_id}",
+            "assignment_id": result.get("assignment_id"),
+            "capital_allocated": result.get("capital_allocated"),
+            "status": result.get("status", "active"),
+            "performance_baseline": result.get("performance_baseline", 0)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to assign agent to farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent assignment error: {str(e)}")
+
+@app.delete("/api/v1/orchestration/farms/{farm_id}/remove-agent/{agent_id}")
+async def remove_agent_from_farm(farm_id: str, agent_id: str):
+    """Remove an agent from a farm"""
+    try:
+        orchestrator = registry.get_service("farm_agent_orchestrator")
+        
+        if not orchestrator:
+            return {
+                "success": True,
+                "message": f"Agent {agent_id} removed from farm {farm_id} (mock mode)",
+                "capital_returned": 25000,
+                "final_performance": 2.34
+            }
+        
+        result = await orchestrator.remove_agent_from_farm(farm_id, agent_id)
+        
+        return {
+            "success": True,
+            "message": f"Agent {agent_id} successfully removed from farm {farm_id}",
+            "capital_returned": result.get("capital_returned"),
+            "final_performance": result.get("final_performance"),
+            "reason": result.get("reason", "manual_removal")
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to remove agent from farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent removal error: {str(e)}")
+
+@app.post("/api/v1/orchestration/capital/rebalance")
+async def rebalance_capital_allocation(request: dict):
+    """Rebalance capital allocation across the entire system"""
+    try:
+        capital_manager = registry.get_service("goal_capital_manager")
+        
+        if not capital_manager:
+            return {
+                "success": True,
+                "message": "Capital rebalancing completed (mock mode)",
+                "total_reallocated": 150000,
+                "farms_affected": ["farm_001", "farm_002", "farm_003"],
+                "agents_affected": ["agent_001", "agent_002", "agent_003", "agent_004"],
+                "rebalance_strategy": "performance_weighted",
+                "execution_time": "2.3s"
+            }
+        
+        rebalance_params = {
+            "strategy": request.get("strategy", "performance_weighted"),
+            "min_allocation": request.get("min_allocation", 10000),
+            "max_allocation": request.get("max_allocation", 100000),
+            "rebalance_threshold": request.get("rebalance_threshold", 0.1)
+        }
+        
+        result = await capital_manager.rebalance_all_allocations(rebalance_params)
+        
+        return {
+            "success": True,
+            "message": "Capital rebalancing completed successfully",
+            "total_reallocated": result.get("total_reallocated"),
+            "farms_affected": result.get("farms_affected", []),
+            "agents_affected": result.get("agents_affected", []),
+            "rebalance_strategy": result.get("strategy"),
+            "execution_time": result.get("execution_time")
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to rebalance capital: {e}")
+        raise HTTPException(status_code=500, detail=f"Capital rebalancing error: {str(e)}")
+
+@app.get("/api/v1/orchestration/agents/{agent_id}/performance-history")
+async def get_agent_performance_history(agent_id: str, period: str = "30d"):
+    """Get detailed performance history for a specific agent"""
+    try:
+        attribution_engine = registry.get_service("performance_attribution_engine")
+        
+        if not attribution_engine:
+            # Mock performance history
+            from datetime import datetime, timedelta
+            import random
+            
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+            
+            history = []
+            current_date = start_date
+            base_performance = 1000
+            
+            while current_date <= end_date:
+                daily_change = random.uniform(-50, 100)
+                base_performance += daily_change
+                
+                history.append({
+                    "date": current_date.isoformat(),
+                    "daily_pnl": daily_change,
+                    "cumulative_pnl": base_performance - 1000,
+                    "win_rate": random.uniform(0.6, 0.8),
+                    "trades_count": random.randint(2, 8),
+                    "sharpe_ratio": random.uniform(1.2, 2.5),
+                    "max_drawdown": random.uniform(0.02, 0.08)
+                })
+                current_date += timedelta(days=1)
+            
+            return {
+                "agent_id": agent_id,
+                "period": period,
+                "total_entries": len(history),
+                "performance_history": history,
+                "summary": {
+                    "total_pnl": base_performance - 1000,
+                    "best_day": max(history, key=lambda x: x["daily_pnl"])["daily_pnl"],
+                    "worst_day": min(history, key=lambda x: x["daily_pnl"])["daily_pnl"],
+                    "avg_daily_pnl": sum(h["daily_pnl"] for h in history) / len(history),
+                    "total_trades": sum(h["trades_count"] for h in history)
+                }
+            }
+        
+        history = await attribution_engine.get_agent_performance_history(agent_id, period)
+        
+        return {
+            "agent_id": agent_id,
+            "period": period,
+            "performance_history": history,
+            "summary": await attribution_engine.calculate_performance_summary(agent_id, period)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get agent performance history: {e}")
+        raise HTTPException(status_code=500, detail=f"Performance history error: {str(e)}")
+
+@app.post("/api/v1/orchestration/events/subscribe")
+async def subscribe_to_orchestration_events(request: dict):
+    """Subscribe to specific orchestration events"""
+    try:
+        event_propagation = registry.get_service("enhanced_event_propagation")
+        
+        if not event_propagation:
+            return {
+                "success": True,
+                "subscription_id": f"sub_{request.get('subscriber_service', 'client')}_{datetime.now().timestamp()}",
+                "message": "Event subscription created (mock mode)",
+                "event_types": request.get("event_types", []),
+                "filters": request.get("filters", {})
+            }
+        
+        subscription_request = {
+            "subscriber_service": request.get("subscriber_service", "web_client"),
+            "event_types": request.get("event_types", ["agent_assigned", "capital_allocated", "performance_updated"]),
+            "priority_filter": request.get("priority_filter"),
+            "scope_filter": request.get("scope_filter"),
+            "data_filter": request.get("data_filter", {})
+        }
+        
+        subscription_id = await event_propagation.subscribe(
+            subscription_request["subscriber_service"],
+            subscription_request["event_types"],
+            lambda event: None  # Handler will be managed via WebSocket
+        )
+        
+        return {
+            "success": True,
+            "subscription_id": subscription_id,
+            "message": "Event subscription created successfully",
+            "event_types": subscription_request["event_types"],
+            "filters": {
+                "priority": subscription_request.get("priority_filter"),
+                "scope": subscription_request.get("scope_filter"),
+                "data": subscription_request.get("data_filter")
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to create event subscription: {e}")
+        raise HTTPException(status_code=500, detail=f"Event subscription error: {str(e)}")
+
+@app.delete("/api/v1/orchestration/events/unsubscribe/{subscription_id}")
+async def unsubscribe_from_orchestration_events(subscription_id: str):
+    """Unsubscribe from orchestration events"""
+    try:
+        event_propagation = registry.get_service("enhanced_event_propagation")
+        
+        if not event_propagation:
+            return {
+                "success": True,
+                "message": f"Subscription {subscription_id} removed (mock mode)"
+            }
+        
+        success = await event_propagation.unsubscribe(subscription_id)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"Successfully unsubscribed from {subscription_id}"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    except Exception as e:
+        logger.error(f"Failed to unsubscribe from events: {e}")
+        raise HTTPException(status_code=500, detail=f"Event unsubscription error: {str(e)}")
+
 @app.post("/api/v1/goals/analyze-natural-language")
 async def analyze_natural_language_goal(request: dict):
     """Analyze natural language input to create goal parameters"""

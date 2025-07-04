@@ -90,6 +90,136 @@ export interface GoalUpdate {
   timestamp: number;
 }
 
+// ============================================================================
+// ORCHESTRATION-SPECIFIC WEBSOCKET EVENTS
+// ============================================================================
+
+export interface AgentAssignmentEvent {
+  assignmentId: string;
+  farmId: string;
+  agentId: string;
+  agentName: string;
+  capitalAllocated: number;
+  assignmentType: 'performance_based' | 'manual' | 'rebalance';
+  performanceBaseline: number;
+  status: 'assigned' | 'active' | 'under_review';
+  timestamp: number;
+}
+
+export interface CapitalReallocationEvent {
+  reallocationId: string;
+  strategy: 'performance_weighted' | 'risk_adjusted' | 'equal_weighted' | 'dynamic';
+  sourceType: 'goal' | 'farm' | 'agent';
+  sourceId: string;
+  targetType: 'goal' | 'farm' | 'agent';
+  targetId: string;
+  amount: number;
+  reason: string;
+  impact: {
+    farmsAffected: string[];
+    agentsAffected: string[];
+    expectedPerformanceChange: number;
+  };
+  timestamp: number;
+}
+
+export interface PerformanceUpdateEvent {
+  entityType: 'agent' | 'farm' | 'goal' | 'portfolio';
+  entityId: string;
+  entityName: string;
+  metrics: {
+    totalPnL: number;
+    dailyPnL: number;
+    winRate: number;
+    sharpeRatio: number;
+    maxDrawdown: number;
+    tradesCount: number;
+    performanceScore: number;
+  };
+  attributions: {
+    contributions: Record<string, number>;
+    confidence: number;
+  };
+  ranking: {
+    position: number;
+    totalEntities: number;
+    percentile: number;
+  };
+  timestamp: number;
+}
+
+export interface FarmStatusEvent {
+  farmId: string;
+  farmName: string;
+  previousStatus: 'active' | 'paused' | 'stopped' | 'maintenance';
+  newStatus: 'active' | 'paused' | 'stopped' | 'maintenance';
+  reason: string;
+  agentsAffected: Array<{
+    agentId: string;
+    agentName: string;
+    action: 'paused' | 'reassigned' | 'stopped';
+  }>;
+  capitalImpact: {
+    totalCapital: number;
+    availableForReallocation: number;
+  };
+  timestamp: number;
+}
+
+export interface GoalProgressEvent {
+  goalId: string;
+  goalName: string;
+  goalType: string;
+  progressData: {
+    currentValue: number;
+    targetValue: number;
+    progressPercent: number;
+    previousValue: number;
+    changeAmount: number;
+    changePercent: number;
+  };
+  attribution: {
+    farmContributions: Record<string, number>;
+    agentContributions: Record<string, number>;
+    topContributor: {
+      type: 'farm' | 'agent';
+      id: string;
+      name: string;
+      contribution: number;
+    };
+  };
+  timeline: {
+    expectedCompletionDate: string;
+    daysRemaining: number;
+    achievementProbability: number;
+  };
+  timestamp: number;
+}
+
+export interface OrchestrationSystemEvent {
+  eventId: string;
+  eventType: 'agent_assigned' | 'capital_reallocated' | 'performance_calculated' | 'farm_status_changed' | 'goal_progress_updated' | 'system_rebalance' | 'risk_threshold_breached';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  sourceService: string;
+  targetService?: string;
+  data: any;
+  metadata: {
+    correlationId?: string;
+    parentEventId?: string;
+    processingTime?: number;
+  };
+  timestamp: number;
+}
+
+export interface OrchestrationWebSocketEvents {
+  'agent_assigned': AgentAssignmentEvent;
+  'capital_reallocated': CapitalReallocationEvent;
+  'performance_updated': PerformanceUpdateEvent;
+  'farm_status_changed': FarmStatusEvent;
+  'goal_progress_updated': GoalProgressEvent;
+  'orchestration_event': OrchestrationSystemEvent;
+}
+
 export type WebSocketMessage = 
   | { type: 'market_data'; data: MarketData }
   | { type: 'portfolio_update'; data: PortfolioUpdate }
@@ -98,6 +228,12 @@ export type WebSocketMessage =
   | { type: 'risk_alert'; data: RiskAlert }
   | { type: 'farm_update'; data: FarmUpdate }
   | { type: 'goal_update'; data: GoalUpdate }
+  | { type: 'agent_assigned'; data: AgentAssignmentEvent }
+  | { type: 'capital_reallocated'; data: CapitalReallocationEvent }
+  | { type: 'performance_updated'; data: PerformanceUpdateEvent }
+  | { type: 'farm_status_changed'; data: FarmStatusEvent }
+  | { type: 'goal_progress_updated'; data: GoalProgressEvent }
+  | { type: 'orchestration_event'; data: OrchestrationSystemEvent }
   | { type: 'heartbeat'; timestamp: number }
   | { type: 'error'; message: string };
 
@@ -124,7 +260,10 @@ export class TradingWebSocketClient {
     // Initialize handler sets for each message type
     const messageTypes = [
       'market_data', 'portfolio_update', 'agent_update', 
-      'trading_signal', 'risk_alert', 'connect', 'disconnect', 'error'
+      'trading_signal', 'risk_alert', 'farm_update', 'goal_update',
+      'agent_assigned', 'capital_reallocated', 'performance_updated',
+      'farm_status_changed', 'goal_progress_updated', 'orchestration_event',
+      'connect', 'disconnect', 'error'
     ];
     
     messageTypes.forEach(type => {
@@ -287,6 +426,32 @@ export class TradingWebSocketClient {
         break;
       case 'goal_update':
         this.emit('goal_update', message.data);
+        break;
+      // Orchestration-specific events
+      case 'agent_assigned':
+        this.emit('agent_assigned', message.data);
+        this.emit('orchestration_event', { type: 'agent_assigned', ...message.data });
+        break;
+      case 'capital_reallocated':
+        this.emit('capital_reallocated', message.data);
+        this.emit('orchestration_event', { type: 'capital_reallocated', ...message.data });
+        break;
+      case 'performance_updated':
+        this.emit('performance_updated', message.data);
+        this.emit('orchestration_event', { type: 'performance_updated', ...message.data });
+        break;
+      case 'farm_status_changed':
+        this.emit('farm_status_changed', message.data);
+        this.emit('orchestration_event', { type: 'farm_status_changed', ...message.data });
+        break;
+      case 'goal_progress_updated':
+        this.emit('goal_progress_updated', message.data);
+        this.emit('orchestration_event', { type: 'goal_progress_updated', ...message.data });
+        break;
+      case 'orchestration_event':
+        this.emit('orchestration_event', message.data);
+        // Also emit the specific event type
+        this.emit(message.data.eventType, message.data);
         break;
       case 'heartbeat':
         // Heartbeat received, connection is alive
