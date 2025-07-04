@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Target, Users, Settings, Play, Pause, Trash2, Plus, 
-  RefreshCw, TrendingUp, DollarSign, Activity, Brain,
+  RefreshCw, TrendingUp, TrendingDown, DollarSign, Activity, Brain,
   BarChart3, Shield, Zap, Star, Bot, Coins, Calendar, Network
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
@@ -53,14 +53,14 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
   
   // Use shared real-time data for additional context
   const {
-    farms: realtimeFarms,
-    totalFarms,
-    activeFarms,
-    farmTotalValue: totalValue,
-    agents: realtimeAgents,
-    totalPnL,
-    agentsConnected,
-    farmsConnected
+    farms: realtimeFarms = [],
+    totalFarms = 0,
+    activeFarms = 0,
+    farmTotalValue: totalValue = 0,
+    agents: realtimeAgents = [],
+    totalPnL = 0,
+    agentsConnected = false,
+    farmsConnected = false
   } = useSharedRealtimeData()
 
   // Use WebSocket for real-time farm updates
