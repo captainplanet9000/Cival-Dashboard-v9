@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS goal_attributions (
 -- EVENT PROPAGATION TABLES
 -- ============================================================================
 
--- Events table
+-- Events table (created first - no dependencies)
 CREATE TABLE IF NOT EXISTS orchestration_events (
     event_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_type TEXT NOT NULL,
@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS orchestration_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Event subscriptions table
+-- Event subscriptions table (created second - no dependencies)
 CREATE TABLE IF NOT EXISTS event_subscriptions (
     subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     subscriber_service TEXT NOT NULL,
@@ -258,17 +258,26 @@ CREATE TABLE IF NOT EXISTS event_subscriptions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Event delivery status table
+-- Event delivery status table (created last - depends on both tables above)
 CREATE TABLE IF NOT EXISTS event_delivery_status (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES orchestration_events(event_id) ON DELETE CASCADE,
-    subscription_id UUID NOT NULL REFERENCES event_subscriptions(subscription_id) ON DELETE CASCADE,
+    event_id UUID NOT NULL,
+    subscription_id UUID NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending', -- pending, delivered, failed, retry
     delivery_time TIMESTAMP WITH TIME ZONE,
     error_message TEXT,
     retry_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add foreign key constraints after table creation
+ALTER TABLE event_delivery_status 
+ADD CONSTRAINT fk_event_delivery_event_id 
+FOREIGN KEY (event_id) REFERENCES orchestration_events(event_id) ON DELETE CASCADE;
+
+ALTER TABLE event_delivery_status 
+ADD CONSTRAINT fk_event_delivery_subscription_id 
+FOREIGN KEY (subscription_id) REFERENCES event_subscriptions(subscription_id) ON DELETE CASCADE;
 
 -- ============================================================================
 -- INDEXES FOR PERFORMANCE

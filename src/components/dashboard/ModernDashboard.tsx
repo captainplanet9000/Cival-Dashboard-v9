@@ -108,6 +108,9 @@ import ConnectedAdvancedTab from '@/components/dashboard/ConnectedAdvancedTab'
 // import AutonomousTradingDashboard from '@/components/autonomous/AutonomousTradingDashboard' // Removed autonomous tab
 import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 
+// Import Orchestration Components
+import { OrchestrationDashboard } from '@/components/orchestration/OrchestrationDashboard'
+
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Farms...</div>
@@ -486,7 +489,8 @@ function OverviewTab({ metrics, chartData, redisData, supabaseData, redisConnect
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'trading', label: 'Trading', component: <RealTradingInterface /> },
     { id: 'agents', label: 'Agent Manager', component: <RealAgentManagement /> },
-    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
+    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> },
+    { id: 'orchestration', label: 'Orchestration', component: <OrchestrationDashboard /> }
   ]
   
   return (
