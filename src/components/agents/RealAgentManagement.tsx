@@ -285,6 +285,41 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
     }
   }
 
+  const handleDeleteAgent = async (agentId: string, agentName: string) => {
+    if (!confirm(`Are you sure you want to delete agent "${agentName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      // Delete from persistent service
+      const persistentAgent = persistentAgentService.getAgent(agentId)
+      if (persistentAgent) {
+        await persistentAgentService.deleteAgent(agentId)
+      }
+
+      // Delete from paper trading engine
+      const paperAgent = paperTradingEngine.getAgent(agentId)
+      if (paperAgent) {
+        paperTradingEngine.deleteAgent(agentId)
+      }
+
+      // Delete from lifecycle manager
+      try {
+        await agentLifecycleManager.deleteAgent(agentId)
+      } catch (error) {
+        console.log('Agent not found in lifecycle manager:', error)
+      }
+
+      // Refresh the agent list
+      await loadAgents()
+      
+      console.log(`🗑️ Deleted agent ${agentName}`)
+      // Note: Using console.log instead of toast to avoid circular dependency
+    } catch (error) {
+      console.error('Error deleting agent:', error)
+    }
+  }
+
   const handleAgentAction = async (agentId: string, action: 'start' | 'pause' | 'stop') => {
     try {
       // Check if it's a persistent agent
@@ -475,6 +510,13 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteAgent(agent.id, agent.name)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Agent
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -493,9 +535,14 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-600">Portfolio Value</span>
-                          <span className="text-lg font-bold">
-                            ${agent.portfolio.totalValue.toLocaleString()}
-                          </span>
+                          <div className="text-right">
+                            <div className="text-lg font-bold">
+                              ${agent.portfolio.totalValue.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Cash: ${agent.portfolio.cash.toFixed(2)}
+                            </div>
+                          </div>
                         </div>
                         
                         <div className="flex items-center justify-between">
@@ -506,26 +553,73 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
                             ) : (
                               <TrendingDown className="h-3 w-3 text-red-500" />
                             )}
-                            <span className={`text-sm font-medium ${
-                              portfolioChange.value >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {portfolioChange.value >= 0 ? '+' : ''}${portfolioChange.value.toFixed(2)}
-                              ({portfolioChange.percentage >= 0 ? '+' : ''}{portfolioChange.percentage.toFixed(2)}%)
+                            <div className="text-right">
+                              <div className={`text-sm font-medium ${
+                                portfolioChange.value >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {portfolioChange.value >= 0 ? '+' : ''}${portfolioChange.value.toFixed(2)}
+                              </div>
+                              <div className={`text-xs ${
+                                portfolioChange.percentage >= 0 ? 'text-green-500' : 'text-red-500'
+                              }`}>
+                                {portfolioChange.percentage >= 0 ? '+' : ''}{portfolioChange.percentage.toFixed(2)}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Real-time status indicator */}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Source: {agent.source}</span>
+                          <div className="flex items-center gap-1">
+                            <div className={`w-2 h-2 rounded-full ${
+                              agent.status === 'active' ? 'bg-green-500 animate-pulse' : 
+                              agent.status === 'paused' ? 'bg-yellow-500' : 'bg-gray-400'
+                            }`} />
+                            <span className="text-gray-500">
+                              {agent.lastActive ? new Date(agent.lastActive).toLocaleTimeString() : 'Never'}
                             </span>
                           </div>
                         </div>
                       </div>
 
                       {/* Stats */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="text-center bg-blue-50 rounded-lg p-2">
                           <div className="text-lg font-bold text-blue-600">{activePositions}</div>
                           <div className="text-xs text-gray-600">Positions</div>
                         </div>
-                        <div className="text-center">
+                        <div className="text-center bg-orange-50 rounded-lg p-2">
                           <div className="text-lg font-bold text-orange-600">{pendingOrders}</div>
                           <div className="text-xs text-gray-600">Pending</div>
                         </div>
+                        <div className="text-center bg-green-50 rounded-lg p-2">
+                          <div className="text-lg font-bold text-green-600">{agent.performance.totalTrades}</div>
+                          <div className="text-xs text-gray-600">Trades</div>
+                        </div>
+                      </div>
+
+                      {/* Trading Activity */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Recent Activity</span>
+                          <span className="text-gray-500">
+                            {agent.portfolio.transactions.length > 0 
+                              ? `${agent.portfolio.transactions.length} transactions` 
+                              : 'No activity'}
+                          </span>
+                        </div>
+                        
+                        {/* Show latest transaction if exists */}
+                        {agent.portfolio.transactions.length > 0 && (
+                          <div className="bg-gray-50 rounded-lg p-2">
+                            <div className="text-xs text-gray-600">
+                              Latest: {agent.portfolio.transactions[agent.portfolio.transactions.length - 1].side} {' '}
+                              {agent.portfolio.transactions[agent.portfolio.transactions.length - 1].symbol} {' '}
+                              ${agent.portfolio.transactions[agent.portfolio.transactions.length - 1].total.toFixed(2)}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Performance Metrics */}
