@@ -8561,6 +8561,241 @@ async def orchestration_websocket(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}")
         ws_manager.disconnect(websocket)
 
+@app.websocket("/ws/agui")
+async def agui_websocket_endpoint(websocket: WebSocket):
+    """AG-UI Protocol v2 WebSocket endpoint for real-time agent communication"""
+    client_info = {
+        "connection_time": datetime.now(timezone.utc),
+        "client_type": "agui_client",
+        "channels": []
+    }
+    
+    await websocket_manager.connect(websocket, client_info)
+    
+    try:
+        # Send connection established event
+        await websocket.send_json({
+            "id": f"conn_{int(datetime.now().timestamp())}",
+            "type": "connection.established",
+            "data": {
+                "client_id": f"client_{id(websocket)}",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            },
+            "timestamp": int(datetime.now().timestamp() * 1000),
+            "source": "backend"
+        })
+        
+        # Start periodic mock event generation
+        async def generate_mock_events():
+            """Generate mock AG-UI events for development/demo purposes"""
+            while True:
+                try:
+                    await asyncio.sleep(10)  # Send events every 10 seconds
+                    
+                    # Generate mock agent decision
+                    await websocket.send_json({
+                        "id": f"agent_decision_{int(datetime.now().timestamp())}",
+                        "type": "agent.decision_made",
+                        "data": {
+                            "agent_id": "marcus_momentum",
+                            "agent_name": "Marcus Momentum",
+                            "decision": "Buy signal detected on BTC/USD",
+                            "action_taken": True,
+                            "confidence": 0.85,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        },
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "agent_network"
+                    })
+                    
+                    await asyncio.sleep(15)  # Wait 15 seconds
+                    
+                    # Generate mock trading signal
+                    await websocket.send_json({
+                        "id": f"trade_signal_{int(datetime.now().timestamp())}",
+                        "type": "trade.signal_generated",
+                        "data": {
+                            "symbol": "BTC/USD",
+                            "side": "buy",
+                            "action": "market_entry",
+                            "confidence": 0.78,
+                            "price": 45000 + (datetime.now().second * 10),
+                            "strategy": "momentum_following",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        },
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "trading_engine"
+                    })
+                    
+                    await asyncio.sleep(20)  # Wait 20 seconds
+                    
+                    # Generate mock portfolio update
+                    await websocket.send_json({
+                        "id": f"portfolio_{int(datetime.now().timestamp())}",
+                        "type": "portfolio.value_updated",
+                        "data": {
+                            "total_value": 125000 + (datetime.now().second * 100),
+                            "change_24h": 2500.50,
+                            "change_percentage": 2.04,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        },
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "portfolio_service"
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"Error generating mock AG-UI events: {e}")
+                    break
+        
+        # Start mock event generation in background
+        mock_task = asyncio.create_task(generate_mock_events())
+        
+        # Keep connection alive and handle AG-UI messages
+        while True:
+            data = await websocket.receive_text()
+            
+            try:
+                message = json.loads(data)
+                message_id = message.get("id", f"msg_{int(datetime.now().timestamp())}")
+                message_type = message.get("type", "unknown")
+                message_data = message.get("data", {})
+                
+                logger.debug(f"AG-UI message received: {message_type}")
+                
+                # Handle different AG-UI message types
+                if message_type == "system.notification":
+                    # Handle system notifications (including heartbeat)
+                    if message_data.get("type") == "heartbeat":
+                        # Respond to heartbeat
+                        await websocket.send_json({
+                            "id": f"heartbeat_{int(datetime.now().timestamp())}",
+                            "type": "system.notification",
+                            "data": {
+                                "type": "heartbeat_ack",
+                                "message": "Heartbeat acknowledged",
+                                "level": "info",
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            },
+                            "timestamp": int(datetime.now().timestamp() * 1000),
+                            "source": "backend"
+                        })
+                
+                elif message_type == "agent.decision_made":
+                    # Broadcast agent decisions to other clients
+                    await websocket_manager.broadcast({
+                        "id": message_id,
+                        "type": message_type,
+                        "data": message_data,
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "agent_network"
+                    }, "agent_decision")
+                    
+                elif message_type == "trade.signal_generated":
+                    # Handle trading signals
+                    await websocket_manager.broadcast({
+                        "id": message_id,
+                        "type": message_type,
+                        "data": message_data,
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "trading_engine"
+                    }, "trading_signal")
+                    
+                elif message_type == "portfolio.value_updated":
+                    # Handle portfolio updates
+                    await websocket_manager.broadcast({
+                        "id": message_id,
+                        "type": message_type,
+                        "data": message_data,
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "portfolio_service"
+                    }, "portfolio_update")
+                    
+                elif message_type == "orchestration.event":
+                    # Handle orchestration events
+                    await websocket_manager.broadcast({
+                        "id": message_id,
+                        "type": message_type,
+                        "data": message_data,
+                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "source": "orchestration_engine"
+                    }, "orchestration_update")
+                
+                # Send acknowledgment for processed messages
+                await websocket.send_json({
+                    "id": f"ack_{message_id}",
+                    "type": "system.notification",
+                    "data": {
+                        "type": "message_processed",
+                        "original_message_id": message_id,
+                        "message": f"Message {message_type} processed successfully",
+                        "level": "info",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    },
+                    "timestamp": int(datetime.now().timestamp() * 1000),
+                    "source": "backend"
+                })
+                
+            except json.JSONDecodeError:
+                # Handle invalid JSON
+                await websocket.send_json({
+                    "id": f"error_{int(datetime.now().timestamp())}",
+                    "type": "system.error",
+                    "data": {
+                        "error_id": f"json_error_{int(datetime.now().timestamp())}",
+                        "message": "Invalid JSON message format",
+                        "severity": "medium",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    },
+                    "timestamp": int(datetime.now().timestamp() * 1000),
+                    "source": "backend"
+                })
+            except Exception as e:
+                logger.error(f"Error processing AG-UI message: {e}")
+                await websocket.send_json({
+                    "id": f"error_{int(datetime.now().timestamp())}",
+                    "type": "system.error",
+                    "data": {
+                        "error_id": f"processing_error_{int(datetime.now().timestamp())}",
+                        "message": f"Error processing message: {str(e)}",
+                        "severity": "high",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    },
+                    "timestamp": int(datetime.now().timestamp() * 1000),
+                    "source": "backend"
+                })
+                
+    except WebSocketDisconnect:
+        logger.info("AG-UI client disconnected")
+        websocket_manager.disconnect(websocket)
+        
+        # Cancel mock event generation
+        if 'mock_task' in locals():
+            mock_task.cancel()
+        
+        # Send disconnection event to other clients
+        try:
+            await websocket_manager.broadcast({
+                "id": f"disconn_{int(datetime.now().timestamp())}",
+                "type": "connection.lost",
+                "data": {
+                    "client_id": f"client_{id(websocket)}",
+                    "reason": "Client disconnected",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                },
+                "timestamp": int(datetime.now().timestamp() * 1000),
+                "source": "backend"
+            }, "connection_update")
+        except Exception as e:
+            logger.error(f"Error broadcasting disconnection: {e}")
+            
+    except Exception as e:
+        logger.error(f"AG-UI WebSocket error: {e}")
+        websocket_manager.disconnect(websocket)
+        
+        # Cancel mock event generation
+        if 'mock_task' in locals():
+            mock_task.cancel()
+
 @app.get("/api/v1/prices/aggregated")
 async def get_aggregated_prices():
     """Get all current aggregated prices"""

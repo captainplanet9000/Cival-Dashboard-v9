@@ -6,22 +6,61 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import { 
-  AGUIClient, 
-  AGUIMessageType, 
+  AGUIProtocolV2,
+  getAGUIInstance,
   AGUIMessage,
-  AgentDecisionData,
-  TradeSignalData,
-  PortfolioUpdateData,
-  RiskAlertData,
-  MarketDataUpdate,
-  getAGUIClient 
-} from '@/lib/websocket/ag-ui-client'
+  EventName,
+  EventData,
+  AGUIConnectionConfig
+} from '@/lib/ag-ui-protocol-v2'
+
+// Type definitions for AG-UI data
+export interface AgentDecisionData {
+  agentId: string
+  agentName?: string
+  decisionType: string
+  decision: string
+  actionTaken?: boolean
+  confidence?: number
+  timestamp?: number
+}
+
+export interface TradeSignalData {
+  symbol: string
+  side: 'buy' | 'sell'
+  action: string
+  confidence: number
+  price?: number
+  quantity?: number
+  strategy?: string
+  timestamp?: number
+}
+
+export interface PortfolioUpdateData {
+  totalValue: number
+  change24h: number
+  changePercentage: number
+  timestamp?: number
+}
+
+export interface RiskAlertData {
+  message: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  value?: number
+  timestamp?: number
+}
+
+export interface MarketDataUpdate {
+  symbol: string
+  price: number
+  volume?: number
+  timestamp?: number
+}
 
 // Hook configuration
-interface UseAGUIConfig {
+interface UseAGUIConfig extends AGUIConnectionConfig {
   channels?: string[]
   autoConnect?: boolean
-  debug?: boolean
   onAgentDecision?: (data: AgentDecisionData) => void
   onTradeSignal?: (data: TradeSignalData) => void
   onPortfolioUpdate?: (data: PortfolioUpdateData) => void
@@ -48,21 +87,21 @@ interface UseAGUIReturn {
   sendRiskAlert: (alert: RiskAlertData) => void
   sendMarketDataUpdate: (marketData: MarketDataUpdate) => void
   executeAgentCommand: (agentId: string, command: string, params?: Record<string, any>) => void
-  
-  // Channel management
-  subscribeToChannel: (channel: string) => void
-  unsubscribeFromChannel: (channel: string) => void
-  subscribedChannels: string[]
+  sendEvent: (event: { type: string; data: any }) => void
   
   // Statistics
   messagesReceived: number
   messagesSent: number
   lastMessage: AGUIMessage | null
+  events: AGUIMessage[]
+  
+  // Protocol access
+  protocol: AGUIProtocolV2
 }
 
 export function useAGUI(config: UseAGUIConfig = {}): UseAGUIReturn {
   const {
-    channels = ['agents', 'trading', 'portfolio', 'market', 'risk'],
+    channels = ['agents', 'trading', 'portfolio', 'market', 'risk', 'system', 'orchestration'],
     autoConnect = true,
     debug = false,
     onAgentDecision,
@@ -70,7 +109,8 @@ export function useAGUI(config: UseAGUIConfig = {}): UseAGUIReturn {
     onPortfolioUpdate,
     onRiskAlert,
     onMarketData,
-    onError
+    onError,
+    ...aguiConfig
   } = config
 
   // State
@@ -80,10 +120,10 @@ export function useAGUI(config: UseAGUIConfig = {}): UseAGUIReturn {
   const [messagesReceived, setMessagesReceived] = useState(0)
   const [messagesSent, setMessagesSent] = useState(0)
   const [lastMessage, setLastMessage] = useState<AGUIMessage | null>(null)
-  const [subscribedChannels, setSubscribedChannels] = useState<string[]>([])
+  const [events, setEvents] = useState<AGUIMessage[]>([])
 
   // Refs
-  const clientRef = useRef<AGUIClient | null>(null)
+  const protocolRef = useRef<AGUIProtocolV2 | null>(null)
   const callbacksRef = useRef({
     onAgentDecision,
     onTradeSignal,
@@ -105,39 +145,38 @@ export function useAGUI(config: UseAGUIConfig = {}): UseAGUIReturn {
     }
   }, [onAgentDecision, onTradeSignal, onPortfolioUpdate, onRiskAlert, onMarketData, onError])
 
-  // Initialize client
+  // Initialize protocol
   useEffect(() => {
-    if (!clientRef.current) {
-      clientRef.current = getAGUIClient({
-        channels,
-        debug
+    if (!protocolRef.current) {
+      protocolRef.current = getAGUIInstance({
+        debug,
+        ...aguiConfig
       })
     }
-  }, [channels, debug])
+  }, [debug, aguiConfig])
 
   // Setup event handlers
   useEffect(() => {
-    const client = clientRef.current
-    if (!client) return
+    const protocol = protocolRef.current
+    if (!protocol) return
 
     // Connection events
     const handleConnected = () => {
       setIsConnected(true)
       setConnectionState('connected')
       setError(null)
-      setSubscribedChannels(client.subscribedChannelsList)
       
       if (debug) {
         console.log('[useAGUI] Connected to AG-UI server')
       }
     }
 
-    const handleDisconnected = (reason: string) => {
+    const handleDisconnected = (data: any) => {
       setIsConnected(false)
       setConnectionState('disconnected')
       
       if (debug) {
-        console.log('[useAGUI] Disconnected from AG-UI server:', reason)
+        console.log('[useAGUI] Disconnected from AG-UI server:', data?.reason)
       }
     }
 
@@ -159,107 +198,142 @@ export function useAGUI(config: UseAGUIConfig = {}): UseAGUIReturn {
     const handleMessage = (message: AGUIMessage) => {
       setMessagesReceived(prev => prev + 1)
       setLastMessage(message)
+      setEvents(prev => [...prev.slice(-99), message]) // Keep last 100 events
       
       if (debug) {
         console.log('[useAGUI] Message received:', message)
       }
     }
 
-    const handleAgentDecision = (data: AgentDecisionData) => {
-      callbacksRef.current.onAgentDecision?.(data)
+    const handleAgentDecision = (data: any) => {
+      const agentData: AgentDecisionData = {
+        agentId: data.agent_id || data.agentId || 'unknown',
+        agentName: data.agent_name || data.agentName,
+        decisionType: data.decision_type || data.decisionType || 'decision',
+        decision: data.decision || 'Unknown decision',
+        actionTaken: data.action_taken || data.actionTaken,
+        confidence: data.confidence,
+        timestamp: data.timestamp || Date.now()
+      }
+      
+      callbacksRef.current.onAgentDecision?.(agentData)
       
       // Show toast for important decisions
-      if (data.actionTaken) {
-        toast.success(`${data.agentName}: ${data.decisionType} executed`, {
+      if (agentData.actionTaken) {
+        toast.success(`${agentData.agentName || agentData.agentId}: ${agentData.decisionType} executed`, {
           duration: 4000,
           icon: '🤖'
         })
       }
     }
 
-    const handleTradeSignal = (data: TradeSignalData) => {
-      callbacksRef.current.onTradeSignal?.(data)
+    const handleTradeSignal = (data: any) => {
+      const signalData: TradeSignalData = {
+        symbol: data.symbol || 'UNKNOWN',
+        side: data.side || 'buy',
+        action: data.action || 'signal',
+        confidence: data.confidence || 0,
+        price: data.price,
+        quantity: data.quantity,
+        strategy: data.strategy,
+        timestamp: data.timestamp || Date.now()
+      }
       
-      toast.success(`Trade Signal: ${data.side.toUpperCase()} ${data.symbol}`, {
+      callbacksRef.current.onTradeSignal?.(signalData)
+      
+      toast.success(`Trade Signal: ${signalData.side.toUpperCase()} ${signalData.symbol}`, {
         duration: 5000,
         icon: '📈'
       })
     }
 
-    const handlePortfolioUpdate = (data: PortfolioUpdateData) => {
-      callbacksRef.current.onPortfolioUpdate?.(data)
+    const handlePortfolioUpdate = (data: any) => {
+      const portfolioData: PortfolioUpdateData = {
+        totalValue: data.total_value || data.totalValue || 0,
+        change24h: data.change_24h || data.change24h || 0,
+        changePercentage: data.change_percentage || data.changePercentage || 0,
+        timestamp: data.timestamp || Date.now()
+      }
+      
+      callbacksRef.current.onPortfolioUpdate?.(portfolioData)
     }
 
-    const handleRiskAlert = (data: RiskAlertData) => {
-      callbacksRef.current.onRiskAlert?.(data)
+    const handleRiskAlert = (data: any) => {
+      const riskData: RiskAlertData = {
+        message: data.message || 'Risk alert',
+        severity: data.severity || 'medium',
+        value: data.value,
+        timestamp: data.timestamp || Date.now()
+      }
       
-      const severity = data.severity
+      callbacksRef.current.onRiskAlert?.(riskData)
+      
+      const severity = riskData.severity
       const icon = severity === 'critical' ? '🚨' : severity === 'high' ? '⚠️' : '⚡'
       const toastFn = severity === 'critical' ? toast.error : severity === 'high' ? toast : toast
       
-      toastFn(`Risk Alert: ${data.message}`, {
+      toastFn(`Risk Alert: ${riskData.message}`, {
         duration: severity === 'critical' ? 10000 : 6000,
         icon
       })
     }
 
-    const handleMarketData = (data: MarketDataUpdate) => {
-      callbacksRef.current.onMarketData?.(data)
+    const handleMarketData = (data: any) => {
+      const marketData: MarketDataUpdate = {
+        symbol: data.symbol || 'UNKNOWN',
+        price: data.price || 0,
+        volume: data.volume,
+        timestamp: data.timestamp || Date.now()
+      }
+      
+      callbacksRef.current.onMarketData?.(marketData)
     }
 
-    const handleSystemStatus = (data: any) => {
-      if (data.health < 0.8) {
+    const handleSystemHealth = (data: any) => {
+      if (data.health_score && data.health_score < 0.8) {
         toast.error('System health degraded', { icon: '⚠️' })
       }
     }
 
     // Register event listeners
-    client.on('connected', handleConnected)
-    client.on('disconnected', handleDisconnected)
-    client.on('error', handleError)
-    client.on('reconnectFailed', handleReconnectFailed)
-    client.on('message', handleMessage)
-    client.on(AGUIMessageType.AGENT_DECISION, handleAgentDecision)
-    client.on(AGUIMessageType.TRADE_SIGNAL, handleTradeSignal)
-    client.on(AGUIMessageType.PORTFOLIO_UPDATE, handlePortfolioUpdate)
-    client.on(AGUIMessageType.RISK_ALERT, handleRiskAlert)
-    client.on(AGUIMessageType.MARKET_DATA, handleMarketData)
-    client.on('systemStatus', handleSystemStatus)
+    const unsubscribers = [
+      protocol.on('connected', handleConnected),
+      protocol.on('disconnected', handleDisconnected),
+      protocol.on('error', handleError),
+      protocol.on('reconnectFailed', handleReconnectFailed),
+      protocol.on('message', handleMessage),
+      protocol.on('agent.decision_made', handleAgentDecision),
+      protocol.on('trade.signal_generated', handleTradeSignal),
+      protocol.on('portfolio.value_updated', handlePortfolioUpdate),
+      protocol.on('portfolio.risk_alert', handleRiskAlert),
+      protocol.on('market_data.price_update', handleMarketData),
+      protocol.on('system.health_update', handleSystemHealth)
+    ]
 
     // Update connection state
-    setConnectionState(client.connectionState)
-    setIsConnected(client.isConnected)
+    setConnectionState(protocol.connectionState)
+    setIsConnected(protocol.connected)
 
     // Cleanup
     return () => {
-      client.off('connected', handleConnected)
-      client.off('disconnected', handleDisconnected)
-      client.off('error', handleError)
-      client.off('reconnectFailed', handleReconnectFailed)
-      client.off('message', handleMessage)
-      client.off(AGUIMessageType.AGENT_DECISION, handleAgentDecision)
-      client.off(AGUIMessageType.TRADE_SIGNAL, handleTradeSignal)
-      client.off(AGUIMessageType.PORTFOLIO_UPDATE, handlePortfolioUpdate)
-      client.off(AGUIMessageType.RISK_ALERT, handleRiskAlert)
-      client.off(AGUIMessageType.MARKET_DATA, handleMarketData)
-      client.off('systemStatus', handleSystemStatus)
+      unsubscribers.forEach(unsubscribe => unsubscribe())
     }
   }, [debug])
 
   // Auto-connect
   useEffect(() => {
-    if (autoConnect && clientRef.current && !isConnected) {
+    if (autoConnect && protocolRef.current && !isConnected) {
       connect()
     }
   }, [autoConnect])
 
   // Connection methods
   const connect = useCallback(async () => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
     try {
       setConnectionState('connecting')
-      await clientRef.current.connect()
+      await protocolRef.current.connect()
     } catch (err: any) {
       setError(err.message || 'Failed to connect')
       setConnectionState('disconnected')
@@ -268,76 +342,105 @@ export function useAGUI(config: UseAGUIConfig = {}): UseAGUIReturn {
   }, [])
 
   const disconnect = useCallback(() => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
-    clientRef.current.disconnect()
+    protocolRef.current.disconnect()
     setIsConnected(false)
     setConnectionState('disconnected')
   }, [])
 
   // Messaging methods
   const sendAgentDecision = useCallback((agentId: string, decision: Partial<AgentDecisionData>) => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
-    clientRef.current.sendAgentDecision(agentId, decision)
+    protocolRef.current.publish('agent.decision_made', {
+      agent_id: agentId,
+      agent_name: decision.agentName,
+      decision: decision.decision || 'decision_made',
+      action_taken: decision.actionTaken,
+      timestamp: decision.timestamp || Date.now()
+    })
     setMessagesSent(prev => prev + 1)
   }, [])
 
   const sendTradeSignal = useCallback((signal: TradeSignalData) => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
-    clientRef.current.sendTradeSignal(signal)
+    protocolRef.current.publish('trade.signal_generated', {
+      symbol: signal.symbol,
+      action: signal.action,
+      confidence: signal.confidence,
+      timestamp: signal.timestamp || Date.now(),
+      price: signal.price,
+      strategy: signal.strategy
+    })
     setMessagesSent(prev => prev + 1)
   }, [])
 
   const sendPortfolioUpdate = useCallback((update: PortfolioUpdateData) => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
-    clientRef.current.sendPortfolioUpdate(update)
+    protocolRef.current.publish('portfolio.value_updated', {
+      total_value: update.totalValue,
+      change_24h: update.change24h,
+      change_percentage: update.changePercentage
+    })
     setMessagesSent(prev => prev + 1)
   }, [])
 
   const sendRiskAlert = useCallback((alert: RiskAlertData) => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
-    clientRef.current.sendRiskAlert(alert)
+    protocolRef.current.publish('portfolio.risk_alert', {
+      message: alert.message,
+      severity: alert.severity,
+      value: alert.value,
+      timestamp: alert.timestamp || Date.now()
+    })
     setMessagesSent(prev => prev + 1)
   }, [])
 
   const sendMarketDataUpdate = useCallback((marketData: MarketDataUpdate) => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
-    clientRef.current.sendMarketDataUpdate(marketData)
+    protocolRef.current.publish('market_data.price_update', {
+      symbol: marketData.symbol,
+      price: marketData.price,
+      timestamp: marketData.timestamp || Date.now(),
+      volume: marketData.volume
+    })
     setMessagesSent(prev => prev + 1)
   }, [])
 
   const executeAgentCommand = useCallback((agentId: string, command: string, params: Record<string, any> = {}) => {
-    if (!clientRef.current) return
+    if (!protocolRef.current) return
     
-    clientRef.current.executeAgentCommand(agentId, command, params)
+    protocolRef.current.publish('agent.communication', {
+      from_agent: 'dashboard',
+      to_agent: agentId,
+      message: JSON.stringify({ command, params }),
+      timestamp: Date.now()
+    })
     setMessagesSent(prev => prev + 1)
   }, [])
 
-  // Channel management
-  const subscribeToChannel = useCallback((channel: string) => {
-    if (!clientRef.current) return
+  const sendEvent = useCallback((event: { type: string; data: any }) => {
+    if (!protocolRef.current) return
     
-    clientRef.current.subscribeToChannel(channel)
-    setSubscribedChannels(clientRef.current.subscribedChannelsList)
-  }, [])
-
-  const unsubscribeFromChannel = useCallback((channel: string) => {
-    if (!clientRef.current) return
-    
-    clientRef.current.unsubscribeFromChannel(channel)
-    setSubscribedChannels(clientRef.current.subscribedChannelsList)
+    protocolRef.current.publish('system.notification', {
+      type: event.type,
+      message: JSON.stringify(event.data),
+      level: 'info',
+      timestamp: Date.now()
+    })
+    setMessagesSent(prev => prev + 1)
   }, [])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (clientRef.current && isConnected) {
-        clientRef.current.disconnect()
+      if (protocolRef.current && isConnected) {
+        protocolRef.current.disconnect()
       }
     }
   }, [])
@@ -359,16 +462,16 @@ export function useAGUI(config: UseAGUIConfig = {}): UseAGUIReturn {
     sendRiskAlert,
     sendMarketDataUpdate,
     executeAgentCommand,
-    
-    // Channel management
-    subscribeToChannel,
-    unsubscribeFromChannel,
-    subscribedChannels,
+    sendEvent,
     
     // Statistics
     messagesReceived,
     messagesSent,
-    lastMessage
+    lastMessage,
+    events,
+    
+    // Protocol access
+    protocol: protocolRef.current!
   }
 }
 
