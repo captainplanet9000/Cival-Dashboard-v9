@@ -241,7 +241,7 @@ export const healthCheckConfig = {
   commands: ['ping', 'info'],
 };
 
-export default {
+const redisConfiguration = {
   redis: defaultRedisConfig,
   cache: defaultCacheConfig,
   realtime: defaultRealtimeConfig,
@@ -254,3 +254,5 @@ export default {
   validateRedisConfig,
   healthCheckConfig,
 };
+
+export default redisConfiguration;

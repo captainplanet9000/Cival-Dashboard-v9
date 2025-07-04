@@ -29,6 +29,7 @@ class PersistentAgentService extends EventEmitter {
   private readonly STORAGE_KEY = 'cival_persistent_agents'
   private agents: Map<string, PersistentAgent> = new Map()
   private initialized = false
+  private portfolioSyncInterval?: NodeJS.Timeout
 
   constructor() {
     super()
@@ -50,6 +51,9 @@ class PersistentAgentService extends EventEmitter {
     for (const agent of this.agents.values()) {
       await this.restoreAgentToEngine(agent)
     }
+
+    // Start real-time portfolio synchronization
+    this.startPortfolioSync()
 
     this.initialized = true
     console.log(`✅ Persistent Agent Service initialized with ${this.agents.size} agents`)
@@ -75,6 +79,70 @@ class PersistentAgentService extends EventEmitter {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(agents))
     } catch (error) {
       console.error('Error saving agents to storage:', error)
+    }
+  }
+
+  private startPortfolioSync() {
+    // Sync portfolio data every 30 seconds
+    this.portfolioSyncInterval = setInterval(() => {
+      this.syncPortfolioData()
+    }, 30000)
+
+    // Also sync immediately
+    this.syncPortfolioData()
+  }
+
+  private async syncPortfolioData() {
+    try {
+      const tradingAgents = paperTradingEngine.getAllAgents()
+      let hasUpdates = false
+
+      for (const [agentId, agent] of this.agents.entries()) {
+        // Find corresponding trading agent
+        const tradingAgent = tradingAgents.find(ta => ta.name === agent.name)
+        
+        if (tradingAgent && tradingAgent.portfolio) {
+          const newCapital = tradingAgent.portfolio.totalValue
+          const newPnL = tradingAgent.portfolio.totalValue - agent.initialCapital
+          const newTrades = tradingAgent.performance?.totalTrades || 0
+          const newWinRate = tradingAgent.performance?.winRate || 0
+          const newSharpe = tradingAgent.performance?.sharpeRatio || 0
+
+          // Check if values have changed
+          if (
+            Math.abs(agent.currentCapital - newCapital) > 0.01 ||
+            Math.abs(agent.performance.totalPnL - newPnL) > 0.01 ||
+            agent.performance.totalTrades !== newTrades ||
+            Math.abs(agent.performance.winRate - newWinRate * 100) > 0.1
+          ) {
+            // Update agent with new values
+            agent.currentCapital = newCapital
+            agent.performance.totalPnL = newPnL
+            agent.performance.totalTrades = newTrades
+            agent.performance.winRate = newWinRate * 100 // Convert to percentage
+            agent.performance.sharpeRatio = newSharpe
+            agent.lastActive = new Date().toISOString()
+
+            hasUpdates = true
+            console.log(`📊 Updated ${agent.name}: $${newCapital.toFixed(2)} (${newPnL >= 0 ? '+' : ''}${newPnL.toFixed(2)} P&L)`)
+          }
+        }
+      }
+
+      if (hasUpdates) {
+        this.saveAgentsToStorage()
+        this.emit('portfolioUpdated', Array.from(this.agents.values()))
+        this.emit('agentUpdated')
+      }
+    } catch (error) {
+      console.error('Error syncing portfolio data:', error)
+    }
+  }
+
+  stopPortfolioSync() {
+    if (this.portfolioSyncInterval) {
+      clearInterval(this.portfolioSyncInterval)
+      this.portfolioSyncInterval = undefined
     }
   }
 

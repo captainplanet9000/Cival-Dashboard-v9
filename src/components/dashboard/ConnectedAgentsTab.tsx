@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
+import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
 import { toast } from 'react-hot-toast'
 import RealAgentManagement from '@/components/agents/RealAgentManagement'
 import RealAgentCreation from '@/components/agents/RealAgentCreation'
@@ -53,10 +54,43 @@ import { NotificationCenter } from '@/components/premium-ui/notifications/notifi
 import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
 import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
 
-// Agent Overview Panel showing expert agents
+// Agent Overview Panel showing agent count and expert agents
 function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string, any> }) {
   // Use shared data manager instead of individual hooks
   const sharedData = useSharedRealtimeData()
+  const [realAgentCount, setRealAgentCount] = useState(0)
+  const [activeAgentCount, setActiveAgentCount] = useState(0)
+  
+  // Get real agent count from persistent service
+  useEffect(() => {
+    const updateAgentCounts = () => {
+      const persistentAgents = persistentAgentService.getAllAgents()
+      const paperAgents = paperTradingEngine.getAllAgents()
+      
+      const totalCount = persistentAgents.length + paperAgents.length
+      const activeCount = persistentAgents.filter(a => a.status === 'active').length + 
+                         paperAgents.filter(a => a.status === 'active').length
+      
+      setRealAgentCount(totalCount)
+      setActiveAgentCount(activeCount)
+    }
+    
+    updateAgentCounts()
+    
+    // Listen for agent updates
+    persistentAgentService.on('agentCreated', updateAgentCounts)
+    persistentAgentService.on('agentStarted', updateAgentCounts)
+    persistentAgentService.on('agentStopped', updateAgentCounts)
+    persistentAgentService.on('agentUpdated', updateAgentCounts)
+    
+    return () => {
+      persistentAgentService.off('agentCreated', updateAgentCounts)
+      persistentAgentService.off('agentStarted', updateAgentCounts)
+      persistentAgentService.off('agentStopped', updateAgentCounts)
+      persistentAgentService.off('agentUpdated', updateAgentCounts)
+    }
+  }, [])
+  
   const expertAgents = [
     { id: 'momentum', name: 'Momentum Master', strategy: 'Trend Following', expertise: 'Catches strong market trends' },
     { id: 'mean_reversion', name: 'Mean Reversion Pro', strategy: 'Counter-Trend', expertise: 'Profits from overextensions' },
@@ -67,6 +101,54 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
   
   return (
     <div className="space-y-6">
+      {/* Agent Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Total Agents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{realAgentCount}</div>
+            <p className="text-xs text-muted-foreground">Created and managed</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Active Agents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{activeAgentCount}</div>
+            <p className="text-xs text-muted-foreground">Currently trading</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Expert Strategies</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{expertAgents.length}</div>
+            <p className="text-xs text-muted-foreground">Pre-configured</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">
+              {Array.from(agentPerformance.values()).length > 0 
+                ? (Array.from(agentPerformance.values()).reduce((sum, agent) => sum + (agent.winRate || 0), 0) / Array.from(agentPerformance.values()).length).toFixed(1)
+                : '0.0'
+              }%
+            </div>
+            <p className="text-xs text-muted-foreground">Avg win rate</p>
+          </CardContent>
+        </Card>
+      </div>
+      
       <div>
         <h3 className="text-lg font-semibold mb-2">Expert Trading Agents</h3>
         <p className="text-sm text-muted-foreground">Pre-configured agents with proven strategies</p>
@@ -120,27 +202,36 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
                     className="w-full" 
                     size="sm"
                     onClick={async () => {
-                      const agentId = await agentLifecycleManager.createAgent({
-                        name: expert.name,
-                        strategy: expert.id,
-                        initialCapital: 10000,
-                        riskLimits: {
-                          maxPositionSize: 5,
-                          maxDailyLoss: 500,
-                          stopLossEnabled: true,
-                          takeProfitEnabled: true
-                        },
-                        parameters: {
-                          riskPerTrade: 0.02,
-                          maxPositions: 5,
-                          stopLoss: 0.05,
-                          takeProfit: 0.1
+                      try {
+                        // Create agent through persistent service
+                        const agentId = await persistentAgentService.createAgent({
+                          name: expert.name,
+                          strategy: expert.id,
+                          initialCapital: 10000,
+                          riskLimits: {
+                            maxPositionSize: 5,
+                            maxDailyLoss: 500,
+                            stopLossEnabled: true,
+                            takeProfitEnabled: true
+                          },
+                          parameters: {
+                            riskPerTrade: 0.02,
+                            maxPositions: 5,
+                            stopLoss: 0.05,
+                            takeProfit: 0.1
+                          }
+                        })
+                        
+                        if (agentId) {
+                          // Start the agent immediately
+                          await persistentAgentService.startAgent(agentId)
+                          toast.success(`${expert.name} deployed and started successfully`)
+                        } else {
+                          toast.error(`Failed to deploy ${expert.name}`)
                         }
-                      })
-                      if (agentId) {
-                        toast.success(`${expert.name} deployed successfully`)
-                      } else {
-                        toast.error(`Failed to deploy ${expert.name}`)
+                      } catch (error) {
+                        console.error('Error deploying agent:', error)
+                        toast.error(`Failed to deploy ${expert.name}: ${error}`)
                       }
                     }}
                   >
@@ -164,82 +255,124 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
   const [loading, setLoading] = useState(true)
   const [realPerformanceData, setRealPerformanceData] = useState<any[]>([])
   
-  // Load real performance data from Supabase
+  // Load real performance data from persistent agents and paper trading
   useEffect(() => {
     loadRealPerformanceData()
+    
+    // Listen for agent updates
+    const handleAgentUpdate = () => loadRealPerformanceData()
+    persistentAgentService.on('agentUpdated', handleAgentUpdate)
+    persistentAgentService.on('agentCreated', handleAgentUpdate)
+    persistentAgentService.on('agentStarted', handleAgentUpdate)
+    persistentAgentService.on('agentStopped', handleAgentUpdate)
+    
+    return () => {
+      persistentAgentService.off('agentUpdated', handleAgentUpdate)
+      persistentAgentService.off('agentCreated', handleAgentUpdate)
+      persistentAgentService.off('agentStarted', handleAgentUpdate)
+      persistentAgentService.off('agentStopped', handleAgentUpdate)
+    }
   }, [timeframe])
 
   const loadRealPerformanceData = async () => {
     try {
       setLoading(true)
       
-      // Get real agents from lifecycle manager
-      const agents = await agentLifecycleManager.getAllAgents()
+      // Get persistent agents (primary source)
+      const persistentAgents = persistentAgentService.getAllAgents()
+      
+      // Get paper trading agents
+      const paperAgents = paperTradingEngine.getAllAgents()
+      
+      // Get lifecycle agents for additional data
+      const lifecycleAgents = await agentLifecycleManager.getAllAgents()
+      
       const performanceData = []
       
-      for (const agent of agents) {
-        // Get agent's strategy performance from Supabase
-        let performance
-        try {
-          performance = await strategyService.getStrategyPerformance(agent.strategy_type, timeframe)
-        } catch (error) {
-          console.log(`No performance data for agent ${agent.name}, using mock data`)
-          performance = null
-        }
+      // Process persistent agents (most accurate data)
+      for (const agent of persistentAgents) {
+        // Find corresponding paper trading agent for real-time data
+        const paperAgent = paperAgents.find(p => p.name === agent.name)
         
-        // Get real-time state from API
-        let state = null
-        try {
-          const response = await fetch(`/api/agents/${agent.id}/state`)
-          if (response.ok) {
-            state = await response.json()
-          }
-        } catch (error) {
-          console.log('Agent state not available, using mock data')
-        }
+        // Find lifecycle agent for advanced metrics
+        const lifecycleAgent = lifecycleAgents.find(l => l.name === agent.name)
         
-        // Combine data sources
         const combinedData = {
           agentId: agent.id,
           name: agent.name,
           status: agent.status,
-          strategy: agent.strategy_type,
+          strategy: agent.strategy,
           
-          // Performance metrics (prefer Supabase data, fallback to Redis/mock)
-          portfolioValue: state?.portfolioValue || agent.current_capital,
-          pnl: performance?.total_return ? (agent.initial_capital * performance.total_return) : 
-               (state?.totalPnL || (agent.current_capital - agent.initial_capital)),
-          winRate: performance?.win_rate ? (performance.win_rate * 100) : 
-                   (state?.winRate * 100 || Math.random() * 40 + 50),
-          tradeCount: performance?.total_trades || 
-                     (state?.currentPositions?.length || 0) + Math.floor(Math.random() * 20),
+          // Real performance metrics from persistent storage
+          portfolioValue: paperAgent?.portfolio.totalValue || agent.currentCapital,
+          pnl: agent.performance.totalPnL,
+          winRate: agent.performance.winRate,
+          tradeCount: agent.performance.totalTrades,
+          sharpeRatio: agent.performance.sharpeRatio,
           
-          // Advanced metrics from strategy_performance table
-          sharpeRatio: performance?.sharpe_ratio || (0.5 + Math.random() * 2),
-          maxDrawdown: performance?.max_drawdown || (Math.random() * 0.15),
-          annualizedReturn: performance?.annualized_return || (Math.random() * 0.3 - 0.1),
-          volatility: performance?.volatility || (0.1 + Math.random() * 0.3),
-          profitFactor: performance?.profit_factor || (0.8 + Math.random() * 1.5),
+          // Enhanced metrics from paper trading
+          maxDrawdown: paperAgent?.performance?.maxDrawdown || 0,
+          annualizedReturn: agent.performance.totalPnL / agent.initialCapital,
+          volatility: paperAgent?.performance?.volatility || 0.15,
+          profitFactor: paperAgent?.performance?.profitFactor || 1.2,
           
-          // Additional metrics
-          averageWin: performance?.average_win || (Math.random() * 500 + 100),
-          averageLoss: performance?.average_loss || (Math.random() * 300 + 50),
-          winningTrades: performance?.winning_trades || Math.floor((performance?.win_rate || 0.6) * (performance?.total_trades || 20)),
-          losingTrades: performance?.losing_trades || Math.floor((1 - (performance?.win_rate || 0.6)) * (performance?.total_trades || 20)),
+          // Trade statistics
+          averageWin: paperAgent?.performance?.averageWin || 150,
+          averageLoss: paperAgent?.performance?.averageLoss || 100,
+          winningTrades: Math.floor(agent.performance.totalTrades * agent.performance.winRate / 100),
+          losingTrades: Math.floor(agent.performance.totalTrades * (1 - agent.performance.winRate / 100)),
           
-          lastUpdated: performance?.calculated_at || new Date().toISOString()
+          // Real-time data
+          activePositions: paperAgent?.portfolio.positions.length || 0,
+          pendingOrders: paperAgent?.portfolio.orders.filter(o => o.status === 'pending').length || 0,
+          
+          lastUpdated: agent.lastActive
         }
         
         performanceData.push(combinedData)
+      }
+      
+      // Add any paper trading agents not in persistent storage
+      for (const paperAgent of paperAgents) {
+        if (!persistentAgents.find(p => p.name === paperAgent.name)) {
+          const combinedData = {
+            agentId: paperAgent.id,
+            name: paperAgent.name,
+            status: paperAgent.status,
+            strategy: paperAgent.strategy.type,
+            
+            portfolioValue: paperAgent.portfolio.totalValue,
+            pnl: paperAgent.performance.totalPnL,
+            winRate: paperAgent.performance.winRate * 100,
+            tradeCount: paperAgent.performance.totalTrades,
+            sharpeRatio: paperAgent.performance.sharpeRatio,
+            
+            maxDrawdown: paperAgent.performance.maxDrawdown,
+            annualizedReturn: paperAgent.performance.totalPnL / 10000, // assume 10k initial
+            volatility: 0.15,
+            profitFactor: 1.2,
+            
+            averageWin: paperAgent.performance.averageWin,
+            averageLoss: paperAgent.performance.averageLoss,
+            winningTrades: paperAgent.performance.winningTrades,
+            losingTrades: paperAgent.performance.losingTrades,
+            
+            activePositions: paperAgent.portfolio.positions.length,
+            pendingOrders: paperAgent.portfolio.orders.filter(o => o.status === 'pending').length,
+            
+            lastUpdated: paperAgent.lastActive.toISOString()
+          }
+          
+          performanceData.push(combinedData)
+        }
       }
       
       setRealPerformanceData(performanceData)
       setLoading(false)
     } catch (error) {
       console.error('Error loading real performance data:', error)
-      // Fallback to mock performance data
-      const mockData = Array.from(agentPerformance.values())
-      setRealPerformanceData(mockData)
+      // Fallback to empty data with proper structure
+      setRealPerformanceData([])
       setLoading(false)
     }
   }
@@ -792,8 +925,30 @@ interface ConnectedAgentsTabProps {
 
 export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   const { state, actions } = useDashboardConnection('agents')
-  const [agentSubTab, setAgentSubTab] = useState('agent-management')
+  const [agentSubTab, setAgentSubTab] = useState('overview')
+  const [agentUpdateTrigger, setAgentUpdateTrigger] = useState(0)
   
+  // Inter-tab communication setup
+  useEffect(() => {
+    const handleAgentUpdate = () => {
+      setAgentUpdateTrigger(prev => prev + 1)
+      refreshAgents()
+    }
+    
+    // Listen for agent events from persistent service
+    persistentAgentService.on('agentCreated', handleAgentUpdate)
+    persistentAgentService.on('agentStarted', handleAgentUpdate)
+    persistentAgentService.on('agentStopped', handleAgentUpdate)
+    persistentAgentService.on('agentUpdated', handleAgentUpdate)
+    
+    return () => {
+      persistentAgentService.off('agentCreated', handleAgentUpdate)
+      persistentAgentService.off('agentStarted', handleAgentUpdate)
+      persistentAgentService.off('agentStopped', handleAgentUpdate)
+      persistentAgentService.off('agentUpdated', handleAgentUpdate)
+    }
+  }, [])
+
   // Use shared real-time data manager (prevents duplicate requests)
   const {
     agents,
@@ -854,18 +1009,130 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   )
 
   const agentSubTabs = [
-    { id: 'agent-management', label: 'Management', component: <RealAgentManagement /> },
-    { id: 'agent-creation', label: 'Create Agent', component: <RealAgentCreation /> },
-    { id: 'enhanced-agents', label: 'Premium Agents', component: <EnhancedExpertAgents /> },
-    { id: 'strategy-builder', label: 'Strategy Builder', component: <VisualStrategyBuilder /> },
-    { id: 'blockchain-wallets', label: 'Blockchain Wallets', component: <BlockchainWalletsPanel /> },
-    { id: 'agent-performance', label: 'Performance', component: <AgentPerformancePanel agentPerformance={agentPerformanceMap} /> },
-    { id: 'advanced-data', label: 'Advanced Data', component: <AdvancedDataTable /> },
-    { id: 'notifications', label: 'Notifications', component: <NotificationCenter /> },
-    { id: 'risk-mgmt', label: 'Risk Management', component: <RiskManagementSuite /> },
-    { id: 'memory-analytics', label: 'Memory Analytics', component: <MemoryAnalyticsDashboard /> },
-    { id: 'expert-strategies', label: 'Expert Strategies', component: <AutonomousExpertAgentsPanel /> },
-    { id: 'strategies', label: 'Classic Strategies', component: <TradingStrategiesPanel /> }
+    { 
+      id: 'overview', 
+      label: 'Overview', 
+      component: () => <AgentOverviewPanel key={agentUpdateTrigger} agentPerformance={agentPerformanceMap} />
+    },
+    { 
+      id: 'agent-management', 
+      label: 'Management', 
+      component: () => <RealAgentManagement key={agentUpdateTrigger} onCreateAgent={() => setAgentSubTab('agent-creation')} />
+    },
+    { 
+      id: 'agent-creation', 
+      label: 'Create Agent', 
+      component: () => <RealAgentCreation key={agentUpdateTrigger} />
+    },
+    { 
+      id: 'enhanced-agents', 
+      label: 'Premium Agents', 
+      component: () => <EnhancedExpertAgents key={agentUpdateTrigger} />
+    },
+    { 
+      id: 'strategy-builder', 
+      label: 'Strategy Builder', 
+      component: () => <VisualStrategyBuilder key={agentUpdateTrigger} />
+    },
+    { 
+      id: 'blockchain-wallets', 
+      label: 'Blockchain Wallets', 
+      component: () => <BlockchainWalletsPanel key={agentUpdateTrigger} />
+    },
+    { 
+      id: 'agent-performance', 
+      label: 'Performance', 
+      component: () => <AgentPerformancePanel key={agentUpdateTrigger} agentPerformance={agentPerformanceMap} />
+    },
+    { 
+      id: 'advanced-data', 
+      label: 'Advanced Data', 
+      component: () => <AdvancedDataTable 
+        key={agentUpdateTrigger}
+        columns={[
+          { accessorKey: 'name', header: 'Agent Name' },
+          { accessorKey: 'strategy', header: 'Strategy' },
+          { accessorKey: 'status', header: 'Status' },
+          { accessorKey: 'pnl', header: 'P&L' },
+          { accessorKey: 'winRate', header: 'Win Rate' },
+          { accessorKey: 'trades', header: 'Trades' }
+        ]}
+        data={agents.map(agent => ({
+          name: agent.name,
+          strategy: agent.strategy || 'Unknown',
+          status: agent.status,
+          pnl: agent.totalPnL || 0,
+          winRate: agent.winRate || 0,
+          trades: agent.totalTrades || 0
+        }))}
+        title="Agent Performance Data"
+        description="Detailed performance metrics for all agents"
+        searchable={true}
+        filterable={true}
+        exportable={true}
+      />
+    },
+    { 
+      id: 'notifications', 
+      label: 'Notifications', 
+      component: () => <NotificationCenter key={agentUpdateTrigger} />
+    },
+    { 
+      id: 'risk-mgmt', 
+      label: 'Risk Management', 
+      component: () => <RiskManagementSuite 
+        key={agentUpdateTrigger}
+        riskLimits={[]}
+        complianceRules={[]}
+        alerts={[]}
+        users={[]}
+        portfolioMetrics={{
+          totalValue: totalPortfolioValue || 0,
+          var95: 0,
+          var99: 0,
+          maxDrawdown: 0,
+          concentrationRisk: 0,
+          leverageRatio: 1,
+          liquidity: 100
+        }}
+        onUpdateRiskLimit={() => {}}
+        onUpdateComplianceRule={() => {}}
+        onAcknowledgeAlert={() => {}}
+        onResolveAlert={() => {}}
+        onUpdateUserProfile={() => {}}
+      />
+    },
+    { 
+      id: 'memory-analytics', 
+      label: 'Memory Analytics', 
+      component: () => <MemoryAnalyticsDashboard key={agentUpdateTrigger} />
+    },
+    { 
+      id: 'expert-strategies', 
+      label: 'Expert Strategies', 
+      component: () => <AutonomousExpertAgentsPanel key={agentUpdateTrigger} />
+    },
+    { 
+      id: 'strategies', 
+      label: 'Classic Strategies', 
+      component: () => (
+        <Card key={agentUpdateTrigger}>
+          <CardHeader>
+            <CardTitle>Classic Trading Strategies</CardTitle>
+            <CardDescription>Traditional algorithmic trading strategies</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <Bot className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Coming Soon</h3>
+              <p className="text-muted-foreground">
+                Classic trading strategies will be available in a future update
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
   ]
   
   return (
@@ -957,7 +1224,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {tab.component}
+                  {tab.component()}
                 </motion.div>
               </TabsContent>
             ))}

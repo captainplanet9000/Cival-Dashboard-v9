@@ -18,28 +18,68 @@ import {
 } from 'lucide-react'
 import { alchemyService } from '@/lib/blockchain/alchemy-service'
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
+import { testnetWalletManager } from '@/lib/blockchain/testnet-wallet-manager'
+import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
 import BlockchainAgentWallet from './BlockchainAgentWallet'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function BlockchainWalletsPanel() {
   const [selectedAgent, setSelectedAgent] = useState<string>('')
-  const [selectedChain, setSelectedChain] = useState('eth-sepolia')
+  const [selectedChain, setSelectedChain] = useState('ethereum')
+  const [wallets, setWallets] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
   
   // Get agent data
   const { agents } = useSharedRealtimeData()
 
-  const availableChains = alchemyService.availableChains.map(chainKey => ({
-    key: chainKey,
-    config: alchemyService.getChainConfig(chainKey)
-  })).filter(chain => chain.config)
+  const availableChains = [
+    { key: 'ethereum', name: 'Ethereum Sepolia', testnet: true },
+    { key: 'arbitrum', name: 'Arbitrum Sepolia', testnet: true }
+  ]
 
   const activeAgents = agents.filter(agent => agent.status === 'active')
 
+  useEffect(() => {
+    loadWallets()
+    
+    // Listen for wallet updates
+    const handleWalletUpdate = () => loadWallets()
+    testnetWalletManager.on('walletCreated', handleWalletUpdate)
+    testnetWalletManager.on('balanceUpdated', handleWalletUpdate)
+    testnetWalletManager.on('transactionCreated', handleWalletUpdate)
+    
+    return () => {
+      testnetWalletManager.off('walletCreated', handleWalletUpdate)
+      testnetWalletManager.off('balanceUpdated', handleWalletUpdate)
+      testnetWalletManager.off('transactionCreated', handleWalletUpdate)
+    }
+  }, [])
+
+  const loadWallets = () => {
+    const allWallets = testnetWalletManager.getAllWallets()
+    setWallets(allWallets)
+  }
+
+  const createWalletForAgent = async (agentId: string, agentName: string) => {
+    setLoading(true)
+    try {
+      const newWallets = await testnetWalletManager.createWalletsForAgent(agentId, agentName)
+      console.log(`✅ Created ${newWallets.length} wallets for ${agentName}`)
+      loadWallets()
+    } catch (error) {
+      console.error('Error creating wallets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const walletStats = testnetWalletManager.getWalletStats()
+
   const [overviewStats] = useState({
-    totalWallets: activeAgents.length * availableChains.length,
-    totalValue: activeAgents.reduce((sum, agent) => sum + (agent.portfolioValue || 0), 0),
+    totalWallets: wallets.length,
+    totalValue: walletStats.totalValue,
     connectedChains: availableChains.length,
-    activeTransactions: Math.floor(Math.random() * 50) + 10
+    activeTransactions: walletStats.totalTransactions
   })
 
   return (
@@ -124,26 +164,19 @@ export function BlockchainWalletsPanel() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {availableChains.map(({ key, config }) => (
-              <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+            {availableChains.map((chain) => (
+              <div key={chain.key} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <Network className="h-5 w-5 text-blue-600" />
                   <div>
-                    <div className="font-medium">{config!.name}</div>
-                    <div className="text-sm text-muted-foreground">Chain ID: {config!.chainId}</div>
+                    <div className="font-medium">{chain.name}</div>
+                    <div className="text-sm text-muted-foreground">Testnet: {chain.testnet ? 'Yes' : 'No'}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={alchemyService.connected ? 'default' : 'secondary'}>
-                    {alchemyService.connected ? 'Connected' : 'Mock'}
+                  <Badge variant="default">
+                    Active
                   </Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => window.open(config!.explorer, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             ))}
@@ -151,123 +184,164 @@ export function BlockchainWalletsPanel() {
         </CardContent>
       </Card>
 
-      {/* Agent Selector and Wallet Display */}
+      {/* Agent Wallets Management */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Agent Wallet Details</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Wallet
-              </Button>
-              <Button size="sm" variant="outline">
-                <Settings className="h-4 w-4 mr-2" />
-                Manage
-              </Button>
-            </div>
+            <CardTitle>Agent Wallets</CardTitle>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => {
+                const persistentAgents = persistentAgentService.getAllAgents()
+                if (persistentAgents.length > 0) {
+                  const agent = persistentAgents[0]
+                  createWalletForAgent(agent.id, agent.name)
+                }
+              }}
+              disabled={loading}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {loading ? 'Creating...' : 'Create Wallets'}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Agent Selector */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select Agent</label>
-              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose an agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeAgents.map((agent) => (
-                    <SelectItem key={agent.agentId} value={agent.agentId}>
-                      <div className="flex items-center gap-2">
-                        <Wallet className="h-4 w-4" />
-                        {agent.name} ({agent.strategy})
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Agent Wallets Grid */}
+          {wallets.length === 0 ? (
+            <div className="text-center py-8">
+              <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Wallets Created</h3>
+              <p className="text-muted-foreground mb-4">
+                Create testnet wallets for your agents to enable blockchain trading
+              </p>
+              <Button onClick={() => {
+                const persistentAgents = persistentAgentService.getAllAgents()
+                if (persistentAgents.length > 0) {
+                  const agent = persistentAgents[0]
+                  createWalletForAgent(agent.id, agent.name)
+                }
+              }}>
+                Create First Wallet
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Preferred Chain</label>
-              <Select value={selectedChain} onValueChange={setSelectedChain}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableChains.map(({ key, config }) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <Network className="h-4 w-4" />
-                        {config!.name}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {wallets.map((wallet) => (
+                <motion.div
+                  key={wallet.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="border rounded-lg p-4 hover:shadow-lg transition-shadow"
+                >
+                  <div className="space-y-3">
+                    {/* Wallet Header */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">{wallet.agentName}</h3>
+                        <p className="text-sm text-muted-foreground">{wallet.network}</p>
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                      <Badge variant="outline">{wallet.chain.toUpperCase()}</Badge>
+                    </div>
 
-          {/* Selected Agent Wallet */}
-          <AnimatePresence mode="wait">
-            {selectedAgent ? (
-              <motion.div
-                key={selectedAgent}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <BlockchainAgentWallet
-                  agentId={selectedAgent}
-                  agentName={activeAgents.find(a => a.agentId === selectedAgent)?.name || 'Unknown Agent'}
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-center py-12"
-              >
-                <Wallet className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Select an Agent</h3>
-                <p className="text-muted-foreground">
-                  Choose an agent from the dropdown above to view their blockchain wallet details
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    {/* Address */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Address</label>
+                      <div className="font-mono text-sm bg-gray-50 rounded p-2 break-all">
+                        {wallet.address}
+                      </div>
+                    </div>
+
+                    {/* Balances */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Balances</label>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>ETH:</span>
+                          <span className="font-medium">{wallet.balance.eth.toFixed(4)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>USDC:</span>
+                          <span className="font-medium">{wallet.balance.usdc.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>USDT:</span>
+                          <span className="font-medium">{wallet.balance.usdt.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>WBTC:</span>
+                          <span className="font-medium">{wallet.balance.wbtc.toFixed(4)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Total Value */}
+                    <div className="border-t pt-2">
+                      <div className="flex justify-between font-semibold">
+                        <span>Total Value:</span>
+                        <span className="text-green-600">
+                          ${(
+                            wallet.balance.eth * 2300 +
+                            wallet.balance.usdc +
+                            wallet.balance.usdt +
+                            wallet.balance.wbtc * 43000
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Transactions */}
+                    <div className="text-xs text-muted-foreground">
+                      {wallet.transactions.length} transactions
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        Trade
+                      </Button>
+                      <Button size="sm" variant="ghost">
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
+      {/* DEX Arbitrage Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5 text-yellow-600" />
+            DEX Arbitrage Trading
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4">
-              <RefreshCw className="h-6 w-6" />
-              <span>Sync All Wallets</span>
-              <span className="text-xs opacity-70">Update balances across chains</span>
-            </Button>
-            
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4">
-              <TrendingUp className="h-6 w-6" />
-              <span>Portfolio Analytics</span>
-              <span className="text-xs opacity-70">View performance metrics</span>
-            </Button>
-            
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4">
-              <ExternalLink className="h-6 w-6" />
-              <span>Testnet Faucets</span>
-              <span className="text-xs opacity-70">Get free testnet tokens</span>
-            </Button>
+          <div className="text-center py-6">
+            <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">DEX Arbitrage Ready</h3>
+            <p className="text-muted-foreground mb-4">
+              Agents can detect and execute arbitrage opportunities across Uniswap, SushiSwap, and other DEXs
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="bg-blue-50 rounded-lg p-3">
+                <div className="font-medium text-blue-800">Supported DEXs</div>
+                <div className="text-blue-600">Uniswap V3, SushiSwap</div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-3">
+                <div className="font-medium text-green-800">Min Profit</div>
+                <div className="text-green-600">0.5% after gas</div>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-3">
+                <div className="font-medium text-purple-800">Execution</div>
+                <div className="text-purple-600">Fully automated</div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
