@@ -118,6 +118,18 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
     agentLifecycleManager.on('agentStopped', handleLifecycleAgentEvent)
     agentLifecycleManager.on('agentDeleted', handleLifecycleAgentEvent)
 
+    // Listen to persistent agent events
+    const handlePersistentAgentEvent = () => {
+      loadAgents() // Refresh when persistent agents update
+    }
+    
+    persistentAgentService.on('agentCreated', handlePersistentAgentEvent)
+    persistentAgentService.on('agentStarted', handlePersistentAgentEvent)
+    persistentAgentService.on('agentStopped', handlePersistentAgentEvent)
+    persistentAgentService.on('agentDeleted', handlePersistentAgentEvent)
+    persistentAgentService.on('portfolioUpdated', handlePersistentAgentEvent)
+    persistentAgentService.on('agentUpdated', handlePersistentAgentEvent)
+
     // Update agents every 5 seconds
     const interval = setInterval(loadAgents, 5000)
 
@@ -131,6 +143,14 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
       agentLifecycleManager.off('agentStarted', handleLifecycleAgentEvent)
       agentLifecycleManager.off('agentStopped', handleLifecycleAgentEvent)
       agentLifecycleManager.off('agentDeleted', handleLifecycleAgentEvent)
+      
+      // Remove persistent agent listeners
+      persistentAgentService.off('agentCreated', handlePersistentAgentEvent)
+      persistentAgentService.off('agentStarted', handlePersistentAgentEvent)
+      persistentAgentService.off('agentStopped', handlePersistentAgentEvent)
+      persistentAgentService.off('agentDeleted', handlePersistentAgentEvent)
+      persistentAgentService.off('portfolioUpdated', handlePersistentAgentEvent)
+      persistentAgentService.off('agentUpdated', handlePersistentAgentEvent)
       
       clearInterval(interval)
     }
@@ -211,11 +231,30 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
           
           allAgents.push(displayAgent)
         } else {
-          // Update existing agent with persistent data
+          // Update existing agent with persistent data for more accurate metrics
           existingAgent.portfolio.totalValue = pAgent.currentCapital
-          existingAgent.performance.totalPnL = pAgent.performance.totalPnL
-          existingAgent.performance.winRate = pAgent.performance.winRate / 100
-          existingAgent.performance.totalTrades = pAgent.performance.totalTrades
+          
+          // Update performance data from persistent source
+          if (existingAgent.performance) {
+            existingAgent.performance.totalPnL = pAgent.performance.totalPnL
+            existingAgent.performance.winRate = pAgent.performance.winRate / 100
+            existingAgent.performance.totalTrades = pAgent.performance.totalTrades
+            existingAgent.performance.sharpeRatio = pAgent.performance.sharpeRatio
+            
+            // Calculate additional metrics if possible
+            if (pAgent.performance.totalTrades > 0) {
+              existingAgent.performance.winningTrades = Math.floor(pAgent.performance.totalTrades * pAgent.performance.winRate / 100)
+              existingAgent.performance.losingTrades = pAgent.performance.totalTrades - existingAgent.performance.winningTrades
+              
+              // Calculate average win if we have winning trades
+              if (existingAgent.performance.winningTrades > 0 && pAgent.performance.totalPnL > 0) {
+                existingAgent.performance.averageWin = pAgent.performance.totalPnL / existingAgent.performance.winningTrades
+              }
+            }
+          }
+          
+          // Update last active time
+          existingAgent.lastActive = new Date(pAgent.lastActive)
         }
       })
       
@@ -390,13 +429,83 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
     }
   }
 
-  const calculatePortfolioChange = (agent: TradingAgent): { value: number; percentage: number } => {
-    const initialValue = 10000 // Default initial value
-    const currentValue = agent.portfolio.totalValue
+  const calculatePortfolioChange = (agent: AgentWithSource): { value: number; percentage: number } => {
+    // Get initial capital from agent data
+    let initialValue = 10000 // Default fallback
+    
+    if (agent.source === 'persistent') {
+      const persistentAgent = persistentAgentService.getAgent(agent.id)
+      if (persistentAgent) {
+        initialValue = persistentAgent.initialCapital
+      }
+    } else if (agent.source === 'paper') {
+      // For paper trading agents, try to get from performance data or use reasonable default
+      initialValue = 10000
+    } else if (agent.source === 'lifecycle') {
+      // For lifecycle agents, calculate from current - total PnL
+      const totalPnL = agent.performance?.totalPnL || 0
+      initialValue = (agent.portfolio?.totalValue || 10000) - totalPnL
+    }
+    
+    const currentValue = agent.portfolio?.totalValue || initialValue
     const change = currentValue - initialValue
-    const percentage = (change / initialValue) * 100
+    const percentage = initialValue > 0 ? (change / initialValue) * 100 : 0
     
     return { value: change, percentage }
+  }
+
+  const getAgentStats = (agent: AgentWithSource) => {
+    // Get active positions count
+    const activePositions = agent.portfolio?.positions?.length || 0
+    
+    // Get pending orders count
+    const pendingOrders = agent.portfolio?.orders?.filter(o => o.status === 'pending')?.length || 0
+    
+    // Get total trades - try different sources
+    let totalTrades = 0
+    if (agent.performance?.totalTrades) {
+      totalTrades = agent.performance.totalTrades
+    } else if (agent.portfolio?.transactions?.length) {
+      totalTrades = agent.portfolio.transactions.length
+    }
+    
+    // Get win rate - normalize to 0-1 range
+    let winRate = 0
+    if (agent.performance?.winRate !== undefined) {
+      winRate = agent.performance.winRate
+      // If winRate is > 1, it's probably in percentage form, convert to decimal
+      if (winRate > 1) {
+        winRate = winRate / 100
+      }
+    }
+    
+    // Get total PnL
+    let totalPnL = 0
+    if (agent.performance?.totalPnL !== undefined) {
+      totalPnL = agent.performance.totalPnL
+    } else {
+      // Calculate from portfolio change
+      const portfolioChange = calculatePortfolioChange(agent)
+      totalPnL = portfolioChange.value
+    }
+    
+    // Get average win
+    let averageWin = 0
+    if (agent.performance?.averageWin) {
+      averageWin = agent.performance.averageWin
+    } else if (agent.performance?.winningTrades && agent.performance?.winningTrades > 0 && totalPnL > 0) {
+      // Estimate average win from available data
+      averageWin = totalPnL / agent.performance.winningTrades
+    }
+    
+    return {
+      activePositions,
+      pendingOrders,
+      totalTrades,
+      winRate,
+      totalPnL,
+      averageWin
+    }
   }
 
   const getStatusColor = (status: TradingAgent['status']) => {
@@ -462,8 +571,7 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {agents.map((agent) => {
               const portfolioChange = calculatePortfolioChange(agent)
-              const activePositions = agent.portfolio.positions.length
-              const pendingOrders = agent.portfolio.orders.filter(o => o.status === 'pending').length
+              const agentStats = getAgentStats(agent)
 
               return (
                 <motion.div
@@ -587,15 +695,15 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
                       {/* Stats */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="text-center bg-blue-50 rounded-lg p-2">
-                          <div className="text-lg font-bold text-blue-600">{activePositions}</div>
+                          <div className="text-lg font-bold text-blue-600">{agentStats.activePositions}</div>
                           <div className="text-xs text-gray-600">Positions</div>
                         </div>
                         <div className="text-center bg-orange-50 rounded-lg p-2">
-                          <div className="text-lg font-bold text-orange-600">{pendingOrders}</div>
+                          <div className="text-lg font-bold text-orange-600">{agentStats.pendingOrders}</div>
                           <div className="text-xs text-gray-600">Pending</div>
                         </div>
                         <div className="text-center bg-green-50 rounded-lg p-2">
-                          <div className="text-lg font-bold text-green-600">{agent.performance.totalTrades}</div>
+                          <div className="text-lg font-bold text-green-600">{agentStats.totalTrades}</div>
                           <div className="text-xs text-gray-600">Trades</div>
                         </div>
                       </div>
@@ -627,9 +735,25 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Win Rate</span>
-                          <span className="font-medium">{(agent.performance.winRate * 100).toFixed(1)}%</span>
+                          <span className="font-medium">{(agentStats.winRate * 100).toFixed(1)}%</span>
                         </div>
-                        <Progress value={agent.performance.winRate * 100} className="h-2" />
+                        <Progress value={agentStats.winRate * 100} className="h-2" />
+                      </div>
+
+                      {/* Additional Performance Stats */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="text-center bg-green-50 rounded p-2">
+                          <div className="font-semibold text-green-700">
+                            ${agentStats.totalPnL >= 0 ? '+' : ''}{agentStats.totalPnL.toFixed(2)}
+                          </div>
+                          <div className="text-gray-600">Total P&L</div>
+                        </div>
+                        <div className="text-center bg-blue-50 rounded p-2">
+                          <div className="font-semibold text-blue-700">
+                            ${agentStats.averageWin.toFixed(2)}
+                          </div>
+                          <div className="text-gray-600">Avg Win</div>
+                        </div>
                       </div>
 
                       {/* Last Active */}
