@@ -107,25 +107,25 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   useEffect(() => {
     const updateGoalProgress = async () => {
       // Update profit goals based on portfolio P&L
-      const profitGoals = goals.filter(g => g.type === 'profit' && g.status === 'active')
+      const profitGoals = (goals || []).filter(g => g.type === 'profit' && g.status === 'active')
       for (const goal of profitGoals) {
         await updateGoalProgress(goal.id, state?.totalPnL || 0)
       }
       
       // Update win rate goals
-      const winRateGoals = goals.filter(g => g.type === 'winRate' && g.status === 'active')
+      const winRateGoals = (goals || []).filter(g => g.type === 'winRate' && g.status === 'active')
       for (const goal of winRateGoals) {
         await updateGoalProgress(goal.id, state?.winRate || 0)
       }
       
       // Update trade count goals
-      const tradeGoals = goals.filter(g => g.type === 'trades' && g.status === 'active')
+      const tradeGoals = (goals || []).filter(g => g.type === 'trades' && g.status === 'active')
       for (const goal of tradeGoals) {
         await updateGoalProgress(goal.id, state?.executedOrders?.length || 0)
       }
       
       // Update farm-specific goals
-      const farmGoals = goals.filter(g => g.type === 'farm' && g.farmId && g.status === 'active')
+      const farmGoals = (goals || []).filter(g => g.type === 'farm' && g.farmId && g.status === 'active')
       for (const goal of farmGoals) {
         const farm = farms.find(f => f.id === goal.farmId)
         if (farm) {
@@ -209,7 +209,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
       const tradingHistory = []
       
       // Recent trades from executed orders
-      state.executedOrders.forEach(order => {
+      (state?.executedOrders || []).forEach(order => {
         tradingHistory.push({
           id: order.id,
           type: 'trade',
@@ -237,7 +237,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
       })
 
       // Agent activities
-      Array.from(state.agentPerformance.values()).forEach(agent => {
+      Array.from(state?.agentPerformance?.values() || []).forEach(agent => {
         tradingHistory.push({
           id: `agent_${agent.agentId}`,
           type: 'agent_activity',
@@ -271,8 +271,8 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
         
         performanceData.push({
           date: format(date, 'yyyy-MM-dd'),
-          portfolioValue: state.portfolioValue * (0.95 + dayFactor * 0.1),
-          totalPnL: state.totalPnL * (0.8 + dayFactor * 0.4),
+          portfolioValue: (state?.portfolioValue || 0) * (0.95 + dayFactor * 0.1),
+          totalPnL: (state?.totalPnL || 0) * (0.8 + dayFactor * 0.4),
           dailyPnL: (Math.random() - 0.4) * 500,
           winRate: 45 + Math.random() * 30,
           tradeCount: Math.floor(Math.random() * 20),
@@ -294,7 +294,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
     const newEvents = []
     
     // Check for new orders
-    const recentOrders = state.executedOrders.filter(order => 
+    const recentOrders = (state?.executedOrders || []).filter(order => 
       new Date().getTime() - new Date(order.timestamp).getTime() < 5000 // Last 5 seconds
     )
     
@@ -513,9 +513,9 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
             <CardTitle className="text-sm">Active Goals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.active}</div>
+            <div className="text-2xl font-bold">{stats?.active || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.total} total goals
+              {stats?.total || 0} total goals
             </p>
           </CardContent>
         </Card>
@@ -526,10 +526,10 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {stats.completed}
+              {stats?.completed || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.completionRate.toFixed(0)}% success rate
+              {(stats?.completionRate || 0).toFixed(0)}% success rate
             </p>
           </CardContent>
         </Card>
@@ -540,7 +540,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {goals.filter(g => g.status === 'active' && g.progress > 0 && g.progress < 100).length}
+              {(goals || []).filter(g => g.status === 'active' && g.progress > 0 && g.progress < 100).length}
             </div>
             <p className="text-xs text-muted-foreground">
               Making progress
@@ -554,7 +554,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats.averageProgress.toFixed(0)}%
+              {(stats?.averageProgress || 0).toFixed(0)}%
             </div>
             <p className="text-xs text-muted-foreground">
               Across all goals
@@ -625,12 +625,12 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium">Progress</span>
-                            <span className="text-sm font-medium">{goal.progress.toFixed(1)}%</span>
+                            <span className="text-sm font-medium">{(goal.progress || 0).toFixed(1)}%</span>
                           </div>
-                          <Progress value={goal.progress} className="h-3" />
+                          <Progress value={goal.progress || 0} className="h-3" />
                           <div className="flex justify-between text-sm text-muted-foreground">
-                            <span>Current: {goal.current.toFixed(goalType?.value === 'profit' ? 2 : 1)} {goalType?.unit}</span>
-                            <span>Target: {goal.target} {goalType?.unit}</span>
+                            <span>Current: {(goal.current || 0).toFixed(goalType?.value === 'profit' ? 2 : 1)} {goalType?.unit}</span>
+                            <span>Target: {goal.target || 0} {goalType?.unit}</span>
                           </div>
                         </div>
                         
@@ -899,7 +899,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                               <span className={`text-sm font-medium ${
                                 event.pnl > 0 ? 'text-green-600' : 'text-red-600'
                               }`}>
-                                {event.pnl > 0 ? '+' : ''}${event.pnl.toFixed(0)}
+                                {event.pnl > 0 ? '+' : ''}${(event.pnl || 0).toFixed(0)}
                               </span>
                             )}
                             <Badge variant="outline" className={
@@ -912,7 +912,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                         </div>
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-muted-foreground">
-                            Value: ${event.value.toFixed(2)}
+                            Value: ${(event.value || 0).toFixed(2)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(event.timestamp), 'MMM dd, HH:mm')}
@@ -1055,13 +1055,13 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                     {performanceHistory.slice(0, 10).map((day, index) => (
                       <tr key={day.date} className="border-b hover:bg-gray-50">
                         <td className="p-2 font-medium">{format(new Date(day.date), 'MMM dd')}</td>
-                        <td className="p-2 text-right">${day.portfolioValue.toLocaleString()}</td>
+                        <td className="p-2 text-right">${(day.portfolioValue || 0).toLocaleString()}</td>
                         <td className={`p-2 text-right font-medium ${
                           day.dailyPnL >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {day.dailyPnL >= 0 ? '+' : ''}${day.dailyPnL.toFixed(0)}
+                          {day.dailyPnL >= 0 ? '+' : ''}${(day.dailyPnL || 0).toFixed(0)}
                         </td>
-                        <td className="p-2 text-right">{day.winRate.toFixed(0)}%</td>
+                        <td className="p-2 text-right">{(day.winRate || 0).toFixed(0)}%</td>
                         <td className="p-2 text-right">{day.tradeCount}</td>
                         <td className="p-2 text-right">
                           <div className="flex items-center justify-end gap-1">
