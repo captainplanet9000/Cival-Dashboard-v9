@@ -273,7 +273,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
         
         performanceData.push({
           date: format(date, 'yyyy-MM-dd'),
-          portfolioValue: (state?.portfolioValue || 0) * (0.95 + dayFactor * 0.1),
+          portfolioValue: Math.max((state?.portfolioValue || 10000) * (0.95 + dayFactor * 0.1), 0),
           totalPnL: (state?.totalPnL || 0) * (0.8 + dayFactor * 0.4),
           dailyPnL: (Math.random() - 0.4) * 500,
           winRate: 45 + Math.random() * 30,
@@ -850,7 +850,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                 <div className={`text-2xl font-bold ${
                   historyData.reduce((sum, h) => sum + (h.pnl || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  ${historyData.reduce((sum, h) => sum + (h.pnl || 0), 0).toFixed(0)}
+                  ${(historyData.reduce((sum, h) => sum + (h.pnl || 0), 0) >= 0 ? '+' : '')}${Math.abs(historyData.reduce((sum, h) => sum + (h.pnl || 0), 0) || 0).toFixed(0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   From history
@@ -942,11 +942,13 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
               <CardContent>
                 <div className={`text-2xl font-bold ${
                   performanceHistory.length > 0 && 
-                  (performanceHistory.reduce((sum, p) => sum + p.dailyPnL, 0) / performanceHistory.length) >= 0 
+                  (performanceHistory.reduce((sum, p) => sum + (p.dailyPnL || 0), 0) / performanceHistory.length) >= 0 
                     ? 'text-green-600' : 'text-red-600'
                 }`}>
                   ${performanceHistory.length > 0 
-                    ? (performanceHistory.reduce((sum, p) => sum + p.dailyPnL, 0) / performanceHistory.length).toFixed(0)
+                    ? ((performanceHistory.reduce((sum, p) => sum + (p.dailyPnL || 0), 0) / performanceHistory.length) >= 0 ? '+' : '')
+                    : ''}${performanceHistory.length > 0 
+                    ? Math.abs((performanceHistory.reduce((sum, p) => sum + (p.dailyPnL || 0), 0) / performanceHistory.length) || 0).toFixed(0)
                     : '0'
                   }
                 </div>
@@ -962,8 +964,8 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ${performanceHistory.length > 0 
-                    ? Math.max(...performanceHistory.map(p => p.dailyPnL)).toFixed(0)
+                  +${performanceHistory.length > 0 
+                    ? Math.max(...performanceHistory.map(p => p.dailyPnL || 0)).toFixed(0)
                     : '0'
                   }
                 </div>
@@ -980,7 +982,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
                   ${performanceHistory.length > 0 
-                    ? Math.min(...performanceHistory.map(p => p.dailyPnL)).toFixed(0)
+                    ? Math.min(...performanceHistory.map(p => p.dailyPnL || 0)).toFixed(0)
                     : '0'
                   }
                 </div>
@@ -997,7 +999,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {performanceHistory.length > 0 
-                    ? (performanceHistory.reduce((sum, p) => sum + p.winRate, 0) / performanceHistory.length).toFixed(0)
+                    ? (performanceHistory.reduce((sum, p) => sum + (p.winRate || 0), 0) / performanceHistory.length).toFixed(0)
                     : '0'
                   }%
                 </div>
@@ -1057,11 +1059,11 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                     {performanceHistory.slice(0, 10).map((day, index) => (
                       <tr key={day.date} className="border-b hover:bg-gray-50">
                         <td className="p-2 font-medium">{format(new Date(day.date), 'MMM dd')}</td>
-                        <td className="p-2 text-right">${(day.portfolioValue || 0).toLocaleString()}</td>
+                        <td className="p-2 text-right">${Math.max((day.portfolioValue || 0), 0).toLocaleString()}</td>
                         <td className={`p-2 text-right font-medium ${
-                          day.dailyPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                          (day.dailyPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {day.dailyPnL >= 0 ? '+' : ''}${(day.dailyPnL || 0).toFixed(0)}
+                          {(day.dailyPnL || 0) >= 0 ? '+' : ''}${Math.abs(day.dailyPnL || 0).toFixed(0)}
                         </td>
                         <td className="p-2 text-right">{(day.winRate || 0).toFixed(0)}%</td>
                         <td className="p-2 text-right">{day.tradeCount}</td>
