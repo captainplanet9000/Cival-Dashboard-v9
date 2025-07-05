@@ -129,7 +129,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
       for (const goal of farmGoals) {
         const farm = farms.find(f => f.id === goal.farmId)
         if (farm && farm.performance) {
-          await updateGoalProgress(goal.id, farm.performance.winRate || 0)
+          await updateGoalProgress(goal.id, (farm.performance.winRate || 0))
         }
       }
     }

@@ -1,2641 +1,520 @@
 /**
  * Backend API Client
- * Centralized client for connecting to the Python AI Services backend
- * Enhanced with JWT authentication and session management
+ * Comprehensive client for connecting to the FastAPI backend
  */
 
-// Solo operator mode - no authentication required
-// import { authService } from '@/lib/auth/auth-service'
-
-export interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
-  status: number;
+export interface APIResponse<T = any> {
+  success: boolean
+  message: string
+  data: T
+  timestamp: string
 }
 
 export interface PortfolioSummary {
-  total_equity: number;
-  cash_balance: number;
-  total_position_value: number;
-  total_unrealized_pnl: number;
-  total_realized_pnl: number;
-  total_pnl: number;
-  daily_pnl: number;
-  total_return_percent: number;
-  number_of_positions: number;
-  long_positions: number;
-  short_positions: number;
-  last_updated: string;
+  total_equity: number
+  cash_balance: number
+  total_position_value: number
+  total_unrealized_pnl: number
+  total_realized_pnl: number
+  total_pnl: number
+  daily_pnl: number
+  total_return_percent: number
+  number_of_positions: number
+  long_positions: number
+  short_positions: number
+  last_updated: string
 }
 
 export interface Position {
-  symbol: string;
-  quantity: number;
-  avg_cost: number;
-  current_price: number;
-  market_value: number;
-  unrealized_pnl: number;
-  realized_pnl: number;
-  pnl_percent: number;
-  last_updated: string;
-}
-
-export interface TradingSignal {
-  symbol: string;
-  signal: 'buy' | 'sell' | 'hold';
-  strength: number;
-  confidence: number;
-  predicted_change_pct: number;
-  reasoning: string;
-  generated_at: string;
-}
-
-// Farm-related interfaces
-export interface Farm {
-  id: string;
-  name: string;
-  description: string;
-  strategy: string;
-  farmType: string;
-  agents: FarmAgent[];
-  status: string;
-  totalValue: number;
-  dailyPnL: number;
-  totalPnL: number;
-  createdAt: string;
-  performance: FarmPerformance;
-  targets: FarmTargets;
-  riskMetrics: FarmRiskMetrics;
-  realTimeMetrics: FarmRealTimeMetrics;
-}
-
-export interface FarmAgent {
-  id: string;
-  name: string;
-  type: string;
-  status: string;
-  allocation: number;
-  pnl: number;
-  trades: number;
-  winRate: number;
-  lastActivity: string;
-  performance: AgentPerformance;
-}
-
-export interface FarmPerformance {
-  winRate: number;
-  sharpeRatio: number;
-  maxDrawdown: number;
-  totalTrades: number;
-  avgProfitPerTrade: number;
-  riskAdjustedReturn: number;
-  coordinationScore: number;
-  strategyEfficiency: number;
-}
-
-export interface FarmTargets {
-  dailyTarget: number;
-  monthlyTarget: number;
-  currentProgress: number;
-  targetProgress: number;
-}
-
-export interface FarmRiskMetrics {
-  currentExposure: number;
-  maxExposure: number;
-  diversificationScore: number;
-  correlationRisk: number;
-}
-
-export interface FarmRealTimeMetrics {
-  systemLoad: number;
-  networkLatency: number;
-  processingSpeed: number;
-  errorRate: number;
-}
-
-export interface AgentPerformance {
-  dailyPnL: number;
-  weeklyPnL: number;
-  monthlyPnL: number;
-  sharpeRatio: number;
-  maxDrawdown: number;
-  source: string;
+  symbol: string
+  quantity: number
+  avg_cost: number
+  current_price: number
+  market_value: number
+  unrealized_pnl: number
+  realized_pnl: number
+  pnl_percent: number
+  last_updated: string
 }
 
 export interface AgentStatus {
-  agent_id: string;
-  name: string;
-  status: 'active' | 'monitoring' | 'paused' | 'error';
-  strategy: string;
-  current_allocation: number;
-  pnl: number;
-  trades_today: number;
-  win_rate: number;
-  last_action: string;
-  last_updated: string;
+  id: string
+  name: string
+  strategy: string
+  status: 'active' | 'paused' | 'stopped'
+  performance: {
+    total_pnl: number
+    win_rate: number
+    total_trades: number
+    active_positions: number
+  }
+}
+
+export interface AgentOverview {
+  total_agents: number
+  active_agents: number
+  paused_agents: number
+  agents: AgentStatus[]
 }
 
 export interface MarketData {
-  symbol: string;
-  price: number;
-  change_pct: number;
-  volatility: number;
-  volume: number;
-  market_cap: number;
-  last_updated: string;
+  symbol: string
+  price: number
+  change_24h: number
+  change_percent_24h: number
+  volume_24h: number
+  market_cap?: number
+  last_updated: string
 }
 
-export interface MarketOverview {
-  market_data: MarketData[];
-  market_sentiment: {
-    overall: string;
-    score: number;
-    fear_greed_index: number;
-    vix: number;
-  };
-  timestamp: string;
+export interface TradingOrder {
+  symbol: string
+  side: 'buy' | 'sell'
+  quantity: number
+  price?: number
+  order_type: 'market' | 'limit'
+  strategy?: string
 }
 
-export interface PerformanceMetrics {
-  total_return_percent: number;
-  total_pnl: number;
-  daily_pnl: number;
-  win_rate: number;
-  sharpe_ratio: number;
-  volatility: number;
-  max_drawdown: number;
-  total_trades: number;
-  total_equity: number;
-  initial_equity: number;
-  best_trade: number;
-  worst_trade: number;
-  avg_trade: number;
-  last_updated: string;
+export interface OrderResponse {
+  order_id: string
+  symbol: string
+  side: 'buy' | 'sell'
+  quantity: number
+  price: number
+  status: string
+  timestamp: string
 }
 
-export interface ServiceStatus {
-  service: string;
-  status: string;
-  last_health_check: string;
-  [key: string]: any;
+export interface TradingSignal {
+  signal_id: string
+  symbol: string
+  action: 'buy' | 'sell' | 'hold'
+  strength: number
+  confidence: number
+  reasoning: string
+  indicators: Record<string, number>
+  timestamp: string
 }
 
-export interface HealthCheck {
-  status: string;
-  services: Record<string, ServiceStatus>;
-  timestamp: string;
+export interface RiskMetrics {
+  portfolio_var: number
+  sharpe_ratio: number
+  max_drawdown: number
+  beta: number
+  alpha: number
+  correlation_matrix: Record<string, Record<string, number>>
+  position_sizes: Record<string, number>
+  concentration_risk: number
+  liquidity_risk: number
+  last_updated: string
 }
 
-class BackendApiClient {
-  private baseUrl: string;
-  private timeout: number;
-  constructor() {
-    // Auto-detect backend URL based on environment
-    this.baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 
-                   process.env.BACKEND_URL || 
-                   'http://localhost:8000';
-    this.timeout = 10000; // 10 second timeout
+export interface MonitoringHealth {
+  overall_status: 'healthy' | 'warning' | 'critical' | 'down'
+  services: Record<string, any>
+  system_metrics: {
+    cpu_percent: number
+    memory_percent: number
+    disk_percent: number
+    memory_available_gb: number
+    disk_free_gb: number
+  }
+  critical_services: string[]
+  warning_services: string[]
+  active_alerts: number
+  monitoring_enabled: boolean
+  last_check: string
+}
+
+export interface SystemMetrics {
+  cpu_percent: number
+  cpu_avg_1m: number
+  memory_percent: number
+  memory_available_gb: number
+  memory_avg_1m: number
+  disk_percent: number
+  disk_free_gb: number
+  disk_avg_1m: number
+  network_bytes_sent: number
+  network_bytes_recv: number
+  timestamp: string
+}
+
+export interface Alert {
+  alert_id: string
+  service: string
+  severity: 'info' | 'warning' | 'critical' | 'emergency'
+  message: string
+  metric: string
+  threshold: number
+  current_value: number
+  timestamp: string
+  acknowledged: boolean
+  resolved: boolean
+}
+
+export interface LLMRequest {
+  prompt: string
+  context?: Record<string, any>
+  model?: string
+  max_tokens?: number
+  temperature?: number
+}
+
+export interface LLMResponse {
+  content: string
+  model: string
+  tokens_used: number
+  cost_estimate: number
+  timestamp: string
+  success: boolean
+  error?: string
+}
+
+export interface SentimentAnalysis {
+  sentiment: 'positive' | 'negative' | 'neutral'
+  confidence: number
+  score: number
+  keywords: string[]
+  summary: string
+}
+
+export interface TradingDecision {
+  action: 'buy' | 'sell' | 'hold'
+  confidence: number
+  reasoning: string
+  risk_level: 'low' | 'medium' | 'high'
+  suggested_position_size: number
+  stop_loss?: number
+  take_profit?: number
+}
+
+class BackendClient {
+  private baseURL: string
+  private timeout: number = 10000
+
+  constructor(baseURL: string = 'http://localhost:8000') {
+    this.baseURL = baseURL
   }
 
-  // Authentication is now handled by the auth service
-
-  private async fetchWithTimeout(url: string, options: RequestInit = {}, retries = 3): Promise<Response> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          ...(options.headers && typeof options.headers === 'object' && !(options.headers instanceof Headers) 
-            ? options.headers as Record<string, string> 
-            : {}),
-        };
-
-        // Solo operator mode - no authentication headers needed
-        // const authHeader = authService.getAuthHeader();
-        // Object.assign(headers, authHeader);
-
-        const response = await fetch(url, {
-          ...options,
-          signal: controller.signal,
-          headers,
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // If response is successful or client error (4xx), don't retry
-        if (response.ok || (response.status >= 400 && response.status < 500)) {
-          return response;
-        }
-        
-        // Server error (5xx) - retry if not last attempt
-        if (attempt < retries) {
-          console.warn(`Attempt ${attempt} failed with status ${response.status}, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
-          continue;
-        }
-        
-        return response;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        
-        if (attempt < retries && (error instanceof Error && error.name !== 'AbortError')) {
-          console.warn(`Attempt ${attempt} failed with error: ${error.message}, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
-          continue;
-        }
-        
-        throw error;
-      }
-    }
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<APIResponse<T>> {
+    const url = `${this.baseURL}${endpoint}`
     
-    throw new Error('All retry attempts failed');
-  }
-
-  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout)
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      })
+
+      clearTimeout(timeoutId)
+
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        
-        // Try to get more detailed error from response body
-        try {
-          const errorBody = await response.text();
-          if (errorBody) {
-            const parsedError = JSON.parse(errorBody);
-            errorMessage = parsedError.detail || parsedError.message || errorMessage;
-          }
-        } catch {
-          // If parsing fails, use the default error message
-        }
-        
-        return {
-          error: errorMessage,
-          status: response.status,
-        };
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const data = await response.json();
-      return {
-        data,
-        status: response.status,
-      };
+      const data = await response.json()
+      return data
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('API Response Error:', errorMessage);
+      console.error(`Backend API Error [${endpoint}]:`, error)
+      
+      // Return fallback response for development
       return {
-        error: `Response parsing error: ${errorMessage}`,
-        status: response.status,
-      };
+        success: false,
+        message: `API Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        data: null as T,
+        timestamp: new Date().toISOString()
+      }
     }
   }
 
-  // Health and System
-  async getHealth(): Promise<ApiResponse<HealthCheck>> {
+  // Portfolio endpoints
+  async getPortfolioSummary(): Promise<APIResponse<PortfolioSummary>> {
+    return this.request<PortfolioSummary>('/api/v1/portfolio/summary')
+  }
+
+  async getPositions(): Promise<APIResponse<Position[]>> {
+    return this.request<Position[]>('/api/v1/portfolio/positions')
+  }
+
+  // Agent endpoints
+  async getAgentsStatus(): Promise<APIResponse<AgentOverview>> {
+    return this.request<AgentOverview>('/api/v1/agents/status')
+  }
+
+  async startAgent(agentId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/start`, { method: 'POST' })
+  }
+
+  async stopAgent(agentId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/stop`, { method: 'POST' })
+  }
+
+  async executeAgentDecision(agentId: string, context: any): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/execute-decision`, {
+      method: 'POST',
+      body: JSON.stringify(context)
+    })
+  }
+
+  async getAgentDecisions(agentId: string): Promise<APIResponse<any[]>> {
+    return this.request<any[]>(`/api/v1/agents/${agentId}/decisions`)
+  }
+
+  async coordinateAgentDecision(participants: string[], context: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/agents/coordinate-decision', {
+      method: 'POST',
+      body: JSON.stringify({ participants, context })
+    })
+  }
+
+  // Market data endpoints
+  async getLiveMarketData(symbol: string): Promise<APIResponse<MarketData>> {
+    return this.request<MarketData>(`/api/v1/market/live-data/${symbol}`)
+  }
+
+  async getWatchlist(): Promise<APIResponse<MarketData[]>> {
+    return this.request<MarketData[]>('/api/v1/market/watchlist')
+  }
+
+  // Trading endpoints
+  async createPaperOrder(order: TradingOrder): Promise<APIResponse<OrderResponse>> {
+    return this.request<OrderResponse>('/api/v1/trading/paper/order', {
+      method: 'POST',
+      body: JSON.stringify(order)
+    })
+  }
+
+  async getPaperPortfolio(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/paper/portfolio')
+  }
+
+  async createOrder(order: TradingOrder): Promise<APIResponse<OrderResponse>> {
+    return this.request<OrderResponse>('/api/v1/trading/order/create', {
+      method: 'POST',
+      body: JSON.stringify(order)
+    })
+  }
+
+  async cancelOrder(orderId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/trading/order/${orderId}`, { method: 'DELETE' })
+  }
+
+  async generateTradingSignals(symbols: string[]): Promise<APIResponse<TradingSignal[]>> {
+    return this.request<TradingSignal[]>('/api/v1/trading/signals/generate', {
+      method: 'POST',
+      body: JSON.stringify({ symbols })
+    })
+  }
+
+  async executeStrategy(strategy: string, context: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/strategy/execute', {
+      method: 'POST',
+      body: JSON.stringify({ strategy, ...context })
+    })
+  }
+
+  async optimizePortfolio(portfolio: any, targetAllocation: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/portfolio/optimize', {
+      method: 'POST',
+      body: JSON.stringify({ portfolio, target_allocation: targetAllocation })
+    })
+  }
+
+  async manageRisk(portfolio: any, marketData: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/risk/manage', {
+      method: 'POST',
+      body: JSON.stringify({ portfolio, market_data: marketData })
+    })
+  }
+
+  async getStrategyPerformance(strategy: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/trading/performance/${strategy}`)
+  }
+
+  async getTradingStatus(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/status')
+  }
+
+  // Risk endpoints
+  async getRiskMetrics(): Promise<APIResponse<RiskMetrics>> {
+    return this.request<RiskMetrics>('/api/v1/risk/metrics')
+  }
+
+  async runStressTest(scenarios: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/risk/stress-test', {
+      method: 'POST',
+      body: JSON.stringify({ scenarios })
+    })
+  }
+
+  // AI Services endpoints
+  async generateLLMResponse(request: LLMRequest): Promise<APIResponse<LLMResponse>> {
+    return this.request<LLMResponse>('/api/v1/ai/llm/generate', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    })
+  }
+
+  async analyzeSentiment(text: string, context?: any): Promise<APIResponse<SentimentAnalysis>> {
+    return this.request<SentimentAnalysis>('/api/v1/ai/sentiment/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ text, context })
+    })
+  }
+
+  async assessRisk(portfolio: any, scenarios?: string[]): Promise<APIResponse<any>> {
+    return this.request('/api/v1/ai/risk/assess', {
+      method: 'POST',
+      body: JSON.stringify({ portfolio, scenarios })
+    })
+  }
+
+  async getTradingDecision(symbol: string, marketData: any, portfolio: any): Promise<APIResponse<TradingDecision>> {
+    return this.request<TradingDecision>('/api/v1/ai/trading/decision', {
+      method: 'POST',
+      body: JSON.stringify({ symbol, market_data: marketData, portfolio_context: portfolio })
+    })
+  }
+
+  async getAIStatus(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/ai/status')
+  }
+
+  // Monitoring endpoints
+  async getOverallHealth(): Promise<APIResponse<MonitoringHealth>> {
+    return this.request<MonitoringHealth>('/api/v1/monitoring/health')
+  }
+
+  async getServiceHealth(serviceName: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/monitoring/service/${serviceName}`)
+  }
+
+  async getActiveAlerts(): Promise<APIResponse<{ total_alerts: number; alerts: Alert[] }>> {
+    return this.request('/api/v1/monitoring/alerts')
+  }
+
+  async acknowledgeAlert(alertId: string): Promise<APIResponse<{ acknowledged: boolean }>> {
+    return this.request(`/api/v1/monitoring/alerts/${alertId}/acknowledge`, { method: 'POST' })
+  }
+
+  async resolveAlert(alertId: string): Promise<APIResponse<{ resolved: boolean }>> {
+    return this.request(`/api/v1/monitoring/alerts/${alertId}/resolve`, { method: 'POST' })
+  }
+
+  async getCircuitBreakers(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/monitoring/circuit-breakers')
+  }
+
+  async getSystemMetrics(): Promise<APIResponse<SystemMetrics>> {
+    return this.request<SystemMetrics>('/api/v1/monitoring/system-metrics')
+  }
+
+  async getMonitoringStatus(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/monitoring/status')
+  }
+
+  // Performance endpoints
+  async getCacheStats(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/performance/cache/stats')
+  }
+
+  async clearCache(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/performance/cache/clear', { method: 'POST' })
+  }
+
+  async getPerformanceMetrics(endpoint?: string): Promise<APIResponse<any>> {
+    const url = endpoint ? `/api/v1/performance/metrics?endpoint=${endpoint}` : '/api/v1/performance/metrics'
+    return this.request(url)
+  }
+
+  async getPerformanceReport(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/performance/report')
+  }
+
+  async optimizeConfiguration(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/performance/optimize', { method: 'POST' })
+  }
+
+  async optimizeMemory(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/performance/memory/optimize', { method: 'POST' })
+  }
+
+  async getPerformanceStatus(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/performance/status')
+  }
+
+  // Service registry
+  async getServicesStatus(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/services')
+  }
+
+  // Health check
+  async healthCheck(): Promise<{ status: string; service: string; version: string; timestamp: string }> {
     try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/health`);
-      return this.handleResponse<HealthCheck>(response);
+      const response = await fetch(`${this.baseURL}/health`)
+      return await response.json()
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
+        status: 'disconnected',
+        service: 'cival-backend-api',
+        version: '1.0.0',
+        timestamp: new Date().toISOString()
+      }
     }
   }
 
-  async getSystemInfo(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
+  // Utility methods
+  setBaseURL(url: string) {
+    this.baseURL = url
   }
 
-  async getServices(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/services`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
+  setTimeout(timeout: number) {
+    this.timeout = timeout
   }
 
-  // Portfolio Management
-  async getPortfolioSummary(): Promise<ApiResponse<PortfolioSummary>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/summary`);
-      return this.handleResponse<PortfolioSummary>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
-  }
-
-  async getPortfolioPositions(): Promise<ApiResponse<Position[]>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/positions`);
-      return this.handleResponse<Position[]>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
-  }
-
-  // Market Data
-  async getMarketData(symbol: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/market-data/${symbol}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
-  }
-
-  async getMarketOverview(): Promise<ApiResponse<MarketOverview>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/market/overview`);
-      return this.handleResponse<MarketOverview>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
-  }
-
-  // Trading
-  async getTradingSignals(): Promise<ApiResponse<TradingSignal[]>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/trading/signals`);
-      return this.handleResponse<TradingSignal[]>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
-  }
-
-  // Agents
-  async getAgentsStatus(): Promise<ApiResponse<AgentStatus[]>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/status`);
-      return this.handleResponse<AgentStatus[]>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
-  }
-
-  // Enhanced Agent Management
-  async executeAgentDecision(agentId: string, decisionParams: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/execute-decision`, {
-        method: 'POST',
-        body: JSON.stringify(decisionParams)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to execute agent decision',
-        status: 0,
-      };
-    }
-  }
-
-  async startAgent(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/start`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to start agent',
-        status: 0,
-      };
-    }
-  }
-
-  async stopAgent(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/stop`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to stop agent',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentDecisions(agentId: string, limit: number = 10): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/decisions?limit=${limit}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent decisions',
-        status: 0,
-      };
-    }
-  }
-
-  async coordinateAgentDecision(coordinationParams: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/coordinate-decision`, {
-        method: 'POST',
-        body: JSON.stringify(coordinationParams)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to coordinate agent decision',
-        status: 0,
-      };
-    }
-  }
-
-  // Performance
-  async getPerformanceMetrics(): Promise<ApiResponse<PerformanceMetrics>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/performance/metrics`);
-      return this.handleResponse<PerformanceMetrics>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Connection failed',
-        status: 0,
-      };
-    }
-  }
-
-  // Utility method to test connection
   async testConnection(): Promise<boolean> {
     try {
-      const response = await this.getHealth();
-      return response.status === 200 && !response.error;
+      const health = await this.healthCheck()
+      return health.status === 'healthy'
     } catch {
-      return false;
-    }
-  }
-
-  // Method to get backend URL for debugging
-  getBackendUrl(): string {
-    return this.baseUrl;
-  }
-
-  // Method to update backend URL dynamically
-  setBackendUrl(url: string): void {
-    this.baseUrl = url;
-  }
-
-  // Authentication methods
-  async login(email: string, password: string): Promise<ApiResponse<{token: string, user: any}>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/auth/login`, {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-      
-      const result = await this.handleResponse<{token: string, user: any}>(response);
-      
-      // Authentication is handled by the auth service
-      // Token management is no longer needed in the API client
-      
-      return result;
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Login failed',
-        status: 0,
-      };
-    }
-  }
-
-  async logout(): Promise<void> {
-    try {
-      // Solo operator mode - no logout needed
-      // if (authService.isAuthenticated()) {
-      //   await this.fetchWithTimeout(`${this.baseUrl}/api/v1/auth/logout`, {
-      //     method: 'POST'
-      //   });
-      // }
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  }
-
-  async refreshToken(): Promise<ApiResponse<{token: string}>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/auth/refresh`, {
-        method: 'POST'
-      });
-      
-      const result = await this.handleResponse<{token: string}>(response);
-      
-      // Token refresh is handled by the auth service
-      
-      return result;
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Token refresh failed',
-        status: 0,
-      };
-    }
-  }
-
-  async getCurrentUser(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/auth/me`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get user info',
-        status: 0,
-      };
-    }
-  }
-
-  // Strategy Management
-  async getStrategies(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get strategies',
-        status: 0,
-      };
-    }
-  }
-
-  async getStrategy(strategyId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/${strategyId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get strategy',
-        status: 0,
-      };
-    }
-  }
-
-  async createStrategy(strategyData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies`, {
-        method: 'POST',
-        body: JSON.stringify(strategyData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create strategy',
-        status: 0,
-      };
-    }
-  }
-
-  async updateStrategy(strategyId: string, strategyData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/${strategyId}`, {
-        method: 'PUT',
-        body: JSON.stringify(strategyData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to update strategy',
-        status: 0,
-      };
-    }
-  }
-
-  async deleteStrategy(strategyId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/${strategyId}`, {
-        method: 'DELETE'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to delete strategy',
-        status: 0,
-      };
-    }
-  }
-
-  async backtestStrategy(strategyId: string, backtestParams: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/${strategyId}/backtest`, {
-        method: 'POST',
-        body: JSON.stringify(backtestParams)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to run backtest',
-        status: 0,
-      };
-    }
-  }
-
-  // Multi-Chain Wallet Management
-  async getWallets(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get wallets',
-        status: 0,
-      };
-    }
-  }
-
-  async getWalletBalance(walletId: string, chain: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets/${walletId}/balance?chain=${chain}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get wallet balance',
-        status: 0,
-      };
-    }
-  }
-
-  async createWallet(walletData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets`, {
-        method: 'POST',
-        body: JSON.stringify(walletData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create wallet',
-        status: 0,
-      };
-    }
-  }
-
-  async transferFunds(transferData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/wallets/transfer`, {
-        method: 'POST',
-        body: JSON.stringify(transferData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to transfer funds',
-        status: 0,
-      };
-    }
-  }
-
-  // Flash Loan Operations
-  async getFlashLoanOpportunities(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/flashloans/opportunities`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get flash loan opportunities',
-        status: 0,
-      };
-    }
-  }
-
-  async executeFlashLoan(loanData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/flashloans/execute`, {
-        method: 'POST',
-        body: JSON.stringify(loanData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to execute flash loan',
-        status: 0,
-      };
-    }
-  }
-
-  // HyperLend Integration
-  async getHyperLendPositions(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/hyperlend/positions`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get HyperLend positions',
-        status: 0,
-      };
-    }
-  }
-
-  async createHyperLendPosition(positionData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/hyperlend/positions`, {
-        method: 'POST',
-        body: JSON.stringify(positionData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create HyperLend position',
-        status: 0,
-      };
-    }
-  }
-
-  // Advanced Analytics
-  async getAnalytics(type?: string, timeframe?: string, symbol?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams();
-      if (type) params.append('type', type);
-      if (timeframe) params.append('timeframe', timeframe);
-      if (symbol) params.append('symbol', symbol);
-      
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics?${params.toString()}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get analytics',
-        status: 0,
-      };
-    }
-  }
-
-  async getUSDTDominance(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics/usdt-dominance`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get USDT dominance',
-        status: 0,
-      };
-    }
-  }
-
-  async getCorrelationMatrix(assets: string[], timeframe?: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics/correlations`, {
-        method: 'POST',
-        body: JSON.stringify({ assets, timeframe })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get correlation matrix',
-        status: 0,
-      };
-    }
-  }
-
-  async getMarketSentiment(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/analytics/sentiment`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get market sentiment',
-        status: 0,
-      };
-    }
-  }
-
-  // Profit Tracking
-  async getProfitTracking(type?: string, timeframe?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams();
-      if (type) params.append('type', type);
-      if (timeframe) params.append('timeframe', timeframe);
-      
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/profit-tracking?${params.toString()}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get profit tracking data',
-        status: 0,
-      };
-    }
-  }
-
-  async createProfitGoal(goalData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/profit-tracking/goals`, {
-        method: 'POST',
-        body: JSON.stringify(goalData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create profit goal',
-        status: 0,
-      };
-    }
-  }
-
-  async calculateTaxLiability(taxData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/profit-tracking/tax`, {
-        method: 'POST',
-        body: JSON.stringify(taxData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to calculate tax liability',
-        status: 0,
-      };
-    }
-  }
-
-  // Trading Orders
-  async createOrder(orderData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/trading/orders`, {
-        method: 'POST',
-        body: JSON.stringify(orderData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create order',
-        status: 0,
-      };
-    }
-  }
-
-  async getOrders(status?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = status ? `?status=${status}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/trading/orders${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get orders',
-        status: 0,
-      };
-    }
-  }
-
-  // Paper Trading Agent Integration
-  async createAgentPaperAccount(agentId: string, accountData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts`, {
-        method: 'POST',
-        body: JSON.stringify(accountData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create agent paper trading account',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentPaperAccounts(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent paper trading accounts',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentPaperAccount(agentId: string, accountId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts/${accountId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent paper trading account',
-        status: 0,
-      };
-    }
-  }
-
-  async resetAgentPaperAccount(agentId: string, accountId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/accounts/${accountId}/reset`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to reset agent paper trading account',
-        status: 0,
-      };
-    }
-  }
-
-  async executeAgentPaperOrder(agentId: string, orderData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/orders`, {
-        method: 'POST',
-        body: JSON.stringify(orderData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to execute agent paper order',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentPaperOrders(agentId: string, filters?: any): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.symbol) params.append('symbol', filters.symbol);
-      if (filters?.limit) params.append('limit', filters.limit.toString());
-      
-      const queryString = params.toString() ? `?${params.toString()}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/orders${queryString}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent paper orders',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentPaperPortfolio(agentId: string, accountId?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = accountId ? `?account_id=${accountId}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/portfolio${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent paper portfolio',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentPaperPositions(agentId: string, accountId?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = accountId ? `?account_id=${accountId}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/positions${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent paper positions',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentPaperPerformance(agentId: string, timeRange?: any): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams();
-      if (timeRange?.start) params.append('start_date', timeRange.start);
-      if (timeRange?.end) params.append('end_date', timeRange.end);
-      if (timeRange?.period) params.append('period', timeRange.period);
-      
-      const queryString = params.toString() ? `?${params.toString()}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/performance${queryString}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent paper performance',
-        status: 0,
-      };
-    }
-  }
-
-  async closeAgentPaperPosition(agentId: string, positionId: string, quantity?: number): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/${agentId}/paper-trading/positions/${positionId}/close`, {
-        method: 'POST',
-        body: JSON.stringify({ quantity })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to close agent paper position',
-        status: 0,
-      };
-    }
-  }
-
-  // ==========================================
-  // TRADING FARM BRAIN ENDPOINTS
-  // ==========================================
-
-  async getFarmCalendarData(year: number, month: number): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/calendar/${year}/${month}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm calendar data',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmDailyPerformance(date: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/daily/${date}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm daily performance',
-        status: 0,
-      };
-    }
-  }
-
-  async archiveFarmStrategy(strategyData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/archive/strategy`, {
-        method: 'POST',
-        body: JSON.stringify(strategyData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to archive farm strategy',
-        status: 0,
-      };
-    }
-  }
-
-  async archiveFarmTrade(tradeData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/archive/trade`, {
-        method: 'POST',
-        body: JSON.stringify(tradeData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to archive farm trade',
-        status: 0,
-      };
-    }
-  }
-
-  async archiveFarmDecision(decisionData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/archive/decision`, {
-        method: 'POST',
-        body: JSON.stringify(decisionData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to archive farm decision',
-        status: 0,
-      };
-    }
-  }
-
-  async persistFarmAgentMemory(memoryData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/agent/memory/persist`, {
-        method: 'POST',
-        body: JSON.stringify(memoryData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to persist farm agent memory',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmAgentMemory(agentId: string, memoryType?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = memoryType ? `?memory_type=${memoryType}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/agent/${agentId}/memory${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm agent memory',
-        status: 0,
-      };
-    }
-  }
-
-  async runFarmDataIngestion(fullIngestion: boolean = false): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/ingestion/run`, {
-        method: 'POST',
-        body: JSON.stringify({ full_ingestion: fullIngestion })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to run farm data ingestion',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmIngestionStatus(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/ingestion/status`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm ingestion status',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmComprehensiveAnalytics(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farm/analytics/comprehensive`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm comprehensive analytics',
-        status: 0,
-      };
-    }
-  }
-
-  // ==========================================
-  // KNOWLEDGE GRAPH API METHODS
-  // ==========================================
-
-  async initializeKnowledgeGraph(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/initialize`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to initialize knowledge graph',
-        status: 0,
-      };
-    }
-  }
-
-  async searchKnowledgeGraph(query: string, entityType?: string, limit: number = 10): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams({ query, limit: limit.toString() });
-      if (entityType) params.append('entity_type', entityType);
-      
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/search?${params.toString()}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to search knowledge graph',
-        status: 0,
-      };
-    }
-  }
-
-  async getStrategyPatterns(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/patterns/strategies`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get strategy patterns',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentSpecializations(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/patterns/agents`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent specializations',
-        status: 0,
-      };
-    }
-  }
-
-  async getDecisionCorrelations(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/correlations/decisions`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get decision correlations',
-        status: 0,
-      };
-    }
-  }
-
-  async getEntityTimeline(entityId: string, days: number = 30): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/timeline/${entityId}?days=${days}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get entity timeline',
-        status: 0,
-      };
-    }
-  }
-
-  async getKnowledgeGraphStats(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/knowledge-graph/statistics`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get knowledge graph statistics',
-        status: 0,
-      };
-    }
-  }
-
-  // ==========================================
-  // EXPERT AGENTS API METHODS
-  // ==========================================
-
-  async createExpertAgent(agentType: string, config: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/create`, {
-        method: 'POST',
-        body: JSON.stringify({
-          agent_type: agentType,
-          config: config
-        })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create expert agent',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentsStatus(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/status`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agents status',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentStatus(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/status/${agentId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agent status',
-        status: 0,
-      };
-    }
-  }
-
-  async deleteExpertAgent(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/delete/${agentId}`, {
-        method: 'DELETE'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to delete expert agent',
-        status: 0,
-      };
-    }
-  }
-
-  async analyzeSymbolWithExperts(symbol: string, marketData: any, agentTypes?: string[]): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analyze`, {
-        method: 'POST',
-        body: JSON.stringify({
-          symbol: symbol,
-          market_data: marketData,
-          agent_types: agentTypes
-        })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to analyze symbol with experts',
-        status: 0,
-      };
-    }
-  }
-
-  async quickAnalyzeSymbol(symbol: string, agentTypes?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = agentTypes ? `?agent_types=${agentTypes}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analyze/${symbol}${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to quick analyze symbol',
-        status: 0,
-      };
-    }
-  }
-
-  async assignGoalToExpertAgent(agentId: string, goalConfig: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/goals/${agentId}`, {
-        method: 'POST',
-        body: JSON.stringify(goalConfig)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to assign goal to expert agent',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentGoals(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/goals/${agentId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agent goals',
-        status: 0,
-      };
-    }
-  }
-
-  async updateExpertAgentPerformance(agentId: string, decisionCorrect: boolean, tradeProfitable?: boolean): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/${agentId}`, {
-        method: 'POST',
-        body: JSON.stringify({
-          decision_correct: decisionCorrect,
-          trade_profitable: tradeProfitable
-        })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to update expert agent performance',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentPerformance(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/${agentId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agent performance',
-        status: 0,
-      };
-    }
-  }
-
-  async triggerExpertAgentLearning(agentId: string, learningData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/learning/${agentId}`, {
-        method: 'POST',
-        body: JSON.stringify({
-          learning_data: learningData
-        })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to trigger expert agent learning',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentLearningStatus(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/learning/${agentId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agent learning status',
-        status: 0,
-      };
-    }
-  }
-
-  async optimizeExpertAgent(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/optimize/${agentId}`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to optimize expert agent',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentCoordinationStatus(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/status`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get coordination status',
-        status: 0,
-      };
-    }
-  }
-
-  async configureExpertAgentCoordination(config: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/configure`, {
-        method: 'POST',
-        body: JSON.stringify(config)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to configure coordination',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentTypes(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/types`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agent types',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentsAnalyticsSummary(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analytics/summary`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agents analytics summary',
-        status: 0,
-      };
-    }
-  }
-
-  async listExpertAgents(filters?: { active_only?: boolean; agent_type?: string }): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.active_only) params.append('active_only', 'true');
-      if (filters?.agent_type) params.append('agent_type', filters.agent_type);
-      
-      const queryString = params.toString() ? `?${params.toString()}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/list${queryString}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to list expert agents',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentDetails(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agent details',
-        status: 0,
-      };
-    }
-  }
-
-  async activateExpertAgent(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/activate`, {
-        method: 'PUT'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to activate expert agent',
-        status: 0,
-      };
-    }
-  }
-
-  async deactivateExpertAgent(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/deactivate`, {
-        method: 'PUT'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to deactivate expert agent',
-        status: 0,
-      };
-    }
-  }
-
-  async runExpertAnalysis(symbol: string, config?: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/analyze`, {
-        method: 'POST',
-        body: JSON.stringify({
-          symbol,
-          timeframe: config?.timeframe || 'H1',
-          include_history: config?.include_history !== false,
-          price_history: config?.price_history,
-          market_data: config?.market_data || {}
-        })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to run expert analysis',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertPerformanceSummary(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/summary`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert performance summary',
-        status: 0,
-      };
-    }
-  }
-
-  async optimizeExpertWeights(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/performance/optimize-weights`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to optimize expert weights',
-        status: 0,
-      };
-    }
-  }
-
-  async getExpertAgentMemory(agentId: string, memoryType: string = 'all'): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/memory?memory_type=${memoryType}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get expert agent memory',
-        status: 0,
-      };
-    }
-  }
-
-  async triggerExpertLearning(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/${agentId}/trigger-learning`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to trigger expert learning',
-        status: 0,
-      };
-    }
-  }
-
-  async getCoordinationSettings(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/settings`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get coordination settings',
-        status: 0,
-      };
-    }
-  }
-
-  async updateCoordinationSettings(settings: any): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams();
-      if (settings.coordination_mode) params.append('coordination_mode', settings.coordination_mode);
-      if (settings.consensus_threshold !== undefined) params.append('consensus_threshold', settings.consensus_threshold.toString());
-      
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/expert-agents/coordination/settings?${params.toString()}`, {
-        method: 'PUT'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to update coordination settings',
-        status: 0,
-      };
-    }
-  }
-
-  // ==========================================
-  // FARM MANAGEMENT API METHODS
-  // ==========================================
-
-  async getFarms(): Promise<ApiResponse<Farm[]>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms`);
-      return this.handleResponse<Farm[]>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farms',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarm(farmId: string): Promise<ApiResponse<Farm>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}`);
-      return this.handleResponse<Farm>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmMetrics(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/metrics`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm metrics',
-        status: 0,
-      };
-    }
-  }
-
-  async createFarm(farmData: any): Promise<ApiResponse<Farm>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms`, {
-        method: 'POST',
-        body: JSON.stringify(farmData)
-      });
-      return this.handleResponse<Farm>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create farm',
-        status: 0,
-      };
-    }
-  }
-
-  async updateFarm(farmId: string, farmData: any): Promise<ApiResponse<Farm>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}`, {
-        method: 'PUT',
-        body: JSON.stringify(farmData)
-      });
-      return this.handleResponse<Farm>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to update farm',
-        status: 0,
-      };
-    }
-  }
-
-  async deleteFarm(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}`, {
-        method: 'DELETE'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to delete farm',
-        status: 0,
-      };
-    }
-  }
-
-  async startFarm(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/start`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to start farm',
-        status: 0,
-      };
-    }
-  }
-
-  async pauseFarm(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/pause`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to pause farm',
-        status: 0,
-      };
-    }
-  }
-
-  async stopFarm(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/stop`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to stop farm',
-        status: 0,
-      };
-    }
-  }
-
-  async assignAgentToFarm(farmId: string, agentId: string, role: string = 'primary'): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/agents`, {
-        method: 'POST',
-        body: JSON.stringify({ agent_id: agentId, role })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to assign agent to farm',
-        status: 0,
-      };
-    }
-  }
-
-  async removeAgentFromFarm(farmId: string, agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/agents/${agentId}`, {
-        method: 'DELETE'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to remove agent from farm',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmPerformance(farmId: string, timeframe?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = timeframe ? `?timeframe=${timeframe}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/performance${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm performance',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmAgents(farmId: string): Promise<ApiResponse<FarmAgent[]>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/agents`);
-      return this.handleResponse<FarmAgent[]>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm agents',
-        status: 0,
-      };
-    }
-  }
-
-  async updateFarmConfiguration(farmId: string, config: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/config`, {
-        method: 'PUT',
-        body: JSON.stringify(config)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to update farm configuration',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmRiskMetrics(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/risk`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm risk metrics',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmRealTimeMetrics(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/realtime`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm real-time metrics',
-        status: 0,
-      };
-    }
-  }
-
-  async scaleFarm(farmId: string, targetAgents: number): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/scale`, {
-        method: 'POST',
-        body: JSON.stringify({ target_agents: targetAgents })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to scale farm',
-        status: 0,
-      };
-    }
-  }
-
-  async optimizeFarm(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/optimize`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to optimize farm',
-        status: 0,
-      };
-    }
-  }
-
-  async getFarmCoordinationScore(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/coordination`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get farm coordination score',
-        status: 0,
-      };
-    }
-  }
-
-  async triggerFarmRebalancing(farmId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/farms/${farmId}/rebalance`, {
-        method: 'POST'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to trigger farm rebalancing',
-        status: 0,
-      };
-    }
-  }
-
-  // ==========================================
-  // PREMIUM COMPONENT API METHODS
-  // ==========================================
-
-  // Premium Trading Interface
-  async getAdvancedOrderBook(symbol: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/trading/advanced-orderbook/${symbol}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get advanced order book',
-        status: 0,
-      };
-    }
-  }
-
-  async createAdvancedOrder(orderData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/trading/advanced-orders`, {
-        method: 'POST',
-        body: JSON.stringify(orderData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create advanced order',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Portfolio Analytics
-  async getAdvancedPortfolioAnalytics(timeframe?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = timeframe ? `?timeframe=${timeframe}` : '';
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/advanced-analytics${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get advanced portfolio analytics',
-        status: 0,
-      };
-    }
-  }
-
-  async getPortfolioRiskMetrics(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/risk-metrics`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get portfolio risk metrics',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Charts Data
-  async getAdvancedChartData(symbol: string, timeframe: string, indicators?: string[]): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams({ symbol, timeframe });
-      if (indicators && indicators.length > 0) {
-        params.append('indicators', indicators.join(','));
-      }
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/charts/advanced-data?${params.toString()}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get advanced chart data',
-        status: 0,
-      };
-    }
-  }
-
-  async getTechnicalIndicators(symbol: string, indicators: string[]): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/charts/technical-indicators`, {
-        method: 'POST',
-        body: JSON.stringify({ symbol, indicators })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get technical indicators',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium AI Agent Orchestration
-  async getAgentOrchestrationStatus(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/orchestration/status`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent orchestration status',
-        status: 0,
-      };
-    }
-  }
-
-  async configureAgentOrchestration(config: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/agents/orchestration/configure`, {
-        method: 'POST',
-        body: JSON.stringify(config)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to configure agent orchestration',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Risk Management
-  async getRiskManagementSuite(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/risk/management-suite`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get risk management suite',
-        status: 0,
-      };
-    }
-  }
-
-  async updateRiskLimits(riskLimits: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/risk/limits`, {
-        method: 'PUT',
-        body: JSON.stringify(riskLimits)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to update risk limits',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Strategy Builder
-  async getVisualStrategyBuilder(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/visual-builder`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get visual strategy builder',
-        status: 0,
-      };
-    }
-  }
-
-  async createVisualStrategy(strategyConfig: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/strategies/visual-create`, {
-        method: 'POST',
-        body: JSON.stringify(strategyConfig)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create visual strategy',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Notifications
-  async getNotificationSystem(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications/system`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get notification system',
-        status: 0,
-      };
-    }
-  }
-
-  async sendNotification(notification: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications/send`, {
-        method: 'POST',
-        body: JSON.stringify(notification)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to send notification',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Data Tables
-  async getAdvancedTableData(tableType: string, filters?: any): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams({ table_type: tableType });
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/data/advanced-tables?${params.toString()}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get advanced table data',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Sortable Components Data
-  async getSortablePortfolioData(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/portfolio/sortable-data`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get sortable portfolio data',
-        status: 0,
-      };
-    }
-  }
-
-  async updateSortableOrder(itemType: string, orderedIds: string[]): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/data/sortable-order`, {
-        method: 'PUT',
-        body: JSON.stringify({ item_type: itemType, ordered_ids: orderedIds })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to update sortable order',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Form Components
-  async validateFormData(formType: string, formData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/forms/validate`, {
-        method: 'POST',
-        body: JSON.stringify({ form_type: formType, form_data: formData })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to validate form data',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Real-time Updates
-  async subscribeToRealtimeUpdates(subscriptions: string[]): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/realtime/subscribe`, {
-        method: 'POST',
-        body: JSON.stringify({ subscriptions })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to subscribe to realtime updates',
-        status: 0,
-      };
-    }
-  }
-
-  async unsubscribeFromRealtimeUpdates(subscriptions: string[]): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/realtime/unsubscribe`, {
-        method: 'POST',
-        body: JSON.stringify({ subscriptions })
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to unsubscribe from realtime updates',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium Performance Monitoring
-  async getComponentPerformanceMetrics(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/performance/components`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get component performance metrics',
-        status: 0,
-      };
-    }
-  }
-
-  async reportComponentPerformance(metrics: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/performance/report`, {
-        method: 'POST',
-        body: JSON.stringify(metrics)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to report component performance',
-        status: 0,
-      };
-    }
-  }
-
-  // Premium WebSocket Management
-  async getWebSocketStatus(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/websocket/status`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get WebSocket status',
-        status: 0,
-      };
-    }
-  }
-
-  async initializeWebSocketConnection(config: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/websocket/initialize`, {
-        method: 'POST',
-        body: JSON.stringify(config)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to initialize WebSocket connection',
-        status: 0,
-      };
-    }
-  }
-
-  // ===============================================
-  // ENHANCED DATABASE API METHODS
-  // ===============================================
-
-  // Dashboard Summary
-  async getEnhancedDashboardSummary(): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/dashboard/enhanced-summary`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get enhanced dashboard summary',
-        status: 0,
-      };
-    }
-  }
-
-  // Blockchain Wallets
-  async getBlockchainWallets(userId: string = 'solo_operator'): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/wallets?user_id=${userId}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get blockchain wallets',
-        status: 0,
-      };
-    }
-  }
-
-  async createBlockchainWallet(walletData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/wallets`, {
-        method: 'POST',
-        body: JSON.stringify(walletData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create blockchain wallet',
-        status: 0,
-      };
-    }
-  }
-
-  // Blockchain Transactions
-  async getWalletTransactions(walletId: string, limit: number = 50): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/transactions/${walletId}?limit=${limit}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get wallet transactions',
-        status: 0,
-      };
-    }
-  }
-
-  async createBlockchainTransaction(transactionData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/blockchain/transactions`, {
-        method: 'POST',
-        body: JSON.stringify(transactionData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create blockchain transaction',
-        status: 0,
-      };
-    }
-  }
-
-  // Notifications
-  async getUserNotifications(userId: string = 'solo_operator', unreadOnly: boolean = false, limit: number = 50): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams({
-        user_id: userId,
-        unread_only: unreadOnly.toString(),
-        limit: limit.toString()
-      });
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications?${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get user notifications',
-        status: 0,
-      };
-    }
-  }
-
-  async createNotification(notificationData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications`, {
-        method: 'POST',
-        body: JSON.stringify(notificationData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create notification',
-        status: 0,
-      };
-    }
-  }
-
-  async markNotificationRead(notificationId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/notifications/${notificationId}/read`, {
-        method: 'PUT'
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to mark notification as read',
-        status: 0,
-      };
-    }
-  }
-
-  // System Events
-  async getUnprocessedEvents(limit: number = 100): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/events/unprocessed?limit=${limit}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get unprocessed events',
-        status: 0,
-      };
-    }
-  }
-
-  async createSystemEvent(eventData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/events`, {
-        method: 'POST',
-        body: JSON.stringify(eventData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create system event',
-        status: 0,
-      };
-    }
-  }
-
-  // Real-time Metrics
-  async getRealtimeMetrics(sourceType?: string, sourceId?: string, metricName?: string, hours: number = 24): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams({ hours: hours.toString() });
-      if (sourceType) params.append('source_type', sourceType);
-      if (sourceId) params.append('source_id', sourceId);
-      if (metricName) params.append('metric_name', metricName);
-      
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/metrics/realtime?${params}`);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get realtime metrics',
-        status: 0,
-      };
-    }
-  }
-
-  async recordRealtimeMetric(metricData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/metrics/realtime`, {
-        method: 'POST',
-        body: JSON.stringify(metricData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to record realtime metric',
-        status: 0,
-      };
-    }
-  }
-
-  // ML Predictions
-  async getActivePredictions(predictionType?: string, modelName?: string): Promise<ApiResponse<any>> {
-    try {
-      const params = new URLSearchParams();
-      if (predictionType) params.append('prediction_type', predictionType);
-      if (modelName) params.append('model_name', modelName);
-      
-      const queryString = params.toString();
-      const url = queryString ? `${this.baseUrl}/api/v1/predictions/active?${queryString}` : `${this.baseUrl}/api/v1/predictions/active`;
-      
-      const response = await this.fetchWithTimeout(url);
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get active predictions',
-        status: 0,
-      };
-    }
-  }
-
-  async createMLPrediction(predictionData: any): Promise<ApiResponse<any>> {
-    try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/v1/predictions`, {
-        method: 'POST',
-        body: JSON.stringify(predictionData)
-      });
-      return this.handleResponse(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to create ML prediction',
-        status: 0,
-      };
-    }
-  }
-
-  // ===============================================
-  // ENHANCED DASHBOARD ANALYTICS
-  // ===============================================
-
-  async getPortfolioAnalytics(userId: string = 'solo_operator'): Promise<ApiResponse<any>> {
-    try {
-      // Combine multiple API calls for comprehensive analytics
-      const [summary, wallets, notifications, metrics] = await Promise.all([
-        this.getEnhancedDashboardSummary(),
-        this.getBlockchainWallets(userId),
-        this.getUserNotifications(userId, true, 10), // Get unread notifications
-        this.getRealtimeMetrics('portfolio', userId, undefined, 24)
-      ]);
-
-      return {
-        data: {
-          summary: summary.data,
-          wallets: wallets.data,
-          notifications: notifications.data,
-          metrics: metrics.data
-        },
-        status: 200
-      };
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get portfolio analytics',
-        status: 0,
-      };
-    }
-  }
-
-  async getAgentPerformanceMetrics(agentId: string): Promise<ApiResponse<any>> {
-    try {
-      const metrics = await this.getRealtimeMetrics('agent', agentId, undefined, 168); // 7 days
-      return metrics;
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Failed to get agent performance metrics',
-        status: 0,
-      };
-    }
-  }
-
-  // Generic HTTP methods for backward compatibility
-  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
-    try {
-      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
-      const response = await this.fetchWithTimeout(url);
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'GET request failed',
-        status: 0,
-      };
-    }
-  }
-
-  async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    try {
-      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
-      const response = await this.fetchWithTimeout(url, {
-        method: 'POST',
-        body: data ? JSON.stringify(data) : undefined
-      });
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'POST request failed',
-        status: 0,
-      };
-    }
-  }
-
-  async put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    try {
-      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
-      const response = await this.fetchWithTimeout(url, {
-        method: 'PUT',
-        body: data ? JSON.stringify(data) : undefined
-      });
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'PUT request failed',
-        status: 0,
-      };
-    }
-  }
-
-  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
-    try {
-      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
-      const response = await this.fetchWithTimeout(url, {
-        method: 'DELETE'
-      });
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'DELETE request failed',
-        status: 0,
-      };
+      return false
     }
   }
 }
 
 // Export singleton instance
-export const backendApi = new BackendApiClient();
-export const backendClient = backendApi; // Alias for compatibility
+export const backendClient = new BackendClient()
 
-// Export class for testing
-export { BackendApiClient };
+// Export for custom instances
+export { BackendClient }
+
+// Export all types
+export type {
+  PortfolioSummary,
+  Position,
+  AgentStatus,
+  AgentOverview,
+  MarketData,
+  TradingOrder,
+  OrderResponse,
+  TradingSignal,
+  RiskMetrics,
+  MonitoringHealth,
+  SystemMetrics,
+  Alert,
+  LLMRequest,
+  LLMResponse,
+  SentimentAnalysis,
+  TradingDecision
+}
