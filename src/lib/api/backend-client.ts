@@ -479,6 +479,14 @@ class BackendClient {
     this.baseURL = url
   }
 
+  setBackendUrl(url: string) {
+    this.baseURL = url
+  }
+
+  getBackendUrl(): string {
+    return this.baseURL
+  }
+
   setTimeout(timeout: number) {
     this.timeout = timeout
   }
@@ -491,10 +499,34 @@ class BackendClient {
       return false
     }
   }
+
+  // Additional methods needed by the hooks
+  async getHealth(): Promise<APIResponse<any>> {
+    return this.request('/health')
+  }
+
+  async getPortfolioPositions(): Promise<APIResponse<Position[]>> {
+    return this.getPositions()
+  }
+
+  async getMarketData(symbol: string): Promise<APIResponse<MarketData>> {
+    return this.getLiveMarketData(symbol)
+  }
+
+  async getTradingSignals(): Promise<APIResponse<any[]>> {
+    return this.generateTradingSignals(['BTCUSD', 'ETHUSD', 'SOLUSD'])
+  }
+
+  async getPerformanceMetrics(): Promise<APIResponse<any>> {
+    return this.getPerformanceReport()
+  }
 }
 
 // Export singleton instance
 export const backendClient = new BackendClient()
+
+// Export as backendApi for compatibility with existing code
+export const backendApi = backendClient
 
 // Export for custom instances
 export { BackendClient }

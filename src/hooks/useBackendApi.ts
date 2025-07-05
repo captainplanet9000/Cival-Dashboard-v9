@@ -6,15 +6,32 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   backendApi, 
-  ApiResponse, 
+  APIResponse as ApiResponse, 
   PortfolioSummary, 
   Position, 
-  TradingSignal, 
   AgentStatus, 
-  MarketOverview, 
-  PerformanceMetrics,
-  HealthCheck 
+  MarketData as MarketOverview
 } from '@/lib/api/backend-client';
+
+// Define missing types for compatibility
+type TradingSignal = {
+  symbol: string;
+  signal: string;
+  confidence: number;
+  timestamp: string;
+};
+
+type PerformanceMetrics = {
+  total_pnl: number;
+  win_rate: number;
+  sharpe_ratio: number;
+};
+
+type HealthCheck = {
+  status: string;
+  service: string;
+  timestamp: string;
+};
 
 // Generic hook for API calls with loading and error states
 export function useApiCall<T>(
@@ -102,7 +119,8 @@ export function useApiCall<T>(
   }, [fetchData]);
 
   useEffect(() => {
-    if (options.immediate !== false) {
+    // Only run on client side
+    if (typeof window !== 'undefined' && options.immediate !== false) {
       fetchData();
     }
     
@@ -114,7 +132,8 @@ export function useApiCall<T>(
   }, dependencies);
 
   useEffect(() => {
-    if (options.refreshInterval && options.refreshInterval > 0) {
+    // Only run on client side
+    if (typeof window !== 'undefined' && options.refreshInterval && options.refreshInterval > 0) {
       intervalRef.current = setInterval(() => fetchData(), options.refreshInterval);
       
       return () => {
@@ -159,19 +178,34 @@ export function useBackendHealth() {
 
 export function useBackendConnection() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
-  const [backendUrl, setBackendUrl] = useState(backendApi.getBackendUrl());
+  const [backendUrl, setBackendUrl] = useState(() => {
+    // Safe initialization for SSR
+    if (typeof window === 'undefined') {
+      return 'http://localhost:8000'; // Default for SSR
+    }
+    return backendApi.getBackendUrl?.() || 'http://localhost:8000';
+  });
 
   const testConnection = useCallback(async () => {
-    const connected = await backendApi.testConnection();
-    setIsConnected(connected);
-    return connected;
+    try {
+      const connected = await backendApi.testConnection();
+      setIsConnected(connected);
+      return connected;
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      setIsConnected(false);
+      return false;
+    }
   }, []);
 
   useEffect(() => {
-    testConnection();
-    // Test connection every minute
-    const interval = setInterval(testConnection, 60000);
-    return () => clearInterval(interval);
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      testConnection();
+      // Test connection every minute
+      const interval = setInterval(testConnection, 60000);
+      return () => clearInterval(interval);
+    }
   }, [testConnection]);
 
   return {
@@ -206,7 +240,7 @@ export function usePortfolioPositions(refreshInterval = 15000) {
 // Market data hooks
 export function useMarketOverview(refreshInterval = 30000) {
   return useApiCall(
-    () => backendApi.getMarketOverview(),
+    () => backendApi.getWatchlist(),
     [],
     { refreshInterval }
   );
