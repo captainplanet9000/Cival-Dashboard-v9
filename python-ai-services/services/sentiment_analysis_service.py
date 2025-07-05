@@ -269,3 +269,8 @@ class SentimentAnalysisService:
 
 # Global service instance
 sentiment_service = SentimentAnalysisService()
+
+# Factory function for service registry
+def create_sentiment_analysis_service() -> SentimentAnalysisService:
+    """Factory function to create sentiment analysis service"""
+    return sentiment_service
