@@ -66,21 +66,21 @@ class GoalsService {
 
   private async checkSupabaseAvailability() {
     try {
-      // Check if Supabase is configured and available
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      // Check if Supabase is available using the new client
+      const { isSupabaseAvailable } = await import('@/lib/supabase/client')
+      const available = await isSupabaseAvailable()
       
-      if (supabaseUrl && supabaseKey) {
+      if (available) {
         // Try to dynamically import and use Supabase service
         const { supabaseGoalsService } = await import('@/lib/services/supabase-goals-service')
         if (supabaseGoalsService) {
           this.useSupabase = true
-          console.log('🟢 Goals service: Using Supabase for persistence')
+          console.log('🟢 Goals service: Using Railway Supabase for persistence')
           // Load goals from Supabase
           await this.loadFromSupabase()
         }
       } else {
-        console.log('🟡 Goals service: Using localStorage (Supabase not configured)')
+        console.log('🟡 Goals service: Using localStorage (Supabase not available)')
       }
     } catch (error) {
       console.log('🟡 Goals service: Supabase unavailable, using localStorage fallback')

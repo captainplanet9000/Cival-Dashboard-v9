@@ -1,4 +1,4 @@
-import { supabaseService } from './supabase-service'
+import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 
 // Type definitions based on Supabase schema
@@ -42,7 +42,7 @@ export interface UpdateFarmInput {
 
 export class SupabaseFarmsService {
   private static instance: SupabaseFarmsService
-  private client = supabaseService
+  private client = supabase
 
   private constructor() {}
 
@@ -55,7 +55,7 @@ export class SupabaseFarmsService {
 
   async getAllFarms(): Promise<SupabaseFarm[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('farms')
         .select('*')
         .order('created_at', { ascending: false })
@@ -74,7 +74,7 @@ export class SupabaseFarmsService {
 
   async getFarmById(farmId: string): Promise<SupabaseFarm | null> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('farms')
         .select('*')
         .eq('farm_id', farmId)
@@ -110,7 +110,7 @@ export class SupabaseFarmsService {
         is_active: true
       }
 
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('farms')
         .insert(newFarm)
         .select()
@@ -130,7 +130,7 @@ export class SupabaseFarmsService {
 
   async updateFarm(farmId: string, updates: UpdateFarmInput): Promise<SupabaseFarm> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('farms')
         .update(updates)
         .eq('farm_id', farmId)
@@ -151,7 +151,7 @@ export class SupabaseFarmsService {
 
   async deleteFarm(farmId: string): Promise<boolean> {
     try {
-      const { error } = await this.client.client
+      const { error } = await this.client
         .from('farms')
         .delete()
         .eq('farm_id', farmId)
@@ -181,7 +181,7 @@ export class SupabaseFarmsService {
 
   async getActiveFarms(): Promise<SupabaseFarm[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('farms')
         .select('*')
         .eq('is_active', true)
@@ -201,7 +201,7 @@ export class SupabaseFarmsService {
 
   async getFarmsByType(farmType: string): Promise<SupabaseFarm[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('farms')
         .select('*')
         .eq('farm_type', farmType)
@@ -254,7 +254,7 @@ export class SupabaseFarmsService {
 
   // Real-time subscription to farm changes
   subscribeToFarms(callback: (farms: SupabaseFarm[]) => void) {
-    const subscription = this.client.client
+    const subscription = this.client
       .channel('farms_changes')
       .on(
         'postgres_changes',

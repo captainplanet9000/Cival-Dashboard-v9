@@ -70,21 +70,21 @@ class FarmsService {
 
   private async checkSupabaseAvailability() {
     try {
-      // Check if Supabase is configured and available
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      // Check if Supabase is available using the new client
+      const { isSupabaseAvailable } = await import('@/lib/supabase/client')
+      const available = await isSupabaseAvailable()
       
-      if (supabaseUrl && supabaseKey) {
+      if (available) {
         // Try to dynamically import and use Supabase service
         const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
         if (supabaseFarmsService) {
           this.useSupabase = true
-          console.log('🟢 Farms service: Using Supabase for persistence')
+          console.log('🟢 Farms service: Using Railway Supabase for persistence')
           // Load farms from Supabase
           await this.loadFromSupabase()
         }
       } else {
-        console.log('🟡 Farms service: Using localStorage (Supabase not configured)')
+        console.log('🟡 Farms service: Using localStorage (Supabase not available)')
       }
     } catch (error) {
       console.log('🟡 Farms service: Supabase unavailable, using localStorage fallback')

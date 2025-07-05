@@ -1,4 +1,4 @@
-import { supabaseService } from './supabase-service'
+import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 
 // Type definitions based on Supabase schema
@@ -47,7 +47,7 @@ export interface UpdateGoalInput {
 
 export class SupabaseGoalsService {
   private static instance: SupabaseGoalsService
-  private client = supabaseService
+  private client = supabase
 
   private constructor() {}
 
@@ -60,7 +60,7 @@ export class SupabaseGoalsService {
 
   async getAllGoals(): Promise<SupabaseGoal[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .select('*')
         .order('created_at', { ascending: false })
@@ -79,7 +79,7 @@ export class SupabaseGoalsService {
 
   async getGoalById(goalId: string): Promise<SupabaseGoal | null> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .select('*')
         .eq('goal_id', goalId)
@@ -116,7 +116,7 @@ export class SupabaseGoalsService {
         deadline: goalData.deadline
       }
 
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .insert(newGoal)
         .select()
@@ -136,7 +136,7 @@ export class SupabaseGoalsService {
 
   async updateGoal(goalId: string, updates: UpdateGoalInput): Promise<SupabaseGoal> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .update(updates)
         .eq('goal_id', goalId)
@@ -157,7 +157,7 @@ export class SupabaseGoalsService {
 
   async deleteGoal(goalId: string): Promise<boolean> {
     try {
-      const { error } = await this.client.client
+      const { error } = await this.client
         .from('goals')
         .delete()
         .eq('goal_id', goalId)
@@ -213,7 +213,7 @@ export class SupabaseGoalsService {
 
   async getActiveGoals(): Promise<SupabaseGoal[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .select('*')
         .eq('completion_status', 'active')
@@ -234,7 +234,7 @@ export class SupabaseGoalsService {
 
   async getCompletedGoals(): Promise<SupabaseGoal[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .select('*')
         .eq('completion_status', 'completed')
@@ -254,7 +254,7 @@ export class SupabaseGoalsService {
 
   async getGoalsByType(goalType: string): Promise<SupabaseGoal[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .select('*')
         .eq('goal_type', goalType)
@@ -274,7 +274,7 @@ export class SupabaseGoalsService {
 
   async getGoalsByPriority(priority: number): Promise<SupabaseGoal[]> {
     try {
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .select('*')
         .eq('priority', priority)
@@ -330,7 +330,7 @@ export class SupabaseGoalsService {
       const futureDate = new Date()
       futureDate.setDate(futureDate.getDate() + daysAhead)
 
-      const { data, error } = await this.client.client
+      const { data, error } = await this.client
         .from('goals')
         .select('*')
         .eq('completion_status', 'active')
@@ -352,7 +352,7 @@ export class SupabaseGoalsService {
 
   // Real-time subscription to goal changes
   subscribeToGoals(callback: (goals: SupabaseGoal[]) => void) {
-    const subscription = this.client.client
+    const subscription = this.client
       .channel('goals_changes')
       .on(
         'postgres_changes',
