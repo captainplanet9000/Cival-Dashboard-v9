@@ -39,6 +39,10 @@ import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creati
 // Import shared data manager to prevent duplicate requests
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
+// Import Supabase services for enhanced integration
+import { supabaseAgentsService } from '@/lib/services/supabase-agents-service'
+import { supabaseDashboardService } from '@/lib/services/supabase-dashboard-service'
+
 // Import new autonomous expert agents panel
 import { AutonomousExpertAgentsPanel } from './AutonomousExpertAgentsPanel'
 
@@ -60,10 +64,31 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
   const sharedData = useSharedRealtimeData()
   const [realAgentCount, setRealAgentCount] = useState(0)
   const [activeAgentCount, setActiveAgentCount] = useState(0)
+  const [useSupabase, setUseSupabase] = useState(false)
+  const [supabaseAgents, setSupabaseAgents] = useState<any[]>([])
   
-  // Get real agent count from persistent service
+  // Check Supabase availability and load agent data
   useEffect(() => {
-    const updateAgentCounts = () => {
+    const initializeAgentData = async () => {
+      try {
+        // Try to load from Supabase first
+        const agents = await supabaseAgentsService.getAllAgents()
+        const activeSupabaseAgents = agents.filter(a => a.is_active)
+        
+        setSupabaseAgents(agents)
+        setUseSupabase(true)
+        setRealAgentCount(agents.length)
+        setActiveAgentCount(activeSupabaseAgents.length)
+        
+        console.log(`✅ Loaded ${agents.length} agents from Supabase (${activeSupabaseAgents.length} active)`)
+      } catch (error) {
+        console.log('⚠️ Supabase unavailable, using local data:', error)
+        setUseSupabase(false)
+        updateLocalAgentCounts()
+      }
+    }
+    
+    const updateLocalAgentCounts = () => {
       const persistentAgents = persistentAgentService.getAllAgents()
       const paperAgents = paperTradingEngine.getAllAgents()
       
@@ -75,19 +100,19 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
       setActiveAgentCount(activeCount)
     }
     
-    updateAgentCounts()
+    initializeAgentData()
     
     // Listen for agent updates
-    persistentAgentService.on('agentCreated', updateAgentCounts)
-    persistentAgentService.on('agentStarted', updateAgentCounts)
-    persistentAgentService.on('agentStopped', updateAgentCounts)
-    persistentAgentService.on('agentUpdated', updateAgentCounts)
+    persistentAgentService.on('agentCreated', updateLocalAgentCounts)
+    persistentAgentService.on('agentStarted', updateLocalAgentCounts)
+    persistentAgentService.on('agentStopped', updateLocalAgentCounts)
+    persistentAgentService.on('agentUpdated', updateLocalAgentCounts)
     
     return () => {
-      persistentAgentService.off('agentCreated', updateAgentCounts)
-      persistentAgentService.off('agentStarted', updateAgentCounts)
-      persistentAgentService.off('agentStopped', updateAgentCounts)
-      persistentAgentService.off('agentUpdated', updateAgentCounts)
+      persistentAgentService.off('agentCreated', updateLocalAgentCounts)
+      persistentAgentService.off('agentStarted', updateLocalAgentCounts)
+      persistentAgentService.off('agentStopped', updateLocalAgentCounts)
+      persistentAgentService.off('agentUpdated', updateLocalAgentCounts)
     }
   }, [])
   
@@ -203,29 +228,92 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
                     size="sm"
                     onClick={async () => {
                       try {
-                        // Create agent through persistent service
-                        const agentId = await persistentAgentService.createAgent({
-                          name: expert.name,
-                          strategy: expert.id,
-                          initialCapital: 10000,
-                          riskLimits: {
-                            maxPositionSize: 5,
-                            maxDailyLoss: 500,
-                            stopLossEnabled: true,
-                            takeProfitEnabled: true
-                          },
-                          parameters: {
-                            riskPerTrade: 0.02,
-                            maxPositions: 5,
-                            stopLoss: 0.05,
-                            takeProfit: 0.1
+                        let agentId: string | null = null
+                        
+                        if (useSupabase) {
+                          // Create agent in Supabase first
+                          const supabaseAgent = await supabaseAgentsService.createAgent({
+                            name: expert.name,
+                            agent_type: 'trading',
+                            strategy: expert.id,
+                            initial_capital: 10000,
+                            configuration: {
+                              parameters: {
+                                riskPerTrade: 0.02,
+                                maxPositions: 5,
+                                stopLoss: 0.05,
+                                takeProfit: 0.1
+                              }
+                            },
+                            risk_limits: {
+                              maxPositionSize: 5,
+                              maxDailyLoss: 500,
+                              stopLossEnabled: true,
+                              takeProfitEnabled: true
+                            }
+                          })
+                          
+                          if (supabaseAgent) {
+                            agentId = supabaseAgent.agent_id
+                            // Also create in local persistent service for compatibility
+                            await persistentAgentService.createAgent({
+                              name: expert.name,
+                              strategy: expert.id,
+                              initialCapital: 10000,
+                              riskLimits: {
+                                maxPositionSize: 5,
+                                maxDailyLoss: 500,
+                                stopLossEnabled: true,
+                                takeProfitEnabled: true
+                              },
+                              parameters: {
+                                riskPerTrade: 0.02,
+                                maxPositions: 5,
+                                stopLoss: 0.05,
+                                takeProfit: 0.1
+                              }
+                            })
+                            
+                            await supabaseAgentsService.updateAgentStatus(agentId, 'active')
+                            console.log(`✅ Created agent in Supabase: ${supabaseAgent.agent_id}`)
                           }
-                        })
+                        } else {
+                          // Fallback to local creation
+                          agentId = await persistentAgentService.createAgent({
+                            name: expert.name,
+                            strategy: expert.id,
+                            initialCapital: 10000,
+                            riskLimits: {
+                              maxPositionSize: 5,
+                              maxDailyLoss: 500,
+                              stopLossEnabled: true,
+                              takeProfitEnabled: true
+                            },
+                            parameters: {
+                              riskPerTrade: 0.02,
+                              maxPositions: 5,
+                              stopLoss: 0.05,
+                              takeProfit: 0.1
+                            }
+                          })
+                        }
                         
                         if (agentId) {
                           // Start the agent immediately
                           await persistentAgentService.startAgent(agentId)
                           toast.success(`${expert.name} deployed and started successfully`)
+                          
+                          // Refresh the agent counts
+                          setTimeout(() => {
+                            if (useSupabase) {
+                              // Refresh from Supabase
+                              supabaseAgentsService.getAllAgents().then(agents => {
+                                setSupabaseAgents(agents)
+                                setRealAgentCount(agents.length)
+                                setActiveAgentCount(agents.filter(a => a.is_active).length)
+                              })
+                            }
+                          }, 1000)
                         } else {
                           toast.error(`Failed to deploy ${expert.name}`)
                         }
@@ -278,6 +366,64 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
     try {
       setLoading(true)
       
+      let performanceData = []
+      
+      // Try to get data from Supabase first
+      try {
+        const supabaseAgents = await supabaseAgentsService.getAllAgents()
+        
+        if (supabaseAgents.length > 0) {
+          console.log(`✅ Loading performance data from Supabase (${supabaseAgents.length} agents)`)
+          
+          // Process Supabase agents
+          for (const agent of supabaseAgents) {
+            const performance = agent.performance_metrics as any
+            const combinedData = {
+              agentId: agent.agent_id,
+              name: agent.name,
+              status: agent.status,
+              strategy: agent.strategy,
+              
+              // Performance metrics from Supabase
+              portfolioValue: agent.current_capital,
+              pnl: performance?.totalPnL || 0,
+              winRate: performance?.winRate || 0,
+              tradeCount: performance?.totalTrades || 0,
+              sharpeRatio: performance?.sharpeRatio || 0,
+              
+              // Enhanced metrics
+              maxDrawdown: performance?.maxDrawdown || 0,
+              annualizedReturn: performance?.totalPnL / Math.max(agent.initial_capital, 1),
+              volatility: performance?.volatility || 0.15,
+              profitFactor: performance?.profitFactor || 1.2,
+              
+              // Trade statistics
+              averageWin: performance?.avgTradeSize || 150,
+              averageLoss: performance?.avgTradeSize || 100,
+              winningTrades: Math.floor((performance?.totalTrades || 0) * (performance?.winRate || 0) / 100),
+              losingTrades: Math.floor((performance?.totalTrades || 0) * (1 - (performance?.winRate || 0) / 100)),
+              
+              // Status data
+              activePositions: 0, // Would need to query paper trading
+              pendingOrders: 0, // Would need to query paper trading
+              
+              lastUpdated: agent.updated_at
+            }
+            
+            performanceData.push(combinedData)
+          }
+          
+          setRealPerformanceData(performanceData)
+          setLoading(false)
+          return
+        }
+      } catch (supabaseError) {
+        console.log('⚠️ Supabase unavailable, using local data:', supabaseError)
+      }
+      
+      // Fallback to local data sources
+      console.log('📊 Loading performance data from local sources')
+      
       // Get persistent agents (primary source)
       const persistentAgents = persistentAgentService.getAllAgents()
       
@@ -286,8 +432,6 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
       
       // Get lifecycle agents for additional data
       const lifecycleAgents = await agentLifecycleManager.getAllAgents()
-      
-      const performanceData = []
       
       // Process persistent agents (most accurate data)
       for (const agent of persistentAgents) {
@@ -927,6 +1071,25 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
   const { state, actions } = useDashboardConnection('agents')
   const [agentSubTab, setAgentSubTab] = useState('overview')
   const [agentUpdateTrigger, setAgentUpdateTrigger] = useState(0)
+  const [supabaseConnected, setSupabaseConnected] = useState(false)
+  const [dashboardSummary, setDashboardSummary] = useState<any>(null)
+  
+  // Check Supabase connectivity and load dashboard summary
+  useEffect(() => {
+    const checkSupabaseAndLoadData = async () => {
+      try {
+        const summary = await supabaseDashboardService.getDashboardSummary()
+        setDashboardSummary(summary)
+        setSupabaseConnected(true)
+        console.log('✅ Connected to Supabase dashboard service')
+      } catch (error) {
+        console.log('⚠️ Supabase dashboard service unavailable:', error)
+        setSupabaseConnected(false)
+      }
+    }
+    
+    checkSupabaseAndLoadData()
+  }, [agentUpdateTrigger])
   
   // Inter-tab communication setup
   useEffect(() => {
@@ -1146,14 +1309,30 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <Badge variant="secondary" className="text-xs">Premium Enhanced</Badge>
             </CardTitle>
             <CardDescription>
-              {activeAgents} active agents • {totalAgents} total • ${((totalPortfolioValue || 0)).toLocaleString()} managed • Premium Components Integrated
+              {dashboardSummary ? 
+                `${dashboardSummary.agents.active} active agents • ${dashboardSummary.agents.total} total • $${(dashboardSummary.agents.totalCapital || 0).toLocaleString()} managed` :
+                `${activeAgents} active agents • ${totalAgents} total • $${((totalPortfolioValue || 0)).toLocaleString()} managed`
+              } • Premium Components Integrated
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Badge 
+              variant={supabaseConnected ? "default" : "secondary"} 
+              className={`text-xs ${supabaseConnected ? 'bg-green-100 text-green-800' : ''}`}
+            >
+              {supabaseConnected ? '🟢 Supabase' : '🟡 Local'}
+            </Badge>
             <Badge variant="outline" className="text-xs">
               {agentsConnected ? 'Connected' : 'Disconnected'}
             </Badge>
-            <Button size="sm" variant="ghost" onClick={refreshAgents}>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => {
+                refreshAgents()
+                setAgentUpdateTrigger(prev => prev + 1)
+              }}
+            >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -1167,8 +1346,8 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Total P&L</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${(totalPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${(totalPnL || 0).toFixed(2)}
+              <div className={`text-2xl font-bold ${(dashboardSummary?.agents.totalPnL || totalPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${(dashboardSummary?.agents.totalPnL || totalPnL || 0).toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -1178,7 +1357,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Avg Win Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{(avgWinRate || 0).toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{(dashboardSummary?.agents.averageWinRate || avgWinRate || 0).toFixed(1)}%</div>
             </CardContent>
           </Card>
           
@@ -1187,7 +1366,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Total Trades</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{paperTradingData?.recentTrades.length || 0}</div>
+              <div className="text-2xl font-bold">{dashboardSummary?.trading.totalTrades || paperTradingData?.recentTrades.length || 0}</div>
             </CardContent>
           </Card>
           

@@ -137,10 +137,13 @@ export class RealPaperTradingEngine extends EventEmitter {
   private isRunning = false
   private priceUpdateInterval?: NodeJS.Timeout
   private tradingInterval?: NodeJS.Timeout
+  private useSupabase = false
+  private defaultSessionId?: string
 
   constructor() {
     super()
     this.initializeMarketData()
+    this.initializeSupabase()
   }
 
   // Initialize with realistic market data
@@ -180,6 +183,34 @@ export class RealPaperTradingEngine extends EventEmitter {
         timestamp: new Date()
       })
     })
+  }
+
+  // Initialize Supabase integration
+  private async initializeSupabase() {
+    if (typeof window === 'undefined') return // Only in browser
+    
+    try {
+      const { isSupabaseAvailable } = await import('@/lib/supabase/client')
+      const available = await isSupabaseAvailable()
+      
+      if (available) {
+        this.useSupabase = true
+        console.log('🟢 Paper Trading Engine: Using Supabase for trade persistence')
+        
+        // Create default trading session
+        const { supabaseTradingService } = await import('@/lib/services/supabase-trading-service')
+        const session = await supabaseTradingService.createTradingSession({
+          name: 'Default Paper Trading Session',
+          description: 'Default session for paper trading engine'
+        })
+        this.defaultSessionId = session.id
+      } else {
+        console.log('🟡 Paper Trading Engine: Supabase not available')
+      }
+    } catch (error) {
+      console.log('🟡 Paper Trading Engine: Supabase unavailable, trades will not be persisted')
+      this.useSupabase = false
+    }
   }
 
   // Start the trading engine
@@ -506,6 +537,9 @@ export class RealPaperTradingEngine extends EventEmitter {
     // Update performance
     agent.performance.totalTrades++
     
+    // Save trade to Supabase if available
+    this.saveTradeToDB(order, transaction, agent.id)
+    
     this.emit('orderFilled', order, transaction)
     console.log(`✅ Order filled: ${order.side} ${order.quantity} ${order.symbol} @ $${fillPrice}`)
   }
@@ -553,6 +587,46 @@ export class RealPaperTradingEngine extends EventEmitter {
       const realizedPnL = (price - position.averagePrice) * quantity
       position.realizedPnL += realizedPnL
       position.quantity -= quantity
+    }
+  }
+
+  // Save trade to Supabase database
+  private async saveTradeToDB(order: Order, transaction: Transaction, agentId: string) {
+    if (!this.useSupabase || !this.defaultSessionId) return
+    
+    try {
+      const { supabaseTradingService } = await import('@/lib/services/supabase-trading-service')
+      
+      // Create trade record in Supabase
+      await supabaseTradingService.createTrade({
+        session_id: this.defaultSessionId,
+        agent_id: agentId,
+        order_id: order.id,
+        symbol: order.symbol,
+        side: order.side,
+        order_type: order.type,
+        quantity: order.quantity,
+        price: transaction.price,
+        strategy_name: this.agents.get(agentId)?.strategy.name,
+        reasoning: `Automated ${order.type} order execution`,
+        market_conditions: {
+          timestamp: transaction.timestamp,
+          total: transaction.total,
+          fees: transaction.fees
+        }
+      })
+      
+      // Execute the trade (mark as filled)
+      await supabaseTradingService.executeTrade(order.id, {
+        avg_fill_price: transaction.price,
+        filled_quantity: order.quantity,
+        commission: transaction.fees,
+        slippage: 0
+      })
+      
+      console.log(`💾 Trade saved to Supabase: ${order.side} ${order.quantity} ${order.symbol}`)
+    } catch (error) {
+      console.error('Failed to save trade to Supabase:', error)
     }
   }
 

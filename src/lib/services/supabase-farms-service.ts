@@ -1,43 +1,47 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 
-// Type definitions based on Supabase schema
+// Type definitions based on Supabase farm_configurations schema
 export interface SupabaseFarm {
   farm_id: string
   name: string
-  description?: string
-  farm_type: string
-  configuration: Record<string, any>
-  wallet_id?: string
-  total_allocated_usd: number
-  performance_metrics: Record<string, any>
-  risk_metrics: Record<string, any>
-  agent_count: number
-  is_active: boolean
+  strategy_type: string
+  target_allocation: number
+  max_agents: number
+  min_agents: number
+  risk_tolerance: number
+  performance_requirements: Record<string, any>
+  agent_selection_criteria: Record<string, any>
+  rebalancing_frequency: number
+  auto_assignment_enabled: boolean
   created_at: string
   updated_at: string
 }
 
 export interface CreateFarmInput {
   name: string
-  description?: string
-  farm_type: string
-  configuration?: Record<string, any>
-  wallet_id?: string
-  total_allocated_usd?: number
-  agent_count?: number
+  strategy_type: string
+  target_allocation?: number
+  max_agents?: number
+  min_agents?: number
+  risk_tolerance?: number
+  performance_requirements?: Record<string, any>
+  agent_selection_criteria?: Record<string, any>
+  rebalancing_frequency?: number
+  auto_assignment_enabled?: boolean
 }
 
 export interface UpdateFarmInput {
   name?: string
-  description?: string
-  farm_type?: string
-  configuration?: Record<string, any>
-  total_allocated_usd?: number
-  performance_metrics?: Record<string, any>
-  risk_metrics?: Record<string, any>
-  agent_count?: number
-  is_active?: boolean
+  strategy_type?: string
+  target_allocation?: number
+  max_agents?: number
+  min_agents?: number
+  risk_tolerance?: number
+  performance_requirements?: Record<string, any>
+  agent_selection_criteria?: Record<string, any>
+  rebalancing_frequency?: number
+  auto_assignment_enabled?: boolean
 }
 
 export class SupabaseFarmsService {
@@ -56,7 +60,7 @@ export class SupabaseFarmsService {
   async getAllFarms(): Promise<SupabaseFarm[]> {
     try {
       const { data, error } = await this.client
-        .from('farms')
+        .from('farm_configurations')
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -75,7 +79,7 @@ export class SupabaseFarmsService {
   async getFarmById(farmId: string): Promise<SupabaseFarm | null> {
     try {
       const { data, error } = await this.client
-        .from('farms')
+        .from('farm_configurations')
         .select('*')
         .eq('farm_id', farmId)
         .single()
@@ -99,19 +103,27 @@ export class SupabaseFarmsService {
     try {
       const newFarm = {
         name: farmData.name,
-        description: farmData.description,
-        farm_type: farmData.farm_type,
-        configuration: farmData.configuration || {},
-        wallet_id: farmData.wallet_id,
-        total_allocated_usd: farmData.total_allocated_usd || 0,
-        performance_metrics: {},
-        risk_metrics: {},
-        agent_count: farmData.agent_count || 0,
-        is_active: true
+        strategy_type: farmData.strategy_type,
+        target_allocation: farmData.target_allocation || 10000,
+        max_agents: farmData.max_agents || 10,
+        min_agents: farmData.min_agents || 1,
+        risk_tolerance: farmData.risk_tolerance || 0.5,
+        performance_requirements: farmData.performance_requirements || {
+          min_sharpe_ratio: 1.0,
+          max_drawdown: 0.15,
+          min_win_rate: 0.55
+        },
+        agent_selection_criteria: farmData.agent_selection_criteria || {
+          strategy_compatibility: true,
+          performance_threshold: 0.1,
+          risk_alignment: true
+        },
+        rebalancing_frequency: farmData.rebalancing_frequency || 24,
+        auto_assignment_enabled: farmData.auto_assignment_enabled !== false
       }
 
       const { data, error } = await this.client
-        .from('farms')
+        .from('farm_configurations')
         .insert(newFarm)
         .select()
         .single()
@@ -131,7 +143,7 @@ export class SupabaseFarmsService {
   async updateFarm(farmId: string, updates: UpdateFarmInput): Promise<SupabaseFarm> {
     try {
       const { data, error } = await this.client
-        .from('farms')
+        .from('farm_configurations')
         .update(updates)
         .eq('farm_id', farmId)
         .select()
@@ -152,7 +164,7 @@ export class SupabaseFarmsService {
   async deleteFarm(farmId: string): Promise<boolean> {
     try {
       const { error } = await this.client
-        .from('farms')
+        .from('farm_configurations')
         .delete()
         .eq('farm_id', farmId)
 
@@ -169,22 +181,22 @@ export class SupabaseFarmsService {
   }
 
   async updateFarmStatus(farmId: string, isActive: boolean): Promise<SupabaseFarm> {
-    return this.updateFarm(farmId, { is_active: isActive })
+    return this.updateFarm(farmId, { auto_assignment_enabled: isActive })
   }
 
   async updateFarmPerformance(
     farmId: string, 
-    performanceMetrics: Record<string, any>
+    performanceRequirements: Record<string, any>
   ): Promise<SupabaseFarm> {
-    return this.updateFarm(farmId, { performance_metrics: performanceMetrics })
+    return this.updateFarm(farmId, { performance_requirements: performanceRequirements })
   }
 
   async getActiveFarms(): Promise<SupabaseFarm[]> {
     try {
       const { data, error } = await this.client
-        .from('farms')
+        .from('farm_configurations')
         .select('*')
-        .eq('is_active', true)
+        .eq('auto_assignment_enabled', true)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -199,12 +211,12 @@ export class SupabaseFarmsService {
     }
   }
 
-  async getFarmsByType(farmType: string): Promise<SupabaseFarm[]> {
+  async getFarmsByType(strategyType: string): Promise<SupabaseFarm[]> {
     try {
       const { data, error } = await this.client
-        .from('farms')
+        .from('farm_configurations')
         .select('*')
-        .eq('farm_type', farmType)
+        .eq('strategy_type', strategyType)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -227,16 +239,16 @@ export class SupabaseFarmsService {
   }> {
     try {
       const farms = await this.getAllFarms()
-      const activeFarms = farms.filter(f => f.is_active)
+      const activeFarms = farms.filter(f => f.auto_assignment_enabled)
       
       const totalAllocated = farms.reduce((sum, farm) => 
-        sum + Number(farm.total_allocated_usd), 0
+        sum + Number(farm.target_allocation), 0
       )
 
       const averagePerformance = farms.length > 0 
         ? farms.reduce((sum, farm) => {
-            const performance = farm.performance_metrics as any
-            return sum + (performance?.roi_percent || 0)
+            const requirements = farm.performance_requirements as any
+            return sum + (requirements?.min_sharpe_ratio || 0)
           }, 0) / farms.length
         : 0
 
@@ -255,13 +267,13 @@ export class SupabaseFarmsService {
   // Real-time subscription to farm changes
   subscribeToFarms(callback: (farms: SupabaseFarm[]) => void) {
     const subscription = this.client
-      .channel('farms_changes')
+      .channel('farm_configurations_changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'farms'
+          table: 'farm_configurations'
         },
         async () => {
           // Refresh farms data

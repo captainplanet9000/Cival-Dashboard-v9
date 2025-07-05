@@ -30,6 +30,7 @@ class PersistentAgentService extends EventEmitter {
   private agents: Map<string, PersistentAgent> = new Map()
   private initialized = false
   private portfolioSyncInterval?: NodeJS.Timeout
+  private useSupabase = false
 
   constructor() {
     super()
@@ -39,8 +40,15 @@ class PersistentAgentService extends EventEmitter {
   }
 
   private async initialize() {
-    // Load agents from localStorage
-    this.loadAgentsFromStorage()
+    // Check Supabase availability first
+    await this.checkSupabaseAvailability()
+    
+    // Load agents from preferred source
+    if (this.useSupabase) {
+      await this.loadAgentsFromSupabase()
+    } else {
+      this.loadAgentsFromStorage()
+    }
     
     // Start paper trading engine if not running
     if (!paperTradingEngine.listenerCount('pricesUpdated')) {
@@ -79,6 +87,91 @@ class PersistentAgentService extends EventEmitter {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(agents))
     } catch (error) {
       console.error('Error saving agents to storage:', error)
+    }
+  }
+
+  private async checkSupabaseAvailability() {
+    try {
+      const { isSupabaseAvailable } = await import('@/lib/supabase/client')
+      const available = await isSupabaseAvailable()
+      
+      if (available) {
+        this.useSupabase = true
+        console.log('🟢 Agent service: Using Supabase for persistence')
+      } else {
+        console.log('🟡 Agent service: Using localStorage (Supabase not available)')
+      }
+    } catch (error) {
+      console.log('🟡 Agent service: Supabase unavailable, using localStorage fallback')
+      this.useSupabase = false
+    }
+  }
+
+  private async loadAgentsFromSupabase() {
+    try {
+      const { supabaseAgentsService } = await import('@/lib/services/supabase-agents-service')
+      const supabaseAgents = await supabaseAgentsService.getAllAgents()
+      
+      // Convert Supabase agents to local format
+      this.agents.clear()
+      for (const sa of supabaseAgents) {
+        const localAgent: PersistentAgent = {
+          id: sa.agent_id,
+          name: sa.name,
+          strategy: sa.strategy,
+          status: sa.status,
+          initialCapital: Number(sa.initial_capital),
+          currentCapital: Number(sa.current_capital),
+          createdAt: sa.created_at,
+          lastActive: sa.updated_at,
+          config: sa.configuration || {},
+          performance: {
+            totalPnL: (sa.performance_metrics as any)?.totalPnL || 0,
+            winRate: (sa.performance_metrics as any)?.winRate || 0,
+            totalTrades: (sa.performance_metrics as any)?.totalTrades || 0,
+            sharpeRatio: (sa.performance_metrics as any)?.sharpeRatio || 0
+          }
+        }
+        this.agents.set(sa.agent_id, localAgent)
+      }
+      
+      console.log(`📥 Loaded ${this.agents.size} agents from Supabase`)
+    } catch (error) {
+      console.error('Failed to load agents from Supabase:', error)
+      this.useSupabase = false
+      this.loadAgentsFromStorage()
+    }
+  }
+
+  private async saveAgentToSupabase(agent: PersistentAgent) {
+    if (!this.useSupabase) return
+    
+    try {
+      const { supabaseAgentsService } = await import('@/lib/services/supabase-agents-service')
+      
+      // Check if agent exists
+      const existing = await supabaseAgentsService.getAgentById(agent.id)
+      
+      if (existing) {
+        // Update existing agent
+        await supabaseAgentsService.updateAgent(agent.id, {
+          name: agent.name,
+          status: agent.status,
+          current_capital: agent.currentCapital,
+          performance_metrics: agent.performance
+        })
+      } else {
+        // Create new agent  
+        await supabaseAgentsService.createAgent({
+          name: agent.name,
+          agent_type: 'trading',
+          strategy: agent.strategy,
+          initial_capital: agent.initialCapital,
+          configuration: agent.config
+        })
+      }
+    } catch (error) {
+      console.error('Failed to save agent to Supabase:', error)
     }
   }
 
@@ -207,6 +300,9 @@ class PersistentAgentService extends EventEmitter {
       // Save to storage
       this.agents.set(agentId, agent)
       this.saveAgentsToStorage()
+      
+      // Also save to Supabase if available
+      await this.saveAgentToSupabase(agent)
 
       // Create in paper trading engine
       const tradingAgent = paperTradingEngine.createAgent({
@@ -261,6 +357,9 @@ class PersistentAgentService extends EventEmitter {
       agent.status = 'active'
       agent.lastActive = new Date().toISOString()
       this.saveAgentsToStorage()
+      
+      // Also update in Supabase
+      await this.saveAgentToSupabase(agent)
 
       // Start in lifecycle manager if exists
       await agentLifecycleManager.startAgent(agentId)
@@ -292,6 +391,9 @@ class PersistentAgentService extends EventEmitter {
       agent.status = 'stopped'
       agent.lastActive = new Date().toISOString()
       this.saveAgentsToStorage()
+      
+      // Also update in Supabase
+      await this.saveAgentToSupabase(agent)
 
       // Stop in lifecycle manager if exists
       await agentLifecycleManager.stopAgent(agentId)

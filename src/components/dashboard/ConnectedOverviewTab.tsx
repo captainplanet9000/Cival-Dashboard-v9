@@ -19,6 +19,10 @@ import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 import { useMarketData } from '@/lib/market/market-data-service'
 import { toast } from 'react-hot-toast'
 
+// Import Supabase dashboard service for unified data
+import { supabaseDashboardService } from '@/lib/services/supabase-dashboard-service'
+import type { DashboardSummary, SystemHealth } from '@/lib/services/supabase-dashboard-service'
+
 interface ConnectedOverviewTabProps {
   className?: string
   onNavigateToTab?: (tabId: string) => void
@@ -27,6 +31,12 @@ interface ConnectedOverviewTabProps {
 export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOverviewTabProps) {
   const { state, actions } = useDashboardConnection('overview')
   const { agents, loading: agentsLoading } = useAgentData()
+  
+  // Supabase dashboard state
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
+  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null)
+  const [useSupabase, setUseSupabase] = useState(false)
+  const [supabaseLoading, setSupabaseLoading] = useState(true)
   
   // AG-UI integration with selective event handling
   const { 
@@ -50,33 +60,90 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
     }
   })
   
-  // Use shared real-time data
-  const {
-    totalAgents,
-    activeAgents,
-    totalPortfolioValue,
-    totalPnL,
-    avgWinRate,
-    totalFarms,
-    activeFarms,
-    farmTotalValue,
-    redisConnected,
-    supabaseConnected,
-    agentsConnected,
-    farmsConnected,
-    lastUpdate
-  } = useSharedRealtimeData()
+  // Use shared real-time data as fallback
+  const sharedData = useSharedRealtimeData()
+  
+  // Load dashboard data from Supabase
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setSupabaseLoading(true)
+        
+        // Try to load from Supabase dashboard service
+        const [summary, health] = await Promise.all([
+          supabaseDashboardService.getDashboardSummary(),
+          supabaseDashboardService.getSystemHealth()
+        ])
+        
+        setDashboardSummary(summary)
+        setSystemHealth(health)
+        setUseSupabase(true)
+        
+        console.log('✅ Loaded dashboard data from Supabase:', { summary, health })
+      } catch (error) {
+        console.log('⚠️ Supabase unavailable, using shared data:', error)
+        setUseSupabase(false)
+      } finally {
+        setSupabaseLoading(false)
+      }
+    }
+    
+    loadDashboardData()
+  }, [])
+  
+  // Subscribe to real-time dashboard changes
+  useEffect(() => {
+    if (!useSupabase) return
+    
+    const unsubscribe = supabaseDashboardService.subscribeToAllChanges((summary) => {
+      setDashboardSummary(summary)
+      console.log('📡 Dashboard data updated via subscription:', summary)
+    })
+    
+    return unsubscribe
+  }, [useSupabase])
+  
+  // Calculate derived metrics from either Supabase or shared data
+  const displayData = useSupabase && dashboardSummary ? {
+    totalAgents: dashboardSummary.agents.total,
+    activeAgents: dashboardSummary.agents.active,
+    totalPortfolioValue: dashboardSummary.agents.totalCapital,
+    totalPnL: dashboardSummary.agents.totalPnL + dashboardSummary.trading.totalPnL,
+    avgWinRate: dashboardSummary.agents.averageWinRate,
+    totalFarms: dashboardSummary.farms.total,
+    activeFarms: dashboardSummary.farms.active,
+    farmTotalValue: dashboardSummary.farms.totalAllocated,
+    supabaseConnected: systemHealth?.supabaseConnected || false,
+    redisConnected: true, // Assume true for now
+    agentsConnected: systemHealth?.agentsHealth || false,
+    farmsConnected: systemHealth?.farmsHealth || false,
+    lastUpdate: systemHealth?.lastUpdate ? new Date(systemHealth.lastUpdate) : new Date()
+  } : {
+    totalAgents: sharedData.totalAgents,
+    activeAgents: sharedData.activeAgents,
+    totalPortfolioValue: sharedData.totalPortfolioValue,
+    totalPnL: sharedData.totalPnL,
+    avgWinRate: sharedData.avgWinRate,
+    totalFarms: sharedData.totalFarms,
+    activeFarms: sharedData.activeFarms,
+    farmTotalValue: sharedData.farmTotalValue,
+    supabaseConnected: sharedData.supabaseConnected,
+    redisConnected: sharedData.redisConnected,
+    agentsConnected: sharedData.agentsConnected,
+    farmsConnected: sharedData.farmsConnected,
+    lastUpdate: sharedData.lastUpdate
+  }
 
   // Market data for overview
   const { prices: marketPrices, loading: marketLoading } = useMarketData()
   
   // Calculate derived metrics
-  const totalSystemValue = totalPortfolioValue + farmTotalValue
+  const totalSystemValue = displayData.totalPortfolioValue + displayData.farmTotalValue
   const systemHealthScore = [
-    supabaseConnected,
-    redisConnected,
-    agentsConnected,
-    farmsConnected,
+    displayData.supabaseConnected,
+    displayData.redisConnected,
+    displayData.agentsConnected,
+    displayData.farmsConnected,
     aguiConnected
   ].filter(Boolean).length / 5 * 100
 
@@ -98,7 +165,7 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                 <Brain className="h-6 w-6 text-purple-600" />
                 AI Trading Dashboard
                 <Badge variant={systemHealthScore > 80 ? 'default' : 'secondary'}>
-                  {systemHealthScore > 80 ? 'All Systems Online' : 'Partial Systems'}
+                  {useSupabase ? '🟢 Supabase' : '🟡 Local'} | {systemHealthScore > 80 ? 'All Systems Online' : 'Partial Systems'}
                 </Badge>
               </CardTitle>
               <CardDescription className="text-lg mt-1">
@@ -107,7 +174,7 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
             </div>
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="text-xs">
-                Last Update: {lastUpdate.toLocaleTimeString()}
+                Last Update: {displayData.lastUpdate.toLocaleTimeString()}
               </Badge>
               <Button size="sm" variant="ghost" onClick={actions?.refresh}>
                 <RefreshCw className="h-4 w-4" />
@@ -123,8 +190,8 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Agents</p>
-                <p className="text-xl font-bold">{activeAgents}</p>
-                <p className="text-xs text-muted-foreground">of {totalAgents} total</p>
+                <p className="text-xl font-bold">{displayData.activeAgents}</p>
+                <p className="text-xs text-muted-foreground">of {displayData.totalAgents} total</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg">
@@ -133,8 +200,8 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Farms</p>
-                <p className="text-xl font-bold">{activeFarms}</p>
-                <p className="text-xs text-muted-foreground">of {totalFarms} total</p>
+                <p className="text-xl font-bold">{displayData.activeFarms}</p>
+                <p className="text-xs text-muted-foreground">of {displayData.totalFarms} total</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg">
@@ -148,16 +215,16 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-white/60 rounded-lg">
-              <div className={`p-2 rounded-full ${totalPnL >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
+              <div className={`p-2 rounded-full ${displayData.totalPnL >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
                 <TrendingUp className="h-4 w-4 text-white" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total P&L</p>
-                <p className={`text-xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                <p className={`text-xl font-bold ${displayData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {displayData.totalPnL >= 0 ? '+' : ''}${displayData.totalPnL.toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {avgWinRate.toFixed(1)}% win rate
+                  {displayData.avgWinRate.toFixed(1)}% win rate
                 </p>
               </div>
             </div>
@@ -281,18 +348,18 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Portfolio Value</span>
-                  <span className="font-semibold">${totalPortfolioValue.toLocaleString()}</span>
+                  <span className="font-semibold">${displayData.totalPortfolioValue.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Daily P&L</span>
-                  <span className={`font-semibold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                  <span className={`font-semibold ${displayData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {displayData.totalPnL >= 0 ? '+' : ''}${displayData.totalPnL.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Status</span>
-                  <Badge variant={agentsConnected ? "default" : "secondary"}>
-                    {agentsConnected ? 'Connected' : 'Offline'}
+                  <Badge variant={displayData.agentsConnected ? "default" : "secondary"}>
+                    {displayData.agentsConnected ? 'Connected' : 'Offline'}
                   </Badge>
                 </div>
               </div>
@@ -323,7 +390,7 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Win Rate</span>
-                  <span className="font-semibold">{avgWinRate.toFixed(1)}%</span>
+                  <span className="font-semibold">{displayData.avgWinRate.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Risk Level</span>
@@ -361,11 +428,11 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Active Agents</span>
-                  <span className="font-semibold">{activeAgents}</span>
+                  <span className="font-semibold">{displayData.activeAgents}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Total Agents</span>
-                  <span className="font-semibold">{totalAgents}</span>
+                  <span className="font-semibold">{displayData.totalAgents}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Performance</span>
@@ -399,16 +466,16 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Active Farms</span>
-                  <span className="font-semibold">{activeFarms}</span>
+                  <span className="font-semibold">{displayData.activeFarms}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Farm Value</span>
-                  <span className="font-semibold">${farmTotalValue.toLocaleString()}</span>
+                  <span className="font-semibold">${displayData.farmTotalValue.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Coordination</span>
-                  <Badge variant={farmsConnected ? "default" : "secondary"}>
-                    {farmsConnected ? 'Active' : 'Offline'}
+                  <Badge variant={displayData.farmsConnected ? "default" : "secondary"}>
+                    {displayData.farmsConnected ? 'Active' : 'Offline'}
                   </Badge>
                 </div>
               </div>
@@ -544,31 +611,31 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${supabaseConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${displayData.supabaseConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                   <span className="text-sm font-medium">Database</span>
-                  <Badge variant={supabaseConnected ? "default" : "secondary"} className="ml-auto text-xs">
-                    {supabaseConnected ? 'Connected' : 'Offline'}
+                  <Badge variant={displayData.supabaseConnected ? "default" : "secondary"} className="ml-auto text-xs">
+                    {displayData.supabaseConnected ? 'Connected' : 'Offline'}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${redisConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${displayData.redisConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                   <span className="text-sm font-medium">Cache</span>
-                  <Badge variant={redisConnected ? "default" : "secondary"} className="ml-auto text-xs">
-                    {redisConnected ? 'Connected' : 'Offline'}
+                  <Badge variant={displayData.redisConnected ? "default" : "secondary"} className="ml-auto text-xs">
+                    {displayData.redisConnected ? 'Connected' : 'Offline'}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${agentsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${displayData.agentsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                   <span className="text-sm font-medium">Agents</span>
-                  <Badge variant={agentsConnected ? "default" : "secondary"} className="ml-auto text-xs">
-                    {agentsConnected ? 'Active' : 'Offline'}
+                  <Badge variant={displayData.agentsConnected ? "default" : "secondary"} className="ml-auto text-xs">
+                    {displayData.agentsConnected ? 'Active' : 'Offline'}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${farmsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${displayData.farmsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                   <span className="text-sm font-medium">Farms</span>
-                  <Badge variant={farmsConnected ? "default" : "secondary"} className="ml-auto text-xs">
-                    {farmsConnected ? 'Connected' : 'Offline'}
+                  <Badge variant={displayData.farmsConnected ? "default" : "secondary"} className="ml-auto text-xs">
+                    {displayData.farmsConnected ? 'Connected' : 'Offline'}
                   </Badge>
                 </div>
               </div>

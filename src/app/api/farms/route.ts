@@ -35,25 +35,80 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url)
     const farmId = url.searchParams.get('id')
     
-    // For now, always use fallback data until Supabase connection is stable
-    console.log('Using fallback farms data for Railway deployment')
-    const farms = generateFallbackFarms()
-    
-    if (farmId) {
-      const farm = farms.find(f => f.id === farmId)
-      if (!farm) {
-        return NextResponse.json({ error: 'Farm not found' }, { status: 404 })
+    // Try to use Supabase first, fallback to mock data if needed
+    try {
+      // Dynamic import to avoid client-side imports in server route
+      const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+      
+      if (farmId) {
+        const farm = await supabaseFarmsService.getFarmById(farmId)
+        if (!farm) {
+          return NextResponse.json({ error: 'Farm not found' }, { status: 404 })
+        }
+        
+        // Convert to expected API format
+        const apiFormat = convertSupabaseFarmToApiFormat(farm)
+        return NextResponse.json(apiFormat)
       }
-      return NextResponse.json(farm)
+      
+      // Get all farms from Supabase
+      const supabaseFarms = await supabaseFarmsService.getAllFarms()
+      const apiFarms = supabaseFarms.map(convertSupabaseFarmToApiFormat)
+      
+      console.log(`✅ Loaded ${apiFarms.length} farms from Supabase`)
+      return NextResponse.json(apiFarms)
+      
+    } catch (supabaseError) {
+      console.log('⚠️ Supabase unavailable, using fallback farms data:', supabaseError)
+      const farms = generateFallbackFarms()
+      
+      if (farmId) {
+        const farm = farms.find(f => f.id === farmId)
+        if (!farm) {
+          return NextResponse.json({ error: 'Farm not found' }, { status: 404 })
+        }
+        return NextResponse.json(farm)
+      }
+      
+      return NextResponse.json(farms)
     }
-    
-    return NextResponse.json(farms)
   } catch (error) {
     console.error('Error fetching farms:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// Convert Supabase farm to API format
+function convertSupabaseFarmToApiFormat(supabaseFarm: any): EnhancedFarm {
+  return {
+    id: supabaseFarm.farm_id,
+    name: supabaseFarm.name,
+    description: `${supabaseFarm.strategy_type} trading farm with ${supabaseFarm.max_agents} max agents`,
+    strategy: supabaseFarm.strategy_type,
+    agentCount: supabaseFarm.max_agents,
+    totalCapital: supabaseFarm.target_allocation,
+    coordinationMode: 'coordinated' as const,
+    status: supabaseFarm.auto_assignment_enabled ? 'active' as const : 'paused' as const,
+    createdAt: supabaseFarm.created_at,
+    agents: [], // Would need to fetch from farm_agent_assignments table
+    performance: {
+      totalValue: supabaseFarm.target_allocation,
+      totalPnL: 0, // Would calculate from agent performance
+      winRate: (supabaseFarm.performance_requirements as any)?.min_win_rate * 100 || 55,
+      tradeCount: 0, // Would calculate from trading history
+      roiPercent: 0, // Would calculate from performance
+      activeAgents: supabaseFarm.min_agents,
+      avgAgentPerformance: (supabaseFarm.performance_requirements as any)?.min_sharpe_ratio || 1.0
+    },
+    farmType: supabaseFarm.strategy_type,
+    llmEnabled: true,
+    groupings: {
+      performanceGroups: { high: [], medium: [], low: [] },
+      strategyGroups: { [supabaseFarm.strategy_type]: [] },
+      riskGroups: { conservative: [], moderate: [], aggressive: [] }
+    }
+  }
+}
 
 // Helper function to generate fallback farms 
 function generateFallbackFarms(): EnhancedFarm[] {
@@ -125,38 +180,71 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // For now, simulate farm creation with mock data
-    const farmId = `farm_${body.strategy}_${Date.now()}`
-    const newFarm: EnhancedFarm = {
-      id: farmId,
-      name: body.name,
-      description: body.description,
-      strategy: body.strategy,
-      agentCount: body.agentCount || 0,
-      totalCapital: body.totalCapital || 0,
-      coordinationMode: body.coordinationMode || 'coordinated',
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      agents: body.agents || [],
-      performance: {
-        totalValue: body.totalCapital || 0,
-        totalPnL: 0,
-        winRate: 0,
-        tradeCount: 0,
-        roiPercent: 0,
-        activeAgents: body.agentCount || 0,
-        avgAgentPerformance: 0
-      },
-      farmType: body.strategy,
-      llmEnabled: body.llmEnabled || false,
-      groupings: {
-        performanceGroups: { high: [], medium: [], low: [] },
-        strategyGroups: { [body.strategy]: [] },
-        riskGroups: { conservative: [], moderate: [], aggressive: [] }
+    // Try to create farm in Supabase first, fallback to mock response
+    try {
+      const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+      
+      const newFarm = await supabaseFarmsService.createFarm({
+        name: body.name,
+        strategy_type: body.strategy,
+        target_allocation: body.totalCapital || 10000,
+        max_agents: body.agentCount || 10,
+        min_agents: body.minAgents || 1,
+        risk_tolerance: body.riskTolerance || 0.5,
+        performance_requirements: {
+          min_sharpe_ratio: 1.0,
+          max_drawdown: 0.15,
+          min_win_rate: 0.55
+        },
+        agent_selection_criteria: {
+          strategy_compatibility: true,
+          performance_threshold: 0.1,
+          risk_alignment: true
+        },
+        rebalancing_frequency: 24,
+        auto_assignment_enabled: true
+      })
+      
+      const apiFormat = convertSupabaseFarmToApiFormat(newFarm)
+      console.log('✅ Created farm in Supabase:', newFarm.farm_id)
+      return NextResponse.json(apiFormat, { status: 201 })
+      
+    } catch (supabaseError) {
+      console.log('⚠️ Supabase unavailable, creating mock farm:', supabaseError)
+      
+      // Fallback to mock farm creation
+      const farmId = `farm_${body.strategy}_${Date.now()}`
+      const newFarm: EnhancedFarm = {
+        id: farmId,
+        name: body.name,
+        description: body.description,
+        strategy: body.strategy,
+        agentCount: body.agentCount || 0,
+        totalCapital: body.totalCapital || 0,
+        coordinationMode: body.coordinationMode || 'coordinated',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        agents: body.agents || [],
+        performance: {
+          totalValue: body.totalCapital || 0,
+          totalPnL: 0,
+          winRate: 0,
+          tradeCount: 0,
+          roiPercent: 0,
+          activeAgents: body.agentCount || 0,
+          avgAgentPerformance: 0
+        },
+        farmType: body.strategy,
+        llmEnabled: body.llmEnabled || false,
+        groupings: {
+          performanceGroups: { high: [], medium: [], low: [] },
+          strategyGroups: { [body.strategy]: [] },
+          riskGroups: { conservative: [], moderate: [], aggressive: [] }
+        }
       }
+      
+      return NextResponse.json(newFarm, { status: 201 })
     }
-    
-    return NextResponse.json(newFarm, { status: 201 })
     
   } catch (error) {
     console.error('Error creating farm:', error)
@@ -171,12 +259,32 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { id, ...updateData } = body
     
-    // For now, simulate farm update
-    return NextResponse.json({ 
-      id, 
-      ...updateData, 
-      message: 'Farm updated successfully' 
-    })
+    // Try to update farm in Supabase first, fallback to mock response
+    try {
+      const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+      
+      const updatedFarm = await supabaseFarmsService.updateFarm(id, {
+        name: updateData.name,
+        strategy_type: updateData.strategy,
+        target_allocation: updateData.totalCapital,
+        max_agents: updateData.agentCount,
+        auto_assignment_enabled: updateData.status === 'active'
+      })
+      
+      const apiFormat = convertSupabaseFarmToApiFormat(updatedFarm)
+      console.log('✅ Updated farm in Supabase:', updatedFarm.farm_id)
+      return NextResponse.json(apiFormat)
+      
+    } catch (supabaseError) {
+      console.log('⚠️ Supabase unavailable, using mock update:', supabaseError)
+      
+      // Fallback to mock update
+      return NextResponse.json({ 
+        id, 
+        ...updateData, 
+        message: 'Farm updated successfully' 
+      })
+    }
     
   } catch (error) {
     console.error('Error updating farm:', error)
@@ -195,8 +303,25 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Farm ID required' }, { status: 400 })
     }
     
-    // For now, simulate farm deletion
-    return NextResponse.json({ message: 'Farm deleted successfully' })
+    // Try to delete farm from Supabase first, fallback to mock response
+    try {
+      const { supabaseFarmsService } = await import('@/lib/services/supabase-farms-service')
+      
+      const success = await supabaseFarmsService.deleteFarm(farmId)
+      
+      if (success) {
+        console.log('✅ Deleted farm from Supabase:', farmId)
+        return NextResponse.json({ message: 'Farm deleted successfully' })
+      } else {
+        return NextResponse.json({ error: 'Failed to delete farm' }, { status: 500 })
+      }
+      
+    } catch (supabaseError) {
+      console.log('⚠️ Supabase unavailable, using mock deletion:', supabaseError)
+      
+      // Fallback to mock deletion
+      return NextResponse.json({ message: 'Farm deleted successfully' })
+    }
     
   } catch (error) {
     console.error('Error deleting farm:', error)
