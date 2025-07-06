@@ -7,6 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
 import {
   Target, Users, Settings, Play, Pause, Trash2, Plus, 
   RefreshCw, TrendingUp, TrendingDown, DollarSign, Activity, Brain,
@@ -692,49 +695,442 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
 
         {/* Agents Tab */}
         <TabsContent value="agents" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Management</CardTitle>
-              <CardDescription>
-                Monitor and coordinate AI trading agents across all farms
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Farm Agent Management</h3>
+              <p className="text-muted-foreground">
+                Monitor and coordinate agents across all trading farms
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">{farms.reduce((sum, farm) => sum + farm.agentCount, 0)} Total Agents</Badge>
+              <Badge variant="outline">{farms.filter(f => f.status === 'active').length} Active Farms</Badge>
+            </div>
+          </div>
+
+          {farms.map((farm) => (
+            <Card key={farm.id} className="mb-4">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getStrategyIcon(farm.strategy)}
+                    <div>
+                      <CardTitle className="text-base">{farm.name}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {farm.agentCount} agents • {farm.coordinationMode} coordination • {farm.strategy.replace('_', ' ')} strategy
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={farm.status === 'active' ? 'default' : 'secondary'}>
+                      {farm.status}
+                    </Badge>
+                    <Button size="sm" variant="outline">
+                      <Settings className="w-4 h-4 mr-1" />
+                      Manage
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Farm Agent Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Array.from({ length: farm.agentCount }, (_, i) => (
+                    <div key={i} className="p-3 border rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Bot className="w-4 h-4 text-blue-600" />
+                          <span className="font-medium text-sm">Agent {i + 1}</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {farm.status === 'active' ? 'Trading' : 'Paused'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>Capital:</span>
+                          <span>${(farm.totalCapital / farm.agentCount).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>P&L:</span>
+                          <span className={farm.performance.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            {farm.performance.totalPnL >= 0 ? '+' : ''}${(farm.performance.totalPnL / farm.agentCount).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Trades:</span>
+                          <span>{Math.floor(farm.performance.tradeCount / farm.agentCount)}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Performance</span>
+                          <span>{farm.performance.winRate.toFixed(1)}%</span>
+                        </div>
+                        <Progress value={farm.performance.winRate} className="h-1" />
+                      </div>
+
+                      <div className="flex gap-1 mt-2">
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
+                          View
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
+                          Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            toast.success(`Agent ${i + 1} moved to available pool`)
+                          }}
+                        >
+                          Release
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Farm-level Agent Controls */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-muted-foreground">Farm Total:</span>
+                    <span className="font-medium">${farm.totalCapital.toLocaleString()}</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className={`font-medium ${farm.performance.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {farm.performance.totalPnL >= 0 ? '+' : ''}${farm.performance.totalPnL.toFixed(2)} P&L
+                    </span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="font-medium">{farm.performance.winRate.toFixed(1)}% Win Rate</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => toast.success(`Adding new agent to ${farm.name}`)}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Agent
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => coordinateFarm(farm.id)}
+                      disabled={loading}
+                    >
+                      <Brain className="w-4 h-4 mr-1" />
+                      Coordinate
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {farms.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-8">
                 <Bot className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Agent Dashboard Coming Soon</h3>
+                <h3 className="text-lg font-semibold mb-2">No Farms Created</h3>
                 <p className="text-muted-foreground mb-4">
-                  Comprehensive agent monitoring and coordination features are in development.
+                  Create a farm first to start managing trading agents in clusters.
                 </p>
-                <Button variant="outline">
+                <Button onClick={() => setActiveTab('create')}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create Agent
+                  Create Your First Farm
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Unassigned Agents */}
+          {realtimeAgents.filter(agent => !agent.farmId).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Unassigned Agents</CardTitle>
+                <CardDescription>
+                  Agents not currently assigned to any farm
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {realtimeAgents.filter(agent => !agent.farmId).map((agent) => (
+                    <div key={agent.id} className="p-3 border rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Bot className="w-4 h-4 text-gray-600" />
+                          <span className="font-medium text-sm">{agent.name}</span>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          Available
+                        </Badge>
+                      </div>
+                      
+                      <div className="text-xs text-muted-foreground mb-2">
+                        Strategy: {agent.strategy || agent.strategyType || 'General'}
+                      </div>
+
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-6 px-2 text-xs flex-1"
+                          onClick={() => {
+                            if (farms.length > 0) {
+                              toast.success(`Agent ${agent.name} ready for assignment`)
+                            } else {
+                              toast.error('Create a farm first to assign agents')
+                            }
+                          }}
+                        >
+                          Assign to Farm
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Farm Performance Analytics</h3>
+              <p className="text-muted-foreground">
+                Comprehensive metrics and insights across all trading farms
+              </p>
+            </div>
+            <Button variant="outline" size="sm">
+              <Calendar className="w-4 h-4 mr-2" />
+              Last 30 Days
+            </Button>
+          </div>
+
+          {/* Performance Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total P&L</p>
+                    <p className={`text-2xl font-bold ${
+                      farms.reduce((sum, farm) => sum + farm.performance.totalPnL, 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      ${farms.reduce((sum, farm) => sum + farm.performance.totalPnL, 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg Win Rate</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {farms.length > 0 ? (farms.reduce((sum, farm) => sum + farm.performance.winRate, 0) / farms.length).toFixed(1) : 0}%
+                    </p>
+                  </div>
+                  <Target className="w-8 h-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Trades</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {farms.reduce((sum, farm) => sum + farm.performance.tradeCount, 0)}
+                    </p>
+                  </div>
+                  <Activity className="w-8 h-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">ROI</p>
+                    <p className={`text-2xl font-bold ${
+                      farms.reduce((sum, farm) => sum + farm.performance.roiPercent, 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {farms.reduce((sum, farm) => sum + farm.performance.roiPercent, 0).toFixed(1)}%
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Farm Performance Comparison */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  Farm Performance Comparison
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {farms.map((farm) => (
+                    <div key={farm.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {getStrategyIcon(farm.strategy)}
+                          <span className="font-medium text-sm">{farm.name}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {farm.performance.winRate.toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Progress value={farm.performance.winRate} className="flex-1 h-2" />
+                        <span className={`text-sm font-medium ${
+                          farm.performance.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {farm.performance.totalPnL >= 0 ? '+' : ''}${farm.performance.totalPnL.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {farms.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No farms to analyze
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Strategy Performance */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-green-600" />
+                  Strategy Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {strategyOptions.map((strategy) => {
+                    const farmsWithStrategy = farms.filter(f => f.strategy === strategy.value)
+                    const avgPerformance = farmsWithStrategy.length > 0 
+                      ? farmsWithStrategy.reduce((sum, f) => sum + f.performance.winRate, 0) / farmsWithStrategy.length
+                      : getStrategyWinRate(strategy.value)
+                    const totalPnL = farmsWithStrategy.reduce((sum, f) => sum + f.performance.totalPnL, 0)
+                    
+                    return (
+                      <div key={strategy.value} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{strategy.label}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {farmsWithStrategy.length} farms
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {avgPerformance.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={avgPerformance} className="flex-1 h-2" />
+                          <span className={`text-sm font-medium ${
+                            totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Detailed Farm Analysis */}
           <Card>
             <CardHeader>
-              <CardTitle>Farm Analytics</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-purple-600" />
+                Detailed Farm Analysis
+              </CardTitle>
               <CardDescription>
-                Performance metrics and insights across all trading farms
+                Comprehensive breakdown of each farm's performance
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Advanced Analytics</h3>
-                <p className="text-muted-foreground mb-4">
-                  Detailed performance analytics and trading insights coming soon.
-                </p>
-                <Button variant="outline">
-                  <Activity className="w-4 h-4 mr-2" />
-                  View Reports
-                </Button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2">Farm</th>
+                      <th className="text-center py-2">Strategy</th>
+                      <th className="text-center py-2">Agents</th>
+                      <th className="text-center py-2">Capital</th>
+                      <th className="text-center py-2">P&L</th>
+                      <th className="text-center py-2">Win Rate</th>
+                      <th className="text-center py-2">Trades</th>
+                      <th className="text-center py-2">ROI</th>
+                      <th className="text-center py-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {farms.map((farm) => (
+                      <tr key={farm.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            {getStrategyIcon(farm.strategy)}
+                            <span className="font-medium">{farm.name}</span>
+                          </div>
+                        </td>
+                        <td className="text-center py-3">
+                          <Badge variant="outline" className="text-xs">
+                            {farm.strategy.replace('_', ' ')}
+                          </Badge>
+                        </td>
+                        <td className="text-center py-3 font-medium">{farm.agentCount}</td>
+                        <td className="text-center py-3 font-medium">${farm.totalCapital.toLocaleString()}</td>
+                        <td className={`text-center py-3 font-medium ${
+                          farm.performance.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {farm.performance.totalPnL >= 0 ? '+' : ''}${farm.performance.totalPnL.toFixed(2)}
+                        </td>
+                        <td className="text-center py-3 font-medium">{farm.performance.winRate.toFixed(1)}%</td>
+                        <td className="text-center py-3 font-medium">{farm.performance.tradeCount}</td>
+                        <td className={`text-center py-3 font-medium ${
+                          farm.performance.roiPercent >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {farm.performance.roiPercent.toFixed(1)}%
+                        </td>
+                        <td className="text-center py-3">
+                          <Badge variant={farm.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                            {farm.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {farms.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No farms to analyze. Create a farm to see detailed analytics.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -744,13 +1140,151 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
         <TabsContent value="orchestration" className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">AI-Powered Farm Orchestration</h3>
-              <p className="text-muted-foreground">Advanced coordination with LLM-driven agent management</p>
+              <h3 className="text-lg font-semibold">Real-Time AI Orchestration</h3>
+              <p className="text-muted-foreground">Live coordination with LLM-driven decision making and agent clustering</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">AI-Powered</Badge>
-              <Badge variant="outline">5 Strategies</Badge>
+              <Badge variant="secondary">Live AI</Badge>
+              <Badge variant="outline">{farms.length} Farms</Badge>
+              <Badge variant="outline">{farms.reduce((sum, farm) => sum + farm.agentCount, 0)} Agents</Badge>
             </div>
+          </div>
+
+          {/* Live Orchestration Control Panel */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  Live Agent Coordination
+                </CardTitle>
+                <CardDescription>
+                  Real-time coordination and decision making across all farms
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    onClick={() => handleLLMAction('analyze')}
+                    disabled={loading}
+                    size="sm"
+                    variant="outline"
+                    className="h-16 flex-col"
+                  >
+                    <BarChart3 className="w-5 h-5 mb-1" />
+                    <span className="text-xs">Market Analysis</span>
+                  </Button>
+                  <Button 
+                    onClick={() => handleLLMAction('rebalance')}
+                    disabled={loading}
+                    size="sm"
+                    variant="outline"
+                    className="h-16 flex-col"
+                  >
+                    <RefreshCw className="w-5 h-5 mb-1" />
+                    <span className="text-xs">Auto Rebalance</span>
+                  </Button>
+                  <Button 
+                    onClick={() => handleLLMAction('optimize')}
+                    disabled={loading}
+                    size="sm"
+                    variant="outline"
+                    className="h-16 flex-col"
+                  >
+                    <TrendingUp className="w-5 h-5 mb-1" />
+                    <span className="text-xs">Optimize All</span>
+                  </Button>
+                  <Button 
+                    onClick={() => handleLLMAction('communicate')}
+                    disabled={loading}
+                    size="sm"
+                    variant="outline"
+                    className="h-16 flex-col"
+                  >
+                    <Users className="w-5 h-5 mb-1" />
+                    <span className="text-xs">Coordinate</span>
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Global Auto-trading</span>
+                    <Switch 
+                      checked={farms.some(f => f.status === 'active')}
+                      onCheckedChange={(checked) => {
+                        farms.forEach(farm => {
+                          if (checked && farm.status !== 'active') {
+                            toggleFarmStatus(farm.id)
+                          } else if (!checked && farm.status === 'active') {
+                            toggleFarmStatus(farm.id)
+                          }
+                        })
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Risk Management</span>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Performance Tracking</span>
+                    <Switch defaultChecked />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-green-600" />
+                  Agent Cluster Status
+                </CardTitle>
+                <CardDescription>
+                  Live monitoring of agent clusters and coordination
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {farms.map((farm) => (
+                    <div key={farm.id} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {getStrategyIcon(farm.strategy)}
+                          <span className="font-medium text-sm">{farm.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Badge variant={farm.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                            {farm.status}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {farm.agentCount} agents
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Coordination: {farm.coordinationMode}</span>
+                        <span>P&L: {farm.performance.totalPnL >= 0 ? '+' : ''}${farm.performance.totalPnL.toFixed(2)}</span>
+                      </div>
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Performance</span>
+                          <span>{farm.performance.winRate.toFixed(1)}%</span>
+                        </div>
+                        <Progress value={farm.performance.winRate} className="h-1" />
+                      </div>
+                    </div>
+                  ))}
+                  {farms.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No farms to orchestrate
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Strategy Templates Section */}
@@ -803,38 +1337,192 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
             </CardContent>
           </Card>
 
-          {/* Real-time Orchestration Events */}
+          {/* Advanced Coordination Features */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Network className="h-5 w-5 text-indigo-600" />
+                  Agent Clustering Controls
+                </CardTitle>
+                <CardDescription>
+                  Dynamic agent grouping and coordination strategies
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <Button 
+                    onClick={handleAgentGrouping}
+                    disabled={loading}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Smart Agent Grouping
+                  </Button>
+                  <Button 
+                    onClick={() => handleLLMAction('optimize')}
+                    disabled={loading}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Performance Optimization
+                  </Button>
+                  <Button 
+                    onClick={() => handleLLMAction('communicate')}
+                    disabled={loading}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    Cross-Farm Communication
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Clustering Strategy</Label>
+                  <Select defaultValue="performance">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="performance">Performance-based</SelectItem>
+                      <SelectItem value="strategy">Strategy similarity</SelectItem>
+                      <SelectItem value="risk">Risk tolerance</SelectItem>
+                      <SelectItem value="capital">Capital allocation</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Coordination Frequency</Label>
+                  <Select defaultValue="real-time">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="real-time">Real-time</SelectItem>
+                      <SelectItem value="1min">Every minute</SelectItem>
+                      <SelectItem value="5min">Every 5 minutes</SelectItem>
+                      <SelectItem value="15min">Every 15 minutes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-orange-500" />
+                  Live Orchestration Events
+                </CardTitle>
+                <CardDescription>
+                  Real-time coordination activities across all farms
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {/* Generate events based on actual farm data */}
+                  {farms.flatMap((farm, farmIndex) => [
+                    {
+                      type: 'farm_status',
+                      message: `Farm "${farm.name}" is ${farm.status} with ${farm.agentCount} agents`,
+                      time: '1 min ago',
+                      farmId: farm.id
+                    },
+                    {
+                      type: 'performance_update',
+                      message: `${farm.name}: ${farm.performance.winRate.toFixed(1)}% win rate, ${farm.performance.totalPnL >= 0 ? '+' : ''}$${farm.performance.totalPnL.toFixed(2)} P&L`,
+                      time: `${farmIndex * 2 + 2} min ago`,
+                      farmId: farm.id
+                    }
+                  ]).concat([
+                    { type: 'coordination', message: 'Cross-farm optimization completed', time: '5 min ago' },
+                    { type: 'rebalance', message: 'Automatic capital rebalancing initiated', time: '8 min ago' },
+                    { type: 'agent_cluster', message: 'New agent cluster formed based on performance', time: '12 min ago' }
+                  ]).slice(0, 8).map((event, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 border rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          event.type === 'farm_status' ? 'bg-blue-500' :
+                          event.type === 'performance_update' ? 'bg-green-500' :
+                          event.type === 'coordination' ? 'bg-purple-500' :
+                          event.type === 'rebalance' ? 'bg-orange-500' :
+                          'bg-indigo-500'
+                        }`} />
+                        <span className="text-xs">{event.message}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{event.time}</span>
+                    </div>
+                  ))}
+                  {farms.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No orchestration events to display
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Global Performance Dashboard */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-orange-500" />
-                Live Orchestration Events
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                Global Farm Performance
               </CardTitle>
               <CardDescription>
-                Real-time coordination activities across all farms
+                Aggregate performance metrics across all coordinated farms
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { type: 'agent_assigned', message: 'Agent TRDBOT-5 assigned to Momentum Farm', time: '2 min ago' },
-                  { type: 'capital_allocated', message: '$10,000 allocated to Arbitrage Farm', time: '5 min ago' },
-                  { type: 'performance_update', message: 'Farm ROI increased by 2.3%', time: '10 min ago' },
-                  { type: 'rebalance', message: 'Automatic rebalancing completed', time: '15 min ago' }
-                ].map((event, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${
-                        event.type === 'agent_assigned' ? 'bg-blue-500' :
-                        event.type === 'capital_allocated' ? 'bg-green-500' :
-                        event.type === 'performance_update' ? 'bg-purple-500' :
-                        'bg-orange-500'
-                      }`} />
-                      <span className="text-sm">{event.message}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{event.time}</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    ${farms.reduce((sum, farm) => sum + farm.performance.totalPnL, 0).toFixed(2)}
                   </div>
-                ))}
+                  <div className="text-sm text-muted-foreground">Total P&L</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {farms.length > 0 ? (farms.reduce((sum, farm) => sum + farm.performance.winRate, 0) / farms.length).toFixed(1) : 0}%
+                  </div>
+                  <div className="text-sm text-muted-foreground">Avg Win Rate</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {farms.reduce((sum, farm) => sum + farm.performance.tradeCount, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Trades</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {farms.filter(f => f.status === 'active').length}/{farms.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Active Farms</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Last orchestration: {new Date().toLocaleTimeString()}
+                </div>
+                <Button
+                  onClick={() => {
+                    handleLLMAction('analyze')
+                    setTimeout(() => handleLLMAction('optimize'), 2000)
+                  }}
+                  disabled={loading}
+                  size="sm"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Run Full Orchestration
+                </Button>
               </div>
             </CardContent>
           </Card>

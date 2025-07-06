@@ -10,6 +10,13 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Loader2, Info, ArrowLeft, ArrowRight, Check, CheckCircle2 } from 'lucide-react'
 import { paperTradingEngine, TradingAgent, TradingStrategy, RiskLimits } from '@/lib/trading/real-paper-trading-engine'
 import { backendApi } from '@/lib/api/backend-client'
@@ -17,6 +24,14 @@ import { toast } from 'react-hot-toast'
 
 // Import farms service for proper backend integration
 import { useFarms, FarmCreateConfig } from '@/lib/farms/farms-service'
+
+// Import all agent services for comprehensive integration
+import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creation-service'
+import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
+import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
+
+// Import shared data manager
+import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
 interface FarmConfig {
   name: string
@@ -93,9 +108,14 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
   const [isCreating, setIsCreating] = useState(false)
   const [existingAgents, setExistingAgents] = useState<TradingAgent[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [availableAgents, setAvailableAgents] = useState<any[]>([])
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([])
   
   // Use farms service for backend integration
   const { createFarm } = useFarms()
+  
+  // Get real-time agent data
+  const { agents: realtimeAgents } = useSharedRealtimeData()
   const [wizardData, setWizardData] = useState<FarmConfig>({
     name: '',
     description: '',
@@ -128,7 +148,67 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
 
   useEffect(() => {
     loadExistingAgents()
-  }, [])
+    loadAvailableAgents()
+  }, [realtimeAgents])
+
+  // Load available agents from all sources
+  const loadAvailableAgents = async () => {
+    try {
+      const allAgents = []
+      
+      // Get agents from paper trading engine
+      const tradingAgents = paperTradingEngine.getAllAgents()
+      allAgents.push(...tradingAgents.map(agent => ({
+        ...agent,
+        source: 'paper_trading',
+        available: true
+      })))
+      
+      // Get agents from persistent service
+      const persistentAgents = persistentAgentService.getAllAgents()
+      allAgents.push(...persistentAgents.map(agent => ({
+        ...agent,
+        source: 'persistent',
+        available: true
+      })))
+      
+      // Get agents from lifecycle manager
+      const lifecycleAgents = await agentLifecycleManager.getAllAgents()
+      allAgents.push(...lifecycleAgents.map(agent => ({
+        ...agent,
+        source: 'lifecycle',
+        available: true
+      })))
+      
+      // Get agents from enhanced service
+      try {
+        const enhancedAgents = enhancedAgentCreationService.getCreatedAgents()
+        allAgents.push(...enhancedAgents.map(agent => ({
+          ...agent,
+          source: 'enhanced',
+          available: true
+        })))
+      } catch (error) {
+        console.log('Enhanced agents not available:', error)
+      }
+      
+      // Add realtime agents
+      allAgents.push(...realtimeAgents.map(agent => ({
+        ...agent,
+        source: 'realtime',
+        available: agent.status !== 'assigned_to_farm'
+      })))
+      
+      // Remove duplicates by ID/name
+      const uniqueAgents = allAgents.filter((agent, index, self) => 
+        index === self.findIndex(a => a.id === agent.id || a.name === agent.name)
+      )
+      
+      setAvailableAgents(uniqueAgents)
+    } catch (error) {
+      console.error('Error loading available agents:', error)
+    }
+  }
 
   useEffect(() => {
     setWizardData(prev => ({
@@ -210,6 +290,8 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
     if (activeStep === 'basic') {
       setActiveStep('strategy')
     } else if (activeStep === 'strategy') {
+      setActiveStep('agents')
+    } else if (activeStep === 'agents') {
       setActiveStep('risk')
     } else if (activeStep === 'risk') {
       setActiveStep('review')
@@ -221,8 +303,10 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
   const handlePrevStep = () => {
     if (activeStep === 'strategy') {
       setActiveStep('basic')
-    } else if (activeStep === 'risk') {
+    } else if (activeStep === 'agents') {
       setActiveStep('strategy')
+    } else if (activeStep === 'risk') {
+      setActiveStep('agents')
     } else if (activeStep === 'review') {
       setActiveStep('risk')
     }
@@ -236,27 +320,107 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
         paperTradingEngine.start()
       }
 
-      // Create agents for the farm
+      const assignedAgents: string[] = []
+      
+      // Use selected existing agents first
+      if (selectedAgents.length > 0) {
+        assignedAgents.push(...selectedAgents)
+        toast.success(`Assigned ${selectedAgents.length} existing agents to farm`)
+      }
+      
+      // Create additional agents if needed
+      const remainingAgentsNeeded = wizardData.agentCount - selectedAgents.length
       const createdAgents: TradingAgent[] = []
 
-      for (let i = 0; i < wizardData.agentCount; i++) {
-        const agentConfig = {
-          name: `${wizardData.name} Agent ${i + 1}`,
-          strategy: {
-            name: `${wizardData.strategy.name} ${i + 1}`,
-            type: wizardData.strategy.type,
-            parameters: wizardData.strategy.parameters,
-            description: wizardData.strategy.description
-          },
-          initialCapital: wizardData.initialCapitalPerAgent,
-          riskLimits: {
-            ...wizardData.riskLimits,
-            maxDailyLoss: wizardData.riskLimits.maxDailyLoss / wizardData.agentCount
+      for (let i = 0; i < remainingAgentsNeeded; i++) {
+        // Try enhanced agent creation first
+        try {
+          const enhancedConfig = {
+            name: `${wizardData.name} Agent ${i + 1}`,
+            description: `Advanced trading agent for ${wizardData.name} farm using ${wizardData.strategy.name}`,
+            initialCapital: wizardData.initialCapitalPerAgent,
+            strategy: {
+              type: wizardData.strategy.type,
+              frequency: 'medium' as const,
+              targetProfitPerTrade: wizardData.targetDailyProfit / wizardData.agentCount / 10, // 10 trades per day target
+              parameters: wizardData.strategy.parameters
+            },
+            riskLimits: {
+              ...wizardData.riskLimits,
+              maxDailyLoss: wizardData.riskLimits.maxDailyLoss / wizardData.agentCount
+            },
+            walletConfig: {
+              createDedicatedWallet: true,
+              walletType: 'hot' as const,
+              initialFunding: wizardData.initialCapitalPerAgent,
+              autoFunding: true,
+              fundingThreshold: wizardData.initialCapitalPerAgent * 0.1,
+              maxWalletBalance: wizardData.initialCapitalPerAgent * 2,
+              vaultIntegration: true,
+              backupToVault: true,
+              vaultBackupFrequency: 'daily' as const
+            },
+            vaultConfig: {
+              enabled: true,
+              encryptionLevel: 'high' as const,
+              accessLevel: 'write' as const,
+              sharedVault: true,
+              backupStrategy: 'incremental' as const,
+              retentionPeriod: 30
+            },
+            llmConfig: {
+              provider: 'gemini' as const,
+              model: 'gemini-pro',
+              decisionFrequency: 30000,
+              contextWindow: 4000,
+              temperature: 0.7,
+              enableLearning: true
+            },
+            mcpTools: {
+              enabled: ['market_analysis', 'risk_assessment', 'portfolio_optimization'],
+              permissions: ['read_market_data', 'execute_trades', 'manage_risk']
+            },
+            memory: {
+              historyRetention: 30,
+              learningEnabled: true,
+              adaptiveParameters: true,
+              performanceTracking: true
+            },
+            autonomous: {
+              autoStart: true,
+              continuousTrading: true,
+              adaptiveStrategy: true,
+              riskAdjustment: true
+            }
           }
-        }
+          
+          const enhancedAgentId = await enhancedAgentCreationService.createAutonomousAgent(enhancedConfig)
+          assignedAgents.push(enhancedAgentId)
+          console.log(`✅ Created enhanced agent: ${enhancedAgentId}`)
+          
+        } catch (enhancedError) {
+          console.log('Enhanced agent creation failed, using paper trading agent:', enhancedError)
+          
+          // Fallback to paper trading agent
+          const agentConfig = {
+            name: `${wizardData.name} Agent ${i + 1}`,
+            strategy: {
+              name: `${wizardData.strategy.name} ${i + 1}`,
+              type: wizardData.strategy.type,
+              parameters: wizardData.strategy.parameters,
+              description: wizardData.strategy.description
+            },
+            initialCapital: wizardData.initialCapitalPerAgent,
+            riskLimits: {
+              ...wizardData.riskLimits,
+              maxDailyLoss: wizardData.riskLimits.maxDailyLoss / wizardData.agentCount
+            }
+          }
 
-        const agent = paperTradingEngine.createAgent(agentConfig)
-        createdAgents.push(agent)
+          const agent = paperTradingEngine.createAgent(agentConfig)
+          createdAgents.push(agent)
+          assignedAgents.push(agent.id)
+        }
       }
 
       // Create farm configuration for the service
@@ -281,7 +445,7 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
           maxConcentration: wizardData.riskLimits.maxPositionSize,
           maxLeverage: wizardData.riskLimits.maxLeverage
         },
-        agents: createdAgents.map(agent => agent.id)
+        agents: assignedAgents
       }
 
       // Create farm using the farms service
@@ -298,7 +462,7 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
         coordinationMode: wizardData.coordinationMode,
         status: 'active' as const,
         createdAt: new Date().toISOString(),
-        agents: createdAgents.map(agent => agent.id),
+        agents: assignedAgents,
         performance: {
           totalValue: wizardData.totalAllocatedCapital,
           totalPnL: 0,
@@ -310,7 +474,7 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
         }
       }
       
-      toast.success(`Farm "${wizardData.name}" created successfully!`)
+      toast.success(`Farm "${wizardData.name}" created successfully with ${assignedAgents.length} agents!`)
       
       if (onFarmCreated) {
         onFarmCreated(farmData)
@@ -361,7 +525,7 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
   }
 
   const getStepProgress = () => {
-    const steps = ['basic', 'strategy', 'risk', 'review']
+    const steps = ['basic', 'strategy', 'agents', 'risk', 'review']
     const currentIndex = steps.indexOf(activeStep)
     return ((currentIndex + 1) / steps.length) * 100
   }
@@ -399,9 +563,10 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
       </div>
 
       <Tabs value={activeStep} onValueChange={setActiveStep} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
           <TabsTrigger value="strategy">Strategy</TabsTrigger>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
           <TabsTrigger value="risk">Risk & Capital</TabsTrigger>
           <TabsTrigger value="review">Review</TabsTrigger>
         </TabsList>
@@ -522,6 +687,147 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                   ))}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="agents" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Agent Assignment</CardTitle>
+              <CardDescription>
+                Assign existing agents or create new ones for your farm
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium">Available Agents ({availableAgents.filter(a => a.available).length})</Label>
+                  <div className="mt-2 max-h-64 overflow-y-auto border rounded-lg">
+                    {availableAgents.filter(a => a.available).map(agent => (
+                      <div 
+                        key={agent.id} 
+                        className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
+                          selectedAgents.includes(agent.id) ? 'bg-blue-50 border-blue-200' : ''
+                        }`}
+                        onClick={() => {
+                          if (selectedAgents.includes(agent.id)) {
+                            setSelectedAgents(prev => prev.filter(id => id !== agent.id))
+                          } else if (selectedAgents.length < wizardData.agentCount) {
+                            setSelectedAgents(prev => [...prev, agent.id])
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-sm">{agent.name}</div>
+                            <div className="text-xs text-gray-500">
+                              Source: {agent.source} • 
+                              Status: {agent.status || 'available'}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {agent.strategy || agent.strategyType || 'General'}
+                            </Badge>
+                            {selectedAgents.includes(agent.id) && (
+                              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {availableAgents.filter(a => a.available).length === 0 && (
+                      <div className="p-4 text-center text-gray-500">
+                        No available agents found
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Farm Configuration</Label>
+                  <div className="mt-2 space-y-3">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-sm">
+                        <div className="flex justify-between mb-2">
+                          <span>Total Agents Needed:</span>
+                          <span className="font-medium">{wizardData.agentCount}</span>
+                        </div>
+                        <div className="flex justify-between mb-2">
+                          <span>Selected Existing:</span>
+                          <span className="font-medium">{selectedAgents.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Will Create New:</span>
+                          <span className="font-medium">{Math.max(0, wizardData.agentCount - selectedAgents.length)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Coordination Mode</Label>
+                      <Select 
+                        value={wizardData.coordinationMode} 
+                        onValueChange={(value: any) => setWizardData(prev => ({ ...prev, coordinationMode: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="independent">Independent - Agents trade separately</SelectItem>
+                          <SelectItem value="coordinated">Coordinated - Agents share information</SelectItem>
+                          <SelectItem value="hierarchical">Hierarchical - Master agent coordinates</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Profit Distribution</Label>
+                      <Select 
+                        value={wizardData.profitDistribution} 
+                        onValueChange={(value: any) => setWizardData(prev => ({ ...prev, profitDistribution: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="equal">Equal - Split profits equally</SelectItem>
+                          <SelectItem value="performance">Performance - Based on results</SelectItem>
+                          <SelectItem value="capital">Capital - Based on allocation</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-sm">Auto-scaling</div>
+                        <div className="text-xs text-gray-600">Automatically add/remove agents</div>
+                      </div>
+                      <Switch
+                        checked={wizardData.autoScaling}
+                        onCheckedChange={(checked) => setWizardData(prev => ({ ...prev, autoScaling: checked }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedAgents.length > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="font-medium text-blue-900 text-sm mb-1">Selected Agents</div>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedAgents.map(agentId => {
+                      const agent = availableAgents.find(a => a.id === agentId)
+                      return (
+                        <Badge key={agentId} variant="secondary" className="text-xs">
+                          {agent?.name || agentId}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -656,6 +962,10 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                       <span className="text-gray-600">Strategy:</span>
                       <span className="font-medium">{wizardData.strategy.name}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Coordination:</span>
+                      <span className="font-medium capitalize">{wizardData.coordinationMode}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -691,13 +1001,30 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                 </div>
               )}
 
+              {selectedAgents.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Selected Agents ({selectedAgents.length})</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedAgents.map(agentId => {
+                      const agent = availableAgents.find(a => a.id === agentId)
+                      return (
+                        <Badge key={agentId} variant="secondary" className="text-xs">
+                          {agent?.name || agentId}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                 <div>
                   <div className="font-medium text-blue-900">Ready to Create</div>
                   <div className="text-sm text-blue-800 mt-1">
-                    Your farm will create {wizardData.agentCount} AI trading agents with ${wizardData.initialCapitalPerAgent.toLocaleString()} each.
-                    They will trade using the {wizardData.strategy.name} strategy.
+                    Your farm will use {selectedAgents.length} existing agents and create {Math.max(0, wizardData.agentCount - selectedAgents.length)} new agents 
+                    with ${wizardData.initialCapitalPerAgent.toLocaleString()} each.
+                    They will trade using the {wizardData.strategy.name} strategy in {wizardData.coordinationMode} mode.
                   </div>
                 </div>
               </div>
