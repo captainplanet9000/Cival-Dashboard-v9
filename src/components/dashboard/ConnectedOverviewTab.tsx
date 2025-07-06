@@ -9,7 +9,7 @@ import {
   BarChart3, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Target,
   Activity, RefreshCw, Users, Zap, Brain, Wallet, PieChart, ArrowRight,
   Network, Calendar, Settings, AlertTriangle, CheckCircle2, Clock, 
-  Layers, Database, Wifi, WifiOff, MessageSquare
+  Layers, Database, Wifi, WifiOff
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { motion } from 'framer-motion'
@@ -604,68 +604,6 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         </Card>
       </div>
 
-      {/* AI Assistant Quick Access */}
-      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Brain className="h-5 w-5 text-purple-600" />
-            AI Trading Assistant
-            <Badge variant="default" className="bg-purple-600 text-white">
-              ✅ ACTIVE
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Advanced AI with persistent memory and agent decision tracking
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-3 bg-white/70 rounded-lg border border-purple-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-medium">AI Status</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Trading Expert</p>
-              <p className="font-bold text-sm text-purple-600">Online & Ready</p>
-              <p className="text-xs text-muted-foreground">Memory system active</p>
-            </div>
-            <div className="p-3 bg-white/70 rounded-lg border border-purple-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">Agent Decisions</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Real-time tracking</p>
-              <p className="font-bold text-sm text-green-600">{displayData.activeAgents} Active</p>
-              <p className="text-xs text-muted-foreground">Decision monitoring</p>
-            </div>
-            <div className="p-3 bg-white/70 rounded-lg border border-purple-100">
-              <div className="flex items-center gap-2 mb-2">
-                <MessageSquare className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">Quick Actions</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Smart assistance</p>
-              <p className="font-bold text-sm text-blue-600">Ask Anything</p>
-              <p className="text-xs text-muted-foreground">Trading insights ready</p>
-            </div>
-          </div>
-          <div className="mt-4 p-3 bg-white/50 rounded-lg border border-purple-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-medium text-purple-700">Ready to Help</span>
-              </div>
-              <Badge variant="outline" className="text-purple-600 border-purple-300">
-                24/7 Available
-              </Badge>
-            </div>
-            <div className="mt-2 text-xs text-muted-foreground">
-              <p>• Get instant market analysis and trading suggestions</p>
-              <p>• Review portfolio performance with AI insights</p>
-              <p>• Ask questions about strategies and risk management</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
