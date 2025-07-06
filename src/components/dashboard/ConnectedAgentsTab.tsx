@@ -49,9 +49,16 @@ import { AutonomousExpertAgentsPanel } from './AutonomousExpertAgentsPanel'
 // Import blockchain wallet integration
 import BlockchainAgentWallet from '@/components/agents/BlockchainAgentWallet'
 
+// Import advanced trading agents framework
+import { tradingAgentCoordinator, TradingAgentCoordinator, MarketData, NewsData } from '@/lib/agents/advanced-trading-agents'
+import { appriseNotificationService, useNotifications } from '@/lib/notifications/apprise-service'
+
 // Import Agent Trading Dashboard
 import { AgentTradingDashboard } from '@/components/agents/AgentTradingDashboard'
 import BlockchainWalletsPanel from '@/components/agents/BlockchainWalletsPanel'
+
+// Import Advanced Trading Agents Panel
+import { AdvancedTradingAgentsPanel } from '@/components/agents/AdvancedTradingAgentsPanel'
 
 // Import premium components for enhanced agent functionality
 import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
@@ -1179,6 +1186,11 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
       id: 'overview', 
       label: 'Overview', 
       component: () => <AgentOverviewPanel key={agentUpdateTrigger} agentPerformance={agentPerformanceMap} />
+    },
+    {
+      id: 'advanced-agents',
+      label: 'AI Analysts',
+      component: () => <AdvancedTradingAgentsPanel key={agentUpdateTrigger} />
     },
     { 
       id: 'agent-management', 

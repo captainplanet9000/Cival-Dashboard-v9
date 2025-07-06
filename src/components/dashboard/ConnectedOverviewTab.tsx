@@ -9,7 +9,7 @@ import {
   BarChart3, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Target,
   Activity, RefreshCw, Users, Zap, Brain, Wallet, PieChart, ArrowRight,
   Network, Calendar, Settings, AlertTriangle, CheckCircle2, Clock, 
-  Layers, Database, Wifi, WifiOff
+  Layers, Database, Wifi, WifiOff, Bell, MessageSquare, Mail, Webhook, TestTube
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { motion } from 'framer-motion'
@@ -25,6 +25,19 @@ import type { DashboardSummary, SystemHealth } from '@/lib/services/supabase-das
 
 // Import Unified AI Assistant
 import UnifiedAIAssistant from '@/components/ai-assistant/UnifiedAIAssistant'
+
+// Import animated components for enhanced UI
+import {
+  AnimatedPrice,
+  AnimatedCounter,
+  AnimatedProgress,
+  AnimatedCard,
+  AnimatedStatus,
+  AnimatedMarketTicker
+} from '@/components/ui/animated-components'
+
+// Import notification hooks
+import { useNotifications } from '@/lib/notifications/apprise-service'
 
 interface ConnectedOverviewTabProps {
   className?: string
@@ -193,7 +206,11 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Agents</p>
-                <p className="text-xl font-bold">{displayData.activeAgents}</p>
+                <AnimatedCounter 
+                  value={displayData.activeAgents} 
+                  className="text-xl font-bold"
+                  duration={800}
+                />
                 <p className="text-xs text-muted-foreground">of {displayData.totalAgents} total</p>
               </div>
             </div>
@@ -203,7 +220,11 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Farms</p>
-                <p className="text-xl font-bold">{displayData.activeFarms}</p>
+                <AnimatedCounter 
+                  value={displayData.activeFarms} 
+                  className="text-xl font-bold"
+                  duration={800}
+                />
                 <p className="text-xs text-muted-foreground">of {displayData.totalFarms} total</p>
               </div>
             </div>
@@ -213,7 +234,14 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-xl font-bold">${totalSystemValue.toLocaleString()}</p>
+                <AnimatedPrice 
+                  value={totalSystemValue}
+                  currency="$"
+                  precision={0}
+                  size="lg"
+                  className="text-xl font-bold"
+                  showTrend={false}
+                />
                 <p className="text-xs text-muted-foreground">managed capital</p>
               </div>
             </div>
@@ -223,11 +251,16 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total P&L</p>
-                <p className={`text-xl font-bold ${displayData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {displayData.totalPnL >= 0 ? '+' : ''}${displayData.totalPnL.toFixed(2)}
-                </p>
+                <AnimatedPrice 
+                  value={displayData.totalPnL}
+                  currency={displayData.totalPnL >= 0 ? '+$' : '-$'}
+                  precision={2}
+                  size="lg"
+                  className={`text-xl font-bold ${displayData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  showTrend={false}
+                />
                 <p className="text-xs text-muted-foreground">
-                  {displayData.avgWinRate.toFixed(1)}% win rate
+                  <AnimatedCounter value={displayData.avgWinRate} precision={1} suffix="%" /> win rate
                 </p>
               </div>
             </div>
@@ -498,7 +531,14 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               return (
                 <div key={price.symbol} className="text-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border transition-colors">
                   <div className="text-xs font-medium text-muted-foreground mb-1">{price.symbol.split('/')[0]}</div>
-                  <div className="font-mono font-bold text-sm">${(price.price || 0).toLocaleString()}</div>
+                  <AnimatedPrice 
+                    value={price.price || 0}
+                    currency="$"
+                    precision={2}
+                    size="sm"
+                    className="font-mono font-bold text-sm"
+                    showTrend={false}
+                  />
                   <div className={`text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                     {isPositive ? '+' : ''}{(price.changePercent24h || 0).toFixed(2)}%
                   </div>
@@ -602,6 +642,124 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                   <span className="text-xs text-red-600">{aguiError}</span>
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Settings & Notifications */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Notification Settings Quick Access */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-blue-600" />
+              Notification Center
+            </CardTitle>
+            <CardDescription>
+              Configure multi-channel alerts for trading events and system updates
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">Global Notifications</div>
+                  <div className="text-sm text-muted-foreground">Master switch for all channels</div>
+                </div>
+                <AnimatedStatus status="active" pulse={true}>
+                  Enabled
+                </AnimatedStatus>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Active Channels</div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    <MessageSquare className="h-3 w-3 mr-1" />
+                    Discord
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    <Mail className="h-3 w-3 mr-1" />
+                    Email
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    <Webhook className="h-3 w-3 mr-1" />
+                    Webhook
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <Button size="sm" variant="outline" className="w-full" onClick={() => {
+                  // Quick test notification
+                  const { notifyAgentDecision } = useNotifications()
+                  notifyAgentDecision('Advanced Trading Agents', 'BUY', 85)
+                  toast.success('Test notification sent!')
+                }}>
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Send Test Notification
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Trading Agents Quick Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-purple-600" />
+              Advanced AI Analysts
+            </CardTitle>
+            <CardDescription>
+              Multi-agent framework with fundamental, technical, and sentiment analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-2 bg-blue-50 rounded-lg">
+                  <div className="text-lg font-bold text-blue-600">4</div>
+                  <div className="text-xs text-muted-foreground">AI Agents</div>
+                </div>
+                <div className="text-center p-2 bg-green-50 rounded-lg">
+                  <div className="text-lg font-bold text-green-600">85%</div>
+                  <div className="text-xs text-muted-foreground">Consensus</div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Fundamental Analyst</span>
+                  <AnimatedStatus status="active" className="text-xs">
+                    Active
+                  </AnimatedStatus>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Technical Analyst</span>
+                  <AnimatedStatus status="active" className="text-xs">
+                    Active
+                  </AnimatedStatus>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Sentiment Analyst</span>
+                  <AnimatedStatus status="active" className="text-xs">
+                    Active
+                  </AnimatedStatus>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Risk Manager</span>
+                  <AnimatedStatus status="active" className="text-xs">
+                    Active
+                  </AnimatedStatus>
+                </div>
+              </div>
+              
+              <Button size="sm" variant="outline" className="w-full" onClick={() => handleNavigateTo('agents')}>
+                <ArrowRight className="h-4 w-4 mr-2" />
+                View Advanced Agents
+              </Button>
             </div>
           </CardContent>
         </Card>

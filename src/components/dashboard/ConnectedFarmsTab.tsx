@@ -20,6 +20,9 @@ import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 // Import WebSocket hooks for real-time updates
 import { useFarmUpdates } from '@/lib/realtime/websocket'
 
+// Import farm creation wizard
+import { TabBasedFarmCreationWizard } from '@/components/farms/TabBasedFarmCreationWizard'
+
 // Simple farm interface
 interface Farm {
   id: string
@@ -98,6 +101,12 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null)
   const [showOrchestration, setShowOrchestration] = useState(false)
+  
+  // Handle farm creation
+  const handleFarmCreated = (farm: any) => {
+    toast.success(`Farm "${farm.name}" created successfully!`)
+    setActiveTab('farms') // Return to farms list
+  }
 
   // Strategy configuration options
   const strategyOptions = [
@@ -326,7 +335,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => toast.success('Farm creation feature coming soon')}>
+          <Button onClick={() => setActiveTab('create')}>
             <Plus className="mr-2 h-4 w-4" />
             Create Farm
           </Button>
@@ -343,7 +352,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
 
       {/* Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-emerald-50 gap-1">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 bg-emerald-50 gap-1">
           <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-100">
             <BarChart3 className="w-4 h-4 mr-2" />
             Overview
@@ -351,6 +360,10 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
           <TabsTrigger value="farms" className="data-[state=active]:bg-emerald-100">
             <Network className="w-4 h-4 mr-2" />
             Farms
+          </TabsTrigger>
+          <TabsTrigger value="create" className="data-[state=active]:bg-emerald-100">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Farm
           </TabsTrigger>
           <TabsTrigger value="agents" className="data-[state=active]:bg-emerald-100">
             <Bot className="w-4 h-4 mr-2" />
@@ -665,6 +678,16 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* Create Farm Tab */}
+        <TabsContent value="create" className="space-y-4">
+          <TabBasedFarmCreationWizard 
+            onFarmCreated={handleFarmCreated}
+            onCancel={() => setActiveTab('farms')}
+            onReturn={() => setActiveTab('farms')}
+            className=""
+          />
         </TabsContent>
 
         {/* Agents Tab */}

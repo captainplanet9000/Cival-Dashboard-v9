@@ -15,6 +15,9 @@ import { paperTradingEngine, TradingAgent, TradingStrategy, RiskLimits } from '@
 import { backendApi } from '@/lib/api/backend-client'
 import { toast } from 'react-hot-toast'
 
+// Import farms service for proper backend integration
+import { useFarms, FarmCreateConfig } from '@/lib/farms/farms-service'
+
 interface FarmConfig {
   name: string
   description: string
@@ -89,6 +92,10 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
   const [activeStep, setActiveStep] = useState('basic')
   const [isCreating, setIsCreating] = useState(false)
   const [existingAgents, setExistingAgents] = useState<TradingAgent[]>([])
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Use farms service for backend integration
+  const { createFarm } = useFarms()
   const [wizardData, setWizardData] = useState<FarmConfig>({
     name: '',
     description: '',
@@ -156,31 +163,48 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
     }
   }
 
-  const validateStep = (stepId: string): boolean | string => {
+  const validateStep = (stepId: string): boolean => {
+    const newErrors: Record<string, string> = {}
+    
     switch (stepId) {
       case 'basic':
-        if (!wizardData.name?.trim()) return 'Farm name is required'
-        if (wizardData.name.length < 3) return 'Farm name must be at least 3 characters'
-        if (wizardData.totalAllocatedCapital < 5000) return 'Minimum capital is $5,000'
+        if (!wizardData.name?.trim()) {
+          newErrors.name = 'Farm name is required'
+        } else if (wizardData.name.length < 3) {
+          newErrors.name = 'Farm name must be at least 3 characters'
+        }
+        if (wizardData.totalAllocatedCapital < 5000) {
+          newErrors.totalCapital = 'Minimum capital is $5,000'
+        }
         break
       case 'strategy':
-        if (!wizardData.strategy?.name?.trim()) return 'Strategy name is required'
-        if (wizardData.agentCount < 1 || wizardData.agentCount > 20) return 'Agent count must be between 1 and 20'
+        if (!wizardData.strategy?.name?.trim()) {
+          newErrors.strategyName = 'Strategy name is required'
+        }
+        if (wizardData.agentCount < 1 || wizardData.agentCount > 20) {
+          newErrors.agentCount = 'Agent count must be between 1 and 20'
+        }
         break
       case 'risk':
-        if (wizardData.riskLimits?.maxPositionSize < 1 || wizardData.riskLimits?.maxPositionSize > 50) return 'Position size must be between 1% and 50%'
-        if (wizardData.riskLimits?.maxDailyLoss < 100) return 'Minimum daily loss limit is $100'
-        if (wizardData.targetDailyProfit <= 0) return 'Target daily profit must be positive'
+        if (wizardData.riskLimits?.maxPositionSize < 1 || wizardData.riskLimits?.maxPositionSize > 50) {
+          newErrors.maxPositionSize = 'Position size must be between 1% and 50%'
+        }
+        if (wizardData.riskLimits?.maxDailyLoss < 100) {
+          newErrors.maxDailyLoss = 'Minimum daily loss limit is $100'
+        }
+        if (wizardData.targetDailyProfit <= 0) {
+          newErrors.targetDailyProfit = 'Target daily profit must be positive'
+        }
         break
     }
-    return true
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleNextStep = () => {
-    const validation = validateStep(activeStep)
-    if (validation !== true) {
-      toast.error(validation as string)
-      return
+    if (!validateStep(activeStep)) {
+      return // Errors are set in validateStep
     }
 
     if (activeStep === 'basic') {
@@ -207,10 +231,12 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
   const handleCreateFarm = async () => {
     setIsCreating(true)
     try {
+      // Start the paper trading engine if not already running
       if (!paperTradingEngine.listenerCount('pricesUpdated')) {
         paperTradingEngine.start()
       }
 
+      // Create agents for the farm
       const createdAgents: TradingAgent[] = []
 
       for (let i = 0; i < wizardData.agentCount; i++) {
@@ -233,42 +259,94 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
         createdAgents.push(agent)
       }
 
-      const farm = {
-        farm_id: `farm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        farm_name: wizardData.name,
+      // Create farm configuration for the service
+      const farmConfig: FarmCreateConfig = {
+        name: wizardData.name,
         description: wizardData.description,
-        strategy_type: wizardData.strategy.type,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        target_daily_profit: wizardData.targetDailyProfit,
-        target_win_rate: wizardData.targetWinRate,
-        max_risk_per_trade: wizardData.maxRiskPerTrade,
-        total_allocated_capital: wizardData.totalAllocatedCapital,
-        coordination_mode: wizardData.coordinationMode,
-        profit_distribution: wizardData.profitDistribution,
-        auto_scaling: wizardData.autoScaling,
-        emergency_stop_loss: wizardData.emergencyStopLoss,
+        farmType: wizardData.strategy.type,
+        targetAllocation: wizardData.totalAllocatedCapital,
+        strategy: wizardData.strategy.type,
+        parameters: {
+          ...wizardData.strategy.parameters,
+          targetDailyProfit: wizardData.targetDailyProfit,
+          targetWinRate: wizardData.targetWinRate,
+          maxRiskPerTrade: wizardData.maxRiskPerTrade,
+          profitDistribution: wizardData.profitDistribution,
+          autoScaling: wizardData.autoScaling,
+          emergencyStopLoss: wizardData.emergencyStopLoss,
+          coordinationMode: wizardData.coordinationMode
+        },
+        riskLimits: {
+          maxDrawdown: wizardData.riskLimits.maxDrawdown,
+          maxConcentration: wizardData.riskLimits.maxPositionSize,
+          maxLeverage: wizardData.riskLimits.maxLeverage
+        },
+        agents: createdAgents.map(agent => agent.id)
+      }
+
+      // Create farm using the farms service
+      const farmId = await createFarm(farmConfig)
+      
+      // Get the created farm data
+      const farmData = {
+        id: farmId,
+        name: wizardData.name,
+        description: wizardData.description,
+        strategy: wizardData.strategy.type,
+        agentCount: wizardData.agentCount,
+        totalCapital: wizardData.totalAllocatedCapital,
+        coordinationMode: wizardData.coordinationMode,
+        status: 'active' as const,
+        createdAt: new Date().toISOString(),
         agents: createdAgents.map(agent => agent.id),
-        metadata: {
-          agent_count: wizardData.agentCount,
-          strategy_parameters: wizardData.strategy.parameters,
-          risk_limits: wizardData.riskLimits,
-          creation_wizard_version: '2.0'
+        performance: {
+          totalValue: wizardData.totalAllocatedCapital,
+          totalPnL: 0,
+          winRate: 0,
+          tradeCount: 0,
+          roiPercent: 0,
+          activeAgents: wizardData.agentCount,
+          avgAgentPerformance: 0
         }
       }
-
-      try {
-        const backendResponse = await backendApi.post('/api/v1/farms', farm)
-        console.log('Farm saved to backend:', backendResponse.data)
-      } catch (backendError) {
-        console.error('Error saving farm to backend:', backendError)
-      }
-
-      toast.success('Farm created successfully!')
+      
+      toast.success(`Farm "${wizardData.name}" created successfully!`)
       
       if (onFarmCreated) {
-        onFarmCreated(farm)
+        onFarmCreated(farmData)
       }
+      
+      // Reset wizard data
+      setWizardData({
+        name: '',
+        description: '',
+        strategy: {
+          type: 'momentum',
+          name: STRATEGY_TEMPLATES.momentum.name,
+          parameters: STRATEGY_TEMPLATES.momentum.defaultParams,
+          description: STRATEGY_TEMPLATES.momentum.description
+        },
+        riskLimits: {
+          maxPositionSize: 10,
+          maxDailyLoss: 500,
+          maxDrawdown: 20,
+          maxLeverage: 1,
+          allowedSymbols: ['BTC/USD', 'ETH/USD', 'SOL/USD'],
+          stopLossEnabled: true,
+          takeProfitEnabled: true
+        },
+        agentCount: 5,
+        initialCapitalPerAgent: 10000,
+        totalAllocatedCapital: 50000,
+        targetDailyProfit: 1000,
+        targetWinRate: 75,
+        maxRiskPerTrade: 2.5,
+        coordinationMode: 'coordinated',
+        profitDistribution: 'performance',
+        autoScaling: true,
+        emergencyStopLoss: 10
+      })
+      setActiveStep('basic')
       
       if (onReturn) {
         onReturn()
@@ -276,7 +354,7 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
 
     } catch (error) {
       console.error('Error creating farm:', error)
-      toast.error('Failed to create farm')
+      toast.error('Failed to create farm. Please try again.')
     } finally {
       setIsCreating(false)
     }
@@ -343,8 +421,9 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                     value={wizardData.name}
                     onChange={(e) => setWizardData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter farm name..."
-                    className="mt-1"
+                    className={`mt-1 ${errors.name ? 'border-red-500' : ''}`}
                   />
+                  {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                 </div>
                 <div>
                   <Label htmlFor="agent-count">Number of Agents</Label>
@@ -355,8 +434,9 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                     max="20"
                     value={wizardData.agentCount}
                     onChange={(e) => setWizardData(prev => ({ ...prev, agentCount: parseInt(e.target.value) || 1 }))}
-                    className="mt-1"
+                    className={`mt-1 ${errors.agentCount ? 'border-red-500' : ''}`}
                   />
+                  {errors.agentCount && <p className="text-sm text-red-600 mt-1">{errors.agentCount}</p>}
                 </div>
               </div>
               
@@ -381,8 +461,9 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                     min="1000"
                     value={wizardData.initialCapitalPerAgent}
                     onChange={(e) => setWizardData(prev => ({ ...prev, initialCapitalPerAgent: parseInt(e.target.value) || 10000 }))}
-                    className="mt-1"
+                    className={`mt-1 ${errors.totalCapital ? 'border-red-500' : ''}`}
                   />
+                  {errors.totalCapital && <p className="text-sm text-red-600 mt-1">{errors.totalCapital}</p>}
                 </div>
                 <div>
                   <Label>Total Allocated Capital</Label>
@@ -465,8 +546,9 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                       ...prev,
                       riskLimits: { ...prev.riskLimits, maxPositionSize: parseInt(e.target.value) || 10 }
                     }))}
-                    className="mt-1"
+                    className={`mt-1 ${errors.maxPositionSize ? 'border-red-500' : ''}`}
                   />
+                  {errors.maxPositionSize && <p className="text-sm text-red-600 mt-1">{errors.maxPositionSize}</p>}
                 </div>
                 <div>
                   <Label htmlFor="max-daily-loss">Max Daily Loss ($)</Label>
@@ -479,8 +561,9 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                       ...prev,
                       riskLimits: { ...prev.riskLimits, maxDailyLoss: parseInt(e.target.value) || 500 }
                     }))}
-                    className="mt-1"
+                    className={`mt-1 ${errors.maxDailyLoss ? 'border-red-500' : ''}`}
                   />
+                  {errors.maxDailyLoss && <p className="text-sm text-red-600 mt-1">{errors.maxDailyLoss}</p>}
                 </div>
               </div>
 
@@ -493,8 +576,9 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                     min="1"
                     value={wizardData.targetDailyProfit}
                     onChange={(e) => setWizardData(prev => ({ ...prev, targetDailyProfit: parseInt(e.target.value) || 1000 }))}
-                    className="mt-1"
+                    className={`mt-1 ${errors.targetDailyProfit ? 'border-red-500' : ''}`}
                   />
+                  {errors.targetDailyProfit && <p className="text-sm text-red-600 mt-1">{errors.targetDailyProfit}</p>}
                 </div>
                 <div>
                   <Label htmlFor="target-winrate">Target Win Rate (%)</Label>

@@ -14,14 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+// Dialog imports removed - using wizard pattern instead
 import {
   Target, TrendingUp, DollarSign, Activity, Trophy, 
   Plus, RefreshCw, CheckCircle2, Clock, Calendar,
@@ -43,6 +36,9 @@ import { useGoals, Goal, GoalCreateConfig } from '@/lib/goals/goals-service'
 // Import farms service for integration
 import { useFarms } from '@/lib/farms/farms-service'
 
+// Import goal creation wizard
+import GoalCreationWizard from '@/components/goals/GoalCreationWizard'
+
 // Goal interface is now imported from goals-service
 
 interface ConnectedGoalsTabProps {
@@ -54,8 +50,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   
   // Use WebSocket for real-time goal updates
   const goalUpdates = useGoalUpdates()
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [activeTab, setActiveTab] = useState<'goals' | 'history' | 'performance'>('goals')
+  const [activeTab, setActiveTab] = useState<'goals' | 'create' | 'history' | 'performance'>('goals')
   const [historyData, setHistoryData] = useState<any[]>([])
   const [performanceHistory, setPerformanceHistory] = useState<any[]>([])
   
@@ -77,19 +72,11 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
   // Use farms service for farm integration
   const { farms = [] } = useFarms()
   
-  // Goal creation form state
-  const [newGoal, setNewGoal] = useState<Partial<GoalCreateConfig>>({
-    name: '',
-    description: '',
-    type: 'profit',
-    target: 1000,
-    priority: 'medium',
-    deadline: '',
-    reward: '',
-    category: 'trading',
-    farmId: '',
-    tags: []
-  })
+  // Goal creation state managed by wizard
+  const handleGoalCreated = (goal: any) => {
+    toast.success(`Goal "${goal.name}" created successfully!`)
+    setActiveTab('goals') // Return to goals list
+  }
 
   // Load performance data and history
   useEffect(() => {
@@ -139,35 +126,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
     }
   }, [state?.totalPnL, state?.winRate, state?.executedOrders?.length, farms])
 
-  const handleCreateGoal = async () => {
-    try {
-      if (!newGoal.name?.trim() || !newGoal.type) {
-        toast.error('Please fill in all required fields')
-        return
-      }
-
-      const goalId = await createGoal(newGoal as GoalCreateConfig)
-      toast.success(`Goal "${newGoal.name}" created successfully`)
-      
-      // Reset form and close dialog
-      setNewGoal({
-        name: '',
-        description: '',
-        type: 'profit',
-        target: 1000,
-        priority: 'medium',
-        deadline: '',
-        reward: '',
-        category: 'trading',
-        farmId: '',
-        tags: []
-      })
-      setShowCreateDialog(false)
-    } catch (error) {
-      console.error('Error creating goal:', error)
-      toast.error('Failed to create goal')
-    }
-  }
+  // Goal creation handled by wizard component
 
   const toggleGoalStatus = async (goalId: string) => {
     try {
@@ -349,128 +308,10 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Goal
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Create Trading Goal</DialogTitle>
-                <DialogDescription>
-                  Set a measurable objective for your trading performance
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Goal Name</Label>
-                  <Input
-                    value={newGoal.name}
-                    onChange={(e) => setNewGoal({...newGoal, name: e.target.value})}
-                    placeholder="e.g., Reach $5000 profit"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Description</Label>
-                  <Input
-                    value={newGoal.description}
-                    onChange={(e) => setNewGoal({...newGoal, description: e.target.value})}
-                    placeholder="Optional description of the goal"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Goal Type</Label>
-                    <Select value={newGoal.type} onValueChange={(v: any) => setNewGoal({...newGoal, type: v})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {goalTypes.map(type => (
-                          <SelectItem key={type.value} value={type.value}>
-                            <div>
-                              <div className="font-medium">{type.label}</div>
-                              <div className="text-xs text-muted-foreground">{type.description}</div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label>Target Value</Label>
-                    <Input
-                      type="number"
-                      value={newGoal.target}
-                      onChange={(e) => setNewGoal({...newGoal, target: parseFloat(e.target.value)})}
-                      placeholder="1000"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Priority</Label>
-                    <Select value={newGoal.priority} onValueChange={(v: any) => setNewGoal({...newGoal, priority: v})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low Priority</SelectItem>
-                        <SelectItem value="medium">Medium Priority</SelectItem>
-                        <SelectItem value="high">High Priority</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label>Deadline (Optional)</Label>
-                    <Input
-                      type="date"
-                      value={newGoal.deadline}
-                      onChange={(e) => setNewGoal({...newGoal, deadline: e.target.value})}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label>Reward (Optional)</Label>
-                  <Input
-                    value={newGoal.reward}
-                    onChange={(e) => setNewGoal({...newGoal, reward: e.target.value})}
-                    placeholder="e.g., Take a trading break, buy new equipment"
-                  />
-                </div>
-                
-                {newGoal.type === 'farm' && (
-                  <div>
-                    <Label>Associated Farm</Label>
-                    <Select value={newGoal.farmId} onValueChange={(v) => setNewGoal({...newGoal, farmId: v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a farm" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {farms.map(farm => (
-                          <SelectItem key={farm.id} value={farm.id}>
-                            {farm.name} - {(farm.strategy || '').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                
-                <Button onClick={handleCreateGoal} className="w-full">
-                  Create Goal
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => setActiveTab('create')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Goal
+          </Button>
           
           <Button variant="outline" size="sm" onClick={actions.refresh}>
             <RefreshCw className="h-4 w-4" />
@@ -483,6 +324,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
         <nav className="-mb-px flex space-x-8">
           {[
             { id: 'goals', label: 'Goals', icon: Target },
+            { id: 'create', label: 'Create Goal', icon: Plus },
             { id: 'history', label: 'History', icon: History },
             { id: 'performance', label: 'Performance', icon: BarChart3 }
           ].map((tab) => {
@@ -577,7 +419,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
                   <p className="text-muted-foreground mb-4">
                     Create your first trading goal to track your progress
                   </p>
-                  <Button onClick={() => setShowCreateDialog(true)}>
+                  <Button onClick={() => setActiveTab('create')}>
                     <Plus className="mr-2 h-4 w-4" />
                     Create Goal
                   </Button>
@@ -783,10 +625,7 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
               <span className="text-sm text-muted-foreground">
                 Achievements are automatically verified on testnet when goals are completed
               </span>
-              <Button size="sm" variant="outline" onClick={() => {
-                setNewGoal({ ...newGoal, type: 'blockchain' })
-                setShowCreateDialog(true)
-              }}>
+              <Button size="sm" variant="outline" onClick={() => setActiveTab('create')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Blockchain Goal
               </Button>
@@ -795,6 +634,17 @@ export function ConnectedGoalsTab({ className }: ConnectedGoalsTabProps) {
         </CardContent>
       </Card>
         </>
+      )}
+
+      {/* Create Goal Tab */}
+      {activeTab === 'create' && (
+        <div className="space-y-6">
+          <GoalCreationWizard 
+            onGoalCreated={handleGoalCreated}
+            onCancel={() => setActiveTab('goals')}
+            className=""
+          />
+        </div>
       )}
 
       {/* History Tab */}
