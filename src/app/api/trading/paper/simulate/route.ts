@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { broadcastPaperTrade, broadcastAgentUpdate, broadcastPortfolioUpdate } from '@/lib/api/websocket-broadcaster'
 
 // Simulate a paper trade execution
 const simulateTrade = () => {
@@ -74,17 +75,39 @@ export async function POST(request: NextRequest) {
       trades.push(simulateTrade())
     }
 
-    // In a real implementation, this would:
-    // 1. Execute the trade through the paper trading engine
-    // 2. Update agent balances and positions
-    // 3. Emit AG-UI events to all connected clients
-    // 4. Store the trade in the database
+    // Enhanced implementation with real-time WebSocket broadcasting
+    for (const trade of trades) {
+      // 1. Broadcast the paper trade event to all connected clients
+      await broadcastPaperTrade(trade)
+      
+      // 2. Broadcast agent update with new performance metrics
+      await broadcastAgentUpdate(trade.agentId, {
+        agentId: trade.agentId,
+        name: trade.agentName,
+        strategy: trade.strategy,
+        lastTrade: trade,
+        performance: {
+          lastTradeTime: trade.timestamp,
+          lastPnL: trade.pnl,
+          status: 'active'
+        }
+      })
+      
+      // 3. Broadcast portfolio update (aggregated data)
+      await broadcastPortfolioUpdate({
+        totalTrades: trades.length,
+        totalPnL: trades.reduce((sum, t) => sum + t.pnl, 0),
+        activeAgents: [...new Set(trades.map(t => t.agentId))].length,
+        lastUpdate: new Date().toISOString()
+      })
+    }
 
     return NextResponse.json({
       success: true,
       trades,
-      message: `Simulated ${trades.length} paper trade(s)`,
-      timestamp: new Date().toISOString()
+      message: `Simulated ${trades.length} paper trade(s) with real-time broadcasting`,
+      timestamp: new Date().toISOString(),
+      broadcastStatus: 'Events sent to WebSocket clients'
     })
   } catch (error) {
     console.error('Trade simulation error:', error)

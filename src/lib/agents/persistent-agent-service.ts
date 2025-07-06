@@ -6,6 +6,7 @@ import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
 import { agentLifecycleManager } from './agent-lifecycle-manager'
 import { enhancedAgentCreationService } from './enhanced-agent-creation-service'
 import { toast } from 'react-hot-toast'
+import { broadcastAgentUpdate, broadcastPortfolioUpdate } from '@/lib/api/websocket-broadcaster'
 
 export interface PersistentAgent {
   id: string
@@ -224,7 +225,22 @@ class PersistentAgentService extends EventEmitter {
 
       if (hasUpdates) {
         this.saveAgentsToStorage()
-        this.emit('portfolioUpdated', Array.from(this.agents.values()))
+        
+        // Broadcast real-time portfolio updates
+        const updatedAgents = Array.from(this.agents.values())
+        await broadcastPortfolioUpdate({
+          totalAgents: updatedAgents.length,
+          activeAgents: updatedAgents.filter(a => a.status === 'active').length,
+          totalValue: updatedAgents.reduce((sum, a) => sum + a.currentCapital, 0),
+          totalPnL: updatedAgents.reduce((sum, a) => sum + a.performance.totalPnL, 0),
+          totalTrades: updatedAgents.reduce((sum, a) => sum + a.performance.totalTrades, 0),
+          avgWinRate: updatedAgents.length > 0 ? 
+            updatedAgents.reduce((sum, a) => sum + a.performance.winRate, 0) / updatedAgents.length : 0,
+          lastUpdate: new Date().toISOString(),
+          eventType: 'portfolio_sync'
+        })
+        
+        this.emit('portfolioUpdated', updatedAgents)
         this.emit('agentUpdated')
       }
     } catch (error) {
@@ -328,6 +344,19 @@ class PersistentAgentService extends EventEmitter {
         await enhancedAgentCreationService.createAutonomousAgent(config)
       }
 
+      // Broadcast real-time agent creation event
+      await broadcastAgentUpdate(agentId, {
+        agentId,
+        name: agent.name,
+        strategy: agent.strategy,
+        status: agent.status,
+        initialCapital: agent.initialCapital,
+        currentCapital: agent.currentCapital,
+        performance: agent.performance,
+        createdAt: agent.createdAt,
+        eventType: 'agent_created'
+      })
+
       this.emit('agentCreated', agent)
       toast.success(`Agent "${config.name}" created successfully`)
       
@@ -363,6 +392,18 @@ class PersistentAgentService extends EventEmitter {
 
       // Start in lifecycle manager if exists
       await agentLifecycleManager.startAgent(agentId)
+
+      // Broadcast real-time agent status change
+      await broadcastAgentUpdate(agentId, {
+        agentId,
+        name: agent.name,
+        strategy: agent.strategy,
+        status: agent.status,
+        currentCapital: agent.currentCapital,
+        performance: agent.performance,
+        lastActive: agent.lastActive,
+        eventType: 'agent_started'
+      })
 
       this.emit('agentStarted', agent)
       toast.success(`Agent "${agent.name}" started`)

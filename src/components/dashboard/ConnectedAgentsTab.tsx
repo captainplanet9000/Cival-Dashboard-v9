@@ -39,6 +39,9 @@ import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creati
 // Import shared data manager to prevent duplicate requests
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 
+// Import real-time agent data hook for live updates
+import { useRealTimeAgentData } from '@/hooks/useRealTimeAgentData'
+
 // Import Supabase services for enhanced integration
 import { supabaseAgentsService } from '@/lib/services/supabase-agents-service'
 import { supabaseDashboardService } from '@/lib/services/supabase-dashboard-service'
@@ -175,7 +178,7 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
               {Array.from(agentPerformance.values()).length > 0 
-                ? (Array.from(agentPerformance.values()).reduce((sum, agent) => sum + (agent.winRate || 0), 0) / Array.from(agentPerformance.values()).length).toFixed(1)
+                ? ((Array.from(agentPerformance.values()).reduce((sum, agent) => sum + (agent.winRate || 0), 0) / Array.from(agentPerformance.values()).length) || 0).toFixed(1)
                 : '0.0'
               }%
             </div>
@@ -215,21 +218,21 @@ function AgentOverviewPanel({ agentPerformance }: { agentPerformance: Map<string
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Portfolio Value</span>
-                      <span className="font-medium">${(agentData.portfolioValue || 0).toFixed(2)}</span>
+                      <span className="font-medium">${((agentData.portfolioValue || 0) || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">P&L</span>
                       <span className={`font-medium ${(agentData.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {(agentData.pnl || 0) >= 0 ? '+' : ''}{(agentData.pnl || 0).toFixed(2)}
+                        {((agentData.pnl || 0) || 0) >= 0 ? '+' : ''}{((agentData.pnl || 0) || 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Win Rate</span>
-                      <span className="font-medium">{(agentData.winRate || 0).toFixed(1)}%</span>
+                      <span className="font-medium">{((agentData.winRate || 0) || 0).toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Trades</span>
-                      <span className="font-medium">{agentData.tradeCount}</span>
+                      <span className="font-medium">{(agentData.tradeCount || 0)}</span>
                     </div>
                   </div>
                 ) : (
@@ -466,15 +469,15 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
           
           // Enhanced metrics from paper trading
           maxDrawdown: paperAgent?.performance?.maxDrawdown || 0,
-          annualizedReturn: agent.performance.totalPnL / agent.initialCapital,
+          annualizedReturn: (agent.performance.totalPnL || 0) / Math.max(agent.initialCapital || 1, 1),
           volatility: paperAgent?.performance?.volatility || 0.15,
           profitFactor: paperAgent?.performance?.profitFactor || 1.2,
           
           // Trade statistics
           averageWin: paperAgent?.performance?.averageWin || 150,
           averageLoss: paperAgent?.performance?.averageLoss || 100,
-          winningTrades: Math.floor(agent.performance.totalTrades * agent.performance.winRate / 100),
-          losingTrades: Math.floor(agent.performance.totalTrades * (1 - agent.performance.winRate / 100)),
+          winningTrades: Math.floor((agent.performance.totalTrades || 0) * (agent.performance.winRate || 0) / 100),
+          losingTrades: Math.floor((agent.performance.totalTrades || 0) * (1 - (agent.performance.winRate || 0) / 100)),
           
           // Real-time data
           activePositions: paperAgent?.portfolio.positions.length || 0,
@@ -502,7 +505,7 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
             sharpeRatio: paperAgent.performance.sharpeRatio,
             
             maxDrawdown: paperAgent.performance.maxDrawdown,
-            annualizedReturn: paperAgent.performance.totalPnL / 10000, // assume 10k initial
+            annualizedReturn: (paperAgent.performance.totalPnL || 0) / 10000, // assume 10k initial
             volatility: 0.15,
             profitFactor: 1.2,
             
@@ -665,11 +668,11 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
                     </div>
                     
                     <div className="text-right">
-                      <div className={`text-2xl font-bold ${(agent.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {(agent.pnl || 0) >= 0 ? '+' : ''}{(agent.pnl || 0).toFixed(2)}
+                      <div className={`text-2xl font-bold ${((agent.pnl || 0) || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {((agent.pnl || 0) || 0) >= 0 ? '+' : ''}{((agent.pnl || 0) || 0).toFixed(2)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {(((agent.pnl || 0) / Math.max((agent.portfolioValue || 10000), 1)) * 100).toFixed(2)}% return
+                        {((((agent.pnl || 0) || 0) / Math.max(((agent.portfolioValue || 0) || 10000), 1)) * 100).toFixed(2)}% return
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Max DD: {((agent.maxDrawdown || 0) * 100).toFixed(1)}%
@@ -680,10 +683,10 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
                   <div className="mt-3 space-y-2">
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>Portfolio Growth</span>
-                      <span>{((agent.portfolioValue || 0) / Math.max(10000, 1) * 100).toFixed(0)}%</span>
+                      <span>{(((agent.portfolioValue || 0) || 0) / Math.max(10000, 1) * 100).toFixed(0)}%</span>
                     </div>
                     <Progress 
-                      value={Math.min(Math.max((agent.portfolioValue || 0) / Math.max(10000, 1) * 100, 0), 200)} 
+                      value={Math.min(Math.max(((agent.portfolioValue || 0) || 0) / Math.max(10000, 1) * 100, 0), 200)} 
                       className="h-2"
                     />
                   </div>
@@ -692,19 +695,19 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
                   <div className="mt-3 pt-3 border-t grid grid-cols-4 gap-4 text-xs">
                     <div>
                       <div className="text-muted-foreground">Volatility</div>
-                      <div className="font-medium">{((agent.volatility || 0) * 100).toFixed(1)}%</div>
+                      <div className="font-medium">{(((agent.volatility || 0) || 0) * 100).toFixed(1)}%</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Profit Factor</div>
-                      <div className="font-medium">{(agent.profitFactor || 0).toFixed(2)}</div>
+                      <div className="font-medium">{((agent.profitFactor || 0) || 0).toFixed(2)}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Avg Win</div>
-                      <div className="font-medium text-green-600">${(agent.averageWin || 0).toFixed(0)}</div>
+                      <div className="font-medium text-green-600">${((agent.averageWin || 0) || 0).toFixed(0)}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Avg Loss</div>
-                      <div className="font-medium text-red-600">${(agent.averageLoss || 0).toFixed(0)}</div>
+                      <div className="font-medium text-red-600">${((agent.averageLoss || 0) || 0).toFixed(0)}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -1141,6 +1144,17 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
     loading: agentsLoading = false
   } = useSharedRealtimeData()
 
+  // Use real-time agent data hook for live WebSocket updates
+  const {
+    agents: realTimeAgents,
+    portfolioData: realTimePortfolio,
+    lastPaperTrade,
+    lastLLMDecision,
+    connectionStatus,
+    isSubscribed,
+    refreshData
+  } = useRealTimeAgentData()
+
   // Mock functions for agent management (replace with actual API calls when backend is ready)
   const createAgent = async (config: any) => {
     console.log('Creating agent:', config)
@@ -1159,7 +1173,8 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
     return true
   }
   const refreshAgents = () => {
-    console.log('Refreshing agents')
+    console.log('Refreshing agents with real-time data')
+    refreshData() // Trigger real-time data refresh
   }
 
   // Use real-time paper trading data
@@ -1288,8 +1303,8 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
       />
     },
     { 
-      id: 'memory-analytics', 
-      label: 'Memory Analytics', 
+      id: 'memory', 
+      label: 'Memory', 
       component: () => <MemoryAnalyticsDashboard key={agentUpdateTrigger} />
     },
     { 
@@ -1347,6 +1362,14 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
             <Badge variant="outline" className="text-xs">
               {agentsConnected ? 'Connected' : 'Disconnected'}
             </Badge>
+            <Badge 
+              variant={connectionStatus === 'connected' ? "default" : "secondary"} 
+              className={`text-xs ${connectionStatus === 'connected' ? 'bg-blue-100 text-blue-800' : ''}`}
+            >
+              {connectionStatus === 'connected' && isSubscribed ? '🔄 Live Data' : 
+               connectionStatus === 'connecting' ? '⏳ Connecting' : 
+               connectionStatus === 'error' ? '❌ Error' : '📴 Offline'}
+            </Badge>
             <Button 
               size="sm" 
               variant="ghost" 
@@ -1368,8 +1391,8 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Total P&L</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${(dashboardSummary?.agents.totalPnL || totalPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${(dashboardSummary?.agents.totalPnL || totalPnL || 0).toFixed(2)}
+              <div className={`text-2xl font-bold ${((dashboardSummary?.agents.totalPnL || totalPnL || 0) || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${((dashboardSummary?.agents.totalPnL || totalPnL || 0) || 0).toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -1379,7 +1402,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Avg Win Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{(dashboardSummary?.agents.averageWinRate || avgWinRate || 0).toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{((dashboardSummary?.agents.averageWinRate || avgWinRate || 0) || 0).toFixed(1)}%</div>
             </CardContent>
           </Card>
           
@@ -1388,7 +1411,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Total Trades</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardSummary?.trading.totalTrades || paperTradingData?.recentTrades.length || 0}</div>
+              <div className="text-2xl font-bold">{(dashboardSummary?.trading.totalTrades || paperTradingData?.recentTrades.length || 0)}</div>
             </CardContent>
           </Card>
           
@@ -1397,7 +1420,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
               <CardTitle className="text-sm">Active Positions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{agents.reduce((sum, agent) => sum + agent.openPositions, 0)}</div>
+              <div className="text-2xl font-bold">{agents.reduce((sum, agent) => sum + (agent.openPositions || 0), 0)}</div>
             </CardContent>
           </Card>
         </div>

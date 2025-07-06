@@ -96,33 +96,33 @@ export function AgentPerformanceCard({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Total P&L</span>
-                  <span className={`font-semibold ${performance.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${performance.totalPnL.toFixed(2)}
+                  <span className={`font-semibold ${(performance.totalPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${(performance.totalPnL || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Win Rate</span>
-                  <span className="font-semibold">{performance.winRate.toFixed(1)}%</span>
+                  <span className="font-semibold">{(performance.winRate || 0).toFixed(1)}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Total Trades</span>
-                  <span className="font-semibold">{performance.totalTrades}</span>
+                  <span className="font-semibold">{performance.totalTrades || 0}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Unrealized P&L</span>
-                  <span className={`font-semibold ${totalUnrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${totalUnrealizedPnL.toFixed(2)}
+                  <span className={`font-semibold ${(totalUnrealizedPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${(totalUnrealizedPnL || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Max Drawdown</span>
-                  <span className="font-semibold text-red-600">{performance.maxDrawdown.toFixed(1)}%</span>
+                  <span className="font-semibold text-red-600">{(performance.maxDrawdown || 0).toFixed(1)}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Sharpe Ratio</span>
-                  <span className="font-semibold">{performance.sharpeRatio.toFixed(2)}</span>
+                  <span className="font-semibold">{(performance.sharpeRatio || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -137,16 +137,16 @@ export function AgentPerformanceCard({
                   {performance.successfulTrades}/{performance.totalTrades}
                 </span>
               </div>
-              <Progress value={performance.winRate} className="h-2" />
+              <Progress value={performance.winRate || 0} className="h-2" />
             </div>
           )}
 
           {/* Drawdown Warning */}
-          {performance && performance.maxDrawdown > agent.settings.maxDrawdown * 0.8 && (
+          {performance && (performance.maxDrawdown || 0) > (agent.settings.maxDrawdown || 100) * 0.8 && (
             <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
               <AlertTriangle className="h-4 w-4 text-red-500" />
               <span className="text-sm text-red-700">
-                Approaching max drawdown limit ({agent.settings.maxDrawdown}%)
+                Approaching max drawdown limit ({agent.settings.maxDrawdown || 100}%)
               </span>
             </div>
           )}
@@ -172,7 +172,7 @@ export function AgentPerformanceCard({
                 <BarChart3 className="h-3 w-3" />
                 <span className="text-xs">Daily Limit</span>
               </div>
-              <p className="text-sm font-semibold">{agent.maxDailyTrades}</p>
+              <p className="text-sm font-semibold">{agent.maxDailyTrades || 0}</p>
             </div>
           </div>
 
@@ -180,15 +180,15 @@ export function AgentPerformanceCard({
           <div className="grid grid-cols-2 gap-4 pt-2 border-t text-sm">
             <div>
               <p className="text-muted-foreground">Stop Loss</p>
-              <p className="font-semibold">{agent.settings.stopLoss}%</p>
+              <p className="font-semibold">{agent.settings.stopLoss || 0}%</p>
             </div>
             <div>
               <p className="text-muted-foreground">Take Profit</p>
-              <p className="font-semibold">{agent.settings.takeProfit}%</p>
+              <p className="font-semibold">{agent.settings.takeProfit || 0}%</p>
             </div>
             <div>
               <p className="text-muted-foreground">Max Position</p>
-              <p className="font-semibold">${agent.maxPositionSize}</p>
+              <p className="font-semibold">${agent.maxPositionSize || 0}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Paper Trading</p>
