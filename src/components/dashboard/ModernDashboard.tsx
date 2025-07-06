@@ -326,8 +326,8 @@ export function ModernDashboardV4() {
       component: <ConnectedTradingTab />
     },
     {
-      id: 'agents',
-      label: 'AI Agents',
+      id: 'agent-trading',
+      label: 'Agent Trading',
       icon: <Bot className="h-4 w-4" />,
       component: <AgentTradingDashboard />
     },
