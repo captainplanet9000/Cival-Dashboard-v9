@@ -57,8 +57,8 @@ import { appriseNotificationService, useNotifications } from '@/lib/notification
 import { AgentTradingDashboard } from '@/components/agents/AgentTradingDashboard'
 import BlockchainWalletsPanel from '@/components/agents/BlockchainWalletsPanel'
 
-// Import Advanced Trading Agents Panel
-import { AdvancedTradingAgentsPanel } from '@/components/agents/AdvancedTradingAgentsPanel'
+// Import Advanced Trading Agents Panel (Real version with live data)
+import { RealAdvancedTradingAgentsPanel } from '@/components/agents/RealAdvancedTradingAgentsPanel'
 
 // Import premium components for enhanced agent functionality
 import { EnhancedExpertAgents } from '@/components/premium-ui/agents/enhanced-expert-agents'
@@ -1190,7 +1190,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
     {
       id: 'advanced-agents',
       label: 'AI Analysts',
-      component: () => <AdvancedTradingAgentsPanel key={agentUpdateTrigger} />
+      component: () => <RealAdvancedTradingAgentsPanel key={agentUpdateTrigger} />
     },
     { 
       id: 'agent-management', 
