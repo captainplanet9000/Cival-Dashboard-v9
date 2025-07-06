@@ -11,10 +11,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
-import { EnhancedDropdown, type DropdownOption } from '@/components/ui/enhanced-dropdown'
-import { Alert } from '@/components/ui/feedback/alert'
-import { Space } from '@/components/ui/layout/space'
-import { Statistic } from '@/components/ui/data-display/statistic'
 import { Loader2 } from 'lucide-react'
 import {
   Target,
@@ -753,16 +749,16 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
                 </div>
               )}
 
-              <Alert>
-                <Info className="h-4 w-4" />
+              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                 <div>
-                  <div className="font-medium">Ready to Create</div>
-                  <div className="text-sm">
+                  <div className="font-medium text-blue-900">Ready to Create</div>
+                  <div className="text-sm text-blue-800 mt-1">
                     Your farm will create {wizardData.agentCount} AI trading agents with ${wizardData.initialCapitalPerAgent.toLocaleString()} each.
                     They will trade using the {wizardData.strategy.name} strategy.
                   </div>
                 </div>
-              </Alert>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
