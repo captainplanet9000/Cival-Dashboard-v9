@@ -21,6 +21,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, subDays, subHours } from 'date-fns'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
+import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
+import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 import AgentMemoryViewer from './AgentMemoryViewer'
 
 interface MemoryEntry {
@@ -77,21 +79,36 @@ export function MemoryAnalyticsDashboard() {
   const [loading, setLoading] = useState(true)
   const [realAgents, setRealAgents] = useState<any[]>([])
 
-  // Load real data from backend
+  // Get real agent data from shared data manager
+  const { agents: realtimeAgents } = useSharedRealtimeData()
+
+  // Load real data from backend and agent services
   useEffect(() => {
     loadRealData()
-  }, [selectedAgent, timeFrame])
+  }, [selectedAgent, timeFrame, realtimeAgents])
 
   const loadRealData = async () => {
     try {
       setLoading(true)
       
-      // Get real agents from lifecycle manager
-      const agents = await agentLifecycleManager.getAllAgents()
-      setRealAgents(agents)
+      // Combine agents from multiple sources for comprehensive data
+      const lifecycleAgents = await agentLifecycleManager.getAllAgents()
+      const persistentAgents = persistentAgentService.getAllAgents()
+      
+      // Merge with realtime agents from shared data
+      const allAgents = [
+        ...lifecycleAgents,
+        ...persistentAgents,
+        ...realtimeAgents
+      ].filter((agent, index, self) => 
+        // Remove duplicates by name
+        index === self.findIndex(a => a.name === agent.name)
+      )
+      
+      setRealAgents(allAgents)
       
       // Generate agent memory profiles from real data
-      const profiles = await Promise.all(agents.map(async (agent) => {
+      const profiles = await Promise.all(allAgents.map(async (agent) => {
         // Get memory from API
         let memory = null
         try {
@@ -131,7 +148,7 @@ export function MemoryAnalyticsDashboard() {
       setAgentProfiles(profiles)
       
       // Load memories from Redis for selected agents
-      await loadMemoriesFromRedis(agents)
+      await loadMemoriesFromRedis(allAgents)
       
       setLoading(false)
     } catch (error) {
