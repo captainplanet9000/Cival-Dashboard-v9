@@ -15,7 +15,7 @@ import { EnhancedDropdown, type DropdownOption } from '@/components/ui/enhanced-
 import { Alert } from '@/components/ui/feedback/alert'
 import { Space } from '@/components/ui/layout/space'
 import { Statistic } from '@/components/ui/data-display/statistic'
-import { Spin } from '@/components/ui/other/spin'
+import { Loader2 } from 'lucide-react'
 import {
   Target,
   Bot,
@@ -383,3 +383,425 @@ export function TabBasedFarmCreationWizard({ onFarmCreated, onCancel, onReturn, 
       setIsCreating(false)
     }
   }
+
+  // Progress calculation
+  const getStepProgress = () => {
+    const steps = ['basic', 'strategy', 'risk', 'review']
+    const currentIndex = steps.indexOf(activeStep)
+    return ((currentIndex + 1) / steps.length) * 100
+  }
+
+  return (
+    <div className={`max-w-4xl mx-auto p-6 ${className || ''}`}>
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Create New Trading Farm</h1>
+            <p className="text-gray-600">Set up a coordinated group of AI trading agents</p>
+          </div>
+          <div className="flex gap-2">
+            {onReturn && (
+              <Button variant="outline" onClick={onReturn}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Farms
+              </Button>
+            )}
+            {onCancel && (
+              <Button variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        {/* Progress bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Progress</span>
+            <span>{Math.round(getStepProgress())}%</span>
+          </div>
+          <Progress value={getStepProgress()} className="h-2" />
+        </div>
+      </div>
+
+      {/* Tabs for steps */}
+      <Tabs value={activeStep} onValueChange={setActiveStep} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="basic">Basic Info</TabsTrigger>
+          <TabsTrigger value="strategy">Strategy</TabsTrigger>
+          <TabsTrigger value="risk">Risk & Capital</TabsTrigger>
+          <TabsTrigger value="review">Review</TabsTrigger>
+        </TabsList>
+
+        {/* Basic Information Tab */}
+        <TabsContent value="basic" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Farm Configuration</CardTitle>
+              <CardDescription>Basic settings for your trading farm</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="farm-name">Farm Name *</Label>
+                  <Input
+                    id="farm-name"
+                    value={wizardData.name}
+                    onChange={(e) => setWizardData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter farm name..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="agent-count">Number of Agents</Label>
+                  <Input
+                    id="agent-count"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={wizardData.agentCount}
+                    onChange={(e) => setWizardData(prev => ({ ...prev, agentCount: parseInt(e.target.value) || 1 }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="farm-description">Description</Label>
+                <Textarea
+                  id="farm-description"
+                  value={wizardData.description}
+                  onChange={(e) => setWizardData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe your farm's purpose and strategy..."
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="capital-per-agent">Capital per Agent ($)</Label>
+                  <Input
+                    id="capital-per-agent"
+                    type="number"
+                    min="1000"
+                    value={wizardData.initialCapitalPerAgent}
+                    onChange={(e) => setWizardData(prev => ({ ...prev, initialCapitalPerAgent: parseInt(e.target.value) || 10000 }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Total Allocated Capital</Label>
+                  <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                    <div className="text-lg font-semibold text-green-600">
+                      ${wizardData.totalAllocatedCapital.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {wizardData.agentCount} agents × ${wizardData.initialCapitalPerAgent.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Strategy Tab */}
+        <TabsContent value="strategy" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Trading Strategy</CardTitle>
+              <CardDescription>Configure the trading strategy for your farm</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Strategy Type</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+                  {Object.entries(STRATEGY_TEMPLATES).map(([key, template]) => (
+                    <Card
+                      key={key}
+                      className={`cursor-pointer transition-all ${
+                        wizardData.strategy.type === key
+                          ? 'ring-2 ring-blue-500 bg-blue-50'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => handleStrategyChange(key as TradingStrategy['type'])}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium">{template.name}</h4>
+                          {wizardData.strategy.type === key && (
+                            <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline">
+                            {template.riskProfile.replace('_', ' ')}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {template.recommendedAgents.optimal} agents
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Strategy Parameters */}
+              <div>
+                <Label>Strategy Parameters</Label>
+                <Card className="mt-2">
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(wizardData.strategy.parameters).map(([key, value]) => (
+                        <div key={key}>
+                          <Label htmlFor={`param-${key}`}>
+                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                          </Label>
+                          <Input
+                            id={`param-${key}`}
+                            type="number"
+                            step="0.001"
+                            value={value as number}
+                            onChange={(e) => handleParameterChange(key, parseFloat(e.target.value) || 0)}
+                            className="mt-1"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Risk & Capital Tab */}
+        <TabsContent value="risk" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Risk Management</CardTitle>
+              <CardDescription>Configure risk limits and safety measures</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="max-position">Max Position Size (%)</Label>
+                  <Input
+                    id="max-position"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={wizardData.riskLimits.maxPositionSize}
+                    onChange={(e) => setWizardData(prev => ({
+                      ...prev,
+                      riskLimits: { ...prev.riskLimits, maxPositionSize: parseInt(e.target.value) || 10 }
+                    }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="max-daily-loss">Max Daily Loss ($)</Label>
+                  <Input
+                    id="max-daily-loss"
+                    type="number"
+                    min="100"
+                    value={wizardData.riskLimits.maxDailyLoss}
+                    onChange={(e) => setWizardData(prev => ({
+                      ...prev,
+                      riskLimits: { ...prev.riskLimits, maxDailyLoss: parseInt(e.target.value) || 500 }
+                    }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="target-profit">Target Daily Profit ($)</Label>
+                  <Input
+                    id="target-profit"
+                    type="number"
+                    min="1"
+                    value={wizardData.targetDailyProfit}
+                    onChange={(e) => setWizardData(prev => ({ ...prev, targetDailyProfit: parseInt(e.target.value) || 1000 }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="target-winrate">Target Win Rate (%)</Label>
+                  <Input
+                    id="target-winrate"
+                    type="number"
+                    min="50"
+                    max="95"
+                    value={wizardData.targetWinRate}
+                    onChange={(e) => setWizardData(prev => ({ ...prev, targetWinRate: parseInt(e.target.value) || 75 }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Risk Controls</Label>
+                <div className="mt-2 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Stop Loss Protection</div>
+                      <div className="text-sm text-gray-600">Automatically close losing positions</div>
+                    </div>
+                    <Switch
+                      checked={wizardData.riskLimits.stopLossEnabled}
+                      onCheckedChange={(checked) => setWizardData(prev => ({
+                        ...prev,
+                        riskLimits: { ...prev.riskLimits, stopLossEnabled: checked }
+                      }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Take Profit Orders</div>
+                      <div className="text-sm text-gray-600">Lock in profits at target levels</div>
+                    </div>
+                    <Switch
+                      checked={wizardData.riskLimits.takeProfitEnabled}
+                      onCheckedChange={(checked) => setWizardData(prev => ({
+                        ...prev,
+                        riskLimits: { ...prev.riskLimits, takeProfitEnabled: checked }
+                      }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Auto Scaling</div>
+                      <div className="text-sm text-gray-600">Automatically adjust position sizes</div>
+                    </div>
+                    <Switch
+                      checked={wizardData.autoScaling}
+                      onCheckedChange={(checked) => setWizardData(prev => ({ ...prev, autoScaling: checked }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Review Tab */}
+        <TabsContent value="review" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Review & Create</CardTitle>
+              <CardDescription>Review your farm configuration before creation</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-3">Basic Configuration</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Farm Name:</span>
+                      <span className="font-medium">{wizardData.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Agents:</span>
+                      <span className="font-medium">{wizardData.agentCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Capital:</span>
+                      <span className="font-medium">${wizardData.totalAllocatedCapital.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Strategy:</span>
+                      <span className="font-medium">{wizardData.strategy.name}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium mb-3">Risk Configuration</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Position:</span>
+                      <span className="font-medium">{wizardData.riskLimits.maxPositionSize}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Daily Loss:</span>
+                      <span className="font-medium">${wizardData.riskLimits.maxDailyLoss}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Target Profit:</span>
+                      <span className="font-medium">${wizardData.targetDailyProfit}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Target Win Rate:</span>
+                      <span className="font-medium">{wizardData.targetWinRate}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {wizardData.description && (
+                <div>
+                  <h4 className="font-medium mb-2">Description</h4>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                    {wizardData.description}
+                  </p>
+                </div>
+              )}
+
+              <Alert>
+                <Info className="h-4 w-4" />
+                <div>
+                  <div className="font-medium">Ready to Create</div>
+                  <div className="text-sm">
+                    Your farm will create {wizardData.agentCount} AI trading agents with ${wizardData.initialCapitalPerAgent.toLocaleString()} each.
+                    They will trade using the {wizardData.strategy.name} strategy.
+                  </div>
+                </div>
+              </Alert>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Navigation buttons */}
+      <div className="flex justify-between pt-6">
+        <Button
+          variant="outline"
+          onClick={handlePrevStep}
+          disabled={activeStep === 'basic'}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
+
+        <Button
+          onClick={handleNextStep}
+          disabled={isCreating}
+          className="min-w-[120px]"
+        >
+          {isCreating ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Creating...
+            </>
+          ) : activeStep === 'review' ? (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              Create Farm
+            </>
+          ) : (
+            <>
+              Next
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
