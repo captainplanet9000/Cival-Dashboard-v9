@@ -23,6 +23,9 @@ import { toast } from 'react-hot-toast'
 import { supabaseDashboardService } from '@/lib/services/supabase-dashboard-service'
 import type { DashboardSummary, SystemHealth } from '@/lib/services/supabase-dashboard-service'
 
+// Import Unified AI Assistant
+import UnifiedAIAssistant from '@/components/ai-assistant/UnifiedAIAssistant'
+
 interface ConnectedOverviewTabProps {
   className?: string
   onNavigateToTab?: (tabId: string) => void
@@ -603,6 +606,22 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Trading Assistant */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-600" />
+            AI Trading Assistant
+          </CardTitle>
+          <CardDescription>
+            Advanced AI assistant with persistent memory and agent decision tracking
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <UnifiedAIAssistant />
+        </CardContent>
+      </Card>
 
     </div>
   )

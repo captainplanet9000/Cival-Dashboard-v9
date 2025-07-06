@@ -48,6 +48,9 @@ import { AutonomousExpertAgentsPanel } from './AutonomousExpertAgentsPanel'
 
 // Import blockchain wallet integration
 import BlockchainAgentWallet from '@/components/agents/BlockchainAgentWallet'
+
+// Import Agent Trading Dashboard
+import { AgentTradingDashboard } from '@/components/agents/AgentTradingDashboard'
 import BlockchainWalletsPanel from '@/components/agents/BlockchainWalletsPanel'
 
 // Import premium components for enhanced agent functionality

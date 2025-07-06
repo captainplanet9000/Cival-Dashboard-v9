@@ -28,6 +28,7 @@ import ElizaAIHub from '@/components/advanced/ElizaAIHub'
 import SystemMonitoringDashboard from '@/components/monitoring/SystemMonitoringDashboard'
 import FileManager from '@/components/data-manager/FileManager'
 import { ExportManager } from '@/components/export/ExportManager'
+import MCPDashboard from '@/components/mcp/MCPDashboard'
 
 // Import premium advanced components (Placeholder components for missing premium features)
 // import { AdvancedSettings } from '@/components/premium-ui/advanced/advanced-settings'
@@ -155,7 +156,7 @@ interface ConnectedAdvancedTabProps {
 
 export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
   const { state, actions } = useDashboardConnection('advanced')
-  const [advancedSubTab, setAdvancedSubTab] = useState('analytics')
+  const [advancedSubTab, setAdvancedSubTab] = useState('mcp')
   const [riskSettings, setRiskSettings] = useState({
     maxDailyLoss: 5000,
     maxDrawdown: 10,
@@ -524,6 +525,7 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
   }
 
   const advancedSubTabs = [
+    { id: 'mcp', label: 'MCP Dashboard', component: <MCPDashboard />, icon: <Zap className="h-4 w-4" /> },
     { id: 'premium-settings', label: 'Premium Settings', component: <AdvancedSettings />, icon: <Settings className="h-4 w-4" /> },
     { id: 'system-monitor', label: 'System Monitor', component: <SystemMonitor />, icon: <Zap className="h-4 w-4" /> },
     { id: 'data-explorer', label: 'Data Explorer', component: <DataExplorer />, icon: <Database className="h-4 w-4" /> },

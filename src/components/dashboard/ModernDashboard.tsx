@@ -308,28 +308,10 @@ export function ModernDashboardV4() {
       component: <ConnectedGoalsTab />
     },
     {
-      id: 'ai-assistant',
-      label: 'AI Assistant',
-      icon: <Brain className="h-4 w-4" />,
-      component: <UnifiedAIAssistant />
-    },
-    {
-      id: 'mcp',
-      label: 'MCP',
-      icon: <Zap className="h-4 w-4" />,
-      component: <MCPDashboard />
-    },
-    {
       id: 'trading',
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
       component: <ConnectedTradingTab />
-    },
-    {
-      id: 'agent-trading',
-      label: 'Agent Trading',
-      icon: <Bot className="h-4 w-4" />,
-      component: <AgentTradingDashboard />
     },
     {
       id: 'defi',
@@ -342,12 +324,6 @@ export function ModernDashboardV4() {
       label: 'Analytics',
       icon: <PieChart className="h-4 w-4" />,
       component: <ConnectedAnalyticsTab />
-    },
-    {
-      id: 'history',
-      label: 'History',
-      icon: <Activity className="h-4 w-4" />,
-      component: <ConnectedHistoryTab />
     },
     {
       id: 'vault',
