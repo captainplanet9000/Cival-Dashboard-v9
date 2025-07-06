@@ -30,6 +30,9 @@ import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDa
 import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// Import Interactive Trading Chart
+import InteractiveTradingChart from '@/components/charts/InteractiveTradingChart'
+
 // Import premium trading components (existing only)
 import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'
 import { AdvancedOrderBook } from '@/components/premium-ui/trading/advanced-orderbook'
@@ -77,15 +80,12 @@ const PositionManager = () => (
 )
 
 const RealTimeCharts = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Real-time Charts</CardTitle>
-      <CardDescription>Live market data visualization</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-muted-foreground">Real-time charts coming soon...</p>
-    </CardContent>
-  </Card>
+  <InteractiveTradingChart
+    symbol="BTC/USD"
+    width={800}
+    height={400}
+    className="w-full"
+  />
 )
 
 interface ConnectedTradingTabProps {

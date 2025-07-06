@@ -27,6 +27,9 @@ import { cn } from '@/lib/utils'
 import { AdvancedPortfolioAnalytics } from '@/components/premium-ui/portfolio/advanced-portfolio-analytics'
 import type { Position, PortfolioMetrics, RiskMetrics } from '@/components/premium-ui/portfolio/advanced-portfolio-analytics'
 
+// Import 3D Portfolio Visualization
+import Portfolio3DVisualization from '@/components/charts/Portfolio3DVisualization'
+
 interface ConnectedPortfolioTabProps {
   className?: string
 }
@@ -480,6 +483,13 @@ export function ConnectedPortfolioTab({ className }: ConnectedPortfolioTabProps)
           </div>
         </div>
       )}
+
+      {/* 3D Portfolio Visualization */}
+      <Portfolio3DVisualization 
+        width={800}
+        height={500}
+        className="mt-6"
+      />
     </div>
   )
 }

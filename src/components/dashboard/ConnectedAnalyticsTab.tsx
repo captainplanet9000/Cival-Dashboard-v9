@@ -39,6 +39,9 @@ import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDas
 import RealPortfolioAnalyticsDashboard from '@/components/portfolio/RealPortfolioAnalyticsDashboard'
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
 
+// Import Swagger API Documentation
+import SwaggerApiDocs from '@/components/api-docs/SwaggerApiDocs'
+
 // Import premium analytics components (Placeholder components for missing premium features)
 // import { AdvancedAnalytics } from '@/components/premium-ui/analytics/advanced-analytics'
 // import { RealTimeCharts } from '@/components/premium-ui/charts/real-time-charts'
@@ -964,7 +967,8 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
     { id: 'realtime-charts', label: 'Real-time Charts', component: <RealTimeCharts /> },
     { id: 'performance-metrics', label: 'Performance Metrics', component: <PerformanceMetrics /> },
     { id: 'risk-analytics', label: 'Risk Analytics', component: <RiskAnalytics /> },
-    { id: 'portfolio-optimizer', label: 'Portfolio Optimizer', component: <PortfolioOptimizer /> }
+    { id: 'portfolio-optimizer', label: 'Portfolio Optimizer', component: <PortfolioOptimizer /> },
+    { id: 'api-docs', label: 'API Documentation', component: <SwaggerApiDocs /> }
   ]
   
   return (

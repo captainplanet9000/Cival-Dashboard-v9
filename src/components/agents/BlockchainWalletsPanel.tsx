@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -65,6 +65,29 @@ export function BlockchainWalletsPanel() {
     try {
       const newWallets = await testnetWalletManager.createWalletsForAgent(agentId, agentName)
       console.log(`✅ Created ${newWallets.length} wallets for ${agentName}`)
+      
+      // Also integrate with enhanced agent creation service
+      try {
+        const { enhancedAgentCreationService } = await import('@/lib/agents/enhanced-agent-creation-service')
+        const existingAgent = enhancedAgentCreationService.getAgent(agentId)
+        if (existingAgent) {
+          // Update agent wallet info
+          existingAgent.walletInfo = {
+            ...existingAgent.walletInfo,
+            walletId: newWallets[0]?.id,
+            address: newWallets[0]?.address,
+            balance: newWallets[0]?.balance?.eth || 0,
+            lastFunding: new Date(),
+            transactions: newWallets[0]?.transactions?.length || 0,
+            vaultBackups: 0
+          }
+          existingAgent.connections.wallet = true
+          console.log(`✅ Updated enhanced agent ${agentId} with wallet info`)
+        }
+      } catch (enhancedError) {
+        console.log('Enhanced agent service not available:', enhancedError)
+      }
+      
       loadWallets()
     } catch (error) {
       console.error('Error creating wallets:', error)
@@ -215,7 +238,22 @@ export function BlockchainWalletsPanel() {
               <p className="text-muted-foreground mb-4">
                 Create testnet wallets for your agents to enable blockchain trading
               </p>
-              <Button onClick={() => {
+              <Button onClick={async () => {
+                try {
+                  // Try enhanced agents first
+                  const { enhancedAgentCreationService } = await import('@/lib/agents/enhanced-agent-creation-service')
+                  const enhancedAgents = enhancedAgentCreationService.getCreatedAgents()
+                  
+                  if (enhancedAgents.length > 0) {
+                    const agent = enhancedAgents[0]
+                    createWalletForAgent(agent.id, agent.config.name)
+                    return
+                  }
+                } catch (error) {
+                  console.log('Enhanced agents not available, using persistent agents')
+                }
+                
+                // Fallback to persistent agents
                 const persistentAgents = persistentAgentService.getAllAgents()
                 if (persistentAgents.length > 0) {
                   const agent = persistentAgents[0]

@@ -253,9 +253,9 @@ export function UnifiedAIAssistant({
     initializeSession()
     loadStoredData()
     
-    // Set up auto-save interval
+    // Set up auto-save interval with throttling to prevent performance issues
     if (autoSaveEnabled) {
-      const interval = setInterval(saveSessionData, 30000) // Save every 30 seconds
+      const interval = setInterval(saveSessionData, 300000) // Save every 5 minutes instead of 30 seconds
       return () => clearInterval(interval)
     }
   }, [autoSaveEnabled])
