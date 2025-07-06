@@ -9,7 +9,7 @@ import {
   BarChart3, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Target,
   Activity, RefreshCw, Users, Zap, Brain, Wallet, PieChart, ArrowRight,
   Network, Calendar, Settings, AlertTriangle, CheckCircle2, Clock, 
-  Layers, Database, Wifi, WifiOff
+  Layers, Database, Wifi, WifiOff, MessageSquare
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { motion } from 'framer-motion'
@@ -105,40 +105,40 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   
   // Calculate derived metrics from either Supabase or shared data
   const displayData = useSupabase && dashboardSummary ? {
-    totalAgents: dashboardSummary.agents.total,
-    activeAgents: dashboardSummary.agents.active,
-    totalPortfolioValue: dashboardSummary.agents.totalCapital,
-    totalPnL: dashboardSummary.agents.totalPnL + dashboardSummary.trading.totalPnL,
-    avgWinRate: dashboardSummary.agents.averageWinRate,
-    totalFarms: dashboardSummary.farms.total,
-    activeFarms: dashboardSummary.farms.active,
-    farmTotalValue: dashboardSummary.farms.totalAllocated,
+    totalAgents: dashboardSummary.agents.total || 0,
+    activeAgents: dashboardSummary.agents.active || 0,
+    totalPortfolioValue: dashboardSummary.agents.totalCapital || 0,
+    totalPnL: (dashboardSummary.agents.totalPnL || 0) + (dashboardSummary.trading.totalPnL || 0),
+    avgWinRate: dashboardSummary.agents.averageWinRate || 0,
+    totalFarms: dashboardSummary.farms.total || 0,
+    activeFarms: dashboardSummary.farms.active || 0,
+    farmTotalValue: dashboardSummary.farms.totalAllocated || 0,
     supabaseConnected: systemHealth?.supabaseConnected || false,
     redisConnected: true, // Assume true for now
     agentsConnected: systemHealth?.agentsHealth || false,
     farmsConnected: systemHealth?.farmsHealth || false,
     lastUpdate: systemHealth?.lastUpdate ? new Date(systemHealth.lastUpdate) : new Date()
   } : {
-    totalAgents: sharedData.totalAgents,
-    activeAgents: sharedData.activeAgents,
-    totalPortfolioValue: sharedData.totalPortfolioValue,
-    totalPnL: sharedData.totalPnL,
-    avgWinRate: sharedData.avgWinRate,
-    totalFarms: sharedData.totalFarms,
-    activeFarms: sharedData.activeFarms,
-    farmTotalValue: sharedData.farmTotalValue,
-    supabaseConnected: sharedData.supabaseConnected,
-    redisConnected: sharedData.redisConnected,
-    agentsConnected: sharedData.agentsConnected,
-    farmsConnected: sharedData.farmsConnected,
-    lastUpdate: sharedData.lastUpdate
+    totalAgents: sharedData.totalAgents || 0,
+    activeAgents: sharedData.activeAgents || 0,
+    totalPortfolioValue: sharedData.totalPortfolioValue || 0,
+    totalPnL: sharedData.totalPnL || 0,
+    avgWinRate: sharedData.avgWinRate || 0,
+    totalFarms: sharedData.totalFarms || 0,
+    activeFarms: sharedData.activeFarms || 0,
+    farmTotalValue: sharedData.farmTotalValue || 0,
+    supabaseConnected: sharedData.supabaseConnected || false,
+    redisConnected: sharedData.redisConnected || false,
+    agentsConnected: sharedData.agentsConnected || false,
+    farmsConnected: sharedData.farmsConnected || false,
+    lastUpdate: sharedData.lastUpdate || new Date()
   }
 
   // Market data for overview
   const { prices: marketPrices, loading: marketLoading } = useMarketData()
   
   // Calculate derived metrics
-  const totalSystemValue = displayData.totalPortfolioValue + displayData.farmTotalValue
+  const totalSystemValue = (displayData.totalPortfolioValue || 0) + (displayData.farmTotalValue || 0)
   const systemHealthScore = [
     displayData.supabaseConnected,
     displayData.redisConnected,
@@ -232,96 +232,6 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         </CardContent>
       </Card>
 
-      {/* AGUI Integration Status - NEW FEATURE HIGHLIGHT */}
-      <Card className="border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500 rounded-full">
-                <Zap className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  AG-UI Protocol v2 Integration
-                  <Badge variant="default" className="bg-emerald-600 text-white">
-                    ✅ LIVE
-                  </Badge>
-                </CardTitle>
-                <CardDescription>
-                  Real-time agent communication with production database integration
-                </CardDescription>
-              </div>
-            </div>
-            <div className="text-right">
-              <Badge variant="outline" className="text-emerald-600 border-emerald-300">
-                100% Schema Compliant
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-white/70 rounded-lg border border-emerald-100">
-              <div className="flex items-center justify-center mb-2">
-                {aguiConnected ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                ) : (
-                  <AlertTriangle className="h-5 w-5 text-orange-500" />
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">WebSocket Status</p>
-              <p className="font-bold text-sm">{aguiConnected ? 'Connected' : 'Disconnected'}</p>
-              <p className="text-xs text-emerald-600">{connectionState}</p>
-            </div>
-            <div className="text-center p-3 bg-white/70 rounded-lg border border-emerald-100">
-              <div className="flex items-center justify-center mb-2">
-                <Activity className="h-5 w-5 text-blue-600" />
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Messages Received</p>
-              <p className="font-bold text-sm">{messagesReceived}</p>
-              <p className="text-xs text-blue-600">real-time events</p>
-            </div>
-            <div className="text-center p-3 bg-white/70 rounded-lg border border-emerald-100">
-              <div className="flex items-center justify-center mb-2">
-                <Database className="h-5 w-5 text-purple-600" />
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Database Integration</p>
-              <p className="font-bold text-sm">Active</p>
-              <p className="text-xs text-purple-600">UUID + JSONB</p>
-            </div>
-            <div className="text-center p-3 bg-white/70 rounded-lg border border-emerald-100">
-              <div className="flex items-center justify-center mb-2">
-                <Brain className="h-5 w-5 text-indigo-600" />
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Agent Decisions</p>
-              <p className="font-bold text-sm">85% Avg</p>
-              <p className="text-xs text-indigo-600">confidence</p>
-            </div>
-          </div>
-          {lastMessage && (
-            <div className="mt-4 p-3 bg-white/50 rounded-lg border border-emerald-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-700">Latest AG-UI Event</span>
-                <Badge variant="outline" className="text-xs">
-                  {new Date(lastMessage.timestamp || Date.now()).toLocaleTimeString()}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {lastMessage.type} - Real-time agent communication active
-              </p>
-            </div>
-          )}
-          {aguiError && (
-            <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-700">{aguiError}</span>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Quick Navigation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -581,13 +491,13 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             {marketPrices.slice(0, 8).map((price) => {
-              const isPositive = price.changePercent24h >= 0
+              const isPositive = (price.changePercent24h || 0) >= 0
               return (
                 <div key={price.symbol} className="text-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border transition-colors">
                   <div className="text-xs font-medium text-muted-foreground mb-1">{price.symbol.split('/')[0]}</div>
-                  <div className="font-mono font-bold text-sm">${price.price.toLocaleString()}</div>
+                  <div className="font-mono font-bold text-sm">${(price.price || 0).toLocaleString()}</div>
                   <div className={`text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                    {isPositive ? '+' : ''}{price.changePercent24h.toFixed(2)}%
+                    {isPositive ? '+' : ''}{(price.changePercent24h || 0).toFixed(2)}%
                   </div>
                 </div>
               )
@@ -694,64 +604,64 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         </Card>
       </div>
 
-      {/* Deployment & Build Status */}
-      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+      {/* AI Assistant Quick Access */}
+      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-blue-600" />
-            Production Deployment Status
-            <Badge variant="default" className="bg-blue-600 text-white">
-              ✅ DEPLOYED
+            <Brain className="h-5 w-5 text-purple-600" />
+            AI Trading Assistant
+            <Badge variant="default" className="bg-purple-600 text-white">
+              ✅ ACTIVE
             </Badge>
           </CardTitle>
           <CardDescription>
-            Latest build and deployment information
+            Advanced AI with persistent memory and agent decision tracking
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-3 bg-white/70 rounded-lg border border-blue-100">
+            <div className="p-3 bg-white/70 rounded-lg border border-purple-100">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">Build Status</span>
+                <Brain className="h-4 w-4 text-purple-600" />
+                <span className="text-sm font-medium">AI Status</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-1">Next.js 15.1.8</p>
-              <p className="font-bold text-sm text-green-600">✓ Compiled Successfully</p>
-              <p className="text-xs text-muted-foreground">77 pages generated</p>
+              <p className="text-xs text-muted-foreground mb-1">Trading Expert</p>
+              <p className="font-bold text-sm text-purple-600">Online & Ready</p>
+              <p className="text-xs text-muted-foreground">Memory system active</p>
             </div>
-            <div className="p-3 bg-white/70 rounded-lg border border-blue-100">
+            <div className="p-3 bg-white/70 rounded-lg border border-purple-100">
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-medium">AG-UI Integration</span>
+                <Target className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium">Agent Decisions</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-1">Protocol v2</p>
-              <p className="font-bold text-sm text-purple-600">Schema Perfect</p>
-              <p className="text-xs text-muted-foreground">Database validated</p>
+              <p className="text-xs text-muted-foreground mb-1">Real-time tracking</p>
+              <p className="font-bold text-sm text-green-600">{displayData.activeAgents} Active</p>
+              <p className="text-xs text-muted-foreground">Decision monitoring</p>
             </div>
-            <div className="p-3 bg-white/70 rounded-lg border border-blue-100">
+            <div className="p-3 bg-white/70 rounded-lg border border-purple-100">
               <div className="flex items-center gap-2 mb-2">
-                <Network className="h-4 w-4 text-indigo-600" />
-                <span className="text-sm font-medium">WebSocket Endpoints</span>
+                <MessageSquare className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium">Quick Actions</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-1">FastAPI Backend</p>
-              <p className="font-bold text-sm text-indigo-600">/ws/agui Active</p>
-              <p className="text-xs text-muted-foreground">Real-time communication</p>
+              <p className="text-xs text-muted-foreground mb-1">Smart assistance</p>
+              <p className="font-bold text-sm text-blue-600">Ask Anything</p>
+              <p className="text-xs text-muted-foreground">Trading insights ready</p>
             </div>
           </div>
-          <div className="mt-4 p-3 bg-white/50 rounded-lg border border-blue-100">
+          <div className="mt-4 p-3 bg-white/50 rounded-lg border border-purple-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">Last Deployment</span>
+                <Clock className="h-4 w-4 text-purple-600" />
+                <span className="text-sm font-medium text-purple-700">Ready to Help</span>
               </div>
-              <Badge variant="outline" className="text-blue-600 border-blue-300">
-                {new Date().toLocaleDateString()} - Production Ready
+              <Badge variant="outline" className="text-purple-600 border-purple-300">
+                24/7 Available
               </Badge>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
-              <p>• AG-UI WebSocket integration complete with database validation</p>
-              <p>• useWebSocket hook added for real-time orchestration</p>
-              <p>• Build errors resolved - Railway deployment successful</p>
+              <p>• Get instant market analysis and trading suggestions</p>
+              <p>• Review portfolio performance with AI insights</p>
+              <p>• Ask questions about strategies and risk management</p>
             </div>
           </div>
         </CardContent>
