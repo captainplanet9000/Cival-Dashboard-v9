@@ -8,21 +8,24 @@ import { EnhancedDropdown, type DropdownOption } from '@/components/ui/enhanced-
 import { Badge } from '@/components/ui/badge'
 import { Palette, Monitor, Moon, Sun, Target, BarChart3, Eye } from 'lucide-react'
 import { useTheme } from './theme-provider'
+import type { LucideIcon } from 'lucide-react'
 
-const themeIcons = {
+const themeIcons: Record<string, LucideIcon> = {
   default: Sun,
   dark: Moon,
   'trading-green': Target,
   'trading-blue': BarChart3,
-  'high-contrast': Eye
+  'high-contrast': Eye,
+  'brutalist': Palette
 }
 
-const themeColors = {
+const themeColors: Record<string, string> = {
   default: 'bg-white border-gray-200',
   dark: 'bg-gray-900 border-gray-700',
   'trading-green': 'bg-green-900 border-green-700',
   'trading-blue': 'bg-blue-900 border-blue-700',
-  'high-contrast': 'bg-black border-white'
+  'high-contrast': 'bg-black border-white',
+  'brutalist': 'bg-[#e9e9ea] border-black'
 }
 
 export function ThemeSelector() {
@@ -50,11 +53,11 @@ export function ThemeSelector() {
                 value: themeOption.value,
                 label: themeOption.label,
                 description: themeOption.description,
-                icon: <Icon className="h-4 w-4" />
+                icon: Icon ? <Icon className="h-4 w-4" /> : null
               }
             })}
             value={theme}
-            onValueChange={setTheme}
+            onValueChange={(value: string) => setTheme(value as any)}
             placeholder="Choose a theme"
             searchable
           />
@@ -65,7 +68,7 @@ export function ThemeSelector() {
           <label className="text-sm font-medium">Theme Preview</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {themes.map((themeOption) => {
-              const Icon = themeIcons[themeOption.value]
+              const Icon = themeIcons[themeOption.value] || Palette
               const isSelected = theme === themeOption.value
               
               return (
@@ -130,7 +133,7 @@ export function ThemeSelector() {
         {/* Current Theme Info */}
         <div className="p-3 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2 mb-1">
-            {React.createElement(themeIcons[theme], { className: "h-4 w-4" })}
+            {React.createElement(themeIcons[theme] || Palette, { className: "h-4 w-4" })}
             <span className="font-medium text-sm">
               Current: {themes.find(t => t.value === theme)?.label}
             </span>

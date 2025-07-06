@@ -30,7 +30,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="dark"
           enableSystem={true}
-          themes={['light', 'dark', 'trading-green', 'trading-blue', 'trading-modern', 'high-contrast']}
+          themes={['light', 'dark', 'trading-green', 'trading-blue', 'trading-modern', 'high-contrast', 'brutalist']}
           disableTransitionOnChange={false}
         >
           <AGUIProvider endpoint="http://localhost:8000/api/v1/agui">
