@@ -31,7 +31,7 @@ import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDas
 import { motion, AnimatePresence } from 'framer-motion'
 
 // Import Interactive Trading Chart
-import InteractiveTradingChart from '@/components/charts/InteractiveTradingChart'
+import InteractiveTradingChart from '@/components/charts/InteractiveTradingChartWrapper'
 
 // Import premium trading components (existing only)
 import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'

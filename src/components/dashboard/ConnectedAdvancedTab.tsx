@@ -29,6 +29,7 @@ import SystemMonitoringDashboard from '@/components/monitoring/SystemMonitoringD
 import FileManager from '@/components/data-manager/FileManager'
 import { ExportManager } from '@/components/export/ExportManager'
 import MCPDashboard from '@/components/mcp/MCPDashboard'
+import IntegratedTradingTerminal from '@/components/terminal/IntegratedTradingTerminal'
 
 // Import premium advanced components (Placeholder components for missing premium features)
 // import { AdvancedSettings } from '@/components/premium-ui/advanced/advanced-settings'
@@ -544,7 +545,8 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
     { id: 'file-management', label: 'File Manager', component: <FileManager />, icon: <FileText className="h-4 w-4" /> },
     { id: 'export-reports', label: 'Export & Reports', component: <ExportManager />, icon: <Download className="h-4 w-4" /> },
     { id: 'system-monitoring', label: 'System Monitor', component: <SystemMonitoringPanel />, icon: <Zap className="h-4 w-4" /> },
-    { id: 'infrastructure', label: 'Infrastructure', component: <SystemMonitoringDashboard />, icon: <Target className="h-4 w-4" /> }
+    { id: 'infrastructure', label: 'Infrastructure', component: <SystemMonitoringDashboard />, icon: <Target className="h-4 w-4" /> },
+    { id: 'trading-terminal', label: 'Trading Terminal', component: <IntegratedTradingTerminal />, icon: <BarChart3 className="h-4 w-4" /> }
   ]
 
   return (
@@ -598,7 +600,7 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1 bg-gray-50">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1 bg-gray-50">
               {advancedSubTabs.slice(12).map((tab) => (
                 <TabsTrigger
                   key={tab.id}

@@ -23,8 +23,6 @@ import { toast } from 'react-hot-toast'
 import { supabaseDashboardService } from '@/lib/services/supabase-dashboard-service'
 import type { DashboardSummary, SystemHealth } from '@/lib/services/supabase-dashboard-service'
 
-// Import Integrated Trading Terminal
-import IntegratedTradingTerminal from '@/components/terminal/IntegratedTradingTerminal'
 
 // Import animated components for enhanced UI
 import {
@@ -765,8 +763,6 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         </Card>
       </div>
 
-      {/* Integrated Trading Terminal */}
-      <IntegratedTradingTerminal className="w-full" />
 
     </div>
   )

@@ -916,7 +916,14 @@ function AutonomousAgentCreationPanel() {
       const agentId = await enhancedAgentCreationService.createAutonomousAgent(config)
       
       if (agentId) {
-        toast.success(`Autonomous agent "${agentConfig.name}" created with full capabilities`)
+        // If wallet creation is enabled, the enhanced service will handle it
+        // but we should also update the UI to reflect the new agent
+        if (agentConfig.enableWallet) {
+          // Trigger refresh of wallet panel and agent counts
+          setAgentUpdateTrigger(prev => prev + 1)
+        }
+        
+        toast.success(`Autonomous agent "${agentConfig.name}" created with full capabilities${agentConfig.enableWallet ? ' including dedicated wallet' : ''}`)
         setAgentConfig(prev => ({ ...prev, name: '', capital: 10000 }))
       } else {
         toast.error('Failed to create autonomous agent')

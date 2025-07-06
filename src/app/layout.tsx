@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import MinimalErrorBoundary from "@/lib/error-handling/minimal-error-boundary";
 import { AGUIProvider } from "@/components/ag-ui/AGUIProvider";
+import { WebSocketProvider } from "@/contexts/websocket-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,11 +34,13 @@ export default function RootLayout({
           themes={['light', 'dark', 'trading-green', 'trading-blue', 'trading-modern', 'high-contrast', 'brutalist']}
           disableTransitionOnChange={false}
         >
-          <AGUIProvider endpoint="http://localhost:8000/api/v1/agui">
-            <MinimalErrorBoundary>
-              {children}
-            </MinimalErrorBoundary>
-          </AGUIProvider>
+          <WebSocketProvider>
+            <AGUIProvider endpoint="http://localhost:8000/api/v1/agui">
+              <MinimalErrorBoundary>
+                {children}
+              </MinimalErrorBoundary>
+            </AGUIProvider>
+          </WebSocketProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -134,27 +134,99 @@ class BinanceProvider implements MarketDataProvider {
   }
 }
 
+class CoinbaseProvider implements MarketDataProvider {
+  name = 'Coinbase'
+  private baseUrl = 'https://api.coinbase.com/v2'
+
+  async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
+    try {
+      // Map trading symbols to Coinbase format
+      const symbolMap: Record<string, string> = {
+        'BTC/USD': 'BTC-USD',
+        'ETH/USD': 'ETH-USD', 
+        'SOL/USD': 'SOL-USD',
+        'ADA/USD': 'ADA-USD',
+        'DOT/USD': 'DOT-USD',
+        'AVAX/USD': 'AVAX-USD',
+        'MATIC/USD': 'MATIC-USD',
+        'LINK/USD': 'LINK-USD'
+      }
+
+      const prices: MarketPrice[] = []
+      
+      // Fetch exchange rates to get current prices
+      const response = await fetch(`${this.baseUrl}/exchange-rates?currency=USD`, {
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      })
+
+      if (!response.ok) {
+        throw new Error(`Coinbase API error: ${response.status}`)
+      }
+
+      const { data } = await response.json()
+      const rates = data.rates
+
+      Object.entries(symbolMap).forEach(([symbol, coinbaseSymbol]) => {
+        if (symbols.includes(symbol)) {
+          const currency = coinbaseSymbol.split('-')[0]
+          if (rates[currency]) {
+            // Rates show how many units of currency equal 1 USD, so price is the inverse
+            const rate = parseFloat(rates[currency])
+            const price = rate > 0 ? 1 / rate : 0
+            prices.push({
+              symbol,
+              price,
+              change24h: 0, // Coinbase exchange rates don't include 24h change
+              changePercent24h: 0,
+              volume24h: 0,
+              lastUpdate: new Date()
+            })
+          }
+        }
+      })
+
+      return prices
+    } catch (error) {
+      console.error('Coinbase provider error:', error)
+      throw error
+    }
+  }
+}
+
 class MockProvider implements MarketDataProvider {
   name = 'Mock'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
-    // Fallback mock data with realistic prices
+    // Updated realistic prices as of January 2025
     const mockPrices: Record<string, number> = {
-      'BTC/USD': 43250.75,
-      'ETH/USD': 2580.20,
-      'SOL/USD': 98.43,
-      'ADA/USD': 0.47,
-      'DOT/USD': 7.23,
-      'AVAX/USD': 36.78,
-      'MATIC/USD': 0.85,
-      'LINK/USD': 14.32
+      'BTC/USD': 96420.50,     // Current realistic BTC price
+      'ETH/USD': 3285.75,      // Current realistic ETH price  
+      'SOL/USD': 205.32,       // Current realistic SOL price
+      'ADA/USD': 0.89,         // Current realistic ADA price
+      'DOT/USD': 6.45,         // Current realistic DOT price
+      'AVAX/USD': 38.90,       // Current realistic AVAX price
+      'MATIC/USD': 0.48,       // Current realistic MATIC price
+      'LINK/USD': 22.18        // Current realistic LINK price
+    }
+
+    // Generate realistic daily changes
+    const changes = {
+      'BTC/USD': 1.25,
+      'ETH/USD': 2.1,
+      'SOL/USD': -0.75,
+      'ADA/USD': 3.4,
+      'DOT/USD': -1.2,
+      'AVAX/USD': 0.8,
+      'MATIC/USD': 1.9,
+      'LINK/USD': -0.5
     }
 
     return symbols.map(symbol => ({
       symbol,
       price: mockPrices[symbol] || 100,
-      change24h: (Math.random() - 0.5) * 200,
-      changePercent24h: (Math.random() - 0.5) * 10,
+      change24h: changes[symbol] || (Math.random() - 0.5) * 5,
+      changePercent24h: changes[symbol] || (Math.random() - 0.5) * 5,
       volume24h: Math.random() * 1000000000,
       lastUpdate: new Date()
     }))
@@ -164,12 +236,13 @@ class MockProvider implements MarketDataProvider {
 class MarketDataService {
   private static instance: MarketDataService
   private providers: MarketDataProvider[] = [
-    new CoinGeckoProvider(),
-    new BinanceProvider(),
-    new MockProvider() // Always keep mock as fallback
+    new CoinbaseProvider(),   // Primary: Coinbase (reliable, free)
+    new BinanceProvider(),    // Secondary: Binance public API
+    new CoinGeckoProvider(),  // Tertiary: CoinGecko (rate limited)
+    new MockProvider()        // Always keep mock as fallback
   ]
   private cache = new Map<string, { data: MarketPrice[], timestamp: number }>()
-  private cacheTimeout = 30000 // 30 seconds cache
+  private cacheTimeout = 15000 // 15 seconds cache for more frequent updates
   private updateCallbacks = new Set<(prices: MarketPrice[]) => void>()
 
   private constructor() {}
@@ -224,7 +297,7 @@ class MarketDataService {
           try {
             const { redisService } = await import('@/lib/services/redis-service')
             if (redisService.isHealthy()) {
-              await redisService.cacheMarketData(cacheKey, prices, 30) // 30 seconds TTL
+              await redisService.cacheMarketData(cacheKey, prices, 15) // 15 seconds TTL for fresh data
             }
           } catch (redisError) {
             console.warn('Failed to cache market data in Redis:', redisError)
@@ -252,7 +325,7 @@ class MarketDataService {
   }
 
   // Start real-time updates
-  startRealTimeUpdates(symbols?: string[], intervalMs = 30000) {
+  startRealTimeUpdates(symbols?: string[], intervalMs = 15000) {
     const interval = setInterval(async () => {
       try {
         await this.fetchMarketPrices(symbols)
