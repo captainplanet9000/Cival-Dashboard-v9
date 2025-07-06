@@ -1,6 +1,8 @@
 'use client'
 
 import { EventEmitter } from 'events'
+import { liveMarketDataService, type LiveMarketData } from '@/lib/market/live-market-data-service'
+import { exchangeAPIService, type ExchangeOrder } from '@/lib/trading/exchange-api-service'
 
 // Core Types
 export interface TradingAgent {
@@ -127,6 +129,7 @@ export interface MarketPrice {
   high24h: number
   low24h: number
   timestamp: Date
+  source?: 'live' | 'mock'
 }
 
 // Real Paper Trading Engine
@@ -139,11 +142,14 @@ export class RealPaperTradingEngine extends EventEmitter {
   private tradingInterval?: NodeJS.Timeout
   private useSupabase = false
   private defaultSessionId?: string
+  private useLiveData = false
+  private liveDataSymbols: string[] = []
 
   constructor() {
     super()
     this.initializeMarketData()
     this.initializeSupabase()
+    this.initializeLiveData()
   }
 
   // Initialize with realistic market data
@@ -180,7 +186,8 @@ export class RealPaperTradingEngine extends EventEmitter {
         change24h: (Math.random() - 0.5) * price * 0.1,
         high24h: price * (1 + Math.random() * 0.05),
         low24h: price * (1 - Math.random() * 0.05),
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: 'mock'
       })
     })
   }
@@ -213,16 +220,67 @@ export class RealPaperTradingEngine extends EventEmitter {
     }
   }
 
+  // Initialize live market data integration
+  private async initializeLiveData() {
+    if (typeof window === 'undefined') return // Only in browser
+    
+    this.liveDataSymbols = [
+      'BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOT/USD',
+      'LINK/USD', 'UNI/USD', 'AAVE/USD', 'MATIC/USD', 'AVAX/USD'
+    ]
+
+    // Check if live data is available
+    const hasExchangeAPI = exchangeAPIService.isLive()
+    
+    if (hasExchangeAPI) {
+      this.useLiveData = true
+      console.log('🟢 Paper Trading Engine: Using live market data')
+      
+      // Set up live data listener
+      liveMarketDataService.on('marketData', (data: LiveMarketData) => {
+        this.handleLiveMarketData(data)
+      })
+      
+      // Start live data feeds
+      liveMarketDataService.startLiveData(this.liveDataSymbols)
+    } else {
+      console.log('🟡 Paper Trading Engine: No live data available, using mock data')
+    }
+  }
+
+  // Handle incoming live market data
+  private handleLiveMarketData(data: LiveMarketData) {
+    const marketPrice: MarketPrice = {
+      symbol: data.symbol,
+      price: data.price,
+      bid: data.bid,
+      ask: data.ask,
+      volume: data.volume,
+      change24h: data.change24h,
+      high24h: data.high24h,
+      low24h: data.low24h,
+      timestamp: data.timestamp,
+      source: 'live'
+    }
+    
+    this.marketPrices.set(data.symbol, marketPrice)
+    this.emit('liveDataUpdate', marketPrice)
+  }
+
   // Start the trading engine
   start() {
     if (this.isRunning) return
 
     this.isRunning = true
     
-    // Update market prices every 1 second
-    this.priceUpdateInterval = setInterval(() => {
-      this.updateMarketPrices()
-    }, 1000)
+    // Update market prices every 1 second (only for mock data)
+    if (!this.useLiveData) {
+      this.priceUpdateInterval = setInterval(() => {
+        this.updateMarketPrices()
+      }, 1000)
+    } else {
+      console.log('🔴 Using live market data, skipping mock price updates')
+    }
 
     // Process trading logic every 5 seconds
     this.tradingInterval = setInterval(() => {

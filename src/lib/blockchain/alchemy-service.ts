@@ -89,11 +89,16 @@ class AlchemyService {
         }
 
         this.alchemyInstances[chainKey] = new Alchemy(settings)
-        this.providers[chainKey] = new ethers.JsonRpcProvider(config.rpcUrl)
+        // Use environment-specific RPC URLs
+        const rpcUrl = chainKey === 'eth-sepolia' 
+          ? process.env.NEXT_PUBLIC_ETH_SEPOLIA_URL
+          : process.env.NEXT_PUBLIC_ARB_SEPOLIA_URL
+        this.providers[chainKey] = new ethers.JsonRpcProvider(rpcUrl || config.rpcUrl)
       })
 
       this.isInitialized = true
       console.log('✅ Alchemy service initialized for', Object.keys(SUPPORTED_CHAINS).length, 'chains')
+      console.log('🔗 Connected to testnets:', Object.keys(this.providers))
     } catch (error) {
       console.error('❌ Failed to initialize Alchemy service:', error)
       this.isInitialized = false
@@ -248,6 +253,121 @@ class AlchemyService {
         maxFeePerGas: '0',
         maxPriorityFeePerGas: '0'
       }
+    }
+  }
+
+  // Real Transaction Execution
+  async sendTransaction(
+    privateKey: string,
+    to: string,
+    amount: string,
+    chainKey: string = 'eth-sepolia',
+    gasPrice?: string
+  ): Promise<TransactionInfo | null> {
+    try {
+      const provider = this.providers[chainKey]
+      if (!provider) {
+        throw new Error(`Provider not found for chain: ${chainKey}`)
+      }
+
+      const wallet = new ethers.Wallet(privateKey, provider)
+      const valueInWei = ethers.parseEther(amount)
+
+      const transaction = {
+        to,
+        value: valueInWei,
+        gasLimit: 21000,
+        gasPrice: gasPrice ? ethers.parseUnits(gasPrice, 'gwei') : undefined
+      }
+
+      const txResponse = await wallet.sendTransaction(transaction)
+      
+      return {
+        hash: txResponse.hash,
+        from: wallet.address,
+        to,
+        value: amount,
+        gasUsed: '21000',
+        gasPrice: gasPrice || '0',
+        blockNumber: 0, // Will be filled after confirmation
+        timestamp: Date.now(),
+        status: 'pending'
+      }
+    } catch (error) {
+      console.error('Error sending transaction:', error)
+      return null
+    }
+  }
+
+  async sendTokenTransaction(
+    privateKey: string,
+    tokenAddress: string,
+    to: string,
+    amount: string,
+    chainKey: string = 'eth-sepolia'
+  ): Promise<TransactionInfo | null> {
+    try {
+      const provider = this.providers[chainKey]
+      if (!provider) {
+        throw new Error(`Provider not found for chain: ${chainKey}`)
+      }
+
+      const wallet = new ethers.Wallet(privateKey, provider)
+      
+      // ERC20 contract ABI (minimal)
+      const erc20Abi = [
+        'function transfer(address to, uint256 amount) returns (bool)',
+        'function decimals() view returns (uint8)',
+        'function symbol() view returns (string)'
+      ]
+
+      const contract = new ethers.Contract(tokenAddress, erc20Abi, wallet)
+      const decimals = await contract.decimals()
+      const amountInWei = ethers.parseUnits(amount, decimals)
+
+      const txResponse = await contract.transfer(to, amountInWei)
+      
+      return {
+        hash: txResponse.hash,
+        from: wallet.address,
+        to,
+        value: amount,
+        gasUsed: '0', // Will be filled after confirmation
+        gasPrice: '0',
+        blockNumber: 0,
+        timestamp: Date.now(),
+        status: 'pending'
+      }
+    } catch (error) {
+      console.error('Error sending token transaction:', error)
+      return null
+    }
+  }
+
+  async waitForTransaction(hash: string, chainKey: string = 'eth-sepolia'): Promise<TransactionInfo | null> {
+    try {
+      const provider = this.providers[chainKey]
+      if (!provider) {
+        throw new Error(`Provider not found for chain: ${chainKey}`)
+      }
+
+      const receipt = await provider.waitForTransaction(hash)
+      if (!receipt) return null
+
+      return {
+        hash,
+        from: receipt.from,
+        to: receipt.to || '',
+        value: '0',
+        gasUsed: receipt.gasUsed.toString(),
+        gasPrice: receipt.gasPrice?.toString() || '0',
+        blockNumber: receipt.blockNumber,
+        timestamp: Date.now(),
+        status: receipt.status === 1 ? 'success' : 'failed'
+      }
+    } catch (error) {
+      console.error('Error waiting for transaction:', error)
+      return null
     }
   }
 
