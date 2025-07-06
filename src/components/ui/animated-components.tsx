@@ -395,14 +395,4 @@ export function AnimatedLoadingSkeleton({ lines = 3, className = '' }: LoadingSk
   )
 }
 
-// Export all components
-export {
-  AnimatedPrice,
-  AnimatedCounter,
-  AnimatedProgress,
-  AnimatedCard,
-  AnimatedStatus,
-  AnimatedTradingSignal,
-  AnimatedMarketTicker,
-  AnimatedLoadingSkeleton
-}
+// All components are already exported with their function definitions above
