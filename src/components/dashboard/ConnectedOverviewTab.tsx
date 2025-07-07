@@ -16,7 +16,7 @@ import { motion } from 'framer-motion'
 import { useAgentData } from '@/hooks/useAgentData'
 import { useAGUI } from '@/lib/hooks/useAGUI'
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
-import { useGlobalMarketData } from '@/lib/market/global-market-data-manager'
+import { useMarketData } from '@/lib/market/market-data-service'
 import { toast } from 'react-hot-toast'
 
 // Import Supabase dashboard service for unified data
@@ -152,17 +152,15 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   }
 
   // Market data for overview
-  const { prices: marketPrices, loading: marketLoading } = useGlobalMarketData([
-    'BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOT/USD', 'AVAX/USD', 'MATIC/USD', 'LINK/USD'
-  ])
+  const { prices: marketPrices, loading: marketLoading } = useMarketData()
   
   // Calculate derived metrics
   const totalSystemValue = (displayData.totalPortfolioValue || 0) + (displayData.farmTotalValue || 0)
   
-  // Get primary market prices for display
-  const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD')?.price || 96420.50
-  const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD')?.price || 3285.75
-  const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD')?.price || 205.32
+  // Get primary market prices for display - using correct symbol format
+  const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD' || p.symbol === 'BTCUSD' || p.symbol === 'BTC')?.price || 96420.50
+  const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD' || p.symbol === 'ETHUSD' || p.symbol === 'ETH')?.price || 3285.75
+  const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD' || p.symbol === 'SOLUSD' || p.symbol === 'SOL')?.price || 205.32
   const systemHealthScore = [
     displayData.supabaseConnected,
     displayData.redisConnected,
@@ -598,7 +596,6 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="text-sm text-muted-foreground mb-1">Bitcoin</div>
               <AnimatedPrice 
                 value={btcPrice}
-                previousValue={marketPrices.find(p => p.symbol === 'BTC/USD')?.price}
                 currency="$"
                 precision={0}
                 size="md"
@@ -610,7 +607,6 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="text-sm text-muted-foreground mb-1">Ethereum</div>
               <AnimatedPrice 
                 value={ethPrice}
-                previousValue={marketPrices.find(p => p.symbol === 'ETH/USD')?.price}
                 currency="$"
                 precision={0}
                 size="md"
@@ -622,7 +618,6 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="text-sm text-muted-foreground mb-1">Solana</div>
               <AnimatedPrice 
                 value={solPrice}
-                previousValue={marketPrices.find(p => p.symbol === 'SOL/USD')?.price}
                 currency="$"
                 precision={2}
                 size="md"
