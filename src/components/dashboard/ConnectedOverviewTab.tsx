@@ -34,6 +34,9 @@ import {
   AnimatedMarketTicker
 } from '@/components/ui/animated-components'
 
+// Import live market data panel
+import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
+
 // Import notification hooks
 import { useNotifications } from '@/lib/notifications/apprise-service'
 
@@ -506,46 +509,12 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         </motion.div>
       </div>
 
-      {/* Market Overview Widget */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-600" />
-                Live Market Overview
-              </CardTitle>
-              <CardDescription>Key cryptocurrency prices and trends</CardDescription>
-            </div>
-            <Badge variant="outline" className="text-xs">
-              Real-time data
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-            {marketPrices.slice(0, 8).map((price) => {
-              const isPositive = (price.changePercent24h || 0) >= 0
-              return (
-                <div key={price.symbol} className="text-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border transition-colors">
-                  <div className="text-xs font-medium text-muted-foreground mb-1">{price.symbol.split('/')[0]}</div>
-                  <AnimatedPrice 
-                    value={price.price || 0}
-                    currency="$"
-                    precision={2}
-                    size="sm"
-                    className="font-mono font-bold text-sm"
-                    showTrend={false}
-                  />
-                  <div className={`text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                    {isPositive ? '+' : ''}{(price.changePercent24h || 0).toFixed(2)}%
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Enhanced Live Market Data Panel */}
+      <LiveMarketDataPanel 
+        className="mb-6"
+        showAgentSignals={true}
+        maxItems={16}
+      />
 
       {/* System Health & AG-UI Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
