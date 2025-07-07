@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress'
 import {
   Zap, Activity, Clock, Target, TrendingUp, TrendingDown,
   Play, Pause, Settings, RefreshCw, AlertTriangle, CheckCircle2,
-  BarChart3, LineChart, Gauge, Timer, Brain, Lightning,
+  BarChart3, LineChart, Gauge, Timer, Brain, Bolt,
   DollarSign, Percent, ArrowUp, ArrowDown, Minus, Eye
 } from 'lucide-react'
 import { 
@@ -528,7 +528,7 @@ export function HighFrequencyTradingEngine({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Lightning className="h-6 w-6 text-yellow-600" />
+              <Bolt className="h-6 w-6 text-yellow-600" />
               High-Frequency Trading Engine
               <Badge variant={hftEngine.enabled ? "default" : "secondary"}>
                 {hftEngine.enabled ? 'Active' : 'Inactive'}

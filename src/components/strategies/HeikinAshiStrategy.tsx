@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
-  TrendingUp, TrendingDown, Candle, Settings,
+  TrendingUp, TrendingDown, BarChart3, Settings,
   Play, Pause, Zap, AlertTriangle, CheckCircle2, Activity
 } from 'lucide-react'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -356,7 +356,7 @@ export function HeikinAshiStrategy({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Candle className="h-5 w-5 text-indigo-600" />
+              <BarChart3 className="h-5 w-5 text-indigo-600" />
               Heikin Ashi Strategy
               <Badge variant={strategy.enabled ? "default" : "secondary"}>
                 {strategy.enabled ? 'Active' : 'Inactive'}

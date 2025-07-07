@@ -112,7 +112,6 @@ import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 import { OrchestrationDashboard } from '@/components/orchestration/OrchestrationDashboard'
 
 // Import Advanced Strategy Components
-import { RealAgentManagement } from '@/components/agents/RealAgentManagement'
 import { AgentCreationIntegration } from '@/components/agents/AgentCreationIntegration'
 import { StrategyIntegrationShowcase } from '@/components/agents/StrategyIntegrationShowcase'
 import { HighFrequencyTradingEngine } from '@/components/trading/HighFrequencyTradingEngine'

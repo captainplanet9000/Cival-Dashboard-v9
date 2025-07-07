@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   CheckCircle2, Zap, Brain, Target, Activity, BarChart3,
   TrendingUp, Settings, Users, Award, Sparkles, Eye,
-  ArrowRight, Play, Cpu, Database, Shield, Lightning
+  ArrowRight, Play, Cpu, Database, Shield, Bolt
 } from 'lucide-react'
 
 /**
@@ -96,7 +96,7 @@ const INTEGRATION_FEATURES: IntegrationFeature[] = [
       'Real-time risk controls',
       'Multi-venue routing'
     ],
-    icon: Lightning
+    icon: Bolt
   },
   {
     id: 'enhanced-creation',
@@ -194,7 +194,7 @@ export function StrategyIntegrationShowcase({
     switch (category) {
       case 'strategy': return Target
       case 'ai': return Brain
-      case 'trading': return Lightning
+      case 'trading': return Bolt
       case 'infrastructure': return Settings
       default: return Activity
     }
@@ -267,7 +267,7 @@ export function StrategyIntegrationShowcase({
             { id: 'all', name: 'All Features', icon: Activity },
             { id: 'strategy', name: 'Strategies', icon: Target },
             { id: 'ai', name: 'AI Systems', icon: Brain },
-            { id: 'trading', name: 'Trading', icon: Lightning },
+            { id: 'trading', name: 'Trading', icon: Bolt },
             { id: 'infrastructure', name: 'Infrastructure', icon: Settings }
           ].map(category => {
             const Icon = category.icon
