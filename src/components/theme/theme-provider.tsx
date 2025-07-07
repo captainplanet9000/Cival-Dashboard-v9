@@ -4,7 +4,7 @@ import * as React from "react"
 import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from "next-themes"
 import type { ThemeProviderProps } from "next-themes"
 
-type ThemeType = 'default' | 'dark' | 'trading-green' | 'trading-blue' | 'high-contrast' | 'brutalist'
+type ThemeType = 'light' | 'dark' | 'trading-green' | 'trading-blue' | 'trading-modern' | 'brutalist'
 
 type ThemeOption = {
   value: ThemeType
@@ -27,14 +27,14 @@ export function useTheme(): UseThemeReturnType {
   
   const themes: ThemeOption[] = [
     {
-      value: 'default',
+      value: 'light',
       label: 'Light',
-      description: 'Clean, light appearance for daytime trading',
+      description: 'Clean, light appearance with OKLCH colors',
     },
     {
       value: 'dark',
       label: 'Dark',
-      description: 'Low-light friendly interface for night sessions',
+      description: 'Professional dark interface with rich contrast',
     },
     {
       value: 'trading-green',
@@ -47,9 +47,9 @@ export function useTheme(): UseThemeReturnType {
       description: 'Calm blue palette for extended sessions',
     },
     {
-      value: 'high-contrast',
-      label: 'High Contrast',
-      description: 'Maximum readability for critical data',
+      value: 'trading-modern',
+      label: 'Trading Modern',
+      description: 'Modern emerald/purple theme with premium styling',
     },
     {
       value: 'brutalist',

@@ -54,27 +54,27 @@ const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'light',
     name: 'Light',
-    description: 'Clean light theme for professional trading',
+    description: 'Clean light theme with modern OKLCH colors',
     icon: Sun,
     badge: 'Default',
     colors: {
-      primary: '#3b82f6',
-      secondary: '#64748b',
-      background: '#ffffff',
-      card: '#f8fafc'
+      primary: 'oklch(0.5016 0.1887 27.4816)',
+      secondary: 'oklch(0.4955 0.0896 126.1858)',
+      background: 'oklch(0.8452 0 0)',
+      card: 'oklch(0.7572 0 0)'
     }
   },
   {
     id: 'dark',
     name: 'Dark',
-    description: 'Dark theme for extended trading sessions',
+    description: 'Professional dark theme with rich contrast',
     icon: Moon,
     badge: 'Popular',
     colors: {
-      primary: '#3b82f6',
-      secondary: '#64748b',
-      background: '#020817',
-      card: '#0f172a'
+      primary: 'oklch(0.6083 0.2090 27.0276)',
+      secondary: 'oklch(0.6423 0.1467 133.0145)',
+      background: 'oklch(0.2178 0 0)',
+      card: 'oklch(0.2850 0 0)'
     }
   },
   {
@@ -117,16 +117,16 @@ const THEME_PRESETS: ThemePreset[] = [
     }
   },
   {
-    id: 'high-contrast',
-    name: 'High Contrast',
-    description: 'Maximum contrast for accessibility',
-    icon: Eye,
-    badge: 'A11y',
+    id: 'brutalist',
+    name: 'Brutalist',
+    description: 'Bold, sharp design with maximum impact',
+    icon: Square,
+    badge: 'Bold',
     colors: {
       primary: '#000000',
       secondary: '#666666',
       background: '#ffffff',
-      card: '#f5f5f5'
+      card: '#ffffff'
     }
   }
 ]

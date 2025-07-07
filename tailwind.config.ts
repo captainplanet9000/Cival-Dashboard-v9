@@ -19,13 +19,21 @@ const config: Config = {
   	extend: {
   		fontFamily: {
   			sans: [
-  				'var(--font-geist-sans)',
+  				'var(--font-sans)',
+  				'"Oxanium"',
   				'system-ui',
   				'sans-serif'
   			],
   			mono: [
-  				'var(--font-geist-mono)',
+  				'var(--font-mono)',
+  				'"Source Code Pro"',
   				'monospace'
+  			],
+  			serif: [
+  				'var(--font-serif)',
+  				'ui-serif',
+  				'Georgia',
+  				'serif'
   			]
   		},
   		colors: {

@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Oxanium, Source_Code_Pro } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import MinimalErrorBoundary from "@/lib/error-handling/minimal-error-boundary";
 import { AGUIProvider } from "@/components/ag-ui/AGUIProvider";
 import { WebSocketProvider } from "@/contexts/websocket-context";
 
-const inter = Inter({
+const oxanium = Oxanium({
   subsets: ["latin"],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-sans',
+});
+
+const sourceCodePro = Source_Code_Pro({
+  subsets: ["latin"],
+  display: 'swap',
+  variable: '--font-mono',
 });
 
 export const metadata: Metadata = {
@@ -26,12 +32,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${oxanium.variable} ${sourceCodePro.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={true}
-          themes={['light', 'dark', 'trading-green', 'trading-blue', 'trading-modern', 'high-contrast', 'brutalist']}
+          themes={['light', 'dark', 'trading-green', 'trading-blue', 'trading-modern', 'brutalist']}
           disableTransitionOnChange={false}
         >
           <WebSocketProvider>
