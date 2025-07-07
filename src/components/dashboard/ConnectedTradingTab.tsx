@@ -45,6 +45,11 @@ import { EnhancedTradingInterface } from '@/components/premium-ui/trading/enhanc
 import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
 import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
 
+// Import our new advanced trading components
+import { HighFrequencyTradingEngine } from '@/components/trading/HighFrequencyTradingEngine'
+import { OrderManagementSystem } from '@/components/trading/OrderManagementSystem'
+import { StrategyExecutionEngine } from '@/components/strategies/StrategyExecutionEngine'
+
 // Live Market Data Trading Dashboard
 const TradingDashboard = () => {
   const { prices, loading, error } = useGlobalMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD', 'AAPL', 'TSLA', 'MSFT', 'NVDA'])
@@ -1005,7 +1010,10 @@ export function ConnectedTradingTab({ className }: ConnectedTradingTabProps) {
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'strategies', label: 'Strategies', component: <TradingStrategiesPanel /> },
     { id: 'backtesting', label: 'Backtesting', component: <RealBacktestingDashboard /> },
-    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> }
+    { id: 'risk', label: 'Risk Monitor', component: <RealRiskManagementDashboard /> },
+    { id: 'hft-engine', label: 'HFT Engine', component: <HighFrequencyTradingEngine /> },
+    { id: 'order-management', label: 'Order Management', component: <OrderManagementSystem /> },
+    { id: 'strategy-execution', label: 'Strategy Engine', component: <StrategyExecutionEngine /> }
   ]
   
   return (

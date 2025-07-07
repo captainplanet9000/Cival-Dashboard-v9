@@ -111,6 +111,14 @@ import DeFiIntegrationHub from '@/components/defi/DeFiIntegrationHub'
 // Import Orchestration Components
 import { OrchestrationDashboard } from '@/components/orchestration/OrchestrationDashboard'
 
+// Import Advanced Strategy Components
+import { RealAgentManagement } from '@/components/agents/RealAgentManagement'
+import { AgentCreationIntegration } from '@/components/agents/AgentCreationIntegration'
+import { StrategyIntegrationShowcase } from '@/components/agents/StrategyIntegrationShowcase'
+import { HighFrequencyTradingEngine } from '@/components/trading/HighFrequencyTradingEngine'
+import { OrderManagementSystem } from '@/components/trading/OrderManagementSystem'
+import { StrategyExecutionEngine } from '@/components/strategies/StrategyExecutionEngine'
+
 const FarmsPage = dynamic(() => import('@/app/dashboard/farms/page'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Farms...</div>
@@ -293,12 +301,50 @@ export function ModernDashboardV4() {
       id: 'agents',
       label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <ConnectedAgentsTab />
+      component: <RealAgentManagement 
+        onCreateAgent={() => setActiveTab('agent-creation')}
+      />
+    },
+    {
+      id: 'strategies',
+      label: 'Strategies',
+      icon: <Brain className="h-4 w-4" />,
+      component: <StrategyIntegrationShowcase 
+        onCreateAgent={() => setActiveTab('agent-creation')}
+        onViewStrategy={(strategyId) => setActiveTab('strategy-execution')}
+      />
+    },
+    {
+      id: 'agent-creation',
+      label: 'Create Agent',
+      icon: <Plus className="h-4 w-4" />,
+      component: <AgentCreationIntegration 
+        onAgentCreated={() => setActiveTab('agents')}
+        onClose={() => setActiveTab('agents')}
+      />
+    },
+    {
+      id: 'strategy-execution',
+      label: 'Strategy Engine',
+      icon: <Zap className="h-4 w-4" />,
+      component: <StrategyExecutionEngine />
+    },
+    {
+      id: 'hft-trading',
+      label: 'HFT Engine',
+      icon: <Activity className="h-4 w-4" />,
+      component: <HighFrequencyTradingEngine />
+    },
+    {
+      id: 'order-management',
+      label: 'Orders',
+      icon: <Target className="h-4 w-4" />,
+      component: <OrderManagementSystem />
     },
     {
       id: 'farms',
       label: 'Farms',
-      icon: <Target className="h-4 w-4" />,
+      icon: <Users className="h-4 w-4" />,
       component: <ConnectedFarmsTab />
     },
     {

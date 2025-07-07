@@ -49,6 +49,13 @@ import { supabaseDashboardService } from '@/lib/services/supabase-dashboard-serv
 // Import new autonomous expert agents panel
 import { AutonomousExpertAgentsPanel } from './AutonomousExpertAgentsPanel'
 
+// Import our new advanced strategy components
+import { AgentCreationIntegration } from '@/components/agents/AgentCreationIntegration'
+import { StrategyIntegrationShowcase } from '@/components/agents/StrategyIntegrationShowcase'
+import { AgentMemorySystem } from '@/components/agents/AgentMemorySystem'
+import { AgentLearningEngine } from '@/components/agents/AgentLearningEngine'
+import { AgentPerformanceAnalytics } from '@/components/agents/AgentPerformanceAnalytics'
+
 // Import blockchain wallet integration
 import BlockchainAgentWallet from '@/components/agents/BlockchainAgentWallet'
 
@@ -1228,6 +1235,42 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
       id: 'enhanced-agents', 
       label: 'Premium Agents', 
       component: () => <EnhancedExpertAgents key={agentUpdateTrigger} />
+    },
+    {
+      id: 'strategy-showcase',
+      label: 'Advanced Strategies',
+      component: () => <StrategyIntegrationShowcase 
+        key={agentUpdateTrigger}
+        onCreateAgent={() => setAgentSubTab('enhanced-creation')}
+        onViewStrategy={(strategyId) => setAgentSubTab('strategy-builder')}
+      />
+    },
+    {
+      id: 'enhanced-creation',
+      label: 'Enhanced Creation',
+      component: () => <AgentCreationIntegration
+        key={agentUpdateTrigger}
+        onAgentCreated={() => {
+          setAgentUpdateTrigger(prev => prev + 1)
+          setAgentSubTab('agent-management')
+        }}
+        onClose={() => setAgentSubTab('overview')}
+      />
+    },
+    {
+      id: 'memory-learning',
+      label: 'AI Memory & Learning',
+      component: () => (
+        <div className="space-y-6">
+          <AgentMemorySystem key={agentUpdateTrigger} />
+          <AgentLearningEngine key={agentUpdateTrigger} />
+        </div>
+      )
+    },
+    {
+      id: 'performance-analytics',
+      label: 'Performance Analytics',
+      component: () => <AgentPerformanceAnalytics key={agentUpdateTrigger} />
     },
     { 
       id: 'strategy-builder', 

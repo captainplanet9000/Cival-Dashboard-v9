@@ -48,6 +48,8 @@ import {
   PieChart,
   Target,
   Zap,
+  Plus,
+  Sparkles,
   Trash2
 } from 'lucide-react'
 import {
@@ -59,6 +61,7 @@ import {
 } from '@/lib/trading/real-paper-trading-engine'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
 import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
+import { AgentCreationIntegration } from './AgentCreationIntegration'
 
 interface RealAgentManagementProps {
   className?: string
@@ -72,6 +75,7 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
   const [selectedAgent, setSelectedAgent] = useState<AgentWithSource | null>(null)
   const [marketPrices, setMarketPrices] = useState<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [showEnhancedCreation, setShowEnhancedCreation] = useState(false)
 
   useEffect(() => {
     // Load agents
@@ -557,17 +561,44 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
           </div>
         </div>
 
+        {/* Enhanced Creation Button */}
+        {!showEnhancedCreation && (
+          <div className="flex justify-center mb-6">
+            <Button
+              onClick={() => setShowEnhancedCreation(true)}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3"
+              size="lg"
+            >
+              <Sparkles className="w-5 h-5 mr-2" />
+              Create Advanced Trading Agent
+              <Plus className="w-5 h-5 ml-2" />
+            </Button>
+          </div>
+        )}
+
+        {/* Enhanced Agent Creation */}
+        {showEnhancedCreation && (
+          <AgentCreationIntegration
+            onAgentCreated={(agent) => {
+              setShowEnhancedCreation(false)
+              loadAgents() // Refresh the agent list
+              onCreateAgent?.()
+            }}
+            onClose={() => setShowEnhancedCreation(false)}
+          />
+        )}
+
         {/* Agents Grid */}
-        {agents.length === 0 ? (
+        {!showEnhancedCreation && agents.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <Bot className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No agents created yet</h3>
               <p className="text-gray-600 mb-4">Create your first trading agent to get started</p>
-              <Button onClick={onCreateAgent}>Create Agent</Button>
+              <Button onClick={() => setShowEnhancedCreation(true)}>Create Agent</Button>
             </CardContent>
           </Card>
-        ) : (
+        ) : !showEnhancedCreation ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {agents.map((agent) => {
               const portfolioChange = calculatePortfolioChange(agent)
@@ -799,7 +830,7 @@ export function RealAgentManagement({ className, onCreateAgent }: RealAgentManag
               )
             })}
           </div>
-        )}
+        ) : null}
 
         {/* Agent Details Modal */}
         <Dialog open={selectedAgent !== null} onOpenChange={() => setSelectedAgent(null)}>
