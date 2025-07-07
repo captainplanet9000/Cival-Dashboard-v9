@@ -36,6 +36,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { backendApi } from '@/lib/api/backend-client'
 import { formatCurrency, formatPercent } from '@/lib/utils'
+import { BlockchainDashboard } from '@/components/blockchain/BlockchainDashboard'
 
 interface DeFiProtocol {
   id: string
@@ -458,9 +459,9 @@ export function DeFiIntegrationHub() {
           <h1 className="text-2xl font-bold text-foreground">
             DeFi Integration Hub
           </h1>
-          <p className="text-muted-foreground">Decentralized finance protocols and yield optimization</p>
+          <p className="text-muted-foreground">Decentralized finance with real blockchain integration and DEX arbitrage</p>
           <p className="text-xs text-gray-500 mt-1">
-            Last updated: {lastUpdate.toLocaleTimeString()}
+            Powered by Alchemy • Ethereum & Arbitrum Testnets
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -474,6 +475,29 @@ export function DeFiIntegrationHub() {
           </Button>
         </div>
       </div>
+
+      {/* Blockchain Integration Notice */}
+      <Card className="border-2 border-indigo-500 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-500 rounded-full">
+                <Globe className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">🎉 Real Blockchain Integration Active!</h3>
+                <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                  Agents can now trade on Ethereum & Arbitrum testnets with real DeFi protocols
+                </p>
+              </div>
+            </div>
+            <Button size="sm" variant="default" onClick={() => setActiveTab('blockchain')}>
+              <Zap className="h-4 w-4 mr-2" />
+              View Blockchain
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -550,7 +574,8 @@ export function DeFiIntegrationHub() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+          <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="protocols">Protocols</TabsTrigger>
           <TabsTrigger value="yield">Yield Farming</TabsTrigger>
@@ -561,11 +586,11 @@ export function DeFiIntegrationHub() {
         <TabsContent value="overview" className="space-y-4">
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('blockchain')}>
               <CardContent className="p-6 text-center">
-                <Zap className="h-12 w-12 mx-auto mb-4 text-purple-500" />
-                <h3 className="font-semibold mb-2">Yield Optimization</h3>
-                <p className="text-sm text-muted-foreground">Auto-compound and rebalance</p>
+                <Globe className="h-12 w-12 mx-auto mb-4 text-indigo-500" />
+                <h3 className="font-semibold mb-2">Blockchain Trading</h3>
+                <p className="text-sm text-muted-foreground">Real testnet DEX arbitrage</p>
               </CardContent>
             </Card>
             
@@ -832,6 +857,10 @@ export function DeFiIntegrationHub() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="blockchain" className="space-y-4">
+          <BlockchainDashboard />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
