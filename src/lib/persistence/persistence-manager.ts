@@ -76,6 +76,32 @@ class PersistenceManager {
 
     // Initialize Supabase client
     this.initializeSupabase()
+    
+    // Load configuration from environment
+    this.loadConfiguration()
+  }
+  
+  private loadConfiguration(): void {
+    // Load persistence configuration from environment variables
+    const enablePersistence = process.env.ENABLE_AUTONOMOUS_PERSISTENCE === 'true'
+    const enableAutoBackup = process.env.PERSISTENCE_AUTO_BACKUP === 'true'
+    const backupInterval = parseInt(process.env.PERSISTENCE_BACKUP_INTERVAL || '60000')
+    const healthCheckInterval = parseInt(process.env.PERSISTENCE_HEALTH_CHECK_INTERVAL || '30000')
+    const syncInterval = parseInt(process.env.PERSISTENCE_SYNC_INTERVAL || '5000')
+    const maxRetries = parseInt(process.env.PERSISTENCE_MAX_RETRIES || '3')
+    const compressionEnabled = process.env.PERSISTENCE_COMPRESSION_ENABLED === 'true'
+    
+    console.log('🔧 Persistence configuration loaded:', {
+      enablePersistence,
+      enableAutoBackup,
+      backupInterval,
+      healthCheckInterval,
+      syncInterval,
+      maxRetries,
+      compressionEnabled
+    })
+    
+    this.initialized = enablePersistence
   }
 
   private initializeSupabase() {

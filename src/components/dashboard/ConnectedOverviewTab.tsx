@@ -40,6 +40,10 @@ import { LiveMarketDataPanel } from '@/components/market/LiveMarketDataPanel'
 // Import notification hooks
 import { useNotifications } from '@/lib/notifications/apprise-service'
 
+// Import persistence system
+import useDashboardPersistence from '@/hooks/useDashboardPersistence'
+import PersistenceMonitor from '@/components/persistence/PersistenceMonitor'
+
 interface ConnectedOverviewTabProps {
   className?: string
   onNavigateToTab?: (tabId: string) => void
@@ -48,6 +52,20 @@ interface ConnectedOverviewTabProps {
 export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOverviewTabProps) {
   const { state, actions } = useDashboardConnection('overview')
   const { agents, loading: agentsLoading } = useAgentData()
+  
+  // Autonomous persistence integration
+  const {
+    dashboardState: persistentState,
+    isLoading: persistenceLoading,
+    isSyncing: persistenceSyncing,
+    lastSaved,
+    health: persistenceHealth,
+    updateAgents,
+    updateFarms,
+    updateGoals,
+    updatePortfolio,
+    updateMarketData
+  } = useDashboardPersistence()
   
   // Supabase dashboard state
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
@@ -688,6 +706,20 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                     {displayData.farmsConnected ? 'Connected' : 'Offline'}
                   </Badge>
                 </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${!persistenceLoading && persistenceHealth.size > 0 ? 'bg-green-500' : 'bg-orange-500'}`} />
+                  <span className="text-sm font-medium">Persistence</span>
+                  <Badge variant={!persistenceLoading ? "default" : "secondary"} className="ml-auto text-xs">
+                    {persistenceSyncing ? 'Syncing' : !persistenceLoading ? 'Active' : 'Loading'}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${lastSaved ? 'bg-green-500' : 'bg-gray-500'}`} />
+                  <span className="text-sm font-medium">Auto-Save</span>
+                  <Badge variant={lastSaved ? "default" : "secondary"} className="ml-auto text-xs">
+                    {lastSaved ? 'Active' : 'Pending'}
+                  </Badge>
+                </div>
               </div>
               <div className="pt-2 border-t">
                 <div className="flex justify-between items-center mb-2">
@@ -862,6 +894,8 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         </Card>
       </div>
 
+      {/* Persistence Monitor */}
+      <PersistenceMonitor className="mt-6" />
 
     </div>
   )
