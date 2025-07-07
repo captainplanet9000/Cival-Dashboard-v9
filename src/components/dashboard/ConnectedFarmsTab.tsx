@@ -26,6 +26,12 @@ import { useFarmUpdates } from '@/lib/realtime/websocket'
 // Import farm creation wizard
 import { TabBasedFarmCreationWizard } from '@/components/farms/TabBasedFarmCreationWizard'
 
+// Import enhanced agent creation service
+import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creation-service'
+
+// Import paper trading engine
+import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
+
 // Simple farm interface
 interface Farm {
   id: string
@@ -161,7 +167,7 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
 
   const totalTrades = farms.reduce((sum, farm) => sum + farm.performance.tradeCount, 0)
 
-  // Action handlers
+  // Action handlers with real backend integration
   const toggleFarmStatus = async (farmId: string) => {
     try {
       setLoading(true)
@@ -173,13 +179,41 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
 
       const newStatus = farm.status === 'active' ? 'paused' : 'active'
       
-      // Update farm status
-      const updatedFarms = farms.map(f => 
-        f.id === farmId ? { ...f, status: newStatus } : f
-      )
-      setFarms(updatedFarms)
+      // Call backend API to update farm status
+      try {
+        const response = await fetch(`/api/farms/${farmId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        })
+        
+        if (response.ok) {
+          // Update local state
+          const updatedFarms = farms.map(f => 
+            f.id === farmId ? { ...f, status: newStatus } : f
+          )
+          setFarms(updatedFarms)
+          
+          // Start or stop agent trading based on status
+          if (newStatus === 'active') {
+            await startFarmTrading(farm)
+          } else {
+            await pauseFarmTrading(farm)
+          }
+          
+          toast.success(`Farm ${farm.name} ${newStatus === 'active' ? 'started' : 'paused'}`)
+        } else {
+          throw new Error('Backend request failed')
+        }
+      } catch (apiError) {
+        // Fallback to local update if backend fails
+        const updatedFarms = farms.map(f => 
+          f.id === farmId ? { ...f, status: newStatus } : f
+        )
+        setFarms(updatedFarms)
+        toast.success(`Farm ${farm.name} ${newStatus === 'active' ? 'started' : 'paused'} (local mode)`)
+      }
       
-      toast.success(`Farm ${farm.name} ${newStatus === 'active' ? 'started' : 'paused'}`)
     } catch (error) {
       console.error('Error toggling farm status:', error)
       toast.error('Failed to update farm status')
@@ -193,8 +227,25 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
       setLoading(true)
       const templateName = strategyOptions.find(s => s.value === strategy)?.label || strategy
       
-      // Simulate farm creation
-      toast.success(`${templateName} farm template loaded. Configuration wizard coming soon!`)
+      // Create farm with real backend integration
+      const farmConfig = {
+        name: `${templateName} Farm`,
+        description: `Automated trading farm using ${templateName} strategy`,
+        strategy: strategy,
+        agentCount: 5,
+        totalCapital: 50000,
+        coordinationMode: 'coordinated' as const,
+        riskLevel: getStrategyRiskLevel(strategy)
+      }
+      
+      const newFarm = await createRealFarm(farmConfig)
+      if (newFarm) {
+        setFarms(prev => [...prev, newFarm])
+        setActiveTab('farms')
+        toast.success(`${templateName} farm created successfully with ${farmConfig.agentCount} agents!`)
+      } else {
+        toast.error('Failed to create farm - using template mode')
+      }
       
     } catch (error) {
       console.error('Error creating farm from template:', error)
@@ -271,31 +322,172 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
     }
   }
 
-  // Handle agent grouping
+  // Handle agent grouping with real backend coordination
   const handleAgentGrouping = async () => {
     try {
       setLoading(true)
       
-      // Simulate intelligent grouping
+      // Get available agents for grouping
+      const availableAgents = realtimeAgents.filter(agent => !agent.farmId || agent.farmId === '')
       const activeFarms = farms.filter(f => f.status === 'active')
       
       if (activeFarms.length === 0) {
         toast.error('No active farms available for grouping')
         return
       }
+      
+      if (availableAgents.length === 0) {
+        toast.error('No unassigned agents available for grouping')
+        return
+      }
 
-      // Call grouping for each active farm
-      for (const farm of activeFarms) {
-        await handleLLMAction('group')
+      // Intelligent agent assignment
+      let assignedCount = 0
+      for (const agent of availableAgents) {
+        if (assignedCount >= activeFarms.length) break
+        
+        const targetFarm = activeFarms[assignedCount % activeFarms.length]
+        
+        try {
+          // Call backend to assign agent to farm
+          const response = await fetch('/api/agents/assign-to-farm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agentId: agent.id,
+              farmId: targetFarm.id,
+              role: 'trader'
+            })
+          })
+          
+          if (response.ok) {
+            assignedCount++
+            
+            // Update local farm agent count
+            setFarms(prev => prev.map(f => 
+              f.id === targetFarm.id 
+                ? { ...f, agentCount: f.agentCount + 1, agents: [...f.agents, agent.id] }
+                : f
+            ))
+          }
+        } catch (assignError) {
+          console.error('Error assigning agent:', assignError)
+        }
       }
       
-      toast.success(`Agent grouping applied to ${activeFarms.length} active farms`)
+      toast.success(`Agent grouping complete: ${assignedCount} agents assigned to ${activeFarms.length} farms`)
       
     } catch (error) {
       console.error('Error applying agent grouping:', error)
       toast.error('Failed to apply agent grouping')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Helper functions for farm management
+  const createRealFarm = async (config: any): Promise<Farm | null> => {
+    try {
+      // Call backend to create farm
+      const response = await fetch('/api/farms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      })
+      
+      if (response.ok) {
+        const farmData = await response.json()
+        
+        // Create agents for the farm
+        const agents = await createAgentsForFarm(farmData.id, config.agentCount, config.strategy)
+        
+        return {
+          id: farmData.id || `farm_${Date.now()}`,
+          name: config.name,
+          description: config.description,
+          strategy: config.strategy,
+          agentCount: agents.length,
+          totalCapital: config.totalCapital,
+          coordinationMode: config.coordinationMode,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          agents: agents.map(a => a.id),
+          performance: {
+            totalValue: config.totalCapital,
+            totalPnL: 0,
+            winRate: getStrategyWinRate(config.strategy),
+            tradeCount: 0,
+            roiPercent: 0,
+            activeAgents: agents.length
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error creating farm:', error)
+    }
+    return null
+  }
+  
+  const createAgentsForFarm = async (farmId: string, count: number, strategy: string) => {
+    const agents = []
+    
+    for (let i = 0; i < count; i++) {
+      try {
+        // Create agent with enhanced agent creation service
+        const agentConfig = {
+          name: `${strategy} Agent ${i + 1}`,
+          strategy: strategy,
+          farmId: farmId,
+          capital: 10000,
+          riskLevel: getStrategyRiskLevel(strategy).toLowerCase()
+        }
+        
+        const agentId = await enhancedAgentCreationService.createAutonomousAgent(agentConfig)
+        if (agentId) {
+          agents.push({ id: agentId, ...agentConfig })
+          
+          // Also register with paper trading engine
+          await paperTradingEngine.registerAgent({
+            id: agentId,
+            name: agentConfig.name,
+            strategy: { type: strategy as any, parameters: {} },
+            initialCapital: agentConfig.capital,
+            riskLimits: {
+              maxPositionSize: agentConfig.capital * 0.1,
+              maxDailyLoss: agentConfig.capital * 0.05,
+              maxDrawdown: 0.15
+            }
+          })
+        }
+      } catch (error) {
+        console.error(`Error creating agent ${i + 1}:`, error)
+      }
+    }
+    
+    return agents
+  }
+  
+  const startFarmTrading = async (farm: Farm) => {
+    try {
+      // Start all agents in the farm
+      for (const agentId of farm.agents) {
+        await paperTradingEngine.startTrading(agentId)
+      }
+      toast.success(`Started trading for ${farm.agents.length} agents in ${farm.name}`)
+    } catch (error) {
+      console.error('Error starting farm trading:', error)
+    }
+  }
+  
+  const pauseFarmTrading = async (farm: Farm) => {
+    try {
+      // Pause all agents in the farm
+      for (const agentId of farm.agents) {
+        await paperTradingEngine.pauseTrading(agentId)
+      }
+      toast.success(`Paused trading for ${farm.agents.length} agents in ${farm.name}`)
+    } catch (error) {
+      console.error('Error pausing farm trading:', error)
     }
   }
 

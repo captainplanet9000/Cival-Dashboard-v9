@@ -489,14 +489,14 @@ export function GoalCreationWizard({ onGoalCreated, onCancel, className }: GoalC
               <div>
                 <Label htmlFor="goal-farm">Associated Farm (Optional)</Label>
                 <Select 
-                  value={config.farmId || ''} 
-                  onValueChange={(value) => setConfig(prev => ({ ...prev, farmId: value }))}
+                  value={config.farmId || 'none'} 
+                  onValueChange={(value) => setConfig(prev => ({ ...prev, farmId: value === 'none' ? undefined : value }))}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select a farm..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No farm association</SelectItem>
+                    <SelectItem value="none">No farm association</SelectItem>
                     {farms.map((farm) => (
                       <SelectItem key={farm.id} value={farm.id}>
                         <div className="flex items-center space-x-2">

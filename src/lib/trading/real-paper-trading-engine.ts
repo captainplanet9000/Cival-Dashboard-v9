@@ -59,6 +59,8 @@ export interface Position {
   realizedPnL: number
   side: 'long' | 'short'
   openedAt: Date
+  stopLoss?: number
+  takeProfit?: number
 }
 
 export interface Order {
@@ -97,6 +99,8 @@ export interface RiskLimits {
   allowedSymbols: string[]
   stopLossEnabled: boolean
   takeProfitEnabled: boolean
+  stopLossPercentage: number // Default stop loss %
+  takeProfitPercentage: number // Default take profit %
 }
 
 export interface PerformanceMetrics {
@@ -144,6 +148,8 @@ export class RealPaperTradingEngine extends EventEmitter {
   private defaultSessionId?: string
   private useLiveData = false
   private liveDataSymbols: string[] = []
+  private riskCheckInterval?: NodeJS.Timeout
+  private emergencyStopActive = false
 
   constructor() {
     super()
@@ -287,6 +293,9 @@ export class RealPaperTradingEngine extends EventEmitter {
       this.processTradingCycle()
     }, 5000)
 
+    // Start risk monitoring every 2 seconds
+    this.startRiskMonitoring()
+
     this.emit('engineStarted')
     console.log('🚀 Paper Trading Engine Started')
   }
@@ -301,6 +310,10 @@ export class RealPaperTradingEngine extends EventEmitter {
     
     if (this.tradingInterval) {
       clearInterval(this.tradingInterval)
+    }
+
+    if (this.riskCheckInterval) {
+      clearInterval(this.riskCheckInterval)
     }
 
     this.emit('engineStopped')
@@ -613,6 +626,9 @@ export class RealPaperTradingEngine extends EventEmitter {
       existingPosition.averagePrice = totalCost / totalQuantity
       existingPosition.quantity = totalQuantity
     } else {
+      // Find agent to get risk limits for stop loss/take profit
+      const agent = this.agents.get(portfolio.agentId)
+      
       // Create new position
       const position: Position = {
         id: `pos_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -626,6 +642,16 @@ export class RealPaperTradingEngine extends EventEmitter {
         side: 'long',
         openedAt: new Date()
       }
+
+      // Set automatic stop loss and take profit if enabled
+      if (agent && agent.riskLimits.stopLossEnabled && agent.riskLimits.stopLossPercentage > 0) {
+        position.stopLoss = price * (1 - agent.riskLimits.stopLossPercentage / 100)
+      }
+
+      if (agent && agent.riskLimits.takeProfitEnabled && agent.riskLimits.takeProfitPercentage > 0) {
+        position.takeProfit = price * (1 + agent.riskLimits.takeProfitPercentage / 100)
+      }
+      
       portfolio.positions.push(position)
     }
   }
@@ -909,7 +935,191 @@ export class RealPaperTradingEngine extends EventEmitter {
     agent.performance = performance
     return performance
   }
+
+  // Start risk monitoring
+  private startRiskMonitoring() {
+    if (this.riskCheckInterval) {
+      clearInterval(this.riskCheckInterval)
+    }
+
+    this.riskCheckInterval = setInterval(() => {
+      if (!this.emergencyStopActive) {
+        this.checkStopLossAndTakeProfit()
+      }
+    }, 2000) // Check every 2 seconds
+
+    console.log('🔍 Risk monitoring started')
+  }
+
+  // Check all positions for stop loss and take profit triggers
+  private async checkStopLossAndTakeProfit() {
+    for (const agent of this.agents.values()) {
+      if (agent.status !== 'active') continue
+
+      for (const position of agent.portfolio.positions) {
+        const currentPrice = this.marketPrices.get(position.symbol)?.price
+        if (!currentPrice) continue
+
+        // Update position current price
+        position.currentPrice = currentPrice
+        position.marketValue = position.quantity * currentPrice
+        position.unrealizedPnL = (currentPrice - position.averagePrice) * position.quantity
+
+        // Check stop loss
+        if (position.stopLoss && currentPrice <= position.stopLoss) {
+          await this.triggerStopLoss(agent, position, currentPrice)
+        }
+
+        // Check take profit
+        if (position.takeProfit && currentPrice >= position.takeProfit) {
+          await this.triggerTakeProfit(agent, position, currentPrice)
+        }
+      }
+    }
+  }
+
+  // Trigger stop loss for a position
+  private async triggerStopLoss(agent: TradingAgent, position: Position, currentPrice: number) {
+    try {
+      console.log(`🛑 Stop loss triggered for ${agent.name}: ${position.symbol} @ $${currentPrice}`)
+
+      // Place market sell order
+      const order = this.placeOrder(agent.id, {
+        symbol: position.symbol,
+        type: 'market',
+        side: 'sell',
+        quantity: position.quantity
+      })
+
+      // Broadcast stop loss event
+      try {
+        const { broadcastStopLossTriggered } = await import('@/lib/websocket/risk-broadcaster')
+        await broadcastStopLossTriggered(agent.id, position.symbol, {
+          stopLossPrice: position.stopLoss,
+          currentPrice,
+          quantity: position.quantity,
+          unrealizedPnL: position.unrealizedPnL,
+          orderId: order.id
+        })
+      } catch (error) {
+        console.error('Error broadcasting stop loss event:', error)
+      }
+
+      // Emit event for local listeners
+      this.emit('stopLossTriggered', {
+        agentId: agent.id,
+        symbol: position.symbol,
+        stopLossPrice: position.stopLoss,
+        currentPrice,
+        quantity: position.quantity,
+        order
+      })
+
+    } catch (error) {
+      console.error(`Failed to trigger stop loss for ${agent.name} ${position.symbol}:`, error)
+    }
+  }
+
+  // Trigger take profit for a position
+  private async triggerTakeProfit(agent: TradingAgent, position: Position, currentPrice: number) {
+    try {
+      console.log(`🎯 Take profit triggered for ${agent.name}: ${position.symbol} @ $${currentPrice}`)
+
+      // Place market sell order
+      const order = this.placeOrder(agent.id, {
+        symbol: position.symbol,
+        type: 'market',
+        side: 'sell',
+        quantity: position.quantity
+      })
+
+      // Broadcast take profit event
+      try {
+        const { broadcastTakeProfitTriggered } = await import('@/lib/websocket/risk-broadcaster')
+        await broadcastTakeProfitTriggered(agent.id, position.symbol, {
+          takeProfitPrice: position.takeProfit,
+          currentPrice,
+          quantity: position.quantity,
+          unrealizedPnL: position.unrealizedPnL,
+          orderId: order.id
+        })
+      } catch (error) {
+        console.error('Error broadcasting take profit event:', error)
+      }
+
+      // Emit event for local listeners
+      this.emit('takeProfitTriggered', {
+        agentId: agent.id,
+        symbol: position.symbol,
+        takeProfitPrice: position.takeProfit,
+        currentPrice,
+        quantity: position.quantity,
+        order
+      })
+
+    } catch (error) {
+      console.error(`Failed to trigger take profit for ${agent.name} ${position.symbol}:`, error)
+    }
+  }
+
+  // Emergency stop functionality
+  async emergencyStop(reason: string = 'Emergency stop activated') {
+    this.emergencyStopActive = true
+    
+    // Stop all agents
+    for (const agent of this.agents.values()) {
+      agent.status = 'paused'
+    }
+
+    // Cancel all pending orders
+    for (const agent of this.agents.values()) {
+      for (const order of agent.portfolio.orders) {
+        if (order.status === 'pending') {
+          order.status = 'cancelled'
+        }
+      }
+    }
+
+    console.log(`🚨 Emergency stop activated: ${reason}`)
+    this.emit('emergencyStop', { reason, timestamp: Date.now() })
+  }
+
+  // Resume trading after emergency stop
+  async resumeTrading() {
+    this.emergencyStopActive = false
+    
+    // Reactivate agents (they can be manually started if needed)
+    console.log('✅ Emergency stop deactivated - agents can be manually restarted')
+    this.emit('tradingResumed', { timestamp: Date.now() })
+  }
+
+  // Pause an agent
+  async pauseAgent(agentId: string) {
+    const agent = this.agents.get(agentId)
+    if (agent) {
+      agent.status = 'paused'
+      console.log(`⏸️ Agent ${agent.name} paused`)
+      this.emit('agentPaused', agent)
+    }
+  }
+
+  // Cancel an order
+  async cancelOrder(orderId: string) {
+    for (const agent of this.agents.values()) {
+      const order = agent.portfolio.orders.find(o => o.id === orderId)
+      if (order && order.status === 'pending') {
+        order.status = 'cancelled'
+        console.log(`❌ Order cancelled: ${orderId}`)
+        this.emit('orderCancelled', order)
+        return true
+      }
+    }
+    return false
+  }
 }
 
 // Export singleton instance
 export const paperTradingEngine = new RealPaperTradingEngine()
+
+// Export alias for API route compatibility
+export const realPaperTradingEngine = paperTradingEngine

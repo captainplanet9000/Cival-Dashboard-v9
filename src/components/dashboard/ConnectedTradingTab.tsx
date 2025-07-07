@@ -33,6 +33,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 // Import Interactive Trading Chart
 import InteractiveTradingChart from '@/components/charts/InteractiveTradingChartWrapper'
 
+// Import market data services
+import { useGlobalMarketData } from '@/lib/market/global-market-data-manager'
+import { agentMarketDataService } from '@/lib/agents/agent-market-data-service'
+import { MarketPrice, TradingSignal } from '@/types/market-data'
+
 // Import premium trading components (existing only)
 import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'
 import { AdvancedOrderBook } from '@/components/premium-ui/trading/advanced-orderbook'
@@ -40,44 +45,519 @@ import { EnhancedTradingInterface } from '@/components/premium-ui/trading/enhanc
 import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
 import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
 
-// Placeholder components for missing premium trading features
-const TradingDashboard = () => (
-  <div className="space-y-6">
+// Live Market Data Trading Dashboard
+const TradingDashboard = () => {
+  const { prices, loading, error } = useGlobalMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD', 'AAPL', 'TSLA', 'MSFT', 'NVDA'])
+  const [selectedSymbol, setSelectedSymbol] = useState('BTC/USD')
+  const [tradingSignals, setTradingSignals] = useState<TradingSignal[]>([])
+  
+  const selectedPrice = prices.find(p => p.symbol === selectedSymbol)
+
+  // Get agent trading signals
+  useEffect(() => {
+    const signals = agentMarketDataService.getActiveSignals('trading-dashboard')
+    setTradingSignals(signals.slice(0, 5)) // Show top 5 signals
+  }, [prices])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center h-32">
+              <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+              <span className="ml-2">Loading market data...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-red-500">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+              <p>Error loading market data: {error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Market Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {prices.slice(0, 4).map((price) => (
+          <Card key={price.symbol} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedSymbol(price.symbol)}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-sm">{price.symbol}</span>
+                <Badge variant={price.changePercent24h >= 0 ? 'default' : 'destructive'}>
+                  {price.changePercent24h >= 0 ? '+' : ''}{price.changePercent24h.toFixed(2)}%
+                </Badge>
+              </div>
+              <div className="text-2xl font-bold">
+                ${price.price.toLocaleString(undefined, { 
+                  minimumFractionDigits: 2, 
+                  maximumFractionDigits: price.price > 100 ? 2 : 6 
+                })}
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                {price.changePercent24h >= 0 ? (
+                  <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 mr-1 text-red-500" />
+                )}
+                ${Math.abs(price.change24h).toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Selected Symbol Details */}
+      {selectedPrice && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              {selectedPrice.symbol} - Live Trading Data
+            </CardTitle>
+            <CardDescription>
+              Real-time market data and trading analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Price Details */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Current Price</Label>
+                    <div className="text-2xl font-bold">
+                      ${selectedPrice.price.toLocaleString(undefined, { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: selectedPrice.price > 100 ? 2 : 6 
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground">24h Change</Label>
+                    <div className={`text-2xl font-bold ${selectedPrice.changePercent24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedPrice.changePercent24h >= 0 ? '+' : ''}{selectedPrice.changePercent24h.toFixed(2)}%
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground">24h High</Label>
+                    <div className="text-lg font-semibold">
+                      ${selectedPrice.high24h?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground">24h Low</Label>
+                    <div className="text-lg font-semibold">
+                      ${selectedPrice.low24h?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Volume 24h</Label>
+                    <div className="text-lg font-semibold">
+                      ${selectedPrice.volume24h?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Source</Label>
+                    <div className="text-lg font-semibold">
+                      {selectedPrice.source}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trading Signals */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  <Label className="font-medium">AI Trading Signals</Label>
+                </div>
+                {tradingSignals.length > 0 ? (
+                  <div className="space-y-2">
+                    {tradingSignals.map((signal) => (
+                      <div key={signal.id} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-sm">{signal.symbol}</span>
+                          <Badge variant={
+                            signal.type === 'buy' ? 'default' : 
+                            signal.type === 'sell' ? 'destructive' : 'secondary'
+                          }>
+                            {signal.type.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Confidence: {signal.confidence.toFixed(1)}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {signal.reasoning}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Brain className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No active trading signals</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+const TradingTerminal = () => {
+  const { prices, loading } = useGlobalMarketData()
+  const [selectedPair, setSelectedPair] = useState('BTC/USD')
+  const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market')
+  const [side, setSide] = useState<'buy' | 'sell'>('buy')
+  const [amount, setAmount] = useState('')
+  const [price, setPrice] = useState('')
+
+  const selectedPrice = prices.find(p => p.symbol === selectedPair)
+
+  const handlePlaceOrder = async () => {
+    if (!selectedPrice || !amount) return
+
+    try {
+      // Create paper trading order
+      const order: Order = {
+        id: `order_${Date.now()}`,
+        symbol: selectedPair,
+        side,
+        type: orderType,
+        amount: parseFloat(amount),
+        price: orderType === 'market' ? selectedPrice.price : parseFloat(price || '0'),
+        status: 'pending',
+        timestamp: new Date(),
+        agentId: 'trading-terminal'
+      }
+
+      const result = await paperTradingEngine.placeOrder(order)
+      if (result.success) {
+        toast.success(`${side.toUpperCase()} order placed for ${amount} ${selectedPair}`)
+        setAmount('')
+        setPrice('')
+      } else {
+        toast.error(result.error || 'Failed to place order')
+      }
+    } catch (error) {
+      toast.error('Failed to place order')
+    }
+  }
+
+  return (
     <Card>
       <CardHeader>
-        <CardTitle>Premium Trading Dashboard</CardTitle>
-        <CardDescription>Advanced trading interface with real-time data</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Trading Terminal
+        </CardTitle>
+        <CardDescription>Live market data with order placement</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground">Premium trading dashboard coming soon...</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Market Data */}
+          <div className="space-y-4">
+            <div>
+              <Label>Select Trading Pair</Label>
+              <Select value={selectedPair} onValueChange={setSelectedPair}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {prices.map(price => (
+                    <SelectItem key={price.symbol} value={price.symbol}>
+                      {price.symbol}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedPrice && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Price:</span>
+                    <div className="font-bold text-lg">
+                      ${selectedPrice.price.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Change:</span>
+                    <div className={`font-bold text-lg ${selectedPrice.changePercent24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedPrice.changePercent24h >= 0 ? '+' : ''}{selectedPrice.changePercent24h.toFixed(2)}%
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">High 24h:</span>
+                    <div className="font-semibold">
+                      ${selectedPrice.high24h?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Low 24h:</span>
+                    <div className="font-semibold">
+                      ${selectedPrice.low24h?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Order Entry */}
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant={side === 'buy' ? 'default' : 'outline'}
+                onClick={() => setSide('buy')}
+                className="flex-1"
+              >
+                Buy
+              </Button>
+              <Button
+                variant={side === 'sell' ? 'destructive' : 'outline'}
+                onClick={() => setSide('sell')}
+                className="flex-1"
+              >
+                Sell
+              </Button>
+            </div>
+
+            <div>
+              <Label>Order Type</Label>
+              <Select value={orderType} onValueChange={(value: any) => setOrderType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="market">Market</SelectItem>
+                  <SelectItem value="limit">Limit</SelectItem>
+                  <SelectItem value="stop">Stop</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Amount</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+
+            {orderType !== 'market' && (
+              <div>
+                <Label>Price</Label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </div>
+            )}
+
+            <Button
+              onClick={handlePlaceOrder}
+              disabled={!amount || loading || (orderType !== 'market' && !price)}
+              className="w-full"
+              variant={side === 'buy' ? 'default' : 'destructive'}
+            >
+              {loading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <DollarSign className="h-4 w-4 mr-2" />
+              )}
+              Place {side.toUpperCase()} Order
+            </Button>
+
+            {selectedPrice && amount && (
+              <div className="p-3 border rounded-lg bg-muted/20">
+                <div className="text-sm text-muted-foreground">Order Summary</div>
+                <div className="font-semibold">
+                  {side.toUpperCase()} {amount} {selectedPair}
+                </div>
+                <div className="text-sm">
+                  Est. Total: ${((parseFloat(amount) || 0) * selectedPrice.price).toLocaleString()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </CardContent>
     </Card>
-  </div>
-)
+  )
+}
 
-const TradingTerminal = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Trading Terminal</CardTitle>
-      <CardDescription>Professional trading terminal interface</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-muted-foreground">Trading terminal coming soon...</p>
-    </CardContent>
-  </Card>
-)
+const PositionManager = () => {
+  const { prices } = useGlobalMarketData()
+  const [positions, setPositions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-const PositionManager = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Position Manager</CardTitle>
-      <CardDescription>Advanced position management tools</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-muted-foreground">Position manager coming soon...</p>
-    </CardContent>
-  </Card>
-)
+  useEffect(() => {
+    // Get current positions from paper trading engine
+    const loadPositions = async () => {
+      try {
+        const portfolio = await paperTradingEngine.getPortfolio('trading-terminal')
+        if (portfolio.success && portfolio.data) {
+          setPositions(portfolio.data.positions || [])
+        }
+      } catch (error) {
+        console.error('Failed to load positions:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPositions()
+    const interval = setInterval(loadPositions, 5000) // Update every 5 seconds
+    return () => clearInterval(interval)
+  }, [])
+
+  const calculatePnL = (position: any) => {
+    const currentPrice = prices.find(p => p.symbol === position.symbol)
+    if (!currentPrice) return { pnl: 0, pnlPercent: 0 }
+
+    const pnl = (currentPrice.price - position.entryPrice) * position.quantity * (position.side === 'long' ? 1 : -1)
+    const pnlPercent = (pnl / (position.entryPrice * position.quantity)) * 100
+
+    return { pnl, pnlPercent }
+  }
+
+  const totalPnL = positions.reduce((sum, pos) => sum + calculatePnL(pos).pnl, 0)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <PieChart className="h-5 w-5" />
+          Position Manager
+        </CardTitle>
+        <CardDescription>Live position tracking with real-time P&L</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <RefreshCw className="h-6 w-6 animate-spin" />
+            <span className="ml-2">Loading positions...</span>
+          </div>
+        ) : positions.length === 0 ? (
+          <div className="text-center py-8">
+            <PieChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-muted-foreground">No open positions</p>
+            <p className="text-sm text-muted-foreground">Place some trades to see your positions here</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Portfolio Summary */}
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-sm text-muted-foreground">Total Positions</div>
+                  <div className="text-xl font-bold">{positions.length}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Total P&L</div>
+                  <div className={`text-xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Status</div>
+                  <div className="text-xl font-bold text-blue-600">Active</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Positions List */}
+            <div className="space-y-3">
+              {positions.map((position, index) => {
+                const { pnl, pnlPercent } = calculatePnL(position)
+                const currentPrice = prices.find(p => p.symbol === position.symbol)
+
+                return (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{position.symbol}</span>
+                        <Badge variant={position.side === 'long' ? 'default' : 'destructive'}>
+                          {position.side?.toUpperCase() || 'LONG'}
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-semibold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                        </div>
+                        <div className={`text-sm ${pnlPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Quantity:</span>
+                        <div className="font-medium">{position.quantity?.toFixed(4) || 'N/A'}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Entry Price:</span>
+                        <div className="font-medium">${position.entryPrice?.toFixed(2) || 'N/A'}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Current Price:</span>
+                        <div className="font-medium">
+                          ${currentPrice?.price.toFixed(2) || 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Market Value:</span>
+                        <div className="font-medium">
+                          ${currentPrice ? (currentPrice.price * (position.quantity || 0)).toFixed(2) : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex gap-2">
+                      <Button size="sm" variant="outline">
+                        <Settings className="h-4 w-4 mr-1" />
+                        Modify
+                      </Button>
+                      <Button size="sm" variant="destructive">
+                        Close Position
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 const RealTimeCharts = () => (
   <InteractiveTradingChart
