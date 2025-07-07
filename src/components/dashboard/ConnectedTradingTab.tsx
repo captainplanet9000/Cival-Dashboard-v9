@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import {
   TrendingUp, TrendingDown, DollarSign, Activity, AlertCircle,
-  CheckCircle2, Clock, RefreshCw, Zap, BarChart3, PieChart
+  CheckCircle2, Clock, RefreshCw, Zap, BarChart3, PieChart, Brain, Settings
 } from 'lucide-react'
 import { useDashboardConnection } from './DashboardTabConnector'
 import { paperTradingEngine, Order } from '@/lib/trading/real-paper-trading-engine'
