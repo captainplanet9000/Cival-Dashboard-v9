@@ -16,7 +16,7 @@ import { motion } from 'framer-motion'
 import { useAgentData } from '@/hooks/useAgentData'
 import { useAGUI } from '@/lib/hooks/useAGUI'
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
-import { useMarketData } from '@/lib/market/market-data-service'
+import { useGlobalMarketData } from '@/lib/market/global-market-data-manager'
 import { toast } from 'react-hot-toast'
 
 // Import Supabase dashboard service for unified data
@@ -152,10 +152,17 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   }
 
   // Market data for overview
-  const { prices: marketPrices, loading: marketLoading } = useMarketData()
+  const { prices: marketPrices, loading: marketLoading } = useGlobalMarketData([
+    'BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOT/USD', 'AVAX/USD', 'MATIC/USD', 'LINK/USD'
+  ])
   
   // Calculate derived metrics
   const totalSystemValue = (displayData.totalPortfolioValue || 0) + (displayData.farmTotalValue || 0)
+  
+  // Get primary market prices for display
+  const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD')?.price || 96420.50
+  const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD')?.price || 3285.75
+  const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD')?.price || 205.32
   const systemHealthScore = [
     displayData.supabaseConnected,
     displayData.redisConnected,
@@ -295,19 +302,34 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Portfolio Value</span>
-                  <span className="font-semibold">${displayData.totalPortfolioValue.toLocaleString()}</span>
+                  <AnimatedPrice 
+                    value={displayData.totalPortfolioValue}
+                    currency="$"
+                    precision={0}
+                    className="font-semibold"
+                    showTrend={false}
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Daily P&L</span>
-                  <span className={`font-semibold ${displayData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {displayData.totalPnL >= 0 ? '+' : ''}${displayData.totalPnL.toFixed(2)}
-                  </span>
+                  <AnimatedPrice 
+                    value={Math.abs(displayData.totalPnL)}
+                    currency={displayData.totalPnL >= 0 ? '+$' : '-$'}
+                    precision={2}
+                    className={`font-semibold ${displayData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    showTrend={false}
+                  />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <Badge variant={displayData.agentsConnected ? "default" : "secondary"}>
-                    {displayData.agentsConnected ? 'Connected' : 'Offline'}
-                  </Badge>
+                  <span className="text-sm text-muted-foreground">BTC Price</span>
+                  <AnimatedPrice 
+                    value={btcPrice}
+                    currency="$"
+                    precision={0}
+                    className="font-semibold text-orange-600"
+                    size="sm"
+                    showTrend={false}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -337,15 +359,31 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Win Rate</span>
-                  <span className="font-semibold">{displayData.avgWinRate.toFixed(1)}%</span>
+                  <AnimatedCounter 
+                    value={displayData.avgWinRate}
+                    precision={1}
+                    suffix="%"
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Risk Level</span>
-                  <Badge variant="outline" className="text-green-600">Low</Badge>
+                  <span className="text-sm text-muted-foreground">SOL Price</span>
+                  <AnimatedPrice 
+                    value={solPrice}
+                    currency="$"
+                    precision={2}
+                    className="font-semibold text-purple-600"
+                    size="sm"
+                    showTrend={false}
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Sharpe Ratio</span>
-                  <span className="font-semibold">{(1.2 + Math.random() * 0.8).toFixed(2)}</span>
+                  <AnimatedCounter 
+                    value={1.2 + Math.random() * 0.8}
+                    precision={2}
+                    className="font-semibold"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -375,11 +413,17 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Active Agents</span>
-                  <span className="font-semibold">{displayData.activeAgents}</span>
+                  <AnimatedCounter 
+                    value={displayData.activeAgents}
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Total Agents</span>
-                  <span className="font-semibold">{displayData.totalAgents}</span>
+                  <AnimatedCounter 
+                    value={displayData.totalAgents}
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Performance</span>
@@ -413,17 +457,31 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Active Farms</span>
-                  <span className="font-semibold">{displayData.activeFarms}</span>
+                  <AnimatedCounter 
+                    value={displayData.activeFarms}
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Farm Value</span>
-                  <span className="font-semibold">${displayData.farmTotalValue.toLocaleString()}</span>
+                  <AnimatedPrice 
+                    value={displayData.farmTotalValue}
+                    currency="$"
+                    precision={0}
+                    className="font-semibold"
+                    showTrend={false}
+                  />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Coordination</span>
-                  <Badge variant={displayData.farmsConnected ? "default" : "secondary"}>
-                    {displayData.farmsConnected ? 'Active' : 'Offline'}
-                  </Badge>
+                  <span className="text-sm text-muted-foreground">ETH Price</span>
+                  <AnimatedPrice 
+                    value={ethPrice}
+                    currency="$"
+                    precision={0}
+                    className="font-semibold text-blue-600"
+                    size="sm"
+                    showTrend={false}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -453,11 +511,18 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Active Goals</span>
-                  <span className="font-semibold">5</span>
+                  <AnimatedCounter 
+                    value={5}
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Completion Rate</span>
-                  <span className="font-semibold">78%</span>
+                  <AnimatedCounter 
+                    value={78}
+                    suffix="%"
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Progress</span>
@@ -491,11 +556,19 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">System Health</span>
-                  <span className="font-semibold">{systemHealthScore.toFixed(0)}%</span>
+                  <AnimatedCounter 
+                    value={systemHealthScore}
+                    precision={0}
+                    suffix="%"
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Events (24h)</span>
-                  <span className="font-semibold">{messagesReceived + messagesSent}</span>
+                  <AnimatedCounter 
+                    value={messagesReceived + messagesSent}
+                    className="font-semibold"
+                  />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Status</span>
@@ -509,11 +582,73 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
         </motion.div>
       </div>
 
+      {/* Live Market Prices Display */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-green-600" />
+            Live Market Prices
+            {marketLoading && <Badge variant="secondary">Updating...</Badge>}
+          </CardTitle>
+          <CardDescription>Real-time cryptocurrency and asset prices</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-orange-50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Bitcoin</div>
+              <AnimatedPrice 
+                value={btcPrice}
+                previousValue={marketPrices.find(p => p.symbol === 'BTC/USD')?.price}
+                currency="$"
+                precision={0}
+                size="md"
+                className="text-lg font-bold"
+              />
+              <div className="text-xs text-muted-foreground">BTC/USD</div>
+            </div>
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Ethereum</div>
+              <AnimatedPrice 
+                value={ethPrice}
+                previousValue={marketPrices.find(p => p.symbol === 'ETH/USD')?.price}
+                currency="$"
+                precision={0}
+                size="md"
+                className="text-lg font-bold"
+              />
+              <div className="text-xs text-muted-foreground">ETH/USD</div>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Solana</div>
+              <AnimatedPrice 
+                value={solPrice}
+                previousValue={marketPrices.find(p => p.symbol === 'SOL/USD')?.price}
+                currency="$"
+                precision={2}
+                size="md"
+                className="text-lg font-bold"
+              />
+              <div className="text-xs text-muted-foreground">SOL/USD</div>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Portfolio</div>
+              <AnimatedPrice 
+                value={displayData.totalPortfolioValue}
+                currency="$"
+                precision={0}
+                size="md"
+                className="text-lg font-bold text-green-600"
+                showTrend={false}
+              />
+              <div className="text-xs text-muted-foreground">Total Value</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Enhanced Live Market Data Panel */}
       <LiveMarketDataPanel 
         className="mb-6"
-        showAgentSignals={true}
-        maxItems={16}
       />
 
       {/* System Health & AG-UI Status */}

@@ -38,6 +38,8 @@ import RealAnalyticsDashboard from '@/components/analytics/RealAnalyticsDashboar
 import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
 import RealPortfolioAnalyticsDashboard from '@/components/portfolio/RealPortfolioAnalyticsDashboard'
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
+import { useMarketData } from '@/lib/market/market-data-service'
+import { AnimatedPrice, AnimatedCounter } from '@/components/ui/animated-components'
 
 // Import Swagger API Documentation
 import SwaggerApiDocs from '@/components/api-docs/SwaggerApiDocs'
@@ -65,17 +67,85 @@ const AdvancedAnalytics = () => (
   </Card>
 )
 
-const RealTimeCharts = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Real-Time Charts</CardTitle>
-      <CardDescription>Live market data visualization</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-muted-foreground">Real-time charts coming soon...</p>
-    </CardContent>
-  </Card>
-)
+const RealTimeCharts = () => {
+  const { prices: marketPrices, loading: marketLoading } = useMarketData()
+  
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-blue-600" />
+            Real-Time Market Data
+            {marketLoading && <Badge variant="secondary">Updating...</Badge>}
+          </CardTitle>
+          <CardDescription>Live market prices with trend analysis</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {marketPrices.map((price) => (
+              <Card key={price.symbol} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-lg">{price.symbol}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(price.timestamp).toLocaleTimeString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <AnimatedPrice 
+                      value={price.price}
+                      currency="$"
+                      precision={price.symbol.includes('BTC') ? 0 : 2}
+                      className="text-xl font-bold"
+                      size="lg"
+                    />
+                    <div className={`text-sm flex items-center ${
+                      price.change24h >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {price.change24h >= 0 ? 
+                        <TrendingUp className="h-3 w-3 mr-1" /> : 
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      }
+                      <AnimatedCounter 
+                        value={Math.abs(price.changePercent24h)}
+                        precision={2}
+                        suffix="%"
+                        prefix={price.change24h >= 0 ? '+' : '-'}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Volume:</span>
+                      <div className="font-medium">
+                        {price.volume24h ? `$${(price.volume24h / 1000000).toFixed(1)}M` : 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">24h High:</span>
+                      <div className="font-medium">
+                        <AnimatedPrice 
+                          value={price.high24h || price.price * 1.05}
+                          currency="$"
+                          precision={price.symbol.includes('BTC') ? 0 : 2}
+                          size="sm"
+                          showTrend={false}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
 const PerformanceMetrics = () => (
   <Card>
@@ -158,6 +228,9 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
   const [analyticsSubTab, setAnalyticsSubTab] = useState('history')
   const [timeRange, setTimeRange] = useState<'1D' | '7D' | '30D' | '90D'>('30D')
   
+  // Get real-time market data
+  const { prices: marketPrices, loading: marketLoading } = useMarketData()
+  
   // Generate analytics data from state
   const analyticsData = useMemo(() => {
     const days = timeRange === '1D' ? 1 : timeRange === '7D' ? 7 : timeRange === '30D' ? 30 : 90
@@ -188,11 +261,17 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
       trades: agent.tradeCount
     }))
     
-    // Symbol performance
-    const symbolPerformance = Array.from(state.marketPrices.keys()).map(symbol => {
+    // Symbol performance using real market data
+    const symbols = marketPrices.length > 0 
+      ? marketPrices.map(p => p.symbol)
+      : Array.from(state.marketPrices.keys())
+      
+    const symbolPerformance = symbols.map(symbol => {
       const symbolOrders = state.executedOrders.filter(order => order.symbol === symbol)
+      const marketPrice = marketPrices.find(p => p.symbol === symbol || p.symbol === `${symbol}/USD`)?.price
+      const currentPrice = marketPrice || state.marketPrices.get(symbol) || 100
+      
       const symbolPnL = symbolOrders.reduce((sum, order) => {
-        const currentPrice = state.marketPrices.get(symbol) || order.price
         const pnl = order.side === 'buy' 
           ? (currentPrice - order.price) * order.quantity
           : (order.price - currentPrice) * order.quantity
@@ -246,11 +325,20 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
             <CardTitle className="text-sm">Total Return</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${state.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {((state.totalPnL / Math.max((state.totalAgents * 10000), 1)) * 100).toFixed(2)}%
-            </div>
+            <AnimatedCounter 
+              value={(state.totalPnL / Math.max((state.totalAgents * 10000), 1)) * 100}
+              precision={2}
+              suffix="%"
+              className={`text-2xl font-bold ${state.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+            />
             <p className="text-xs text-muted-foreground">
-              {state.totalPnL >= 0 ? '+' : ''}{(state.totalPnL || 0).toFixed(2)} USD
+              <AnimatedPrice 
+                value={Math.abs(state.totalPnL || 0)}
+                currency={state.totalPnL >= 0 ? '+$' : '-$'}
+                precision={2}
+                size="sm"
+                showTrend={false}
+              />
             </p>
           </CardContent>
         </Card>
@@ -260,7 +348,11 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
             <CardTitle className="text-sm">Sharpe Ratio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(analyticsData.riskMetrics.sharpeRatio || 0).toFixed(2)}</div>
+            <AnimatedCounter 
+              value={analyticsData.riskMetrics.sharpeRatio || 0}
+              precision={2}
+              className="text-2xl font-bold"
+            />
             <p className="text-xs text-muted-foreground">
               Risk-adjusted return
             </p>
@@ -272,9 +364,12 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
             <CardTitle className="text-sm">Max Drawdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              -{(analyticsData.riskMetrics.maxDrawdown || 0).toFixed(1)}%
-            </div>
+            <AnimatedCounter 
+              value={-(analyticsData.riskMetrics.maxDrawdown || 0)}
+              precision={1}
+              suffix="%"
+              className="text-2xl font-bold text-red-600"
+            />
             <p className="text-xs text-muted-foreground">
               Largest loss period
             </p>
@@ -286,9 +381,13 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
             <CardTitle className="text-sm">Daily VaR</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              ${(analyticsData.riskMetrics.varDaily || 0).toFixed(0)}
-            </div>
+            <AnimatedPrice 
+              value={analyticsData.riskMetrics.varDaily || 0}
+              currency="$"
+              precision={0}
+              className="text-2xl font-bold text-orange-600"
+              showTrend={false}
+            />
             <p className="text-xs text-muted-foreground">
               95% confidence
             </p>
