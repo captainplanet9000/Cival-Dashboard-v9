@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 import GlobalErrorBoundary from "@/components/error-boundaries/GlobalErrorBoundary";
 import { AGUIProvider } from "@/components/ag-ui/AGUIProvider";
 import { WebSocketProvider } from "@/contexts/websocket-context";
+import MigrationInitializer from "@/components/database/MigrationInitializer";
 
 const oxanium = Oxanium({
   subsets: ["latin"],
@@ -42,9 +43,11 @@ export default function RootLayout({
         >
           <WebSocketProvider>
             <AGUIProvider endpoint="http://localhost:8000/api/v1/agui">
-              <GlobalErrorBoundary>
-                {children}
-              </GlobalErrorBoundary>
+              <MigrationInitializer>
+                <GlobalErrorBoundary>
+                  {children}
+                </GlobalErrorBoundary>
+              </MigrationInitializer>
             </AGUIProvider>
           </WebSocketProvider>
         </ThemeProvider>

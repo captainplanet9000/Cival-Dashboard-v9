@@ -875,13 +875,15 @@ export class RealPaperTradingEngine extends EventEmitter {
     if (!marketPrice) return
 
     // Calculate position size based on risk limits
-    const maxPositionValue = portfolio.totalValue * (agent.riskLimits.maxPositionSize / 100)
-    const quantity = Math.floor(maxPositionValue / marketPrice.price)
+    const maxPositionValue = (portfolio.totalValue || 0) * ((agent.riskLimits.maxPositionSize || 0) / 100)
+    const price = marketPrice.price || marketPrice.ask || marketPrice.bid || 1
+    const quantity = Math.floor((maxPositionValue || 0) / price)
     
-    if (quantity <= 0) return
+    if (quantity <= 0 || isNaN(quantity) || !isFinite(quantity)) return
 
     // Check risk limits
-    if (signal.type === 'buy' && portfolio.cash < quantity * marketPrice.ask) return
+    const orderValue = quantity * (marketPrice.ask || marketPrice.price || price)
+    if (signal.type === 'buy' && (portfolio.cash || 0) < orderValue) return
     
     // Place order
     try {
