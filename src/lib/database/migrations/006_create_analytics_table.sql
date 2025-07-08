@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS performance_history (
     -- Trade identification
     trade_id VARCHAR(255) NOT NULL,
     agent_id VARCHAR(255),
-    farm_id VARCHAR(255),
+    farm_id UUID, -- Foreign key to farms.farm_id
     
     -- Trade details
     symbol VARCHAR(20) NOT NULL,
@@ -219,8 +219,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Add foreign key constraint to farms table using farm_id
+ALTER TABLE performance_history ADD CONSTRAINT fk_performance_history_farm_id 
+FOREIGN KEY (farm_id) REFERENCES farms(farm_id) ON DELETE SET NULL;
+
 -- Comments
 COMMENT ON TABLE analytics_snapshots IS 'Daily/hourly snapshots of portfolio and trading performance metrics';
 COMMENT ON TABLE performance_history IS 'Detailed trade-by-trade performance tracking';
 COMMENT ON TABLE risk_events IS 'Risk management events and alerts tracking';
+COMMENT ON COLUMN performance_history.farm_id IS 'Reference to the farm this trade belongs to (foreign key to farms.farm_id)';
 COMMENT ON FUNCTION create_daily_analytics_snapshot IS 'Creates a daily analytics snapshot with current portfolio and performance metrics';

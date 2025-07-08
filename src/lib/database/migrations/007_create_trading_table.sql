@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS trading_orders (
     -- Order identification
     order_id VARCHAR(255) UNIQUE NOT NULL,
     agent_id VARCHAR(255) NOT NULL,
-    farm_id VARCHAR(255), -- Optional: if part of a farm
+    farm_id UUID, -- Optional: if part of a farm (foreign key to farms.farm_id)
     
     -- Order details
     symbol VARCHAR(20) NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS trading_positions (
     -- Position identification
     position_id VARCHAR(255) UNIQUE NOT NULL,
     agent_id VARCHAR(255) NOT NULL,
-    farm_id VARCHAR(255), -- Optional: if part of a farm
+    farm_id UUID, -- Optional: if part of a farm (foreign key to farms.farm_id)
     
     -- Position details
     symbol VARCHAR(20) NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS trading_signals (
     -- Signal identification
     signal_id VARCHAR(255) UNIQUE NOT NULL,
     agent_id VARCHAR(255) NOT NULL,
-    farm_id VARCHAR(255), -- Optional: if part of a farm
+    farm_id UUID, -- Optional: if part of a farm (foreign key to farms.farm_id)
     
     -- Signal details
     symbol VARCHAR(20) NOT NULL,
@@ -264,6 +264,16 @@ INSERT INTO trading_signals (signal_id, agent_id, symbol, signal_type, strength,
 ('signal_eth_sell_1', 'agent_alpha', 'ETH/USD', 'sell', 0.7, 0.8, 'mean_reversion', 'Price approaching resistance level with high volume'),
 ('signal_sol_hold_1', 'agent_alpha', 'SOL/USD', 'hold', 0.3, 0.6, 'consolidation', 'Sideways movement expected, waiting for breakout')
 ON CONFLICT (signal_id) DO NOTHING;
+
+-- Add foreign key constraints to farms table using farm_id
+ALTER TABLE trading_orders ADD CONSTRAINT fk_trading_orders_farm_id 
+FOREIGN KEY (farm_id) REFERENCES farms(farm_id) ON DELETE SET NULL;
+
+ALTER TABLE trading_positions ADD CONSTRAINT fk_trading_positions_farm_id 
+FOREIGN KEY (farm_id) REFERENCES farms(farm_id) ON DELETE SET NULL;
+
+ALTER TABLE trading_signals ADD CONSTRAINT fk_trading_signals_farm_id 
+FOREIGN KEY (farm_id) REFERENCES farms(farm_id) ON DELETE SET NULL;
 
 -- Comments
 COMMENT ON TABLE trading_orders IS 'Stores all trading orders placed by agents';

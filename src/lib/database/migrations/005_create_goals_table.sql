@@ -111,9 +111,14 @@ INSERT INTO goals (goal_id, name, description, goal_type, target_value, priority
 ('goal_portfolio_20', '20% Portfolio Growth', 'Grow portfolio by 20%', 'portfolio', 20, 3, 'portfolio')
 ON CONFLICT (goal_id) DO NOTHING;
 
+-- Add foreign key constraint to farms table using farm_id
+ALTER TABLE goals ADD CONSTRAINT fk_goals_farm_id 
+FOREIGN KEY (farm_id) REFERENCES farms(farm_id) ON DELETE SET NULL;
+
 -- Comments
 COMMENT ON TABLE goals IS 'Stores trading goals, objectives, and progress tracking';
 COMMENT ON COLUMN goals.target_criteria IS 'Detailed criteria and parameters for goal achievement';
 COMMENT ON COLUMN goals.current_progress IS 'Current progress details and metrics';
 COMMENT ON COLUMN goals.milestones IS 'Array of milestone objects for tracking progress steps';
+COMMENT ON COLUMN goals.farm_id IS 'Reference to the farm this goal belongs to (foreign key to farms.farm_id)';
 COMMENT ON FUNCTION update_goal_progress IS 'Updates goal progress and automatically marks as completed when target is reached';

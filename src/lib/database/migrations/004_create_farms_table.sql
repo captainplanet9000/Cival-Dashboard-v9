@@ -1,46 +1,47 @@
--- Create farms table for storing trading farm configurations
--- This table stores multi-agent trading farm setups and coordination
+-- Skip farms table creation - it already exists with different schema
+-- This migration adds any missing columns to the existing farms table
 
-CREATE TABLE IF NOT EXISTS farms (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    farm_id VARCHAR(255) UNIQUE NOT NULL, -- External farm identifier
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
+DO $$ 
+BEGIN
+    -- The existing farms table uses farm_id as primary key (UUID)
+    -- Add any missing columns that our application needs
     
-    -- Farm Configuration
-    strategy VARCHAR(100) NOT NULL DEFAULT 'darvas_box',
-    agent_count INTEGER DEFAULT 5,
-    total_allocated_usd DECIMAL(20, 8) DEFAULT 50000,
-    coordination_mode VARCHAR(50) DEFAULT 'coordinated' CHECK (coordination_mode IN ('independent', 'coordinated', 'hierarchical')),
+    -- Check if strategy column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'farms' AND column_name = 'strategy') THEN
+        ALTER TABLE farms ADD COLUMN strategy VARCHAR(100) DEFAULT 'darvas_box';
+    END IF;
     
-    -- Farm Status
-    status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'stopped', 'deploying')),
-    is_active BOOLEAN DEFAULT true,
+    -- Check if status column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'farms' AND column_name = 'status') THEN
+        ALTER TABLE farms ADD COLUMN status VARCHAR(50) DEFAULT 'active';
+    END IF;
     
-    -- Performance Metrics
-    performance_metrics JSONB DEFAULT '{}',
-    total_value DECIMAL(20, 8) DEFAULT 0,
-    total_pnl DECIMAL(20, 8) DEFAULT 0,
-    win_rate DECIMAL(5, 2) DEFAULT 0,
-    trade_count INTEGER DEFAULT 0,
-    roi_percent DECIMAL(5, 2) DEFAULT 0,
-    active_agents INTEGER DEFAULT 0,
+    -- Check if is_active column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'farms' AND column_name = 'is_active') THEN
+        ALTER TABLE farms ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
     
-    -- Risk Management
-    risk_level VARCHAR(20) DEFAULT 'medium' CHECK (risk_level IN ('low', 'medium', 'high')),
-    max_drawdown_percent DECIMAL(5, 2) DEFAULT 15,
-    position_size_limit DECIMAL(5, 2) DEFAULT 10,
+    -- Check if coordination_mode exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'farms' AND column_name = 'coordination_mode') THEN
+        ALTER TABLE farms ADD COLUMN coordination_mode VARCHAR(50) DEFAULT 'coordinated';
+    END IF;
     
-    -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_rebalance_at TIMESTAMP WITH TIME ZONE,
+    -- Check if goals column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'farms' AND column_name = 'goals') THEN
+        ALTER TABLE farms ADD COLUMN goals JSONB DEFAULT '[]';
+    END IF;
     
-    -- Configuration and metadata
-    config JSONB DEFAULT '{}',
-    goals JSONB DEFAULT '[]', -- Array of associated goals
-    wallet_allocations JSONB DEFAULT '{}' -- Wallet allocation configuration
-);
+    -- Check if config column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'farms' AND column_name = 'config') THEN
+        ALTER TABLE farms ADD COLUMN config JSONB DEFAULT '{}';
+    END IF;
+END $$;
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_farms_farm_id ON farms(farm_id);
