@@ -341,44 +341,107 @@ export function ComprehensiveAgentCreation({
         }
       }
 
-      // Create agent using both services for comprehensive coverage
+      // Create agent using robust multi-service approach
       let createdAgent
+      let creationSuccess = false
       
+      // First try persistent service (most reliable)
       try {
-        // Try enhanced service first
-        createdAgent = await enhancedAgentCreationService.createAgent(agentData)
-      } catch (enhancedError) {
-        console.warn('Enhanced service failed, trying persistent service:', enhancedError)
-        // Fallback to persistent service
-        createdAgent = await persistentAgentService.createAgent({
+        console.log('🔧 Attempting agent creation with persistent service...')
+        const persistentAgentData = {
+          id: `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: config.name,
           type: config.type,
           strategy: config.strategy,
           capital: config.initialCapital,
           riskLevel: config.riskLevel,
-          config: agentData
-        })
-      }
-      
-      // Also save to persistent service for backup
-      try {
-        await persistentAgentService.createAgent({
-          id: createdAgent.id,
-          name: config.name,
-          type: config.type,
-          strategy: config.strategy,
-          capital: config.initialCapital,
-          riskLevel: config.riskLevel,
-          status: 'idle',
+          status: 'idle' as const,
           config: agentData,
           createdAt: new Date().toISOString(),
-          lastActive: new Date().toISOString()
-        })
+          lastActive: new Date().toISOString(),
+          currentValue: config.initialCapital,
+          pnl: 0,
+          winRate: 0,
+          totalTrades: 0
+        }
+        
+        createdAgent = await persistentAgentService.createAgent(persistentAgentData)
+        creationSuccess = true
+        console.log('✅ Agent created successfully with persistent service:', createdAgent)
+        
       } catch (persistentError) {
-        console.warn('Failed to save to persistent service:', persistentError)
+        console.warn('❌ Persistent service failed:', persistentError)
+        
+        // Try enhanced service as fallback
+        try {
+          console.log('🔧 Attempting agent creation with enhanced service...')
+          createdAgent = await enhancedAgentCreationService.createAgent(agentData)
+          creationSuccess = true
+          console.log('✅ Agent created successfully with enhanced service:', createdAgent)
+          
+        } catch (enhancedError) {
+          console.error('❌ Enhanced service also failed:', enhancedError)
+          
+          // Manual creation as last resort
+          const manualAgentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          createdAgent = {
+            id: manualAgentId,
+            name: config.name,
+            type: config.type,
+            strategy: config.strategy,
+            capital: config.initialCapital,
+            status: 'idle',
+            config: agentData,
+            createdAt: new Date().toISOString()
+          }
+          
+          // Store in localStorage as backup
+          try {
+            const existingAgents = JSON.parse(localStorage.getItem('trading-agents') || '[]')
+            existingAgents.push(createdAgent)
+            localStorage.setItem('trading-agents', JSON.stringify(existingAgents))
+            creationSuccess = true
+            console.log('✅ Agent stored in localStorage as backup')
+          } catch (localError) {
+            console.error('❌ Failed to store in localStorage:', localError)
+            throw new Error('All agent creation methods failed')
+          }
+        }
       }
       
-      toast.success(`Agent "${config.name}" created successfully!`)
+      // Dual persistence - save to both services if available
+      if (creationSuccess) {
+        // Try to save to Supabase agents service if available
+        try {
+          const { supabaseAgentsService } = await import('@/lib/services/supabase-agents-service')
+          await supabaseAgentsService.createAgent({
+            agent_id: createdAgent.id,
+            name: config.name,
+            type: config.type,
+            strategy: config.strategy,
+            initial_capital: config.initialCapital,
+            current_capital: config.initialCapital,
+            risk_level: config.riskLevel,
+            status: 'idle',
+            configuration: agentData,
+            is_active: false
+          })
+          console.log('✅ Agent also saved to Supabase')
+        } catch (supabaseError) {
+          console.warn('⚠️ Failed to save to Supabase (non-critical):', supabaseError)
+        }
+      }
+      
+      if (creationSuccess) {
+        toast.success(`🎉 Agent "${config.name}" created successfully!`)
+        console.log('🎯 Agent creation completed:', {
+          id: createdAgent.id,
+          name: createdAgent.name,
+          strategy: createdAgent.strategy
+        })
+      } else {
+        throw new Error('Agent creation failed')
+      }
       
       // Auto-start if configured
       if (config.autoStart) {

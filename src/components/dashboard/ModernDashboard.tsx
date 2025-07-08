@@ -101,6 +101,8 @@ import ConnectedHistoryTab from '@/components/dashboard/ConnectedHistoryTab'
 import ConnectedAnalyticsTab from '@/components/dashboard/ConnectedAnalyticsTab'
 import ConnectedFarmsTab from '@/components/dashboard/ConnectedFarmsTab'
 import ConnectedGoalsTab from '@/components/dashboard/ConnectedGoalsTab'
+import ComprehensiveFarmsTab from '@/components/dashboard/ComprehensiveFarmsTab'
+import ComprehensiveGoalsTab from '@/components/dashboard/ComprehensiveGoalsTab'
 import ConnectedVaultTab from '@/components/dashboard/ConnectedVaultTab'
 import ConnectedCalendarTab from '@/components/dashboard/ConnectedCalendarTab'
 import ConnectedAdvancedTab from '@/components/dashboard/ConnectedAdvancedTab'
@@ -301,13 +303,13 @@ export function ModernDashboardV4() {
       id: 'farms',
       label: 'Farms',
       icon: <Users className="h-4 w-4" />,
-      component: <ConnectedFarmsTab />
+      component: <ComprehensiveFarmsTab />
     },
     {
       id: 'goals',
       label: 'Goals',
       icon: <Star className="h-4 w-4" />,
-      component: <ConnectedGoalsTab />
+      component: <ComprehensiveGoalsTab />
     },
     {
       id: 'trading',
