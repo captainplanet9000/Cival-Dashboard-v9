@@ -258,7 +258,7 @@
     --sidebar-ring: oklch(0.6487 0.1538 150.3071);
   }
 
-  /* High Contrast Theme */
+  /* High Contrast Theme - Light */
   .high-contrast {
     --background: oklch(1.0000 0 0);
     --foreground: oklch(0 0 0);
@@ -285,6 +285,35 @@
     --chart-3: oklch(0.4000 0 0);
     --chart-4: oklch(0.5000 0 0);
     --chart-5: oklch(0.6000 0 0);
+  }
+
+  /* High Contrast Theme - Dark */
+  .high-contrast.dark {
+    --background: oklch(0 0 0);
+    --foreground: oklch(1.0000 0 0);
+    --card: oklch(0.1000 0 0);
+    --card-foreground: oklch(1.0000 0 0);
+    --popover: oklch(0.1000 0 0);
+    --popover-foreground: oklch(1.0000 0 0);
+    --primary: oklch(0.8000 0.2000 60.0000);
+    --primary-foreground: oklch(0 0 0);
+    --secondary: oklch(0.9000 0 0);
+    --secondary-foreground: oklch(0 0 0);
+    --muted: oklch(0.2000 0 0);
+    --muted-foreground: oklch(0.9000 0 0);
+    --accent: oklch(0.8000 0.1500 120.0000);
+    --accent-foreground: oklch(0 0 0);
+    --destructive: oklch(0.7500 0.2500 25.0000);
+    --destructive-foreground: oklch(0 0 0);
+    --border: oklch(1.0000 0 0);
+    --input: oklch(1.0000 0 0);
+    --ring: oklch(0.8000 0.2000 60.0000);
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 1px 2px rgba(255, 255, 255, 0.8);
+    --chart-1: oklch(0.8000 0.2000 60.0000);
+    --chart-2: oklch(0.8000 0.1500 120.0000);
+    --chart-3: oklch(0.7500 0.2500 240.0000);
+    --chart-4: oklch(0.6000 0.2000 300.0000);
+    --chart-5: oklch(0.9000 0.1500 0);
   }
 
   /* Brutalist Theme */

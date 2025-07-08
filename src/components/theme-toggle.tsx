@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Moon, Sun, Monitor, Leaf, Square, Zap, Eye, Palette } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/components/theme/theme-provider"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 const THEME_CONFIG = {
   light: {
