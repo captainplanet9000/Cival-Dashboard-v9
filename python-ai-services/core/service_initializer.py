@@ -20,6 +20,32 @@ from services.technical_analysis_service import create_technical_analysis_servic
 from services.sentiment_analysis_service import create_sentiment_analysis_service
 from services.ml_portfolio_optimizer_service import create_ml_portfolio_optimizer_service
 
+# Import new autonomous services
+try:
+    from services.apscheduler_agent_service import create_apscheduler_agent_service
+except ImportError:
+    create_apscheduler_agent_service = None
+
+try:
+    from services.universal_trading_mode_service import create_universal_trading_mode_service
+except ImportError:
+    create_universal_trading_mode_service = None
+
+try:
+    from services.blockchain_provider_service import create_blockchain_provider_service
+except ImportError:
+    create_blockchain_provider_service = None
+
+try:
+    from services.enhanced_agent_wallet_service import create_enhanced_agent_wallet_service
+except ImportError:
+    create_enhanced_agent_wallet_service = None
+
+try:
+    from services.autonomous_state_persistence import create_autonomous_state_persistence
+except ImportError:
+    create_autonomous_state_persistence = None
+
 # Import existing services (keeping imports for services that exist)
 try:
     from services.market_data_service import MarketDataService
@@ -118,7 +144,14 @@ class ServiceInitializer:
             "performance_attribution_engine",
             "enhanced_event_propagation",
             "orchestration_scheduler",
-            "orchestration_recovery"
+            "orchestration_recovery",
+            
+            # Phase 8: Autonomous Services (new)
+            "autonomous_state_persistence",
+            "blockchain_provider_service", 
+            "enhanced_agent_wallet_service",
+            "universal_trading_mode_service",
+            "apscheduler_agent_service"
         ]
     
     async def initialize_all_services(self) -> Dict[str, str]:
@@ -363,6 +396,72 @@ class ServiceInitializer:
             except ImportError as e:
                 logger.warning(f"Goal capital manager dependencies not available: {e}")
                 return "skipped - dependencies not available"
+        
+        # Phase 8: Autonomous Services
+        elif service_name == "autonomous_state_persistence":
+            if create_autonomous_state_persistence:
+                try:
+                    service = create_autonomous_state_persistence()
+                    await service.initialize()
+                    registry.register_service("autonomous_state_persistence", service)
+                    return "initialized"
+                except Exception as e:
+                    logger.warning(f"Autonomous state persistence initialization failed: {e}")
+                    return "skipped - initialization failed"
+            else:
+                return "skipped - service not available"
+        
+        elif service_name == "blockchain_provider_service":
+            if create_blockchain_provider_service:
+                try:
+                    service = create_blockchain_provider_service()
+                    await service.initialize()
+                    registry.register_service("blockchain_provider_service", service)
+                    return "initialized"
+                except Exception as e:
+                    logger.warning(f"Blockchain provider service initialization failed: {e}")
+                    return "skipped - initialization failed"
+            else:
+                return "skipped - service not available"
+        
+        elif service_name == "enhanced_agent_wallet_service":
+            if create_enhanced_agent_wallet_service:
+                try:
+                    service = create_enhanced_agent_wallet_service()
+                    await service.initialize()
+                    registry.register_service("enhanced_agent_wallet_service", service)
+                    return "initialized"
+                except Exception as e:
+                    logger.warning(f"Enhanced agent wallet service initialization failed: {e}")
+                    return "skipped - initialization failed"
+            else:
+                return "skipped - service not available"
+        
+        elif service_name == "universal_trading_mode_service":
+            if create_universal_trading_mode_service:
+                try:
+                    service = create_universal_trading_mode_service()
+                    await service.initialize()
+                    registry.register_service("universal_trading_mode_service", service)
+                    return "initialized"
+                except Exception as e:
+                    logger.warning(f"Universal trading mode service initialization failed: {e}")
+                    return "skipped - initialization failed"
+            else:
+                return "skipped - service not available"
+        
+        elif service_name == "apscheduler_agent_service":
+            if create_apscheduler_agent_service:
+                try:
+                    service = create_apscheduler_agent_service()
+                    await service.initialize()
+                    registry.register_service("apscheduler_agent_service", service)
+                    return "initialized"
+                except Exception as e:
+                    logger.warning(f"APScheduler agent service initialization failed: {e}")
+                    return "skipped - initialization failed"
+            else:
+                return "skipped - service not available"
         
         elif service_name == "performance_attribution_engine":
             try:
