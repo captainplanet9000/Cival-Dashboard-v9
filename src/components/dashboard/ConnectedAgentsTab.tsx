@@ -56,6 +56,17 @@ import { AgentMemorySystem } from '@/components/agents/AgentMemorySystem'
 import { AgentLearningEngine } from '@/components/agents/AgentLearningEngine'
 import { AgentPerformanceAnalytics } from '@/components/agents/AgentPerformanceAnalytics'
 
+// Import new Phase 4-6 components
+import { AIProviderIntegrationHub } from '@/components/ai-providers/AIProviderIntegrationHub'
+import { MultiLLMDecisionEngine } from '@/components/ai-providers/MultiLLMDecisionEngine'
+import { AIModelComparisonDashboard } from '@/components/ai-providers/AIModelComparisonDashboard'
+import { BlockchainTradingInfrastructure } from '@/components/blockchain/BlockchainTradingInfrastructure'
+import { DeFiProtocolIntegrationHub } from '@/components/defi/DeFiProtocolIntegrationHub'
+import { CrossChainTradingCapabilities } from '@/components/cross-chain/CrossChainTradingCapabilities'
+import { AutonomousFarmCoordination } from '@/components/farm-coordination/AutonomousFarmCoordination'
+import { MultiAgentCommunicationProtocol } from '@/components/communication/MultiAgentCommunicationProtocol'
+import { DistributedDecisionMakingSystem } from '@/components/distributed/DistributedDecisionMakingSystem'
+
 // Import blockchain wallet integration
 import BlockchainAgentWallet from '@/components/agents/BlockchainAgentWallet'
 
@@ -1652,6 +1663,51 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
       label: 'Expert Strategies', 
       component: () => <AutonomousExpertAgentsPanel key={agentUpdateTrigger} />
     },
+    {
+      id: 'ai-providers',
+      label: 'AI Providers',
+      component: () => <AIProviderIntegrationHub key={agentUpdateTrigger} />
+    },
+    {
+      id: 'multi-llm',
+      label: 'Multi-LLM Engine',
+      component: () => <MultiLLMDecisionEngine key={agentUpdateTrigger} />
+    },
+    {
+      id: 'ai-comparison',
+      label: 'AI Models',
+      component: () => <AIModelComparisonDashboard key={agentUpdateTrigger} />
+    },
+    {
+      id: 'blockchain',
+      label: 'Blockchain',
+      component: () => <BlockchainTradingInfrastructure key={agentUpdateTrigger} />
+    },
+    {
+      id: 'defi',
+      label: 'DeFi Protocols',
+      component: () => <DeFiProtocolIntegrationHub key={agentUpdateTrigger} />
+    },
+    {
+      id: 'cross-chain',
+      label: 'Cross-Chain',
+      component: () => <CrossChainTradingCapabilities key={agentUpdateTrigger} />
+    },
+    {
+      id: 'farm-coordination',
+      label: 'Farm Coordination',
+      component: () => <AutonomousFarmCoordination key={agentUpdateTrigger} />
+    },
+    {
+      id: 'communication',
+      label: 'Agent Comms',
+      component: () => <MultiAgentCommunicationProtocol key={agentUpdateTrigger} />
+    },
+    {
+      id: 'distributed',
+      label: 'Distributed AI',
+      component: () => <DistributedDecisionMakingSystem key={agentUpdateTrigger} />
+    },
     { 
       id: 'strategies', 
       label: 'Classic Strategies', 
@@ -1767,7 +1823,7 @@ export function ConnectedAgentsTab({ className }: ConnectedAgentsTabProps) {
         
         {/* Sub-tabs */}
         <Tabs value={agentSubTab} onValueChange={setAgentSubTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-1 bg-purple-50">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-1 bg-purple-50 overflow-x-auto">
             {agentSubTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
