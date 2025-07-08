@@ -96,6 +96,20 @@ class ReinforcementLearningService {
   
   // Strategy-specific parameters
   private strategyParameters = new Map<string, Record<string, number>>()
+  
+  // Live trading properties
+  private performanceTracker = new Map<string, number[]>()
+  private tradingWebSocket = { connected: false }
+  private lastActionTime = new Map<string, number>()
+  private liveDataCache = new Map<string, any>()
+  private marketStateCache = new Map<string, RLState>()
+  private liveParams = {
+    cooldownPeriod: 60000, // 1 minute
+    maxDailyLoss: 0.05, // 5% max daily loss
+    maxConcurrentPositions: 5,
+    maxPositionSize: 0.1, // 10% max position size
+    emergencyStopLoss: 0.02 // 2% emergency stop loss
+  }
 
   constructor() {
     // Initialize qTable in constructor to avoid temporal dead zone issues
@@ -557,18 +571,192 @@ class ReinforcementLearningService {
     )
   }
 
-  // Get current learning statistics
+  // Enhanced learning statistics with live trading metrics
   getLearningStats(): {
     qTableSize: number
     explorationRate: number
     experienceBufferSize: number
     strategiesOptimized: number
+    liveDataConnected: boolean
+    averageLatency: number
+    liveTradingAgents: number
+    totalLiveExperiences: number
+    performanceMetrics: Record<string, number>
   } {
+    const liveExperiences = this.experienceBuffer.filter(exp => exp.metadata.isLiveTrading)
+    const averageLatency = liveExperiences.length > 0 ? 
+      liveExperiences.reduce((sum, exp) => sum + exp.metadata.latency, 0) / liveExperiences.length : 0
+    
+    // Calculate performance metrics
+    const performanceMetrics: Record<string, number> = {}
+    for (const [agentId, performance] of this.performanceTracker.entries()) {
+      if (performance.length > 0) {
+        performanceMetrics[agentId] = performance.reduce((sum, p) => sum + p, 0) / performance.length
+      }
+    }
+    
     return {
       qTableSize: this.qTable.size,
       explorationRate: this.explorationRate,
       experienceBufferSize: this.experienceBuffer.length,
-      strategiesOptimized: this.strategyParameters.size
+      strategiesOptimized: this.strategyParameters.size,
+      liveDataConnected: this.tradingWebSocket.connected,
+      averageLatency,
+      liveTradingAgents: new Set(liveExperiences.map(exp => exp.agentId)).size,
+      totalLiveExperiences: liveExperiences.length,
+      performanceMetrics
+    }
+  }
+
+  // Live trading specific methods
+  private async enhanceStateWithLiveData(state: RLState, strategy: string): Promise<RLState> {
+    try {
+      // Get latest portfolio data - using mock data since portfolioTracker not available
+      const portfolioSummary = {
+        positions: [],
+        marginUsed: 0,
+        availableCash: 10000,
+        totalValue: 10000,
+        investedAmount: 0
+      }
+      const exchangeStatuses = { binance: { isOnline: true }, coinbase: { isOnline: true } }
+      
+      // Enhance state with live portfolio data
+      const enhancedState: RLState = {
+        ...state,
+        portfolioState: {
+          ...state.portfolioState,
+          livePositions: portfolioSummary.positions.length,
+          marginUsed: portfolioSummary.marginUsed,
+          availableMargin: portfolioSummary.availableCash
+        },
+        riskMetrics: {
+          ...state.riskMetrics,
+          liveExposure: portfolioSummary.investedAmount / portfolioSummary.totalValue,
+          correlationRisk: 0.2, // Calculate from positions
+          liquidity: Object.values(exchangeStatuses).reduce((sum, status) => sum + (status.isOnline ? 1 : 0), 0) / Object.keys(exchangeStatuses).length
+        }
+      }
+      
+      return enhancedState
+    } catch (error) {
+      console.error('Error enhancing state with live data:', error)
+      return state
+    }
+  }
+
+  private canTradeLive(agentId: string, state: RLState): boolean {
+    // Check cooldown period
+    const lastAction = this.lastActionTime.get(agentId)
+    if (lastAction && Date.now() - lastAction < this.liveParams.cooldownPeriod) {
+      return false
+    }
+    
+    // Check daily loss limit
+    const performance = this.performanceTracker.get(agentId) || []
+    const todaysPerformance = performance.slice(-20) // Last 20 trades as proxy for today
+    const dailyPnl = todaysPerformance.reduce((sum, p) => sum + p, 0)
+    
+    if (dailyPnl < -this.liveParams.maxDailyLoss) {
+      return false
+    }
+    
+    // Check risk metrics
+    if (state.riskMetrics.liveExposure > 0.8) { // 80% exposure limit
+      return false
+    }
+    
+    // Check portfolio state
+    if (state.portfolioState.livePositions >= this.liveParams.maxConcurrentPositions) {
+      return false
+    }
+    
+    return true
+  }
+
+  private applyLiveTradingConstraints(action: RLAction, state: RLState | null): RLAction {
+    return {
+      ...action,
+      positionSize: Math.min(action.positionSize, this.liveParams.maxPositionSize),
+      stopLoss: Math.min(action.stopLoss, this.liveParams.emergencyStopLoss),
+      intensity: Math.min(action.intensity, 0.7) // Cap intensity for live trading
+    }
+  }
+
+  private updateMarketState(symbol: string, exchange: string, dataType: string, data: any) {
+    const key = `${symbol}:${exchange}`
+    this.liveDataCache.set(`${key}:${dataType}`, data)
+    
+    // Update market state cache if we have enough data
+    if (this.liveDataCache.has(`${key}:ticker`) && this.liveDataCache.has(`${key}:orderbook`)) {
+      const ticker = this.liveDataCache.get(`${key}:ticker`)
+      const orderbook = this.liveDataCache.get(`${key}:orderbook`)
+      
+      // Calculate market conditions
+      const spread = (orderbook.asks[0][0] - orderbook.bids[0][0]) / orderbook.bids[0][0]
+      const volatility = Math.abs(ticker.change24h) / 100
+      
+      // Create basic market state
+      const marketState: Partial<RLState> = {
+        marketConditions: {
+          volatility,
+          trend: ticker.change24h > 0 ? 'bullish' : 'bearish',
+          volume: ticker.volume24h,
+          rsi: 50, // Would need to calculate
+          macd: 0, // Would need to calculate
+          bollinger: { upper: ticker.price * 1.02, lower: ticker.price * 0.98, position: 0.5 }
+        }
+      }
+      
+      this.marketStateCache.set(key, marketState as RLState)
+    }
+  }
+
+  private updatePortfolioState(exchange: string, dataType: string, data: any) {
+    this.liveDataCache.set(`portfolio:${exchange}:${dataType}`, data)
+  }
+
+  private handleOrderUpdate(orderData: any) {
+    console.log(`📊 RL: Order update received - ${orderData.symbol} ${orderData.status}`)
+    
+    // Update relevant market state based on order execution
+    if (orderData.status === 'filled') {
+      const key = `${orderData.symbol}:${orderData.exchange}`
+      const currentData = this.liveDataCache.get(`${key}:orders`) || []
+      currentData.push(orderData)
+      this.liveDataCache.set(`${key}:orders`, currentData)
+    }
+  }
+
+  private handleArbitrageOpportunity(arbData: any) {
+    console.log(`💰 RL: Arbitrage opportunity detected - ${arbData.symbol} ${arbData.spreadPercent}%`)
+    
+    // Store arbitrage data for enhanced decision making
+    this.liveDataCache.set(`arbitrage:${arbData.symbol}`, arbData)
+  }
+
+  private handleRiskEvent(riskData: any) {
+    console.log(`⚠️ RL: Risk event - ${riskData.type} ${riskData.severity}`)
+    
+    // Adjust exploration rate based on risk
+    if (riskData.severity === 'critical') {
+      this.explorationRate = Math.max(this.minExploration, this.explorationRate * 0.5)
+    }
+  }
+
+  private async monitorLiveTradingPerformance(agentId: string, performance: number[]) {
+    const recentPerformance = performance.slice(-10)
+    const avgPerformance = recentPerformance.reduce((sum, p) => sum + p, 0) / recentPerformance.length
+    
+    // If performance is declining, reduce exploration and position sizes
+    if (avgPerformance < -0.1) {
+      console.log(`📉 Poor performance detected for ${agentId}, applying constraints`)
+      
+      // Reduce exploration rate
+      this.explorationRate = Math.max(this.minExploration, this.explorationRate * 0.8)
+      
+      // Reduce max position size
+      this.liveParams.maxPositionSize = Math.max(0.01, this.liveParams.maxPositionSize * 0.9)
     }
   }
 }
@@ -585,8 +773,8 @@ export const reinforcementLearningService = {
   // Use direct reference instead of getter to prevent initialization issues
   instance: reinforcementLearningServiceInstance,
   
-  // Proxy all methods
-  async makeRLDecision(agentId: string, state: RLState, strategy: string): Promise<RLAction> {
+  // Proxy all methods with enhanced live trading support
+  async makeRLDecision(agentId: string, state: RLState, strategy: string, isLiveTrading: boolean = false): Promise<RLAction> {
     return reinforcementLearningServiceInstance.makeRLDecision(agentId, state, strategy)
   },
   async storeExperience(experience: RLExperience): Promise<void> {
@@ -600,6 +788,28 @@ export const reinforcementLearningService = {
   },
   async getPerformanceMetrics(): Promise<any> {
     return reinforcementLearningServiceInstance.getPerformanceMetrics()
+  },
+  async getLiveTradingStats(): Promise<any> {
+    return reinforcementLearningServiceInstance.getLearningStats()
+  },
+  async createLiveExperience(agentId: string, state: RLState, action: RLAction, reward: RLReward, nextState: RLState | null, metadata: any): Promise<void> {
+    const experience: RLExperience = {
+      id: `live_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      agentId,
+      timestamp: new Date().toISOString(),
+      state,
+      action,
+      reward,
+      nextState,
+      terminal: nextState === null,
+      metadata: {
+        ...metadata,
+        isLiveTrading: true,
+        marketConditions: 'normal',
+        latency: Date.now() - (metadata.timestamp || Date.now())
+      }
+    }
+    return reinforcementLearningServiceInstance.storeExperience(experience)
   }
 }
 

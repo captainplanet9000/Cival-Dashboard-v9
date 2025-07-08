@@ -36,6 +36,10 @@ import {
 import { subscribe, emit, type TradingEvents } from '@/lib/ag-ui-protocol-v2'
 import { PaperTradingPnL } from './PaperTradingPnL'
 
+// Enhanced Exchange API integration
+import { exchangeAPIService, type ExchangeOrder as APIExchangeOrder } from '@/lib/trading/exchange-api-service'
+import { secureAPIManager } from '@/lib/trading/secure-api-manager'
+
 // Trading Types
 interface TradingPair {
   symbol: string
@@ -120,6 +124,11 @@ export function TradingInterface() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const [orderError, setOrderError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  
+  // Live Trading State
+  const [isLiveTrading, setIsLiveTrading] = useState(false)
+  const [hasValidCredentials, setHasValidCredentials] = useState(false)
+  const [exchangeStatus, setExchangeStatus] = useState<'online' | 'offline' | 'checking'>('checking')
   
   // Paper Trading Summary State
   const [paperTradingSummary, setPaperTradingSummary] = useState({
@@ -254,6 +263,27 @@ export function TradingInterface() {
     }
   }, [])
 
+  // Check exchange credentials on mount
+  useEffect(() => {
+    const checkCredentials = async () => {
+      try {
+        const hasKeys = await secureAPIManager.hasCredentials(selectedExchange === 'auto' ? 'binance' : selectedExchange)
+        setHasValidCredentials(hasKeys)
+        
+        if (hasKeys && selectedExchange !== 'auto') {
+          const status = await exchangeAPIService.getExchangeStatus(selectedExchange)
+          setExchangeStatus(status?.isOnline ? 'online' : 'offline')
+        }
+      } catch (error) {
+        console.error('Failed to check credentials:', error)
+        setHasValidCredentials(false)
+        setExchangeStatus('offline')
+      }
+    }
+    
+    checkCredentials()
+  }, [selectedExchange])
+
   // Effects
   useEffect(() => {
     fetchTradingData()
@@ -331,55 +361,65 @@ export function TradingInterface() {
       return
     }
 
+    // Additional validation for live trading
+    if (isLiveTrading && !hasValidCredentials) {
+      setOrderError('Please configure exchange API credentials for live trading')
+      return
+    }
+
+    if (isLiveTrading && exchangeStatus !== 'online') {
+      setOrderError('Exchange is currently offline or unavailable')
+      return
+    }
+
     setIsPlacingOrder(true)
     setOrderError(null)
 
     try {
-      const orderData = {
+      const orderData: Partial<APIExchangeOrder> = {
         symbol: selectedPair!.symbol,
         side: orderSide,
         type: orderType,
-        quantity: parseFloat(quantity),
+        amount: parseFloat(quantity),
         ...(orderType !== 'market' && { price: parseFloat(price) }),
-        ...(orderType === 'stop' || orderType === 'stop_limit') && { stopPrice: parseFloat(stopPrice) },
+        ...(orderType === 'stop' || orderType === 'stop_limit') && { stopPrice: parseFloat(stopPrice) }),
         timeInForce,
-        exchange: selectedExchange === 'auto' ? undefined : selectedExchange
       }
 
-      const response = await fetch('/api/trading/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        if (result.success) {
-          // Emit order placed event
-          emit('trade.order_placed', {
-            order_id: result.orderId,
-            symbol: orderData.symbol,
-            side: orderData.side,
-            quantity: orderData.quantity,
-            price: orderData.price || selectedPair!.currentPrice
-          })
-          
-          // Clear form
-          setQuantity('')
-          setPrice('')
-          setStopPrice('')
-          
-          // Refresh data
-          await fetchTradingData()
-        } else {
-          setOrderError(result.message || 'Failed to place order')
+      // Use enhanced exchange API service for order placement
+      const result = await exchangeAPIService.placeOrder(
+        selectedExchange === 'auto' ? 'binance' : selectedExchange,
+        orderData,
+        {
+          forcePaper: !isLiveTrading,
+          skipSafetyChecks: false,
+          dryRun: false
         }
+      )
+
+      if (result) {
+        // Emit order placed event
+        emit('trade.order_placed', {
+          order_id: result.id,
+          symbol: result.symbol,
+          side: result.side,
+          quantity: result.amount,
+          price: result.price || selectedPair!.currentPrice
+        })
+        
+        // Clear form
+        setQuantity('')
+        setPrice('')
+        setStopPrice('')
+        
+        // Refresh data
+        await fetchTradingData()
       } else {
-        setOrderError('Failed to communicate with trading service')
+        setOrderError('Failed to place order')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Order placement error:', error)
-      setOrderError('An unexpected error occurred')
+      setOrderError(error.message || 'An unexpected error occurred')
     } finally {
       setIsPlacingOrder(false)
     }
@@ -442,6 +482,21 @@ export function TradingInterface() {
           <p className="text-muted-foreground">Professional trading tools and order management</p>
         </div>
         <div className="flex items-center space-x-4">
+          {/* Trading Mode Indicator */}
+          <Badge variant={isLiveTrading ? 'destructive' : 'secondary'} className="px-3 py-1">
+            {isLiveTrading ? (
+              <>
+                <Zap className="h-3 w-3 mr-1" />
+                LIVE TRADING
+              </>
+            ) : (
+              <>
+                <BarChart3 className="h-3 w-3 mr-1" />
+                PAPER TRADING
+              </>
+            )}
+          </Badge>
+          
           {/* Paper Trading Summary */}
           <div className="hidden md:flex items-center space-x-4 px-4 py-2 bg-muted rounded-lg">
             <div className="text-center">
@@ -703,6 +758,7 @@ export function TradingInterface() {
               <TabsTrigger value="market">Market Data</TabsTrigger>
               <TabsTrigger value="orders">Open Orders</TabsTrigger>
               <TabsTrigger value="history">Order History</TabsTrigger>
+              <TabsTrigger value="settings">Trading Settings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="pnl" className="space-y-4">
@@ -894,6 +950,111 @@ export function TradingInterface() {
                       </div>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="settings" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Trading Settings</CardTitle>
+                  <CardDescription>Configure live trading and exchange connections</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Live Trading Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="live-trading" className="text-base">
+                        Live Trading Mode
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {isLiveTrading ? 'Execute real trades on connected exchanges' : 'Paper trading mode - no real funds at risk'}
+                      </p>
+                    </div>
+                    <Switch
+                      id="live-trading"
+                      checked={isLiveTrading}
+                      onCheckedChange={setIsLiveTrading}
+                      disabled={!hasValidCredentials}
+                    />
+                  </div>
+
+                  {/* Exchange Status */}
+                  <div className="space-y-2">
+                    <Label>Exchange Connection Status</Label>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={exchangeStatus === 'online' ? 'default' : exchangeStatus === 'checking' ? 'secondary' : 'destructive'}>
+                        {exchangeStatus === 'online' && <CheckCircle className="h-3 w-3 mr-1" />}
+                        {exchangeStatus === 'offline' && <XCircle className="h-3 w-3 mr-1" />}
+                        {exchangeStatus === 'checking' && <RefreshCw className="h-3 w-3 mr-1 animate-spin" />}
+                        {exchangeStatus.charAt(0).toUpperCase() + exchangeStatus.slice(1)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {selectedExchange === 'auto' ? 'Auto-routing' : selectedExchange.charAt(0).toUpperCase() + selectedExchange.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* API Credentials Status */}
+                  <div className="space-y-2">
+                    <Label>API Credentials</Label>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {hasValidCredentials ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="text-sm">Credentials configured</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                            <span className="text-sm">No credentials configured</span>
+                          </>
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        // TODO: Open credential management dialog
+                        alert('Credential management UI coming soon')
+                      }}>
+                        Manage Keys
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Safety Settings */}
+                  <div className="space-y-4">
+                    <Label>Safety Settings</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="max-order-size" className="text-sm font-normal">
+                          Max Order Size (% of balance)
+                        </Label>
+                        <span className="text-sm text-muted-foreground">10%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="daily-loss-limit" className="text-sm font-normal">
+                          Daily Loss Limit
+                        </Label>
+                        <span className="text-sm text-muted-foreground">$1,000</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="price-deviation" className="text-sm font-normal">
+                          Max Price Deviation
+                        </Label>
+                        <span className="text-sm text-muted-foreground">2%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Warning for Live Trading */}
+                  {isLiveTrading && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Live Trading Active:</strong> Real funds are at risk. All orders will be executed on the selected exchange. Please ensure you understand the risks involved.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

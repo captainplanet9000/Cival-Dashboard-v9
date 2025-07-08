@@ -6,14 +6,18 @@
 import HyperliquidConnector, { HyperliquidPosition } from './hyperliquid-connector'
 import DEXConnector, { LiquidityPosition } from './dex-connector'
 import CoinbaseProConnector, { CoinbaseAccount } from './coinbase-connector'
+import { exchangeAPIService } from './exchange-api-service'
+import { secureAPIManager } from './secure-api-manager'
 
 export interface TradingAccount {
   id: string
   name: string
   exchange: 'hyperliquid' | 'dex' | 'coinbase' | 'binance'
-  connector: HyperliquidConnector | DEXConnector | CoinbaseProConnector
+  connector: HyperliquidConnector | DEXConnector | CoinbaseProConnector | null
   isActive: boolean
   config: any
+  isLiveTrading?: boolean
+  lastSync?: number
 }
 
 export interface UnifiedPosition {
@@ -122,9 +126,36 @@ export class PortfolioTracker {
   private priceCache: Map<string, {price: number, timestamp: number}> = new Map()
   private portfolioHistory: {timestamp: number, value: number, pnl: number}[] = []
   private updateInterval?: NodeJS.Timeout
+  private isLiveMode: boolean = false
 
   constructor() {
     this.startPeriodicUpdates()
+    this.initializeEnhancedAccounts()
+  }
+
+  /**
+   * Initialize accounts with enhanced exchange API
+   */
+  private async initializeEnhancedAccounts(): Promise<void> {
+    // Check for available exchanges with credentials
+    const exchanges = ['binance', 'coinbase', 'hyperliquid']
+    
+    for (const exchange of exchanges) {
+      const hasCredentials = await secureAPIManager.hasCredentials(exchange)
+      if (hasCredentials) {
+        const account: TradingAccount = {
+          id: `enhanced-${exchange}`,
+          name: `Enhanced ${exchange.charAt(0).toUpperCase() + exchange.slice(1)}`,
+          exchange: exchange as any,
+          connector: null, // Will use enhanced API service instead
+          isActive: true,
+          config: {},
+          isLiveTrading: false,
+          lastSync: 0
+        }
+        this.accounts.set(account.id, account)
+      }
+    }
   }
 
   /**
@@ -254,19 +285,100 @@ export class PortfolioTracker {
    */
   private async syncExchangePositions(account: TradingAccount): Promise<void> {
     try {
+      // Use enhanced API service if available and configured
+      if (!account.connector && (account.exchange === 'binance' || account.exchange === 'coinbase' || account.exchange === 'hyperliquid')) {
+        await this.syncEnhancedExchangePositions(account)
+        return
+      }
+
+      // Fallback to legacy connectors
       switch (account.exchange) {
         case 'hyperliquid':
-          await this.syncHyperliquidPositions(account.connector as HyperliquidConnector, account.id)
+          if (account.connector) {
+            await this.syncHyperliquidPositions(account.connector as HyperliquidConnector, account.id)
+          }
           break
         case 'dex':
-          await this.syncDEXPositions(account.connector as DEXConnector, account.id)
+          if (account.connector) {
+            await this.syncDEXPositions(account.connector as DEXConnector, account.id)
+          }
           break
         case 'coinbase':
-          await this.syncCoinbasePositions(account.connector as CoinbaseProConnector, account.id)
+          if (account.connector) {
+            await this.syncCoinbasePositions(account.connector as CoinbaseProConnector, account.id)
+          }
           break
       }
+      
+      account.lastSync = Date.now()
     } catch (error) {
       console.error(`Failed to sync positions for ${account.exchange}:`, error)
+    }
+  }
+
+  /**
+   * Sync positions using enhanced exchange API service
+   */
+  private async syncEnhancedExchangePositions(account: TradingAccount): Promise<void> {
+    try {
+      // Get positions from enhanced API
+      const positions = await exchangeAPIService.getPositions(account.exchange)
+      
+      for (const apiPosition of positions) {
+        const position: UnifiedPosition = {
+          id: `${account.id}-${apiPosition.symbol}`,
+          symbol: apiPosition.symbol,
+          exchange: account.exchange,
+          type: apiPosition.type === 'futures' ? 'futures' : 'spot',
+          side: apiPosition.side === 'buy' ? 'long' : 'short',
+          size: apiPosition.amount,
+          entryPrice: apiPosition.averagePrice || 0,
+          currentPrice: apiPosition.markPrice || 0,
+          marketValue: apiPosition.notional || (apiPosition.amount * (apiPosition.markPrice || 0)),
+          unrealizedPnl: apiPosition.unrealizedPnl || 0,
+          realizedPnl: apiPosition.realizedPnl || 0,
+          fees: 0, // TODO: Track fees separately
+          leverage: apiPosition.leverage,
+          marginUsed: apiPosition.margin || 0,
+          lastUpdated: Date.now()
+        }
+
+        this.positions.set(position.id, position)
+      }
+
+      // Also sync spot balances
+      const balances = await exchangeAPIService.getBalances(account.exchange)
+      
+      for (const balance of balances) {
+        if (balance.free <= 0 && balance.locked <= 0) continue
+        
+        const totalBalance = balance.free + balance.locked
+        const currentPrice = await this.getCurrentPrice(balance.asset, account.exchange)
+        
+        const position: UnifiedPosition = {
+          id: `${account.id}-spot-${balance.asset}`,
+          symbol: balance.asset,
+          exchange: account.exchange,
+          type: 'spot',
+          side: 'long',
+          size: totalBalance,
+          entryPrice: 0, // TODO: Calculate from trade history
+          currentPrice,
+          marketValue: totalBalance * currentPrice,
+          unrealizedPnl: 0, // TODO: Calculate based on entry price
+          realizedPnl: 0,
+          fees: 0,
+          lastUpdated: Date.now()
+        }
+
+        // Only add if it's a significant position (>$1 value)
+        if (position.marketValue > 1) {
+          this.positions.set(position.id, position)
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to sync enhanced positions for ${account.exchange}:`, error)
+      throw error
     }
   }
 
@@ -409,16 +521,29 @@ export class PortfolioTracker {
     try {
       let price = 0
       
-      // Try to get price from the specific exchange first
-      const account = Array.from(this.accounts.values()).find(acc => acc.exchange === exchange)
-      if (account) {
-        if (exchange === 'hyperliquid') {
-          const marketData = await (account.connector as HyperliquidConnector).getMarketDataForCoin(symbol)
-          price = marketData ? parseFloat(marketData.price) : 0
-        } else if (exchange === 'coinbase') {
-          const product = await (account.connector as CoinbaseProConnector).getProduct(`${symbol}-USD`)
-          price = product ? parseFloat(product.price) : 0
+      // First try enhanced API service
+      try {
+        const ticker = await exchangeAPIService.getTicker(exchange, `${symbol}/USDT`)
+        if (ticker && ticker.last) {
+          price = ticker.last
         }
+      } catch (enhancedError) {
+        // Fallback to legacy connectors
+        const account = Array.from(this.accounts.values()).find(acc => acc.exchange === exchange)
+        if (account && account.connector) {
+          if (exchange === 'hyperliquid') {
+            const marketData = await (account.connector as HyperliquidConnector).getMarketDataForCoin(symbol)
+            price = marketData ? parseFloat(marketData.price) : 0
+          } else if (exchange === 'coinbase') {
+            const product = await (account.connector as CoinbaseProConnector).getProduct(`${symbol}-USD`)
+            price = product ? parseFloat(product.price) : 0
+          }
+        }
+      }
+
+      // If still no price and it's a stablecoin, use 1
+      if (price === 0 && ['USDT', 'USDC', 'BUSD', 'DAI'].includes(symbol)) {
+        price = 1
       }
 
       // Cache the price
@@ -597,7 +722,11 @@ export class PortfolioTracker {
       try {
         let isHealthy = false
         
-        if ('healthCheck' in account.connector && typeof account.connector.healthCheck === 'function') {
+        // Check enhanced API service first
+        if (!account.connector && (account.exchange === 'binance' || account.exchange === 'coinbase' || account.exchange === 'hyperliquid')) {
+          const status = await exchangeAPIService.getExchangeStatus(account.exchange)
+          isHealthy = status ? status.isOnline : false
+        } else if (account.connector && 'healthCheck' in account.connector && typeof account.connector.healthCheck === 'function') {
           isHealthy = await account.connector.healthCheck()
         } else {
           isHealthy = true // Assume healthy if no health check method
@@ -610,6 +739,50 @@ export class PortfolioTracker {
     }
 
     return health
+  }
+
+  /**
+   * Enable or disable live trading mode
+   */
+  setLiveMode(enabled: boolean): void {
+    this.isLiveMode = enabled
+    
+    // Update all accounts
+    for (const account of this.accounts.values()) {
+      account.isLiveTrading = enabled
+    }
+  }
+
+  /**
+   * Get current live trading status
+   */
+  isLiveTradingEnabled(): boolean {
+    return this.isLiveMode
+  }
+
+  /**
+   * Force sync all positions immediately
+   */
+  async forceSyncPositions(): Promise<void> {
+    await this.syncAllPositions()
+  }
+
+  /**
+   * Get exchange connection statuses
+   */
+  async getExchangeStatuses(): Promise<{[exchange: string]: { connected: boolean, lastSync: number, isLive: boolean }}> {
+    const statuses: {[exchange: string]: { connected: boolean, lastSync: number, isLive: boolean }} = {}
+    
+    for (const account of this.accounts.values()) {
+      const health = await this.healthCheck()
+      statuses[account.exchange] = {
+        connected: health[account.id] || false,
+        lastSync: account.lastSync || 0,
+        isLive: account.isLiveTrading || false
+      }
+    }
+    
+    return statuses
   }
 }
 

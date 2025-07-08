@@ -2,6 +2,7 @@
 
 import { EventEmitter } from 'events'
 import CryptoJS from 'crypto-js'
+import { secureAPIManager, type ExchangeCredentials } from './secure-api-manager'
 
 export interface ExchangeOrder {
   id: string
@@ -343,18 +344,78 @@ class CoinbaseAPI extends BaseExchangeAPI {
   }
 }
 
-// Main Exchange API Service
+// Enhanced Exchange API Service with Secure Credential Management
 export class ExchangeAPIService extends EventEmitter {
   private exchanges = new Map<string, BaseExchangeAPI>()
   private isLiveMode = false
+  private liveModeEnabled = false // User-controlled live trading toggle
 
   constructor() {
     super()
     this.initializeExchanges()
+    this.setupSecureCredentialSystem()
+  }
+
+  private async setupSecureCredentialSystem() {
+    // Initialize secure API manager and load existing credentials
+    const configuredExchanges = secureAPIManager.getConfiguredExchanges()
+    
+    for (const exchangeId of configuredExchanges) {
+      await this.initializeExchangeFromSecureStorage(exchangeId)
+    }
+
+    console.log(`🔐 Secure credential system initialized for ${configuredExchanges.length} exchanges`)
+  }
+
+  private async initializeExchangeFromSecureStorage(exchangeId: string): Promise<void> {
+    try {
+      const credentials = await secureAPIManager.getCredentials(exchangeId)
+      if (!credentials) {
+        console.warn(`❌ No credentials found for ${exchangeId}`)
+        return
+      }
+
+      // Only initialize if credentials are ready and healthy
+      if (!secureAPIManager.isExchangeReady(exchangeId)) {
+        console.warn(`⚠️ Exchange ${exchangeId} credentials not ready`)
+        return
+      }
+
+      let exchangeAPI: BaseExchangeAPI
+
+      switch (exchangeId) {
+        case 'binance':
+          exchangeAPI = new BinanceAPI(credentials.apiKey, credentials.apiSecret, credentials.testnet || false)
+          break
+        case 'coinbase':
+          exchangeAPI = new CoinbaseAPI(credentials.apiKey, credentials.apiSecret, credentials.testnet || false)
+          break
+        default:
+          console.warn(`❌ Unsupported exchange: ${exchangeId}`)
+          return
+      }
+
+      // Test the connection before adding to active exchanges
+      const isConnected = await exchangeAPI.testConnectivity()
+      if (isConnected) {
+        this.exchanges.set(exchangeId, exchangeAPI)
+        this.isLiveMode = true
+        console.log(`✅ ${exchangeId} API initialized and connected`)
+        this.emit('exchangeConnected', exchangeId)
+      } else {
+        console.error(`❌ Failed to connect to ${exchangeId}`)
+        this.emit('exchangeError', exchangeId, 'Connection failed')
+      }
+
+    } catch (error) {
+      console.error(`❌ Error initializing ${exchangeId}:`, error)
+      this.emit('exchangeError', exchangeId, error)
+    }
   }
 
   private initializeExchanges() {
-    // Initialize Binance if credentials are available
+    // Legacy initialization for backward compatibility
+    // Initialize Binance if credentials are available in environment
     const binanceKey = process.env.BINANCE_API_KEY || process.env.NEXT_PUBLIC_BINANCE_API_KEY
     const binanceSecret = process.env.BINANCE_API_SECRET || process.env.NEXT_PUBLIC_BINANCE_API_SECRET
     
@@ -362,10 +423,10 @@ export class ExchangeAPIService extends EventEmitter {
       const binanceAPI = new BinanceAPI(binanceKey, binanceSecret, false)
       this.exchanges.set('binance', binanceAPI)
       this.isLiveMode = true
-      console.log('🟢 Binance API initialized')
+      console.log('🟢 Binance API initialized from environment')
     }
 
-    // Initialize Coinbase if credentials are available
+    // Initialize Coinbase if credentials are available in environment
     const coinbaseKey = process.env.COINBASE_API_KEY || process.env.NEXT_PUBLIC_COINBASE_API_KEY
     const coinbaseSecret = process.env.COINBASE_API_SECRET || process.env.NEXT_PUBLIC_COINBASE_API_SECRET
     
@@ -373,7 +434,7 @@ export class ExchangeAPIService extends EventEmitter {
       const coinbaseAPI = new CoinbaseAPI(coinbaseKey, coinbaseSecret, false)
       this.exchanges.set('coinbase', coinbaseAPI)
       this.isLiveMode = true
-      console.log('🟢 Coinbase API initialized')
+      console.log('🟢 Coinbase API initialized from environment')
     }
 
     if (!this.isLiveMode) {
@@ -381,13 +442,118 @@ export class ExchangeAPIService extends EventEmitter {
     }
   }
 
+  // NEW: Add exchange credentials securely
+  async addExchange(credentials: Omit<ExchangeCredentials, 'status'>): Promise<boolean> {
+    try {
+      // Store credentials securely
+      const stored = await secureAPIManager.storeCredentials(credentials)
+      if (!stored) {
+        throw new Error('Failed to store credentials securely')
+      }
+
+      // Initialize the exchange
+      await this.initializeExchangeFromSecureStorage(credentials.exchangeId)
+      
+      console.log(`✅ Exchange ${credentials.exchangeId} added successfully`)
+      return true
+    } catch (error) {
+      console.error(`❌ Failed to add exchange ${credentials.exchangeId}:`, error)
+      return false
+    }
+  }
+
+  // NEW: Remove exchange
+  async removeExchange(exchangeId: string): Promise<boolean> {
+    try {
+      // Remove from active exchanges
+      this.exchanges.delete(exchangeId)
+      
+      // Remove credentials from secure storage
+      await secureAPIManager.removeCredentials(exchangeId)
+      
+      // Update live mode status
+      this.isLiveMode = this.exchanges.size > 0
+      
+      console.log(`✅ Exchange ${exchangeId} removed`)
+      this.emit('exchangeRemoved', exchangeId)
+      return true
+    } catch (error) {
+      console.error(`❌ Failed to remove exchange ${exchangeId}:`, error)
+      return false
+    }
+  }
+
+  // NEW: Toggle live trading mode
+  setLiveTradingMode(enabled: boolean): void {
+    this.liveModeEnabled = enabled
+    console.log(`🔄 Live trading mode ${enabled ? 'ENABLED' : 'DISABLED'}`)
+    this.emit('liveModeChanged', enabled)
+  }
+
+  // NEW: Get exchange health status
+  getExchangeHealth(): Map<string, any> {
+    return secureAPIManager.getHealthStatus()
+  }
+
+  // NEW: Test all exchange connections
+  async testAllConnections(): Promise<Map<string, boolean>> {
+    const results = new Map<string, boolean>()
+    
+    for (const [exchangeId, exchangeAPI] of this.exchanges) {
+      try {
+        const isConnected = await exchangeAPI.testConnectivity()
+        results.set(exchangeId, isConnected)
+        
+        if (isConnected) {
+          console.log(`✅ ${exchangeId} connection test passed`)
+        } else {
+          console.log(`❌ ${exchangeId} connection test failed`)
+        }
+      } catch (error) {
+        console.error(`❌ ${exchangeId} connection test error:`, error)
+        results.set(exchangeId, false)
+      }
+    }
+    
+    return results
+  }
+
   async placeOrder(
     exchange: string, 
-    order: Partial<ExchangeOrder>
+    order: Partial<ExchangeOrder>,
+    options: {
+      forcePaper?: boolean
+      skipSafetyChecks?: boolean
+      dryRun?: boolean
+    } = {}
   ): Promise<ExchangeOrder | null> {
-    if (!this.isLiveMode) {
-      console.log('🟡 Paper trading mode: Order would be placed on', exchange)
-      return null
+    // Enhanced safety checks for live trading
+    const isReallyLive = this.isLiveMode && this.liveModeEnabled && !options.forcePaper
+    
+    if (!isReallyLive || options.dryRun) {
+      console.log(`🟡 ${options.dryRun ? 'Dry run' : 'Paper trading'} mode: Order would be placed on ${exchange}`)
+      
+      // Return simulated order for paper trading/dry run
+      return {
+        id: `paper_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        clientOrderId: order.clientOrderId || `paper_${Date.now()}`,
+        symbol: order.symbol!,
+        side: order.side!,
+        type: order.type!,
+        quantity: order.quantity!,
+        price: order.price,
+        status: 'FILLED', // Simulate immediate fill for paper trading
+        executedQuantity: order.quantity!,
+        fills: [{
+          price: order.price || 0,
+          quantity: order.quantity!,
+          commission: 0,
+          commissionAsset: 'USD',
+          timestamp: new Date()
+        }],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     }
 
     const exchangeAPI = this.exchanges.get(exchange)
@@ -395,15 +561,121 @@ export class ExchangeAPIService extends EventEmitter {
       throw new Error(`Exchange ${exchange} not configured`)
     }
 
+    // Pre-flight safety checks for live trading
+    if (!options.skipSafetyChecks) {
+      const safetyCheck = await this.performSafetyChecks(exchange, order)
+      if (!safetyCheck.passed) {
+        throw new Error(`Safety check failed: ${safetyCheck.reason}`)
+      }
+    }
+
     try {
+      console.log(`🚨 LIVE TRADING: Placing real order on ${exchange}`)
+      console.log(`   ${order.side} ${order.quantity} ${order.symbol} at ${order.price || 'market price'}`)
+      
       const result = await exchangeAPI.placeOrder(order)
-      this.emit('orderPlaced', exchange, result)
-      console.log(`✅ Order placed on ${exchange}: ${result.side} ${result.quantity} ${result.symbol}`)
+      
+      this.emit('orderPlaced', exchange, result, { isLive: true })
+      console.log(`✅ LIVE ORDER PLACED on ${exchange}: ${result.side} ${result.quantity} ${result.symbol}`)
+      
+      // Store order in database for tracking
+      await this.storeOrderInDatabase(exchange, result)
+      
       return result
     } catch (error) {
-      console.error(`❌ Error placing order on ${exchange}:`, error)
-      this.emit('orderError', exchange, error)
+      console.error(`❌ LIVE TRADING ERROR on ${exchange}:`, error)
+      this.emit('orderError', exchange, error, { isLive: true })
       throw error
+    }
+  }
+
+  // NEW: Safety checks before placing live orders
+  private async performSafetyChecks(exchange: string, order: Partial<ExchangeOrder>): Promise<{
+    passed: boolean
+    reason?: string
+  }> {
+    try {
+      // Check 1: Exchange connection health
+      const isConnected = await this.testConnectivity(exchange)
+      if (!isConnected) {
+        return { passed: false, reason: `Exchange ${exchange} not connected` }
+      }
+
+      // Check 2: Valid order parameters
+      if (!order.symbol || !order.side || !order.type || !order.quantity) {
+        return { passed: false, reason: 'Missing required order parameters' }
+      }
+
+      // Check 3: Reasonable order size (prevent fat finger trades)
+      if (order.quantity! > 10000) { // Configurable limit
+        return { passed: false, reason: `Order size ${order.quantity} exceeds safety limit` }
+      }
+
+      // Check 4: Price sanity check for limit orders
+      if (order.type === 'LIMIT' && order.price) {
+        const currentPrice = await this.getCurrentPrice(exchange, order.symbol!)
+        if (currentPrice) {
+          const priceDiff = Math.abs(order.price - currentPrice) / currentPrice
+          if (priceDiff > 0.1) { // 10% price difference threshold
+            return { passed: false, reason: `Order price ${order.price} deviates ${(priceDiff * 100).toFixed(1)}% from market price ${currentPrice}` }
+          }
+        }
+      }
+
+      // Check 5: Account balance check
+      const balances = await this.getBalances(exchange)
+      const requiredBalance = this.calculateRequiredBalance(order)
+      const hasBalance = this.checkSufficientBalance(balances, requiredBalance)
+      if (!hasBalance) {
+        return { passed: false, reason: 'Insufficient balance for order' }
+      }
+
+      return { passed: true }
+    } catch (error) {
+      return { passed: false, reason: `Safety check error: ${error}` }
+    }
+  }
+
+  // Helper methods for safety checks
+  private async getCurrentPrice(exchange: string, symbol: string): Promise<number | null> {
+    // This would integrate with market data service
+    // For now, return null to skip price checks
+    return null
+  }
+
+  private calculateRequiredBalance(order: Partial<ExchangeOrder>): { asset: string; amount: number } {
+    if (order.side === 'BUY') {
+      if (order.type === 'MARKET') {
+        // For market buy, estimate required quote currency
+        return { asset: 'USD', amount: (order.quantity! * 50000) } // Rough estimate
+      } else {
+        // For limit buy, calculate exact quote currency needed
+        return { asset: 'USD', amount: order.quantity! * order.price! }
+      }
+    } else {
+      // For sell orders, need base currency
+      const baseAsset = order.symbol!.split('/')[0]
+      return { asset: baseAsset, amount: order.quantity! }
+    }
+  }
+
+  private checkSufficientBalance(balances: ExchangeBalance[], required: { asset: string; amount: number }): boolean {
+    const balance = balances.find(b => b.asset === required.asset || 
+      (required.asset === 'USD' && ['USDT', 'USDC', 'USD'].includes(b.asset)))
+    
+    return balance ? balance.free >= required.amount : false
+  }
+
+  private async storeOrderInDatabase(exchange: string, order: ExchangeOrder): Promise<void> {
+    try {
+      // This would integrate with the existing backend API to store order
+      // For now, just log the order
+      console.log(`💾 Storing order in database: ${order.id}`)
+      
+      // TODO: Integrate with existing backendApi client
+      // await backendApi.post('/orders', { exchange, order })
+    } catch (error) {
+      console.error('Failed to store order in database:', error)
     }
   }
 

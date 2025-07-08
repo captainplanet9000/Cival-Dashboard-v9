@@ -372,6 +372,126 @@ async def health_check():
     
     return health_status
 
+# Autonomous Health Monitor Endpoints
+@app.get("/api/v1/health/autonomous")
+async def get_autonomous_health_status():
+    """Get detailed autonomous health monitoring status"""
+    try:
+        health_monitor = registry.get_service("autonomous_health_monitor")
+        if health_monitor:
+            health_summary = await health_monitor.get_system_health()
+            return {
+                "status": "success",
+                "data": health_summary,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Autonomous health monitor not available",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Failed to get autonomous health status: {e}")
+        raise HTTPException(status_code=500, detail=f"Health monitor error: {str(e)}")
+
+@app.get("/api/v1/health/components")
+async def get_component_health():
+    """Get health status for all monitored components"""
+    try:
+        health_monitor = registry.get_service("autonomous_health_monitor")
+        if health_monitor:
+            health_summary = await health_monitor.get_health_summary()
+            return {
+                "status": "success",
+                "data": health_summary,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Autonomous health monitor not available",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Failed to get component health: {e}")
+        raise HTTPException(status_code=500, detail=f"Component health error: {str(e)}")
+
+@app.get("/api/v1/health/component/{component_id}")
+async def get_specific_component_health(component_id: str):
+    """Get health status for a specific component"""
+    try:
+        health_monitor = registry.get_service("autonomous_health_monitor")
+        if health_monitor:
+            component_health = await health_monitor.get_component_health(component_id)
+            if component_health:
+                return {
+                    "status": "success",
+                    "data": component_health,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            else:
+                raise HTTPException(status_code=404, detail=f"Component {component_id} not found")
+        else:
+            return {
+                "status": "error",
+                "message": "Autonomous health monitor not available",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get component health for {component_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Component health error: {str(e)}")
+
+@app.post("/api/v1/health/recovery/{component_id}")
+async def trigger_component_recovery(component_id: str):
+    """Manually trigger recovery for a specific component"""
+    try:
+        health_monitor = registry.get_service("autonomous_health_monitor")
+        if health_monitor:
+            success = await health_monitor.force_recovery(component_id)
+            return {
+                "status": "success" if success else "failed",
+                "message": f"Recovery {'triggered' if success else 'failed'} for component {component_id}",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Autonomous health monitor not available",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Failed to trigger recovery for {component_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Recovery trigger error: {str(e)}")
+
+@app.get("/api/v1/health/performance/{component_id}")
+async def get_component_performance_history(component_id: str, limit: int = 100):
+    """Get performance history for a specific component"""
+    try:
+        health_monitor = registry.get_service("autonomous_health_monitor")
+        if health_monitor:
+            performance_data = await health_monitor.get_performance_history(component_id, limit)
+            return {
+                "status": "success",
+                "data": {
+                    "component_id": component_id,
+                    "performance_history": performance_data,
+                    "count": len(performance_data)
+                },
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Autonomous health monitor not available",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Failed to get performance history for {component_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Performance history error: {str(e)}")
+
 # Market Data Endpoints (Consolidated from ports 8001-8002)
 @app.get("/api/v1/market-data/live/{symbol}")
 async def get_live_market_data(

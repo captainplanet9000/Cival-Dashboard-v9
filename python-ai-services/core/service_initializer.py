@@ -46,6 +46,11 @@ try:
 except ImportError:
     create_autonomous_state_persistence = None
 
+try:
+    from services.autonomous_health_monitor import create_autonomous_health_monitor
+except ImportError:
+    create_autonomous_health_monitor = None
+
 # Import existing services (keeping imports for services that exist)
 try:
     from services.market_data_service import MarketDataService
@@ -151,7 +156,8 @@ class ServiceInitializer:
             "blockchain_provider_service", 
             "enhanced_agent_wallet_service",
             "universal_trading_mode_service",
-            "apscheduler_agent_service"
+            "apscheduler_agent_service",
+            "autonomous_health_monitor"
         ]
     
     async def initialize_all_services(self) -> Dict[str, str]:
@@ -459,6 +465,21 @@ class ServiceInitializer:
                     return "initialized"
                 except Exception as e:
                     logger.warning(f"APScheduler agent service initialization failed: {e}")
+                    return "skipped - initialization failed"
+            else:
+                return "skipped - service not available"
+        
+        elif service_name == "autonomous_health_monitor":
+            if create_autonomous_health_monitor:
+                try:
+                    service = create_autonomous_health_monitor()
+                    await service.initialize()
+                    registry.register_service("autonomous_health_monitor", service)
+                    # Start the 24/7 monitoring
+                    await service.start_monitoring()
+                    return "initialized"
+                except Exception as e:
+                    logger.warning(f"Autonomous health monitor initialization failed: {e}")
                     return "skipped - initialization failed"
             else:
                 return "skipped - service not available"
