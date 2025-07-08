@@ -23,7 +23,7 @@ interface MarketDataProvider {
 
 class CoinGeckoProvider implements MarketDataProvider {
   name = 'CoinGecko'
-  private baseUrl = 'https://api.coingecko.com/api/v3'
+  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
@@ -41,7 +41,7 @@ class CoinGeckoProvider implements MarketDataProvider {
 
       const ids = symbols.map(s => symbolMap[s]).filter(Boolean).join(',')
       const response = await fetch(
-        `${this.baseUrl}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`,
+        `${this.proxyUrl}?provider=coingecko&symbols=${ids}`,
         { 
           headers: { 'Accept': 'application/json' },
           cache: 'no-store' // Disable caching for real-time data
@@ -78,27 +78,26 @@ class CoinGeckoProvider implements MarketDataProvider {
 
 class BinanceProvider implements MarketDataProvider {
   name = 'Binance'
-  private baseUrl = 'https://api.binance.com/api/v3'
+  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
       // Map symbols to Binance format
       const symbolMap: Record<string, string> = {
-        'BTC/USD': 'BTCUSDT',
-        'ETH/USD': 'ETHUSDT',
-        'SOL/USD': 'SOLUSDT', 
-        'ADA/USD': 'ADAUSDT',
-        'DOT/USD': 'DOTUSDT',
-        'AVAX/USD': 'AVAXUSDT',
-        'MATIC/USD': 'MATICUSDT',
-        'LINK/USD': 'LINKUSDT'
+        'BTC/USD': 'BTC',
+        'ETH/USD': 'ETH',
+        'SOL/USD': 'SOL', 
+        'ADA/USD': 'ADA',
+        'DOT/USD': 'DOT',
+        'AVAX/USD': 'AVAX',
+        'MATIC/USD': 'MATIC',
+        'LINK/USD': 'LINK'
       }
 
-      const binanceSymbols = symbols.map(s => symbolMap[s]).filter(Boolean)
-      const symbolsParam = JSON.stringify(binanceSymbols)
+      const binanceSymbols = symbols.map(s => symbolMap[s]).filter(Boolean).join(',')
 
       const response = await fetch(
-        `${this.baseUrl}/ticker/24hr?symbols=${encodeURIComponent(symbolsParam)}`,
+        `${this.proxyUrl}?provider=binance&symbols=${binanceSymbols}`,
         { 
           headers: { 'Accept': 'application/json' },
           cache: 'no-store'
@@ -136,26 +135,26 @@ class BinanceProvider implements MarketDataProvider {
 
 class CoinbaseProvider implements MarketDataProvider {
   name = 'Coinbase'
-  private baseUrl = 'https://api.coinbase.com/v2'
+  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
       // Map trading symbols to Coinbase format
       const symbolMap: Record<string, string> = {
-        'BTC/USD': 'BTC-USD',
-        'ETH/USD': 'ETH-USD', 
-        'SOL/USD': 'SOL-USD',
-        'ADA/USD': 'ADA-USD',
-        'DOT/USD': 'DOT-USD',
-        'AVAX/USD': 'AVAX-USD',
-        'MATIC/USD': 'MATIC-USD',
-        'LINK/USD': 'LINK-USD'
+        'BTC/USD': 'BTC',
+        'ETH/USD': 'ETH', 
+        'SOL/USD': 'SOL',
+        'ADA/USD': 'ADA',
+        'DOT/USD': 'DOT',
+        'AVAX/USD': 'AVAX',
+        'MATIC/USD': 'MATIC',
+        'LINK/USD': 'LINK'
       }
 
       const prices: MarketPrice[] = []
       
       // Fetch exchange rates to get current prices
-      const response = await fetch(`${this.baseUrl}/exchange-rates?currency=USD`, {
+      const response = await fetch(`${this.proxyUrl}?provider=coinbase`, {
         headers: { 'Accept': 'application/json' },
         cache: 'no-store'
       })

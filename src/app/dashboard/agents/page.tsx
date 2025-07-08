@@ -373,9 +373,9 @@ export default function AgentsPage() {
                       name: agent.name,
                       type: agent.type,
                       status: agent.isActive ? 'Active' : 'Inactive',
-                      balance: agent.wallet ? `$${agent.wallet.balance.toFixed(2)}` : '$0.00',
-                      totalValue: agent.wallet ? `$${agent.wallet.totalValue.toFixed(2)}` : '$0.00',
-                      pnl: agent.wallet ? `$${(agent.wallet.realizedPnL + agent.wallet.unrealizedPnL).toFixed(2)}` : '$0.00',
+                      balance: agent.wallet ? `$${(agent.wallet.balance || 0).toFixed(2)}` : '$0.00',
+                      totalValue: agent.wallet ? `$${(agent.wallet.totalValue || 0).toFixed(2)}` : '$0.00',
+                      pnl: agent.wallet ? `$${((agent.wallet.realizedPnL || 0) + (agent.wallet.unrealizedPnL || 0)).toFixed(2)}` : '$0.00',
                       decisions: agent.performance.totalDecisions,
                       winRate: agent.performance.totalDecisions > 0 ? 
                         `${((agent.performance.successfulDecisions / agent.performance.totalDecisions) * 100).toFixed(1)}%` : '0%',

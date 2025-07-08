@@ -444,7 +444,7 @@ export class DEXConnector {
     if (tokenAddress === ethers.ZeroAddress) {
       // ETH balance
       const balance = await this.provider.getBalance(this.wallet.address)
-      return balance.toString()
+      return (balance || '0').toString()
     } else {
       // ERC20 token balance
       const contract = new ethers.Contract(
@@ -453,7 +453,7 @@ export class DEXConnector {
         this.provider
       )
       const balance = await contract.balanceOf(this.wallet.address)
-      return balance.toString()
+      return (balance || '0').toString()
     }
   }
 

@@ -18,6 +18,7 @@ import { useAGUI } from '@/lib/hooks/useAGUI'
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
 import { useMarketData } from '@/lib/market/market-data-service'
 import { toast } from 'react-hot-toast'
+import { ApiCallErrorBoundary } from '@/components/error-boundaries/ApiErrorBoundary'
 
 // Import Supabase dashboard service for unified data
 import { supabaseDashboardService } from '@/lib/services/supabase-dashboard-service'
@@ -666,52 +667,53 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
           <CardDescription>Real-time cryptocurrency and asset prices</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <motion.div 
-              className="text-center p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
-              whileHover={{ scale: 1.02 }}
-              onClick={() => handleNavigateTo('trading')}
-            >
-              <div className="text-sm text-muted-foreground mb-1">Bitcoin</div>
-              <AnimatedPrice 
-                value={btcPrice}
-                currency="$"
-                precision={0}
-                size="md"
-                className="text-lg font-bold"
-              />
-              <div className="text-xs text-muted-foreground">BTC/USD • Live</div>
-            </motion.div>
-            <motion.div 
-              className="text-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
-              whileHover={{ scale: 1.02 }}
-              onClick={() => handleNavigateTo('trading')}
-            >
-              <div className="text-sm text-muted-foreground mb-1">Ethereum</div>
-              <AnimatedPrice 
-                value={ethPrice}
-                currency="$"
-                precision={0}
-                size="md"
-                className="text-lg font-bold"
-              />
-              <div className="text-xs text-muted-foreground">ETH/USD • Live</div>
-            </motion.div>
-            <motion.div 
-              className="text-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer"
-              whileHover={{ scale: 1.02 }}
-              onClick={() => handleNavigateTo('trading')}
-            >
-              <div className="text-sm text-muted-foreground mb-1">Solana</div>
-              <AnimatedPrice 
-                value={solPrice}
-                currency="$"
-                precision={2}
-                size="md"
-                className="text-lg font-bold"
-              />
-              <div className="text-xs text-muted-foreground">SOL/USD • Live</div>
-            </motion.div>
+          <ApiCallErrorBoundary apiName="Market Data">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <motion.div 
+                className="text-center p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.02 }}
+                onClick={() => handleNavigateTo('trading')}
+              >
+                <div className="text-sm text-muted-foreground mb-1">Bitcoin</div>
+                <AnimatedPrice 
+                  value={btcPrice}
+                  currency="$"
+                  precision={0}
+                  size="md"
+                  className="text-lg font-bold"
+                />
+                <div className="text-xs text-muted-foreground">BTC/USD • Live</div>
+              </motion.div>
+              <motion.div 
+                className="text-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.02 }}
+                onClick={() => handleNavigateTo('trading')}
+              >
+                <div className="text-sm text-muted-foreground mb-1">Ethereum</div>
+                <AnimatedPrice 
+                  value={ethPrice}
+                  currency="$"
+                  precision={0}
+                  size="md"
+                  className="text-lg font-bold"
+                />
+                <div className="text-xs text-muted-foreground">ETH/USD • Live</div>
+              </motion.div>
+              <motion.div 
+                className="text-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.02 }}
+                onClick={() => handleNavigateTo('trading')}
+              >
+                <div className="text-sm text-muted-foreground mb-1">Solana</div>
+                <AnimatedPrice 
+                  value={solPrice}
+                  currency="$"
+                  precision={2}
+                  size="md"
+                  className="text-lg font-bold"
+                />
+                <div className="text-xs text-muted-foreground">SOL/USD • Live</div>
+              </motion.div>
             <motion.div 
               className="text-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
               whileHover={{ scale: 1.02 }}
@@ -728,7 +730,8 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               />
               <div className="text-xs text-muted-foreground">Total Value • Managed</div>
             </motion.div>
-          </div>
+            </div>
+          </ApiCallErrorBoundary>
         </CardContent>
       </Card>
 

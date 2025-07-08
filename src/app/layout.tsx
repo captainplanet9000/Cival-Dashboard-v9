@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Oxanium, Source_Code_Pro } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import MinimalErrorBoundary from "@/lib/error-handling/minimal-error-boundary";
+import GlobalErrorBoundary from "@/components/error-boundaries/GlobalErrorBoundary";
 import { AGUIProvider } from "@/components/ag-ui/AGUIProvider";
 import { WebSocketProvider } from "@/contexts/websocket-context";
 
@@ -42,9 +42,9 @@ export default function RootLayout({
         >
           <WebSocketProvider>
             <AGUIProvider endpoint="http://localhost:8000/api/v1/agui">
-              <MinimalErrorBoundary>
+              <GlobalErrorBoundary>
                 {children}
-              </MinimalErrorBoundary>
+              </GlobalErrorBoundary>
             </AGUIProvider>
           </WebSocketProvider>
         </ThemeProvider>

@@ -542,7 +542,7 @@ export class WalletManager {
     )
 
     const balance = await contract.balanceOf(walletAddress)
-    return ethers.utils.formatUnits(balance, decimals)
+    return ethers.utils.formatUnits(balance || '0', decimals)
   }
 
   /**
@@ -803,7 +803,9 @@ export class WalletManager {
     const balance = wallet.balances.find(b => b.symbol === tokenSymbol)
     if (!balance) return false
 
-    return parseFloat(balance.balance) >= parseFloat(amount)
+    const balanceAmount = parseFloat(balance.balance || '0')
+    const requiredAmount = parseFloat(amount || '0')
+    return balanceAmount >= requiredAmount
   }
 
   /**
