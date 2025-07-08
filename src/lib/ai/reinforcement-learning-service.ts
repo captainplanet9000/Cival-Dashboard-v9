@@ -573,8 +573,38 @@ class ReinforcementLearningService {
   }
 }
 
-// Export singleton instance
-export const reinforcementLearningService = new ReinforcementLearningService()
+// Singleton instance with lazy initialization
+let reinforcementLearningServiceInstance: ReinforcementLearningService | null = null
+
+export function getReinforcementLearningService(): ReinforcementLearningService {
+  if (!reinforcementLearningServiceInstance) {
+    reinforcementLearningServiceInstance = new ReinforcementLearningService()
+  }
+  return reinforcementLearningServiceInstance
+}
+
+// For backward compatibility - use lazy getter
+export const reinforcementLearningService = {
+  get instance() {
+    return getReinforcementLearningService()
+  },
+  // Proxy all methods
+  async makeRLDecision(agentId: string, state: RLState, strategy: string): Promise<RLAction> {
+    return this.instance.makeRLDecision(agentId, state, strategy)
+  },
+  async storeExperience(experience: RLExperience): Promise<void> {
+    return this.instance.storeExperience(experience)
+  },
+  async replayExperiences(agentId: string, batchSize: number): Promise<void> {
+    return this.instance.replayExperiences(agentId, batchSize)
+  },
+  async optimizeStrategy(agentId: string, strategy: string): Promise<Record<string, number>> {
+    return this.instance.optimizeStrategy(agentId, strategy)
+  },
+  async getPerformanceMetrics(): Promise<any> {
+    return this.instance.getPerformanceMetrics()
+  }
+}
 
 // Export types
 export type { RLState, RLAction, RLReward, RLExperience, QValue, PolicyGradient }
