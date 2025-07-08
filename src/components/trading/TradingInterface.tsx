@@ -382,7 +382,7 @@ export function TradingInterface() {
         type: orderType,
         amount: parseFloat(quantity),
         ...(orderType !== 'market' && { price: parseFloat(price) }),
-        ...(orderType === 'stop' || orderType === 'stop_limit') && { stopPrice: parseFloat(stopPrice) }),
+        ...((orderType === 'stop' || orderType === 'stop_limit') && { stopPrice: parseFloat(stopPrice) }),
         timeInForce,
       }
 
