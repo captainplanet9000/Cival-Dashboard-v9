@@ -1,10 +1,13 @@
 'use client'
 
 // Simple EventEmitter implementation for browser compatibility
-class EventEmitter {
-  private events: Record<string, Function[]> = {}
+// Define explicit event listener function type
+type EventListener = (...args: any[]) => void;
 
-  on(event: string, listener: Function): this {
+class EventEmitter {
+  private events: Record<string, EventListener[]> = {}
+
+  on(event: string, listener: EventListener): this {
     if (!this.events[event]) {
       this.events[event] = []
     }
@@ -18,7 +21,7 @@ class EventEmitter {
     return true
   }
 
-  removeListener(event: string, listener: Function): this {
+  removeListener(event: string, listener: EventListener): this {
     if (!this.events[event]) return this
     this.events[event] = this.events[event].filter(l => l !== listener)
     return this
