@@ -2,6 +2,7 @@
  * Autonomous Persistence Orchestrator
  * Self-healing, multi-layer persistence system for Railway deployment
  */
+import { DEFAULT_USER_UUID } from '../constants/system-constants';
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { backendApi } from '@/lib/api/backend-client'
@@ -293,7 +294,7 @@ class AutonomousPersistenceOrchestrator {
         .from('dashboard_state')
         .upsert({
           session_id: this.sessionId,
-          user_id: 'default_user', // TODO: Replace with actual user ID when auth is added
+          user_id: DEFAULT_USER_UUID, // Use proper UUID format for user_id
           state_data: state,
           updated_at: new Date().toISOString()
         })
@@ -318,7 +319,7 @@ class AutonomousPersistenceOrchestrator {
       const { data, error } = await this.supabase
         .from('dashboard_state')
         .select('state_data')
-        .eq('user_id', 'default_user')
+        .eq('user_id', DEFAULT_USER_UUID)
         .order('updated_at', { ascending: false })
         .limit(1)
         .single()

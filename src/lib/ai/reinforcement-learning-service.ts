@@ -573,36 +573,33 @@ class ReinforcementLearningService {
   }
 }
 
-// Singleton instance with lazy initialization
-let reinforcementLearningServiceInstance: ReinforcementLearningService | null = null
+// Pre-initialize singleton instance to avoid temporal dead zone issues
+const reinforcementLearningServiceInstance: ReinforcementLearningService = new ReinforcementLearningService()
 
 export function getReinforcementLearningService(): ReinforcementLearningService {
-  if (!reinforcementLearningServiceInstance) {
-    reinforcementLearningServiceInstance = new ReinforcementLearningService()
-  }
   return reinforcementLearningServiceInstance
 }
 
-// For backward compatibility - use lazy getter
+// For backward compatibility - direct reference to avoid getter issues
 export const reinforcementLearningService = {
-  get instance() {
-    return getReinforcementLearningService()
-  },
+  // Use direct reference instead of getter to prevent initialization issues
+  instance: reinforcementLearningServiceInstance,
+  
   // Proxy all methods
   async makeRLDecision(agentId: string, state: RLState, strategy: string): Promise<RLAction> {
-    return this.instance.makeRLDecision(agentId, state, strategy)
+    return reinforcementLearningServiceInstance.makeRLDecision(agentId, state, strategy)
   },
   async storeExperience(experience: RLExperience): Promise<void> {
-    return this.instance.storeExperience(experience)
+    return reinforcementLearningServiceInstance.storeExperience(experience)
   },
   async replayExperiences(agentId: string, batchSize: number): Promise<void> {
-    return this.instance.replayExperiences(agentId, batchSize)
+    return reinforcementLearningServiceInstance.replayExperiences(agentId, batchSize)
   },
   async optimizeStrategy(agentId: string, strategy: string): Promise<Record<string, number>> {
-    return this.instance.optimizeStrategy(agentId, strategy)
+    return reinforcementLearningServiceInstance.optimizeStrategy(agentId, strategy)
   },
   async getPerformanceMetrics(): Promise<any> {
-    return this.instance.getPerformanceMetrics()
+    return reinforcementLearningServiceInstance.getPerformanceMetrics()
   }
 }
 

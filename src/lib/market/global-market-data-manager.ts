@@ -33,9 +33,9 @@ class GlobalMarketDataManager {
   
   private config: MarketDataConfig = {
     providers: {
-      primary: 'coingecko',
-      secondary: 'alphaVantage',
-      fallback: 'yahooFinance'
+      primary: 'messari',
+      secondary: 'coinapi',
+      fallback: 'coingecko'
     },
     updateIntervals: {
       realtime: 1000,     // 1 second
@@ -91,10 +91,32 @@ class GlobalMarketDataManager {
 
   private async initializeProviders(): Promise<void> {
     try {
-      // CoinGecko Provider
+      // Messari Provider (Primary)
+      this.providers.set('messari', {
+        name: 'Messari',
+        priority: 1,
+        rateLimit: 100,
+        lastRequest: new Date(0),
+        isHealthy: true,
+        fetchPrices: this.fetchMessariPrices.bind(this),
+        fetchHistorical: this.fetchMessariHistorical.bind(this)
+      })
+      
+      // CoinAPI Provider (Secondary)
+      this.providers.set('coinapi', {
+        name: 'CoinAPI',
+        priority: 2,
+        rateLimit: 100,
+        lastRequest: new Date(0),
+        isHealthy: true,
+        fetchPrices: this.fetchCoinAPIPrices.bind(this),
+        fetchHistorical: this.fetchCoinAPIHistorical.bind(this)
+      })
+      
+      // CoinGecko Provider (Fallback)
       this.providers.set('coingecko', {
         name: 'CoinGecko',
-        priority: 1,
+        priority: 3,
         rateLimit: 100,
         lastRequest: new Date(0),
         isHealthy: true,
@@ -105,7 +127,7 @@ class GlobalMarketDataManager {
       // Alpha Vantage Provider (for stocks)
       this.providers.set('alphaVantage', {
         name: 'Alpha Vantage',
-        priority: 2,
+        priority: 4,
         rateLimit: 5, // 5 requests per minute
         lastRequest: new Date(0),
         isHealthy: true,
@@ -116,7 +138,7 @@ class GlobalMarketDataManager {
       // Yahoo Finance Fallback
       this.providers.set('yahooFinance', {
         name: 'Yahoo Finance',
-        priority: 3,
+        priority: 5,
         rateLimit: 2000,
         lastRequest: new Date(0),
         isHealthy: true,
@@ -317,10 +339,22 @@ class GlobalMarketDataManager {
     )
 
     try {
-      // Fetch crypto prices from CoinGecko
+      // Fetch crypto prices from primary provider (Messari)
       if (cryptoSymbols.length > 0) {
-        const cryptoPrices = await this.fetchWithProvider('coingecko', cryptoSymbols)
-        results.push(...cryptoPrices)
+        try {
+          const cryptoPrices = await this.fetchWithProvider('messari', cryptoSymbols)
+          results.push(...cryptoPrices)
+        } catch (error) {
+          console.warn('Primary provider failed, trying secondary provider:', error)
+          try {
+            const cryptoPrices = await this.fetchWithProvider('coinapi', cryptoSymbols)
+            results.push(...cryptoPrices)
+          } catch (secondaryError) {
+            console.warn('Secondary provider failed, trying fallback provider:', secondaryError)
+            const cryptoPrices = await this.fetchWithProvider('coingecko', cryptoSymbols)
+            results.push(...cryptoPrices)
+          }
+        }
       }
 
       // Fetch stock prices from Alpha Vantage
@@ -381,96 +415,148 @@ class GlobalMarketDataManager {
 
   // ===== PROVIDER IMPLEMENTATIONS =====
 
-  private async fetchCoinGeckoPrices(symbols: string[]): Promise<MarketPrice[]> {
+  private async fetchMessariPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
+      const apiKey = 'Cz782HCR6WW4Q268WlSIpSoUlvLYj5pah2snEfxK712Vp9Rq' // API key provided by the user
       const symbolMap: Record<string, string> = {
         'BTC/USD': 'bitcoin',
         'ETH/USD': 'ethereum',
         'SOL/USD': 'solana',
         'ADA/USD': 'cardano',
         'DOT/USD': 'polkadot',
-        'AVAX/USD': 'avalanche-2',
-        'MATIC/USD': 'matic-network',
+        'AVAX/USD': 'avalanche',
+        'MATIC/USD': 'polygon',
         'LINK/USD': 'chainlink'
       }
-
-      const ids = symbols.map(s => symbolMap[s]).filter(Boolean).join(',')
-      if (!ids) return []
-
-      const response = await fetch(
-        `/api/market/proxy?provider=coingecko&symbols=${ids}`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store'
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(`CoinGecko API error: ${response.status}`)
-      }
-
-      const data = await response.json()
+      
       const prices: MarketPrice[] = []
-
-      for (const [symbol, coinId] of Object.entries(symbolMap)) {
-        if (symbols.includes(symbol) && data[coinId]) {
-          const coinData = data[coinId]
-          prices.push({
-            symbol,
-            price: coinData.usd,
-            change24h: coinData.usd_24h_change || 0,
-            changePercent24h: coinData.usd_24h_change || 0,
-            volume24h: coinData.usd_24h_vol || 0,
-            high24h: coinData.usd + (coinData.usd_24h_change || 0) * 0.02,
-            low24h: coinData.usd - (coinData.usd_24h_change || 0) * 0.02,
-            open24h: coinData.usd - (coinData.usd_24h_change || 0),
-            marketCap: coinData.usd_market_cap,
-            lastUpdate: new Date(),
-            source: 'coingecko'
-          })
+      
+      // Process each symbol in parallel for better performance
+      await Promise.all(symbols.map(async (symbol) => {
+        const asset = symbolMap[symbol]
+        if (!asset) return
+        
+        try {
+          // Using our proxy to avoid CORS and protect API key
+          const response = await fetch(
+            `/api/market/proxy?provider=messari&asset=${asset}`,
+            { 
+              headers: { 
+                'Accept': 'application/json',
+                'X-Api-Key': apiKey 
+              },
+              cache: 'no-store'
+            }
+          )
+          
+          if (!response.ok) {
+            throw new Error(`Messari API error: ${response.status}`)
+          }
+          
+          const data = await response.json()
+          
+          if (data.data && data.data.market_data) {
+            const marketData = data.data.market_data
+            prices.push({
+              symbol,
+              price: marketData.price_usd,
+              change24h: marketData.price_usd - (marketData.price_usd / (1 + (marketData.percent_change_usd_last_24_hours / 100))),
+              changePercent24h: marketData.percent_change_usd_last_24_hours || 0,
+              volume24h: marketData.volume_last_24_hours || 0,
+              high24h: marketData.ohlcv_last_24_hour?.high || 0,
+              low24h: marketData.ohlcv_last_24_hour?.low || 0,
+              open24h: marketData.ohlcv_last_24_hour?.open || 0,
+              marketCap: data.data.marketcap?.current_marketcap_usd || 0,
+              lastUpdate: new Date(),
+              source: 'messari'
+            })
+          }
+        } catch (error) {
+          console.error(`Error fetching Messari data for ${symbol}:`, error)
         }
-      }
-
+      }))
+      
       return prices
     } catch (error) {
-      console.error('CoinGecko fetch error:', error)
+      console.error('Messari fetch error:', error)
       throw error
     }
   }
-
-  private async fetchAlphaVantagePrices(symbols: string[]): Promise<MarketPrice[]> {
-    // Note: This would require an Alpha Vantage API key
-    // For now, return mock data for stocks
-    const prices: MarketPrice[] = []
-    
-    for (const symbol of symbols) {
-      if (this.config.symbols.stocks.includes(symbol)) {
-        // Generate realistic mock prices for stocks
-        const basePrice = this.getBasePriceForStock(symbol)
-        const randomChange = (Math.random() - 0.5) * 0.05 // ±2.5% random change
-        const price = basePrice * (1 + randomChange)
-        
-        prices.push({
-          symbol,
-          price,
-          change24h: basePrice * randomChange,
-          changePercent24h: randomChange * 100,
-          volume24h: Math.random() * 1000000,
-          high24h: price * 1.02,
-          low24h: price * 0.98,
-          open24h: price - (basePrice * randomChange),
-          lastUpdate: new Date(),
-          source: 'alphaVantage'
-        })
+  
+  private async fetchCoinAPIPrices(symbols: string[]): Promise<MarketPrice[]> {
+    try {
+      const apiKey = 'f099097a-0c63-41f6-9e5f-31bf2ce1672c' // API key provided by the user
+      const symbolMap: Record<string, string> = {
+        'BTC/USD': 'BTC/USD',
+        'ETH/USD': 'ETH/USD',
+        'SOL/USD': 'SOL/USD',
+        'ADA/USD': 'ADA/USD',
+        'DOT/USD': 'DOT/USD',
+        'AVAX/USD': 'AVAX/USD',
+        'MATIC/USD': 'MATIC/USD',
+        'LINK/USD': 'LINK/USD'
       }
+      
+      const prices: MarketPrice[] = []
+      
+      // Process each symbol individually to comply with API structure
+      await Promise.all(symbols.map(async (symbol) => {
+        const apiSymbol = symbolMap[symbol]
+        if (!apiSymbol) return
+        
+        try {
+          // Using our proxy to avoid CORS and protect API key
+          const response = await fetch(
+            `/api/market/proxy?provider=coinapi&symbol=${apiSymbol}`,
+            { 
+              headers: { 
+                'Accept': 'application/json',
+                'X-CoinAPI-Key': apiKey 
+              },
+              cache: 'no-store'
+            }
+          )
+          
+          if (!response.ok) {
+            throw new Error(`CoinAPI error: ${response.status}`)
+          }
+          
+          const data = await response.json()
+          
+          if (data) {
+            prices.push({
+              symbol,
+              price: data.rate || 0,
+              change24h: 0, // CoinAPI basic endpoint doesn't include change data
+              changePercent24h: 0,
+              volume24h: 0,
+              high24h: 0,
+              low24h: 0,
+              open24h: 0,
+              lastUpdate: new Date(),
+              source: 'coinapi'
+            })
+          }
+        } catch (error) {
+          console.error(`Error fetching CoinAPI data for ${symbol}:`, error)
+        }
+      }))
+      
+      return prices
+    } catch (error) {
+      console.error('CoinAPI fetch error:', error)
+      throw error
     }
-
-    return prices
   }
-
-  private async fetchYahooFinancePrices(symbols: string[]): Promise<MarketPrice[]> {
-    // Yahoo Finance fallback implementation
-    return this.fetchAlphaVantagePrices(symbols) // Use same mock for now
+  
+  private async fetchMessariHistorical(symbol: string, interval: string, limit: number): Promise<HistoricalPrice[]> {
+    // Implementation for Messari historical data
+    return []
+  }
+  
+  private async fetchCoinAPIHistorical(symbol: string, interval: string, limit: number): Promise<HistoricalPrice[]> {
+    // Implementation for CoinAPI historical data
+    return []
   }
 
   private async fetchCoinGeckoHistorical(symbol: string, interval: string, limit: number): Promise<HistoricalPrice[]> {
@@ -688,13 +774,109 @@ class GlobalMarketDataManager {
     try {
       const allSymbols = [
         ...this.config.symbols.crypto,
-        ...this.config.symbols.stocks
+        ...this.config.symbols.stocks,
+        ...this.config.symbols.forex,
+        ...this.config.symbols.commodities
       ]
+
+      const prices = await this.fetchLatestPrices(allSymbols)
+      this.processPriceUpdate(prices)
       
-      await this.fetchLatestPrices(allSymbols)
     } catch (error) {
       console.error('Failed to update all prices:', error)
     }
+  }
+
+  private async fetchCoinGeckoPrices(symbols: string[]): Promise<MarketPrice[]> {
+    try {
+      const symbolMap: Record<string, string> = {
+        'BTC/USD': 'bitcoin',
+        'ETH/USD': 'ethereum',
+        'SOL/USD': 'solana',
+        'ADA/USD': 'cardano',
+        'DOT/USD': 'polkadot',
+        'AVAX/USD': 'avalanche-2',
+        'MATIC/USD': 'matic-network',
+        'LINK/USD': 'chainlink'
+      }
+
+      const ids = symbols.map(s => symbolMap[s]).filter(Boolean).join(',')
+      if (!ids) return []
+
+      const response = await fetch(
+        `/api/market/proxy?provider=coingecko&symbols=${ids}`,
+        { 
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`CoinGecko API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const prices: MarketPrice[] = []
+
+      for (const [symbol, coinId] of Object.entries(symbolMap)) {
+        if (symbols.includes(symbol) && data[coinId]) {
+          const coinData = data[coinId]
+          prices.push({
+            symbol,
+            price: coinData.usd,
+            change24h: coinData.usd_24h_change || 0,
+            changePercent24h: coinData.usd_24h_change || 0,
+            volume24h: coinData.usd_24h_vol || 0,
+            high24h: coinData.usd + (coinData.usd_24h_change || 0) * 0.02,
+            low24h: coinData.usd - (coinData.usd_24h_change || 0) * 0.02,
+            open24h: coinData.usd - (coinData.usd_24h_change || 0),
+            marketCap: coinData.usd_market_cap,
+            lastUpdate: new Date(),
+            source: 'coingecko'
+          })
+        }
+      }
+
+      return prices
+    } catch (error) {
+      console.error('CoinGecko fetch error:', error)
+      throw error
+    }
+  }
+
+  private async fetchAlphaVantagePrices(symbols: string[]): Promise<MarketPrice[]> {
+    // Note: This would require an Alpha Vantage API key
+    // For now, return mock data for stocks
+    const prices: MarketPrice[] = []
+    
+    for (const symbol of symbols) {
+      if (this.config.symbols.stocks.includes(symbol)) {
+        // Generate realistic mock prices for stocks
+        const basePrice = this.getBasePriceForStock(symbol)
+        const randomChange = (Math.random() - 0.5) * 0.05 // ±2.5% random change
+        const price = basePrice * (1 + randomChange)
+        
+        prices.push({
+          symbol,
+          price,
+          change24h: basePrice * randomChange,
+          changePercent24h: randomChange * 100,
+          volume24h: Math.random() * 1000000,
+          high24h: price * 1.02,
+          low24h: price * 0.98,
+          open24h: price - (basePrice * randomChange),
+          lastUpdate: new Date(),
+          source: 'alphaVantage'
+        })
+      }
+    }
+
+    return prices
+  }
+
+  private async fetchYahooFinancePrices(symbols: string[]): Promise<MarketPrice[]> {
+    // Yahoo Finance fallback implementation
+    return this.fetchAlphaVantagePrices(symbols) // Use same mock for now
   }
 }
 

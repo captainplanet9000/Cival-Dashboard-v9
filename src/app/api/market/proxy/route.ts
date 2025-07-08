@@ -3,13 +3,18 @@ import { NextRequest, NextResponse } from 'next/server'
 /**
  * CORS-safe market data proxy API
  * Proxies external API calls to avoid CORS issues in the browser
+ * Supports multiple providers: Messari, CoinAPI, CoinGecko, Binance, Coinbase
  */
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const provider = searchParams.get('provider') || 'coingecko'
+    const provider = searchParams.get('provider') || 'messari'
     const symbols = searchParams.get('symbols') || 'bitcoin,ethereum,solana'
+    // For specific asset lookup (Messari)
+    const asset = searchParams.get('asset')
+    // For specific symbol lookup (CoinAPI)
+    const symbol = searchParams.get('symbol')
 
     let apiUrl: string
     let headers: Record<string, string> = {
@@ -18,6 +23,35 @@ export async function GET(request: NextRequest) {
     }
 
     switch (provider) {
+      case 'messari':
+        // Handle Messari API requests
+        if (asset) {
+          apiUrl = `https://data.messari.io/api/v1/assets/${asset}/metrics`
+          // Add Messari API key from environment variables
+          const messariApiKey = process.env.MESSARI_API_KEY || request.headers.get('X-Api-Key') || ''
+          if (messariApiKey) {
+            headers['x-messari-api-key'] = messariApiKey
+          }
+        } else {
+          // Fallback to market data endpoint
+          apiUrl = `https://data.messari.io/api/v1/markets`
+        }
+        break
+
+      case 'coinapi':
+        // Handle CoinAPI requests
+        if (symbol) {
+          apiUrl = `https://rest.coinapi.io/v1/exchangerate/${symbol.split('/')[0]}/${symbol.split('/')[1]}`
+          const coinApiKey = process.env.COINAPI_KEY || request.headers.get('X-CoinAPI-Key') || ''
+          headers['X-CoinAPI-Key'] = coinApiKey
+        } else {
+          // If no specific symbol, get exchange rates for all assets
+          apiUrl = `https://rest.coinapi.io/v1/exchangerate/USD`
+          const coinApiKey = process.env.COINAPI_KEY || request.headers.get('X-CoinAPI-Key') || ''
+          headers['X-CoinAPI-Key'] = coinApiKey
+        }
+        break
+      
       case 'coingecko':
         apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${symbols}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`
         break
