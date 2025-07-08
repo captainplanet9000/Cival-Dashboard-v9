@@ -344,6 +344,7 @@ export function ComprehensiveAgentsTab({ className }: { className?: string }) {
               metrics={metrics}
               onRefresh={refreshData}
               loading={loading}
+              onNavigateToCreate={() => setCurrentSection('creation-management')}
             />
           </TabsContent>
 
@@ -398,12 +399,14 @@ function AgentControlCenter({
   agents, 
   metrics, 
   onRefresh, 
-  loading 
+  loading,
+  onNavigateToCreate
 }: { 
   agents: Agent[]
   metrics: AgentMetrics
   onRefresh: () => void
   loading: boolean
+  onNavigateToCreate: () => void
 }) {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([])
 
@@ -584,7 +587,7 @@ function AgentControlCenter({
               <p className="text-muted-foreground mb-4">
                 Create your first agent to get started with automated trading
               </p>
-              <Button onClick={() => {}}>
+              <Button onClick={onNavigateToCreate}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Agent
               </Button>
@@ -622,7 +625,8 @@ function AgentCreationManagement({
           <ComprehensiveAgentCreation
             onAgentCreated={() => {
               onAgentCreated()
-              toast.success('Agent created successfully!')
+              setActiveTab('manage') // Switch to management tab to see the new agent
+              toast.success('Agent created and ready for management!')
             }}
           />
         </TabsContent>
@@ -920,11 +924,155 @@ function StrategyHub({ agents, onStrategyDeployed }: any) {
   )
 }
 
-function TradingOperations({ agents, metrics }: any) {
+function TradingOperations({ 
+  agents, 
+  metrics 
+}: { 
+  agents: Agent[]
+  metrics: AgentMetrics
+}) {
+  const [activeOperationsTab, setActiveOperationsTab] = useState('overview')
+  
   return (
     <div className="space-y-6">
-      <HighFrequencyTradingEngine />
-      <OrderManagementSystem />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-orange-600" />
+            Trading Operations Center
+          </CardTitle>
+          <CardDescription>
+            High-frequency trading engine and order management system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeOperationsTab} onValueChange={setActiveOperationsTab}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="hft">HFT Engine</TabsTrigger>
+              <TabsTrigger value="orders">Order Management</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="mt-6">
+              <TradingOperationsOverview agents={agents} metrics={metrics} />
+            </TabsContent>
+            
+            <TabsContent value="hft" className="mt-6">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>High-Frequency Trading Engine</CardTitle>
+                    <CardDescription>Sub-20ms execution latency trading system</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <HighFrequencyTradingEngine />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="orders" className="mt-6">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Order Management System</CardTitle>
+                    <CardDescription>Real-time order execution and management</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <OrderManagementSystem />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Trading Operations Overview Component
+function TradingOperationsOverview({ 
+  agents, 
+  metrics 
+}: { 
+  agents: Agent[]
+  metrics: AgentMetrics
+}) {
+  const activeTraders = agents.filter(a => a.status === 'active').length
+  const hftAgents = agents.filter(a => a.type === 'hft').length
+  const totalOrders = agents.reduce((sum, a) => sum + a.totalTrades, 0)
+  
+  return (
+    <div className="space-y-6">
+      {/* Trading Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Active Traders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              <AnimatedCounter value={activeTraders} />
+            </div>
+            <p className="text-xs text-muted-foreground">Currently trading</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">HFT Agents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              <AnimatedCounter value={hftAgents} />
+            </div>
+            <p className="text-xs text-muted-foreground">High-frequency traders</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Total Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              <AnimatedCounter value={totalOrders} />
+            </div>
+            <p className="text-xs text-muted-foreground">Orders executed</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Recent Trading Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Trading Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {agents.slice(0, 5).map((agent, index) => (
+              <div key={agent.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${
+                    agent.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                  }`} />
+                  <div>
+                    <p className="font-medium">{agent.name}</p>
+                    <p className="text-sm text-muted-foreground">{agent.strategy}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`font-medium ${agent.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${agent.pnl.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{agent.totalTrades} trades</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

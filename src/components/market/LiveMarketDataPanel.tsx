@@ -25,6 +25,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { backendApi } from '@/lib/api/backend-client'
+import { useMarketData } from '@/lib/market/market-data-service'
 
 interface PriceData {
   symbol: string
@@ -90,25 +91,62 @@ export function LiveMarketDataPanel() {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch real-time price data from backend
+  // Use market data service
+  const { marketData, loading: marketDataLoading, error: marketDataError } = useMarketData()
+
+  // Fetch real-time price data from backend and market data service
   const fetchPriceData = useCallback(async () => {
     try {
       setConnectionStatus('connecting')
+      setError(null)
       
-      // Get live data for each symbol
+      // First try to use market data service
+      if (marketData && Object.keys(marketData).length > 0) {
+        const updatedPriceData: Record<string, PriceData> = {}
+        
+        selectedSymbols.forEach(symbol => {
+          const serviceData = marketData[symbol]
+          if (serviceData) {
+            updatedPriceData[symbol] = {
+              symbol,
+              price: serviceData.price,
+              change: serviceData.change,
+              changePercent: serviceData.changePercent,
+              volume: serviceData.volume,
+              bid: serviceData.bid,
+              ask: serviceData.ask,
+              high24h: serviceData.high24h,
+              low24h: serviceData.low24h,
+              timestamp: serviceData.timestamp,
+              provider: 'Market Data Service'
+            }
+          }
+        })
+        
+        if (Object.keys(updatedPriceData).length > 0) {
+          setPriceData(prev => ({ ...prev, ...updatedPriceData }))
+          setConnectionStatus('connected')
+          setLastUpdate(new Date())
+          setIsLoading(false)
+          return
+        }
+      }
+      
+      // Fallback to API calls if market data service doesn't have data
       const pricePromises = selectedSymbols.map(async (symbol) => {
         try {
           const response = await backendApi.fetchWithTimeout(
-            `${backendApi.getBackendUrl()}/api/v1/market/live-data/${symbol}`
+            `${backendApi.getBackendUrl()}/api/v1/market/live-data/${symbol}`,
+            { timeout: 5000 }
           )
           
           if (response.ok) {
             const data = await response.json()
             return {
               symbol,
-              price: data.price || Math.random() * 1000 + 100,
-              change: data.change || (Math.random() - 0.5) * 20,
-              changePercent: data.change_percent || (Math.random() - 0.5) * 5,
+              price: data.price || (Math.random() * 1000 + 100),
+              change: data.change || ((Math.random() - 0.5) * 20),
+              changePercent: data.change_percent || ((Math.random() - 0.5) * 5),
               volume: data.volume || Math.floor(Math.random() * 1000000),
               bid: data.bid,
               ask: data.ask,
@@ -118,22 +156,19 @@ export function LiveMarketDataPanel() {
               provider: data.provider || 'Backend API'
             }
           } else {
-            // Fallback to mock data
-            return {
-              symbol,
-              price: Math.random() * 1000 + 100,
-              change: (Math.random() - 0.5) * 20,
-              changePercent: (Math.random() - 0.5) * 5,
-              volume: Math.floor(Math.random() * 1000000),
-              timestamp: new Date().toISOString(),
-              provider: 'Mock Data'
-            }
+            throw new Error(`API returned ${response.status}`)
           }
-        } catch {
-          // Fallback for individual symbol
+        } catch (apiError) {
+          console.warn(`Failed to fetch ${symbol} from API, using mock data:`, apiError)
+          // Generate realistic mock data
+          const basePrice = symbol.includes('BTC') ? 50000 : 
+                           symbol.includes('ETH') ? 3000 :
+                           symbol.includes('USD') ? 200 : 150
+          const variation = (Math.random() - 0.5) * 0.1
+          
           return {
             symbol,
-            price: Math.random() * 1000 + 100,
+            price: basePrice * (1 + variation),
             change: (Math.random() - 0.5) * 20,
             changePercent: (Math.random() - 0.5) * 5,
             volume: Math.floor(Math.random() * 1000000),
@@ -160,7 +195,14 @@ export function LiveMarketDataPanel() {
       setError(err instanceof Error ? err.message : 'Failed to fetch price data')
       setConnectionStatus('disconnected')
     }
-  }, [selectedSymbols])
+  }, [selectedSymbols, marketData])
+
+  // Watch for market data service updates
+  useEffect(() => {
+    if (marketData && !marketDataLoading && !marketDataError) {
+      fetchPriceData()
+    }
+  }, [marketData, marketDataLoading, marketDataError, fetchPriceData])
 
   // Fetch technical indicators from backend
   const fetchTechnicalData = useCallback(async () => {

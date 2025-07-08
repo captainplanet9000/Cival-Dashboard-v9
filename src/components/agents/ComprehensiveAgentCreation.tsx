@@ -341,8 +341,42 @@ export function ComprehensiveAgentCreation({
         }
       }
 
-      // Create agent using enhanced service
-      const createdAgent = await enhancedAgentCreationService.createAgent(agentData)
+      // Create agent using both services for comprehensive coverage
+      let createdAgent
+      
+      try {
+        // Try enhanced service first
+        createdAgent = await enhancedAgentCreationService.createAgent(agentData)
+      } catch (enhancedError) {
+        console.warn('Enhanced service failed, trying persistent service:', enhancedError)
+        // Fallback to persistent service
+        createdAgent = await persistentAgentService.createAgent({
+          name: config.name,
+          type: config.type,
+          strategy: config.strategy,
+          capital: config.initialCapital,
+          riskLevel: config.riskLevel,
+          config: agentData
+        })
+      }
+      
+      // Also save to persistent service for backup
+      try {
+        await persistentAgentService.createAgent({
+          id: createdAgent.id,
+          name: config.name,
+          type: config.type,
+          strategy: config.strategy,
+          capital: config.initialCapital,
+          riskLevel: config.riskLevel,
+          status: 'idle',
+          config: agentData,
+          createdAt: new Date().toISOString(),
+          lastActive: new Date().toISOString()
+        })
+      } catch (persistentError) {
+        console.warn('Failed to save to persistent service:', persistentError)
+      }
       
       toast.success(`Agent "${config.name}" created successfully!`)
       
