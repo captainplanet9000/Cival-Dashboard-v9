@@ -198,6 +198,18 @@ class BackendClient {
     this.baseURL = baseURL
   }
 
+  async get<T>(endpoint: string, options: RequestInit = {}): Promise<APIResponse<T>> {
+    return this.request<T>(endpoint, { ...options, method: 'GET' })
+  }
+
+  async post<T>(endpoint: string, body?: any, options: RequestInit = {}): Promise<APIResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: body ? JSON.stringify(body) : undefined,
+    })
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}

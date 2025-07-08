@@ -1,6 +1,30 @@
 'use client'
 
-import { EventEmitter } from 'events'
+// Simple EventEmitter implementation for browser compatibility
+class EventEmitter {
+  private events: Record<string, Function[]> = {}
+
+  on(event: string, listener: Function): this {
+    if (!this.events[event]) {
+      this.events[event] = []
+    }
+    this.events[event].push(listener)
+    return this
+  }
+
+  emit(event: string, ...args: any[]): boolean {
+    if (!this.events[event]) return false
+    this.events[event].forEach(listener => listener(...args))
+    return true
+  }
+
+  removeListener(event: string, listener: Function): this {
+    if (!this.events[event]) return this
+    this.events[event] = this.events[event].filter(l => l !== listener)
+    return this
+  }
+}
+
 import { liveMarketDataService, type LiveMarketData } from '@/lib/market/live-market-data-service'
 import { exchangeAPIService, type ExchangeOrder } from '@/lib/trading/exchange-api-service'
 
@@ -142,13 +166,13 @@ export class RealPaperTradingEngine extends EventEmitter {
   private marketPrices = new Map<string, MarketPrice>()
   private orderQueue: Order[] = []
   private isRunning = false
-  private priceUpdateInterval?: NodeJS.Timeout
-  private tradingInterval?: NodeJS.Timeout
+  private priceUpdateInterval?: ReturnType<typeof setInterval>
+  private tradingInterval?: ReturnType<typeof setInterval>
   private useSupabase = false
   private defaultSessionId?: string
   private useLiveData = false
   private liveDataSymbols: string[] = []
-  private riskCheckInterval?: NodeJS.Timeout
+  private riskCheckInterval?: ReturnType<typeof setInterval>
   private emergencyStopActive = false
 
   constructor() {
@@ -200,9 +224,11 @@ export class RealPaperTradingEngine extends EventEmitter {
 
   // Initialize Supabase integration
   private async initializeSupabase() {
-    if (typeof window === 'undefined') return // Only in browser
+    // Only attempt to initialize if we're running in a browser
+    if (typeof window === 'undefined') return
     
     try {
+      // Dynamic import to avoid bundling issues in server context
       const { isSupabaseAvailable } = await import('@/lib/supabase/client')
       const available = await isSupabaseAvailable()
       

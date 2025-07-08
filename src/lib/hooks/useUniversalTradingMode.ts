@@ -4,7 +4,7 @@
  * Integrates with backend universal trading mode service
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react'
 import { backendClient } from '@/lib/api/backend-client'
 import { toast } from 'react-hot-toast'
 
@@ -296,25 +296,25 @@ export function withTradingModeRegistration<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   componentId: string,
   componentType: string
-) {
+): React.FC<P> {
   return function TradingModeRegisteredComponent(props: P) {
     useComponentRegistration(componentId, componentType)
-    return <WrappedComponent {...props} />
+    return React.createElement(WrappedComponent, props)
   }
 }
 
 // Context provider for trading mode
-import React, { createContext, useContext, ReactNode } from 'react'
-
 const TradingModeContext = createContext<UseUniversalTradingModeReturn | null>(null)
 
-export function TradingModeProvider({ children }: { children: ReactNode }) {
+export function TradingModeProvider({ children }: { children: ReactNode }): React.ReactElement {
   const tradingMode = useUniversalTradingMode()
   
   return (
-    <TradingModeContext.Provider value={tradingMode}>
-      {children}
-    </TradingModeContext.Provider>
+    React.createElement(
+      TradingModeContext.Provider, 
+      { value: tradingMode },
+      children
+    )
   )
 }
 
