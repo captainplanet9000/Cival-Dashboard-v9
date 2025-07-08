@@ -96,6 +96,7 @@ import UnifiedAIAssistant from '@/components/ai-assistant/UnifiedAIAssistant'
 import ConnectedOverviewTab from '@/components/dashboard/ConnectedOverviewTab'
 import ConnectedTradingTab from '@/components/dashboard/ConnectedTradingTab'
 import ConnectedAgentsTab from '@/components/dashboard/ConnectedAgentsTab'
+import { ComprehensiveAgentsTab } from '@/components/dashboard/ComprehensiveAgentsTab'
 import ConnectedHistoryTab from '@/components/dashboard/ConnectedHistoryTab'
 import ConnectedAnalyticsTab from '@/components/dashboard/ConnectedAnalyticsTab'
 import ConnectedFarmsTab from '@/components/dashboard/ConnectedFarmsTab'
@@ -300,9 +301,7 @@ export function ModernDashboardV4() {
       id: 'agents',
       label: 'Agents',
       icon: <Bot className="h-4 w-4" />,
-      component: <RealAgentManagement 
-        onCreateAgent={() => setActiveTab('agent-creation')}
-      />
+      component: <ComprehensiveAgentsTab />
     },
     {
       id: 'strategies',
