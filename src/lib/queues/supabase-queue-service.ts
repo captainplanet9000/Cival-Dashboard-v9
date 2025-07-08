@@ -6,7 +6,8 @@
  * Built on top of Supabase's pgmq extension for guaranteed delivery and exactly-once processing
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
 
 // Queue message types
 export interface QueueMessage<T = any> {
@@ -111,10 +112,8 @@ export class SupabaseQueueService {
   private pollingIntervals = new Map<string, NodeJS.Timeout>()
 
   constructor() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    
-    this.supabase = createClient(supabaseUrl, supabaseKey)
+    // Use shared Supabase client to avoid multiple instances
+    this.supabase = supabase
   }
 
   async initialize(): Promise<void> {
