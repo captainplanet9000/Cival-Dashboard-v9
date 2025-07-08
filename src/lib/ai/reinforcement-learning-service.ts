@@ -83,7 +83,7 @@ export interface PolicyGradient {
 }
 
 class ReinforcementLearningService {
-  private qTable = new Map<string, QValue>()
+  private qTable: Map<string, QValue>
   private experienceBuffer: RLExperience[] = []
   private maxBufferSize = 10000
   
@@ -98,6 +98,8 @@ class ReinforcementLearningService {
   private strategyParameters = new Map<string, Record<string, number>>()
 
   constructor() {
+    // Initialize qTable in constructor to avoid temporal dead zone issues
+    this.qTable = new Map<string, QValue>()
     this.initializeStrategies()
   }
 
