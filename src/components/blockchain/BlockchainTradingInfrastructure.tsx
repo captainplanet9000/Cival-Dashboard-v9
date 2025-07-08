@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar, PieChart, Cell, ComposedChart
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, ComposedChart
 } from 'recharts'
 import { AnimatedPrice, AnimatedCounter } from '@/components/ui/animated-components'
 import { motion, AnimatePresence } from 'framer-motion'

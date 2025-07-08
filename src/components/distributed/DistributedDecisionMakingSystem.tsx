@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { 
   LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Cell, ComposedChart,
+  AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, ComposedChart,
   ScatterChart, Scatter, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   Sankey, Flow, TreeMap
 } from 'recharts'

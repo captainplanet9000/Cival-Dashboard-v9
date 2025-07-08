@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Cell, ComposedChart,
+  AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, ComposedChart,
   Sankey, Flow, ScatterChart, Scatter
 } from 'recharts'
 import { AnimatedPrice, AnimatedCounter } from '@/components/ui/animated-components'

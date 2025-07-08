@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar, PieChart, Cell, ComposedChart,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, ComposedChart,
   ScatterChart, Scatter, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts'
 import { AnimatedPrice, AnimatedCounter } from '@/components/ui/animated-components'
