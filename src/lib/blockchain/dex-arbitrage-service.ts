@@ -63,7 +63,9 @@ class DexArbitrageService extends EventEmitter {
 
   private initializeService() {
     console.log('🔍 DEX Arbitrage service initialized')
-    this.startOpportunityScanning()
+    // Temporarily disable scanning to prevent address checksum errors
+    // this.startOpportunityScanning()
+    console.log('⚠️ DEX arbitrage scanning disabled to prevent address checksum errors')
   }
 
   // Start scanning for arbitrage opportunities

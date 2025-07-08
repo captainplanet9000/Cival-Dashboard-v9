@@ -140,7 +140,19 @@ class AlchemyService {
       }
 
       const balance = await alchemy.core.getBalance(address)
-      return ethers.formatEther(balance)
+      
+      // Handle BigNumber safely - check for valid balance
+      if (!balance || balance.toString() === '0x00' || balance.toString() === '') {
+        return '0'
+      }
+      
+      // Convert BigNumber to string safely
+      const balanceString = balance.toString()
+      if (!balanceString || balanceString === '0x00') {
+        return '0'
+      }
+      
+      return ethers.formatEther(balanceString)
     } catch (error) {
       console.error('Error getting wallet balance:', error)
       return '0'
