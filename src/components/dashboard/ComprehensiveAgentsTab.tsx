@@ -66,6 +66,9 @@ import { ComprehensiveAgentCreation } from '@/components/agents/ComprehensiveAge
 import { Textarea } from '@/components/ui/textarea'
 import { Slider } from '@/components/ui/slider'
 
+// Import enhanced control center
+import { EnhancedAgentControlCenter } from './EnhancedAgentControlCenter'
+
 /**
  * Comprehensive Agents Tab - Unified agent management interface
  * Consolidates all agent-related functionality into 6 logical sections
@@ -339,7 +342,7 @@ export function ComprehensiveAgentsTab({ className }: { className?: string }) {
 
           {/* Agent Control Center */}
           <TabsContent value="control-center" className="mt-6">
-            <AgentControlCenter 
+            <EnhancedAgentControlCenter 
               agents={agents}
               metrics={metrics}
               onRefresh={refreshData}
@@ -394,7 +397,7 @@ export function ComprehensiveAgentsTab({ className }: { className?: string }) {
   )
 }
 
-// Agent Control Center Component
+// Enhanced Agent Control Center Component - Central hub for all agent operations
 function AgentControlCenter({ 
   agents, 
   metrics, 
@@ -409,6 +412,30 @@ function AgentControlCenter({
   onNavigateToCreate: () => void
 }) {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([])
+  const [systemHealth, setSystemHealth] = useState({
+    agentsOnline: 0,
+    strategiesActive: 0,
+    tradingPairs: 0,
+    aiModelsConnected: 0,
+    systemLoad: 0
+  })
+  
+  // Calculate system health metrics
+  useEffect(() => {
+    const activeAgents = agents.filter(a => a.status === 'active').length
+    const strategiesActive = new Set(agents.map(a => a.strategy)).size
+    const tradingPairs = Math.floor(Math.random() * 12) + 8 // Mock trading pairs
+    const aiModelsConnected = Math.floor(Math.random() * 5) + 3 // Mock AI models
+    const systemLoad = Math.floor(Math.random() * 30) + 15 // Mock system load
+    
+    setSystemHealth({
+      agentsOnline: activeAgents,
+      strategiesActive,
+      tradingPairs,
+      aiModelsConnected,
+      systemLoad
+    })
+  }, [agents])
 
   const toggleAgent = async (agentId: string, action: 'start' | 'stop') => {
     try {
