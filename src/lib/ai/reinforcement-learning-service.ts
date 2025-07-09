@@ -83,36 +83,66 @@ export interface PolicyGradient {
 }
 
 class ReinforcementLearningService {
-  private qTable: Map<string, QValue> = new Map<string, QValue>()
-  private experienceBuffer: RLExperience[] = []
-  private maxBufferSize = 10000
+  // Initialize all properties with safe defaults to prevent temporal dead zone issues
+  private qTable: Map<string, QValue>
+  private experienceBuffer: RLExperience[]
+  private maxBufferSize: number
   
-  // Hyperparameters
-  private learningRate = 0.01
-  private discountFactor = 0.95
-  private explorationRate = 0.1
-  private explorationDecay = 0.995
-  private minExploration = 0.01
+  // Hyperparameters - all initialized as properties
+  private learningRate: number
+  private discountFactor: number
+  private explorationRate: number
+  private explorationDecay: number
+  private minExploration: number
   
   // Strategy-specific parameters
-  private strategyParameters = new Map<string, Record<string, number>>()
+  private strategyParameters: Map<string, Record<string, number>>
   
-  // Live trading properties
-  private performanceTracker = new Map<string, number[]>()
-  private tradingWebSocket = { connected: false }
-  private lastActionTime = new Map<string, number>()
-  private liveDataCache = new Map<string, any>()
-  private marketStateCache = new Map<string, RLState>()
-  private liveParams = {
-    cooldownPeriod: 60000, // 1 minute
-    maxDailyLoss: 0.05, // 5% max daily loss
-    maxConcurrentPositions: 5,
-    maxPositionSize: 0.1, // 10% max position size
-    emergencyStopLoss: 0.02 // 2% emergency stop loss
+  // Live trading properties - all safely initialized
+  private performanceTracker: Map<string, number[]>
+  private tradingWebSocket: { connected: boolean }
+  private lastActionTime: Map<string, number>
+  private liveDataCache: Map<string, any>
+  private marketStateCache: Map<string, RLState>
+  private liveParams: {
+    cooldownPeriod: number
+    maxDailyLoss: number
+    maxConcurrentPositions: number
+    maxPositionSize: number
+    emergencyStopLoss: number
   }
 
   constructor() {
-    // qTable is now initialized at property level to avoid temporal dead zone issues
+    // Initialize all properties in constructor to avoid temporal dead zone
+    this.qTable = new Map<string, QValue>()
+    this.experienceBuffer = []
+    this.maxBufferSize = 10000
+    
+    // Initialize hyperparameters
+    this.learningRate = 0.01
+    this.discountFactor = 0.95
+    this.explorationRate = 0.1
+    this.explorationDecay = 0.995
+    this.minExploration = 0.01
+    
+    // Initialize strategy parameters
+    this.strategyParameters = new Map<string, Record<string, number>>()
+    
+    // Initialize live trading properties
+    this.performanceTracker = new Map<string, number[]>()
+    this.tradingWebSocket = { connected: false }
+    this.lastActionTime = new Map<string, number>()
+    this.liveDataCache = new Map<string, any>()
+    this.marketStateCache = new Map<string, RLState>()
+    this.liveParams = {
+      cooldownPeriod: 60000, // 1 minute
+      maxDailyLoss: 0.05, // 5% max daily loss
+      maxConcurrentPositions: 5,
+      maxPositionSize: 0.1, // 10% max position size
+      emergencyStopLoss: 0.02 // 2% emergency stop loss
+    }
+    
+    // Now safely initialize strategies
     this.initializeStrategies()
   }
 

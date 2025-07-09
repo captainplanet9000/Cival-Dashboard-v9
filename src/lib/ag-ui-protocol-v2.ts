@@ -105,6 +105,12 @@ export class AGUIProtocolV2 {
         return `${wsUrl}/ws/agui`
       }
       
+      // Disable WebSocket connection if backend is not available (development mode)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[AG-UI] Backend not configured, using mock mode')
+        return '' // Return empty URL to disable connection
+      }
+      
       // Fallback to localhost backend
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       return `${protocol}//localhost:8000/ws/agui`
@@ -160,6 +166,13 @@ export class AGUIProtocolV2 {
   public async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
+        // Skip connection if URL is empty (development mode)
+        if (!this.config.url || this.config.url === '') {
+          this.log('AG-UI WebSocket connection disabled (no backend available)')
+          resolve()
+          return
+        }
+        
         this.log('Connecting to AG-UI WebSocket server:', this.config.url)
         
         this.websocket = new WebSocket(this.config.url!)

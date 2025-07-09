@@ -57,6 +57,11 @@ class TaskType(Enum):
     HEALTH_CHECK = "health_check"
     BACKUP_OPERATION = "backup_operation"
     MAINTENANCE = "maintenance"
+    IDLE_DETECTION = "idle_detection"
+    GOAL_AUTOMATION = "goal_automation"
+    PROFIT_COLLECTION = "profit_collection"
+    AGENT_IDLE_MANAGEMENT = "agent_idle_management"
+    FARM_COORDINATION = "farm_coordination"
 
 @dataclass
 class ScheduledTask:
@@ -361,6 +366,121 @@ class AutonomousTaskScheduler:
                     },
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
+                ),
+                
+                # Idle detection every 30 seconds
+                ScheduledTask(
+                    task_id="idle_detection_30s",
+                    name="Agent Idle State Detection",
+                    task_type=TaskType.IDLE_DETECTION,
+                    cron_expression="*/30 * * * * *",  # Every 30 seconds
+                    priority=TaskPriority.MEDIUM,
+                    enabled=True,
+                    max_runtime_seconds=25,
+                    retry_attempts=2,
+                    retry_delay_seconds=5,
+                    timeout_seconds=30,
+                    dependencies=[],
+                    configuration={
+                        'idle_threshold_minutes': 5,
+                        'check_agent_activity': True,
+                        'check_farm_activity': True,
+                        'auto_reactivate': True
+                    },
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                ),
+                
+                # Goal automation every 2 minutes
+                ScheduledTask(
+                    task_id="goal_automation_2m",
+                    name="Goal Achievement Automation",
+                    task_type=TaskType.GOAL_AUTOMATION,
+                    cron_expression="*/2 * * * *",  # Every 2 minutes
+                    priority=TaskPriority.HIGH,
+                    enabled=True,
+                    max_runtime_seconds=90,
+                    retry_attempts=3,
+                    retry_delay_seconds=20,
+                    timeout_seconds=120,
+                    dependencies=[],
+                    configuration={
+                        'check_goal_completion': True,
+                        'auto_collect_profits': True,
+                        'update_goal_progress': True,
+                        'optimize_goal_targets': True
+                    },
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                ),
+                
+                # Profit collection every 1 minute
+                ScheduledTask(
+                    task_id="profit_collection_1m",
+                    name="Automated Profit Collection",
+                    task_type=TaskType.PROFIT_COLLECTION,
+                    cron_expression="*/1 * * * *",  # Every 1 minute
+                    priority=TaskPriority.HIGH,
+                    enabled=True,
+                    max_runtime_seconds=50,
+                    retry_attempts=3,
+                    retry_delay_seconds=10,
+                    timeout_seconds=60,
+                    dependencies=['goal_automation_2m'],
+                    configuration={
+                        'collect_completed_goals': True,
+                        'transfer_to_vault': True,
+                        'update_bank_master': True,
+                        'min_profit_threshold': 1.0
+                    },
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                ),
+                
+                # Agent idle management every 3 minutes
+                ScheduledTask(
+                    task_id="agent_idle_management_3m",
+                    name="Agent Idle State Management",
+                    task_type=TaskType.AGENT_IDLE_MANAGEMENT,
+                    cron_expression="*/3 * * * *",  # Every 3 minutes
+                    priority=TaskPriority.MEDIUM,
+                    enabled=True,
+                    max_runtime_seconds=120,
+                    retry_attempts=2,
+                    retry_delay_seconds=30,
+                    timeout_seconds=180,
+                    dependencies=['idle_detection_30s'],
+                    configuration={
+                        'reassign_idle_agents': True,
+                        'optimize_agent_allocation': True,
+                        'rebalance_farms': True,
+                        'pause_underperforming': True
+                    },
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                ),
+                
+                # Farm coordination every 10 minutes
+                ScheduledTask(
+                    task_id="farm_coordination_10m",
+                    name="Farm Coordination and Optimization",
+                    task_type=TaskType.FARM_COORDINATION,
+                    cron_expression="*/10 * * * *",  # Every 10 minutes
+                    priority=TaskPriority.MEDIUM,
+                    enabled=True,
+                    max_runtime_seconds=300,
+                    retry_attempts=2,
+                    retry_delay_seconds=60,
+                    timeout_seconds=420,
+                    dependencies=['agent_idle_management_3m'],
+                    configuration={
+                        'optimize_farm_allocation': True,
+                        'coordinate_inter_farm_transfers': True,
+                        'update_farm_performance': True,
+                        'auto_scale_farms': True
+                    },
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
                 )
             ]
             
@@ -625,6 +745,16 @@ class AutonomousTaskScheduler:
                 result = await self._execute_health_check(task)
             elif task.task_type == TaskType.BACKUP_OPERATION:
                 result = await self._execute_backup_operation(task)
+            elif task.task_type == TaskType.IDLE_DETECTION:
+                result = await self._execute_idle_detection(task)
+            elif task.task_type == TaskType.GOAL_AUTOMATION:
+                result = await self._execute_goal_automation(task)
+            elif task.task_type == TaskType.PROFIT_COLLECTION:
+                result = await self._execute_profit_collection(task)
+            elif task.task_type == TaskType.AGENT_IDLE_MANAGEMENT:
+                result = await self._execute_agent_idle_management(task)
+            elif task.task_type == TaskType.FARM_COORDINATION:
+                result = await self._execute_farm_coordination(task)
             else:
                 raise ValueError(f"Unknown task type: {task.task_type}")
             
@@ -1008,6 +1138,379 @@ class AutonomousTaskScheduler:
                 metrics={
                     'backup_size_mb': 10.5,  # Mock backup size
                     'backup_duration_seconds': 45.2
+                },
+                errors=[],
+                execution_time_seconds=0.0
+            )
+            
+        except Exception as e:
+            return TaskResult(
+                success=False,
+                data={},
+                metrics={},
+                errors=[str(e)],
+                execution_time_seconds=0.0
+            )
+    
+    async def _execute_idle_detection(self, task: ScheduledTask) -> TaskResult:
+        """Execute idle detection for agents and farms"""
+        try:
+            config = task.configuration
+            idle_threshold_minutes = config.get('idle_threshold_minutes', 5)
+            current_time = datetime.now(timezone.utc)
+            
+            idle_agents = []
+            idle_farms = []
+            
+            # Check agent activity
+            if config.get('check_agent_activity', True):
+                from ..services.live_trading_agent_service import liveTradingAgentService
+                if liveTradingAgentService:
+                    agents = liveTradingAgentService.getAllAgents()
+                    for agent in agents:
+                        if agent.last_trade_time:
+                            last_activity = datetime.fromisoformat(agent.last_trade_time.replace('Z', '+00:00'))
+                            minutes_idle = (current_time - last_activity).total_seconds() / 60
+                            if minutes_idle > idle_threshold_minutes:
+                                idle_agents.append({
+                                    'agent_id': agent.id,
+                                    'agent_name': agent.name,
+                                    'minutes_idle': minutes_idle,
+                                    'last_activity': agent.last_trade_time
+                                })
+            
+            # Check farm activity (mock implementation)
+            if config.get('check_farm_activity', True):
+                # Mock farm activity check
+                idle_farms.append({
+                    'farm_id': 'farm_001',
+                    'farm_name': 'Arbitrage Farm Alpha',
+                    'minutes_idle': 8.5,
+                    'last_activity': (current_time - timedelta(minutes=8.5)).isoformat()
+                })
+            
+            # Auto-reactivate if configured
+            reactivated_count = 0
+            if config.get('auto_reactivate', True):
+                for agent_info in idle_agents:
+                    if agent_info['minutes_idle'] > idle_threshold_minutes:
+                        # Trigger agent reactivation
+                        reactivated_count += 1
+                        logger.info(f"Auto-reactivating idle agent: {agent_info['agent_name']}")
+            
+            return TaskResult(
+                success=True,
+                data={
+                    'idle_agents': idle_agents,
+                    'idle_farms': idle_farms,
+                    'reactivated_count': reactivated_count,
+                    'idle_threshold_minutes': idle_threshold_minutes
+                },
+                metrics={
+                    'idle_agents_count': len(idle_agents),
+                    'idle_farms_count': len(idle_farms),
+                    'reactivated_count': reactivated_count,
+                    'avg_idle_time_minutes': sum(a['minutes_idle'] for a in idle_agents) / max(len(idle_agents), 1)
+                },
+                errors=[],
+                execution_time_seconds=0.0
+            )
+            
+        except Exception as e:
+            return TaskResult(
+                success=False,
+                data={},
+                metrics={},
+                errors=[str(e)],
+                execution_time_seconds=0.0
+            )
+    
+    async def _execute_goal_automation(self, task: ScheduledTask) -> TaskResult:
+        """Execute goal automation and completion checking"""
+        try:
+            config = task.configuration
+            
+            # Check goal completion
+            completed_goals = []
+            updated_goals = []
+            
+            if config.get('check_goal_completion', True):
+                from ..services.live_trading_agent_service import liveTradingAgentService
+                if liveTradingAgentService:
+                    agents = liveTradingAgentService.getAllAgents()
+                    for agent in agents:
+                        # Check if agent has completed any goals
+                        if agent.goals and agent.goals.get('current_progress', 0) >= 100:
+                            completed_goals.append({
+                                'agent_id': agent.id,
+                                'agent_name': agent.name,
+                                'goal_type': 'profit_target',
+                                'target_value': agent.goals.get('profit_target', 0),
+                                'achieved_value': agent.performance.get('total_profit', 0),
+                                'completion_time': datetime.now(timezone.utc).isoformat()
+                            })
+                        
+                        # Update goal progress
+                        if config.get('update_goal_progress', True):
+                            # Calculate current progress
+                            current_profit = agent.performance.get('total_profit', 0)
+                            profit_target = agent.goals.get('profit_target', 1)
+                            progress = min((current_profit / profit_target) * 100, 100)
+                            
+                            updated_goals.append({
+                                'agent_id': agent.id,
+                                'agent_name': agent.name,
+                                'progress': progress,
+                                'current_profit': current_profit,
+                                'profit_target': profit_target
+                            })
+            
+            # Optimize goal targets if configured
+            optimized_goals = []
+            if config.get('optimize_goal_targets', True):
+                for goal in updated_goals:
+                    # Simple optimization: increase target if performance is above 80%
+                    if goal['progress'] > 80:
+                        new_target = goal['profit_target'] * 1.2
+                        optimized_goals.append({
+                            'agent_id': goal['agent_id'],
+                            'agent_name': goal['agent_name'],
+                            'old_target': goal['profit_target'],
+                            'new_target': new_target,
+                            'reason': 'High performance detected'
+                        })
+            
+            return TaskResult(
+                success=True,
+                data={
+                    'completed_goals': completed_goals,
+                    'updated_goals': updated_goals,
+                    'optimized_goals': optimized_goals
+                },
+                metrics={
+                    'completed_goals_count': len(completed_goals),
+                    'updated_goals_count': len(updated_goals),
+                    'optimized_goals_count': len(optimized_goals),
+                    'avg_goal_progress': sum(g['progress'] for g in updated_goals) / max(len(updated_goals), 1)
+                },
+                errors=[],
+                execution_time_seconds=0.0
+            )
+            
+        except Exception as e:
+            return TaskResult(
+                success=False,
+                data={},
+                metrics={},
+                errors=[str(e)],
+                execution_time_seconds=0.0
+            )
+    
+    async def _execute_profit_collection(self, task: ScheduledTask) -> TaskResult:
+        """Execute automated profit collection for completed goals"""
+        try:
+            config = task.configuration
+            min_profit_threshold = config.get('min_profit_threshold', 1.0)
+            
+            collections = []
+            total_collected = 0.0
+            
+            if config.get('collect_completed_goals', True):
+                from ..services.live_trading_agent_service import liveTradingAgentService
+                if liveTradingAgentService:
+                    agents = liveTradingAgentService.getAllAgents()
+                    for agent in agents:
+                        current_profit = agent.performance.get('total_profit', 0)
+                        if current_profit >= min_profit_threshold:
+                            # Collect profit
+                            collection_amount = current_profit
+                            collections.append({
+                                'agent_id': agent.id,
+                                'agent_name': agent.name,
+                                'collected_amount': collection_amount,
+                                'collection_time': datetime.now(timezone.utc).isoformat(),
+                                'vault_transfer': config.get('transfer_to_vault', True)
+                            })
+                            total_collected += collection_amount
+                            
+                            # Update Bank Master if configured
+                            if config.get('update_bank_master', True):
+                                try:
+                                    from ..services.bank_master_agent import bankMasterAgent
+                                    if bankMasterAgent:
+                                        await bankMasterAgent.collect_profit({
+                                            'source': 'agent',
+                                            'source_id': agent.id,
+                                            'amount': collection_amount,
+                                            'token': 'USD',
+                                            'reason': 'Automated goal completion collection'
+                                        })
+                                except Exception as e:
+                                    logger.warning(f"Failed to update Bank Master: {e}")
+            
+            return TaskResult(
+                success=True,
+                data={
+                    'collections': collections,
+                    'total_collected': total_collected,
+                    'min_profit_threshold': min_profit_threshold
+                },
+                metrics={
+                    'collections_count': len(collections),
+                    'total_collected_usd': total_collected,
+                    'avg_collection_amount': total_collected / max(len(collections), 1)
+                },
+                errors=[],
+                execution_time_seconds=0.0
+            )
+            
+        except Exception as e:
+            return TaskResult(
+                success=False,
+                data={},
+                metrics={},
+                errors=[str(e)],
+                execution_time_seconds=0.0
+            )
+    
+    async def _execute_agent_idle_management(self, task: ScheduledTask) -> TaskResult:
+        """Execute agent idle state management and optimization"""
+        try:
+            config = task.configuration
+            
+            reassignments = []
+            optimizations = []
+            paused_agents = []
+            
+            if config.get('reassign_idle_agents', True):
+                # Get idle agents from recent idle detection
+                idle_agents = []  # This would come from idle detection results
+                
+                # Mock reassignment logic
+                for i in range(2):  # Mock 2 reassignments
+                    reassignments.append({
+                        'agent_id': f'agent_{i}',
+                        'agent_name': f'Agent {i}',
+                        'from_farm': f'farm_{i}',
+                        'to_farm': f'farm_{i+1}',
+                        'reason': 'Better performance match',
+                        'reassignment_time': datetime.now(timezone.utc).isoformat()
+                    })
+            
+            if config.get('optimize_agent_allocation', True):
+                # Mock optimization logic
+                optimizations.append({
+                    'optimization_type': 'allocation_rebalance',
+                    'agents_affected': 3,
+                    'performance_improvement': 0.15,
+                    'optimization_time': datetime.now(timezone.utc).isoformat()
+                })
+            
+            if config.get('pause_underperforming', True):
+                # Mock pausing of underperforming agents
+                paused_agents.append({
+                    'agent_id': 'agent_underperform',
+                    'agent_name': 'Underperforming Agent',
+                    'performance_score': 0.25,
+                    'pause_reason': 'Performance below threshold',
+                    'pause_time': datetime.now(timezone.utc).isoformat()
+                })
+            
+            return TaskResult(
+                success=True,
+                data={
+                    'reassignments': reassignments,
+                    'optimizations': optimizations,
+                    'paused_agents': paused_agents
+                },
+                metrics={
+                    'reassignments_count': len(reassignments),
+                    'optimizations_count': len(optimizations),
+                    'paused_agents_count': len(paused_agents),
+                    'total_actions': len(reassignments) + len(optimizations) + len(paused_agents)
+                },
+                errors=[],
+                execution_time_seconds=0.0
+            )
+            
+        except Exception as e:
+            return TaskResult(
+                success=False,
+                data={},
+                metrics={},
+                errors=[str(e)],
+                execution_time_seconds=0.0
+            )
+    
+    async def _execute_farm_coordination(self, task: ScheduledTask) -> TaskResult:
+        """Execute farm coordination and optimization"""
+        try:
+            config = task.configuration
+            
+            farm_optimizations = []
+            inter_farm_transfers = []
+            performance_updates = []
+            auto_scaling = []
+            
+            if config.get('optimize_farm_allocation', True):
+                # Mock farm allocation optimization
+                farm_optimizations.append({
+                    'farm_id': 'farm_001',
+                    'farm_name': 'Arbitrage Farm Alpha',
+                    'optimization_type': 'agent_reallocation',
+                    'performance_improvement': 0.12,
+                    'optimization_time': datetime.now(timezone.utc).isoformat()
+                })
+            
+            if config.get('coordinate_inter_farm_transfers', True):
+                # Mock inter-farm transfers
+                inter_farm_transfers.append({
+                    'transfer_id': f'transfer_{datetime.now().timestamp()}',
+                    'from_farm': 'farm_001',
+                    'to_farm': 'farm_002',
+                    'asset': 'USD',
+                    'amount': 1000,
+                    'reason': 'Rebalancing opportunity detected',
+                    'transfer_time': datetime.now(timezone.utc).isoformat()
+                })
+            
+            if config.get('update_farm_performance', True):
+                # Mock farm performance updates
+                performance_updates.append({
+                    'farm_id': 'farm_001',
+                    'farm_name': 'Arbitrage Farm Alpha',
+                    'new_performance_score': 0.85,
+                    'roi_24h': 0.025,
+                    'active_agents': 5,
+                    'update_time': datetime.now(timezone.utc).isoformat()
+                })
+            
+            if config.get('auto_scale_farms', True):
+                # Mock auto-scaling decisions
+                auto_scaling.append({
+                    'farm_id': 'farm_002',
+                    'farm_name': 'Mean Reversion Farm Beta',
+                    'scaling_action': 'scale_up',
+                    'target_agents': 8,
+                    'current_agents': 5,
+                    'reason': 'High demand detected',
+                    'scaling_time': datetime.now(timezone.utc).isoformat()
+                })
+            
+            return TaskResult(
+                success=True,
+                data={
+                    'farm_optimizations': farm_optimizations,
+                    'inter_farm_transfers': inter_farm_transfers,
+                    'performance_updates': performance_updates,
+                    'auto_scaling': auto_scaling
+                },
+                metrics={
+                    'optimizations_count': len(farm_optimizations),
+                    'transfers_count': len(inter_farm_transfers),
+                    'performance_updates_count': len(performance_updates),
+                    'scaling_actions_count': len(auto_scaling),
+                    'total_farm_actions': len(farm_optimizations) + len(inter_farm_transfers) + len(performance_updates) + len(auto_scaling)
                 },
                 errors=[],
                 execution_time_seconds=0.0

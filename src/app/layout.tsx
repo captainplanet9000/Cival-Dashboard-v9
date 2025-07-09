@@ -3,7 +3,7 @@ import { Oxanium, Source_Code_Pro } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import GlobalErrorBoundary from "@/components/error-boundaries/GlobalErrorBoundary";
-import { AGUIProvider } from "@/components/ag-ui/AGUIProvider";
+import { AGUIProvider } from "@/components/ag-ui/fallback";
 import { WebSocketProvider } from "@/contexts/websocket-context";
 import MigrationInitializer from "@/components/database/MigrationInitializer";
 
@@ -42,7 +42,7 @@ export default function RootLayout({
           disableTransitionOnChange={false}
         >
           <WebSocketProvider>
-            <AGUIProvider endpoint="http://localhost:8000/api/v1/agui">
+            <AGUIProvider>
               <MigrationInitializer>
                 <GlobalErrorBoundary>
                   {children}

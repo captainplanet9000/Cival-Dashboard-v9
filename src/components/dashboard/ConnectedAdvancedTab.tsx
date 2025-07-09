@@ -42,6 +42,9 @@ import IntegratedTradingTerminal from '@/components/terminal/IntegratedTradingTe
 // import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
 // import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
 
+// Import new Advanced Features Tab with experimental features
+import AdvancedFeaturesTab from '@/components/advanced/AdvancedFeaturesTab'
+
 // Placeholder components for missing premium features
 const AdvancedSettings = () => (
   <Card>
@@ -157,7 +160,7 @@ interface ConnectedAdvancedTabProps {
 
 export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
   const { state, actions } = useDashboardConnection('advanced')
-  const [advancedSubTab, setAdvancedSubTab] = useState('mcp')
+  const [advancedSubTab, setAdvancedSubTab] = useState('experimental')
   const [riskSettings, setRiskSettings] = useState({
     maxDailyLoss: 5000,
     maxDrawdown: 10,
@@ -526,6 +529,7 @@ export function ConnectedAdvancedTab({ className }: ConnectedAdvancedTabProps) {
   }
 
   const advancedSubTabs = [
+    { id: 'experimental', label: 'Experimental Features', component: <AdvancedFeaturesTab />, icon: <Brain className="h-4 w-4" /> },
     { id: 'mcp', label: 'MCP Dashboard', component: <MCPDashboard />, icon: <Zap className="h-4 w-4" /> },
     { id: 'premium-settings', label: 'Premium Settings', component: <AdvancedSettings />, icon: <Settings className="h-4 w-4" /> },
     { id: 'system-monitor', label: 'System Monitor', component: <SystemMonitor />, icon: <Zap className="h-4 w-4" /> },
