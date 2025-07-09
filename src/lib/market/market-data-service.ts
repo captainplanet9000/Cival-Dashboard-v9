@@ -193,6 +193,158 @@ class CoinbaseProvider implements MarketDataProvider {
   }
 }
 
+class CoinCapProvider implements MarketDataProvider {
+  name = 'CoinCap'
+  private proxyUrl = '/api/market/proxy'
+
+  async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
+    try {
+      // Map trading symbols to CoinCap IDs
+      const symbolMap: Record<string, string> = {
+        'BTC/USD': 'bitcoin',
+        'ETH/USD': 'ethereum',
+        'SOL/USD': 'solana',
+        'ADA/USD': 'cardano',
+        'DOT/USD': 'polkadot',
+        'AVAX/USD': 'avalanche',
+        'MATIC/USD': 'polygon',
+        'LINK/USD': 'chainlink'
+      }
+
+      const response = await fetch(
+        `${this.proxyUrl}?provider=coincap&symbols=${Object.values(symbolMap).join(',')}`,
+        { 
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`CoinCap API error: ${response.status}`)
+      }
+
+      const { data } = await response.json()
+      const prices: MarketPrice[] = []
+
+      Object.entries(symbolMap).forEach(([symbol, id]) => {
+        const asset = data.find((a: any) => a.id === id)
+        if (asset && symbols.includes(symbol)) {
+          prices.push({
+            symbol,
+            price: parseFloat(asset.priceUsd),
+            change24h: parseFloat(asset.changePercent24Hr || 0),
+            changePercent24h: parseFloat(asset.changePercent24Hr || 0),
+            volume24h: parseFloat(asset.volumeUsd24Hr || 0),
+            lastUpdate: new Date()
+          })
+        }
+      })
+
+      return prices
+    } catch (error) {
+      console.error('CoinCap provider error:', error)
+      throw error
+    }
+  }
+}
+
+class CoinPaprikaProvider implements MarketDataProvider {
+  name = 'CoinPaprika'
+  private proxyUrl = '/api/market/proxy'
+
+  async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
+    try {
+      // Map trading symbols to CoinPaprika IDs
+      const symbolMap: Record<string, string> = {
+        'BTC/USD': 'btc-bitcoin',
+        'ETH/USD': 'eth-ethereum',
+        'SOL/USD': 'sol-solana',
+        'ADA/USD': 'ada-cardano',
+        'DOT/USD': 'dot-polkadot',
+        'AVAX/USD': 'avax-avalanche',
+        'MATIC/USD': 'matic-polygon',
+        'LINK/USD': 'link-chainlink'
+      }
+
+      const response = await fetch(
+        `${this.proxyUrl}?provider=coinpaprika&symbols=${Object.values(symbolMap).join(',')}`,
+        { 
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`CoinPaprika API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const prices: MarketPrice[] = []
+
+      Object.entries(symbolMap).forEach(([symbol, id]) => {
+        const ticker = data.find((t: any) => t.id === id)
+        if (ticker && symbols.includes(symbol)) {
+          prices.push({
+            symbol,
+            price: ticker.quotes?.USD?.price || 0,
+            change24h: ticker.quotes?.USD?.percent_change_24h || 0,
+            changePercent24h: ticker.quotes?.USD?.percent_change_24h || 0,
+            volume24h: ticker.quotes?.USD?.volume_24h || 0,
+            lastUpdate: new Date()
+          })
+        }
+      })
+
+      return prices
+    } catch (error) {
+      console.error('CoinPaprika provider error:', error)
+      throw error
+    }
+  }
+}
+
+class CoinDeskProvider implements MarketDataProvider {
+  name = 'CoinDesk'
+  private proxyUrl = '/api/market/proxy'
+
+  async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
+    try {
+      // CoinDesk focuses on Bitcoin but has expanded coverage
+      const response = await fetch(
+        `${this.proxyUrl}?provider=coindesk`,
+        { 
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`CoinDesk API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const prices: MarketPrice[] = []
+
+      // CoinDesk Bitcoin Price Index
+      if (symbols.includes('BTC/USD') && data.bpi?.USD) {
+        prices.push({
+          symbol: 'BTC/USD',
+          price: data.bpi.USD.rate_float,
+          change24h: 0, // CoinDesk BPI doesn't include 24h change
+          changePercent24h: 0,
+          volume24h: 0,
+          lastUpdate: new Date(data.time?.updated || Date.now())
+        })
+      }
+
+      return prices
+    } catch (error) {
+      console.error('CoinDesk provider error:', error)
+      throw error
+    }
+  }
+}
+
 class MockProvider implements MarketDataProvider {
   name = 'Mock'
 
@@ -235,10 +387,12 @@ class MockProvider implements MarketDataProvider {
 class MarketDataService {
   private static instance: MarketDataService
   private providers: MarketDataProvider[] = [
-    new CoinbaseProvider(),   // Primary: Coinbase (reliable, free)
-    new BinanceProvider(),    // Secondary: Binance public API
-    new CoinGeckoProvider(),  // Tertiary: CoinGecko (rate limited)
-    new MockProvider()        // Always keep mock as fallback
+    new CoinPaprikaProvider(), // Primary: CoinPaprika (free, fast, frequent updates)
+    new CoinCapProvider(),     // Secondary: CoinCap (lightweight, reliable)
+    new CoinDeskProvider(),    // Tertiary: CoinDesk (Bitcoin-focused, institutional)
+    new CoinbaseProvider(),    // Quaternary: Coinbase (reliable, free)
+    new BinanceProvider(),     // Backup: Binance public API
+    new MockProvider()         // Always keep mock as fallback
   ]
   private cache = new Map<string, { data: MarketPrice[], timestamp: number }>()
   private cacheTimeout = 15000 // 15 seconds cache for more frequent updates

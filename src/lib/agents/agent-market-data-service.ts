@@ -19,6 +19,10 @@ import { globalMarketDataManager } from '@/lib/market/global-market-data-manager
 import { marketDataPersistence } from '@/lib/market/market-data-persistence'
 import agentTodoService from '@/lib/agents/agent-todo-service'
 import { CreateTodoRequest } from '@/types/agent-todos'
+import { supabase } from '@/lib/supabase/client'
+import { agentStrategyIntegration, StrategySignal } from '@/lib/agents/agent-strategy-integration'
+import { strategyService, StrategyType, STRATEGY_TYPES } from '@/lib/supabase/strategy-service'
+import { strategyPerformanceAnalytics } from '@/lib/analytics/strategy-performance-analytics'
 
 class AgentMarketDataService {
   private agentAccess: Map<string, AgentMarketAccess> = new Map()
@@ -683,7 +687,142 @@ class AgentMarketDataService {
         
         // Check for alert conditions
         await this.checkAlertConditions(agentId, relevantPrices)
+        
+        // Execute strategy analysis on market updates
+        await this.executeStrategyAnalysisOnUpdate(agentId, relevantPrices)
       }
+    }
+  }
+
+  /**
+   * Execute strategy analysis when market data updates
+   */
+  private async executeStrategyAnalysisOnUpdate(agentId: string, prices: MarketPrice[]): Promise<void> {
+    try {
+      // Get agent's assigned strategies
+      const agentPerformance = await agentStrategyIntegration.getAgentStrategyPerformance(agentId)
+      if (!agentPerformance.success) {
+        console.warn(`Agent ${agentId} not registered for strategy access`)
+        return
+      }
+
+      // Execute strategy analysis for each relevant price update
+      for (const price of prices) {
+        // Get agent's preferred strategies for this symbol
+        const strategies = await this.getAgentStrategiesForSymbol(agentId, price.symbol)
+        
+        for (const strategyType of strategies) {
+          try {
+            // Execute strategy analysis
+            const analysisResult = await agentStrategyIntegration.executeStrategyAnalysis(
+              agentId,
+              strategyType,
+              price.symbol,
+              price
+            )
+
+            if (analysisResult.success && analysisResult.analysis) {
+              // Check if analysis indicates a strong signal
+              const signalStrength = analysisResult.analysis.analysis?.signal_strength || 0
+              const signalType = analysisResult.analysis.analysis?.signal_type || 'hold'
+              const confidence = analysisResult.analysis.analysis?.confidence || 0
+
+              // Generate trading signal if criteria met
+              if (signalStrength > 70 && confidence > 60 && signalType !== 'hold') {
+                await this.generateTradingSignalFromAnalysis(
+                  agentId,
+                  strategyType,
+                  price.symbol,
+                  price,
+                  analysisResult.analysis
+                )
+              }
+            }
+          } catch (error) {
+            console.error(`Strategy analysis failed for ${agentId}/${strategyType}/${price.symbol}:`, error)
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Strategy execution on market update failed for ${agentId}:`, error)
+    }
+  }
+
+  /**
+   * Generate trading signal from strategy analysis
+   */
+  private async generateTradingSignalFromAnalysis(
+    agentId: string,
+    strategyType: StrategyType,
+    symbol: string,
+    price: MarketPrice,
+    analysis: any
+  ): Promise<void> {
+    try {
+      const signalResult = await agentStrategyIntegration.generateStrategySignals(
+        agentId,
+        strategyType,
+        symbol,
+        price
+      )
+
+      if (signalResult.success && signalResult.signals) {
+        const signal = signalResult.signals[0]
+        
+        // Create todo for agent about the signal
+        await agentTodoService.createTodo({
+          agentId,
+          title: `Strategy Signal: ${strategyType} - ${symbol}`,
+          description: `${signal.recommendation} Entry: $${signal.entryPrice.toFixed(2)}, Confidence: ${signal.confidence.toFixed(1)}%`,
+          priority: signal.confidence > 80 ? 'high' : signal.confidence > 60 ? 'medium' : 'low',
+          category: 'trading',
+          assignedBy: 'strategy_system',
+          hierarchyLevel: 'individual',
+          context: {
+            strategySignal: signal,
+            marketData: {
+              symbol,
+              price: price.price,
+              change24h: price.change24h,
+              volume: price.volume24h
+            }
+          }
+        })
+
+        // Log the signal generation
+        console.log(`📊 Strategy Signal Generated: ${agentId}/${strategyType}/${symbol} - ${signal.signalType.toUpperCase()} (${signal.confidence.toFixed(1)}% confidence)`)
+
+        // Track strategy execution for performance analytics
+        await this.trackStrategyExecution(
+          agentId,
+          strategyType,
+          symbol,
+          signal,
+          analysis
+        )
+      }
+    } catch (error) {
+      console.error(`Failed to generate trading signal for ${agentId}:`, error)
+    }
+  }
+
+  /**
+   * Get agent's strategies for a specific symbol
+   */
+  private async getAgentStrategiesForSymbol(agentId: string, symbol: string): Promise<StrategyType[]> {
+    try {
+      // Get agent's performance data to determine assigned strategies
+      const performanceResult = await agentStrategyIntegration.getAgentStrategyPerformance(agentId)
+      if (!performanceResult.success) {
+        return []
+      }
+
+      // For now, return all strategies - in a real implementation, 
+      // this would filter based on agent preferences and symbol compatibility
+      return Object.values(STRATEGY_TYPES).slice(0, 3) // Limit to 3 strategies per update
+    } catch (error) {
+      console.error(`Failed to get strategies for ${agentId}/${symbol}:`, error)
+      return []
     }
   }
 
@@ -727,6 +866,226 @@ class AgentMarketDataService {
         })
 
         event.agentNotified = true
+      }
+    }
+  }
+
+  // ===== STRATEGY PERFORMANCE TRACKING =====
+
+  /**
+   * Track strategy execution for performance analytics
+   */
+  private async trackStrategyExecution(
+    agentId: string,
+    strategyType: StrategyType,
+    symbol: string,
+    signal: any,
+    analysis: any
+  ): Promise<void> {
+    try {
+      // Log strategy execution to database
+      const { error } = await supabase
+        .from('strategy_executions')
+        .insert([
+          {
+            agent_id: agentId,
+            strategy_type: strategyType,
+            symbol: symbol,
+            signal_type: signal.signalType,
+            entry_price: signal.entryPrice,
+            confidence: signal.confidence,
+            market_conditions: {
+              price: signal.entryPrice,
+              volume: analysis.volume || 0,
+              volatility: analysis.volatility || 0,
+              trend: analysis.trend || 'neutral',
+              indicators: analysis.indicators || {}
+            },
+            analysis_data: {
+              signal_strength: analysis.signal_strength || 0,
+              market_context: analysis.market_context || {},
+              parameters: analysis.parameters || {}
+            },
+            executed_at: new Date().toISOString(),
+            status: 'pending'
+          }
+        ])
+
+      if (error) {
+        console.error('Failed to log strategy execution:', error)
+      }
+    } catch (error) {
+      console.error('Error tracking strategy execution:', error)
+    }
+  }
+
+  /**
+   * Get strategy performance analytics for an agent
+   */
+  public async getStrategyPerformanceAnalytics(
+    agentId: string,
+    strategyType?: StrategyType,
+    timeframe?: string
+  ): Promise<MarketDataResponse<any>> {
+    try {
+      if (strategyType) {
+        // Get performance for specific strategy
+        const metrics = await strategyPerformanceAnalytics.calculateStrategyPerformance(
+          strategyType,
+          agentId,
+          timeframe
+        )
+
+        const suggestions = await strategyPerformanceAnalytics.generateOptimizationSuggestions(
+          strategyType,
+          agentId
+        )
+
+        return {
+          success: true,
+          data: {
+            metrics,
+            suggestions,
+            strategyType
+          },
+          message: `Performance analytics retrieved for ${strategyType}`,
+          timestamp: new Date()
+        }
+      } else {
+        // Get comparison across all strategies
+        const comparison = await strategyPerformanceAnalytics.compareStrategies(
+          Object.values(STRATEGY_TYPES),
+          timeframe || '30d',
+          agentId
+        )
+
+        return {
+          success: true,
+          data: { comparison },
+          message: 'Strategy comparison analytics retrieved',
+          timestamp: new Date()
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get performance analytics',
+        timestamp: new Date()
+      }
+    }
+  }
+
+  /**
+   * Track strategy learning and adaptation
+   */
+  public async trackStrategyLearning(
+    agentId: string,
+    strategyType: StrategyType,
+    marketCondition: string,
+    adaptationMade: string,
+    performanceImpact: number,
+    confidence: number
+  ): Promise<MarketDataResponse<void>> {
+    try {
+      await strategyPerformanceAnalytics.trackStrategyLearning(
+        strategyType,
+        agentId,
+        {
+          marketCondition,
+          adaptationMade,
+          performanceImpact,
+          confidence
+        }
+      )
+
+      return {
+        success: true,
+        message: 'Strategy learning tracked successfully',
+        timestamp: new Date()
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to track strategy learning',
+        timestamp: new Date()
+      }
+    }
+  }
+
+  /**
+   * Get strategy performance trends
+   */
+  public async getStrategyTrends(
+    agentId: string,
+    strategyType: StrategyType,
+    periods: string[] = ['7d', '30d', '90d']
+  ): Promise<MarketDataResponse<any>> {
+    try {
+      const trends = await strategyPerformanceAnalytics.getPerformanceTrends(
+        strategyType,
+        agentId,
+        periods
+      )
+
+      return {
+        success: true,
+        data: { trends, strategyType },
+        message: `Performance trends retrieved for ${strategyType}`,
+        timestamp: new Date()
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get strategy trends',
+        timestamp: new Date()
+      }
+    }
+  }
+
+  /**
+   * Update strategy execution result
+   */
+  public async updateStrategyExecutionResult(
+    agentId: string,
+    executionId: string,
+    result: {
+      status: 'completed' | 'failed' | 'cancelled'
+      return_amount?: number
+      return_percent?: number
+      exit_price?: number
+      hold_time_hours?: number
+      notes?: string
+    }
+  ): Promise<MarketDataResponse<void>> {
+    try {
+      const { error } = await supabase
+        .from('strategy_executions')
+        .update({
+          status: result.status,
+          result: {
+            return_amount: result.return_amount || 0,
+            return_percent: result.return_percent || 0,
+            exit_price: result.exit_price || 0,
+            hold_time_hours: result.hold_time_hours || 0,
+            notes: result.notes || ''
+          },
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', executionId)
+        .eq('agent_id', agentId)
+
+      if (error) throw error
+
+      return {
+        success: true,
+        message: 'Strategy execution result updated',
+        timestamp: new Date()
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update execution result',
+        timestamp: new Date()
       }
     }
   }

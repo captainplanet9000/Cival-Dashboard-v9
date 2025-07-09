@@ -66,6 +66,21 @@ export async function GET(request: NextRequest) {
         apiUrl = `https://api.coinbase.com/v2/exchange-rates?currency=USD`
         break
       
+      case 'coincap':
+        // CoinCap API for asset prices
+        apiUrl = `https://api.coincap.io/v2/assets?ids=${symbols}`
+        break
+      
+      case 'coinpaprika':
+        // CoinPaprika API for ticker data
+        apiUrl = `https://api.coinpaprika.com/v1/tickers?quotes=USD`
+        break
+      
+      case 'coindesk':
+        // CoinDesk Bitcoin Price Index
+        apiUrl = `https://api.coindesk.com/v1/bpi/currentprice.json`
+        break
+      
       default:
         return NextResponse.json(
           { error: 'Invalid provider specified' },

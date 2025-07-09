@@ -289,80 +289,263 @@ class StrategyService {
     }
   }
 
-  // Helper methods for strategy configurations
+  // Helper methods for comprehensive strategy configurations
   private getStrategyConfig(type: string) {
     const configs: Record<string, any> = {
       darvas_box: {
         name: 'Darvas Box Breakout',
+        description: 'Breakout strategy based on Nicolas Darvas box theory - identifying consolidation boxes and trading breakouts',
         parameters: {
           boxPeriod: 20,
           volumeThreshold: 1.5,
           breakoutConfirmation: 2,
-          stopLossPercent: 3
+          stopLossPercent: 8,
+          profitTargetRatio: 2,
+          minBoxSize: 0.05,
+          maxBoxAge: 21
         },
-        indicators: ['Volume', 'ATR', 'Price Action'],
+        indicators: ['Volume', 'ATR', '200-day MA', 'Box levels', 'Support/Resistance'],
         rules: {
-          entryConditions: ['Box breakout', 'Volume surge', 'Trend alignment'],
-          exitConditions: ['Box breakdown', 'Stop loss hit', 'Target reached']
-        }
+          entryConditions: {
+            primary: [
+              'Box formation: 3+ weeks consolidation within 10% range',
+              'Breakout confirmation: 2+ consecutive closes above box high',
+              'Volume surge: 150% of 50-day average volume',
+              'Trend alignment: Price above 200-day MA'
+            ],
+            secondary: [
+              'ATR expansion during breakout',
+              'No major resistance within 2x box height',
+              'Market not in oversold condition (RSI > 30)'
+            ]
+          },
+          exitConditions: {
+            stop_loss: '8% below breakout point',
+            profit_target: '2x risk (16% gain)',
+            trailing_stop: 'Move stop to breakeven after 8% gain',
+            time_exit: 'Exit if no progress after 30 days'
+          },
+          riskManagement: {
+            maxPositionSize: '2% of portfolio',
+            maxCorrelation: '0.7 with existing positions',
+            maxDailyLoss: '1% of portfolio',
+            sectorExposure: 'Max 10% per sector'
+          }
+        },
+        marketConditions: {
+          optimal: ['Trending market', 'Medium to high volatility', 'Strong volume'],
+          avoid: ['Sideways choppy market', 'Low volume periods', 'High correlation environment']
+        },
+        timeframes: ['Daily', '4-hour', '1-hour'],
+        assetClasses: ['Stocks', 'Crypto', 'Forex'],
+        complexity: 'Intermediate',
+        winRate: 0.45,
+        riskRewardRatio: 2.0
       },
       williams_alligator: {
         name: 'Williams Alligator Trend',
+        description: 'Bill Williams Alligator system using 3 displaced moving averages to identify trend and momentum',
         parameters: {
           jawPeriod: 13,
           teethPeriod: 8,
           lipsPeriod: 5,
           jawOffset: 8,
           teethOffset: 5,
-          lipsOffset: 3
+          lipsOffset: 3,
+          fractalPeriod: 5,
+          aoFastPeriod: 5,
+          aoSlowPeriod: 34
         },
-        indicators: ['Alligator Lines', 'Fractals', 'Awesome Oscillator'],
+        indicators: ['Alligator Lines (Jaw, Teeth, Lips)', 'Fractals', 'Awesome Oscillator', 'Accelerator/Decelerator'],
         rules: {
-          entryConditions: ['Alligator awakens', 'Fractal breakout', 'AO momentum'],
-          exitConditions: ['Alligator sleeps', 'Opposite fractal', 'AO divergence']
-        }
+          entryConditions: {
+            primary: [
+              'Alligator awakening: Jaw(13,8) < Teeth(8,5) < Lips(5,3) for bullish',
+              'Fractal breakout: Price breaks above/below fractal level',
+              'Momentum confirmation: Awesome Oscillator same direction',
+              'Alligator lines expanding (not converging)'
+            ],
+            secondary: [
+              'AC/DC oscillator confirming momentum',
+              'Price above/below all alligator lines',
+              'Volume increasing on breakout'
+            ]
+          },
+          exitConditions: {
+            primary: 'Alligator sleeping: Lines converging for 5+ bars',
+            secondary: 'Opposite fractal signal confirmed',
+            momentum: 'AO shows divergence or color change',
+            time_exit: 'Exit if alligator sleeping for 10+ bars'
+          },
+          riskManagement: {
+            stopLoss: 'Below/above nearest fractal',
+            positionSizing: 'Based on fractal distance',
+            maxPositionSize: '3% of portfolio',
+            trailingStop: 'Trail with alligator lips'
+          }
+        },
+        marketConditions: {
+          optimal: ['Strong trending market', 'Clear directional bias', 'Low noise environment'],
+          avoid: ['Choppy sideways market', 'Low volatility', 'News-driven volatility']
+        },
+        timeframes: ['Daily', '4-hour', '1-hour', '15-minute'],
+        assetClasses: ['Forex', 'Stocks', 'Commodities', 'Crypto'],
+        complexity: 'Advanced',
+        winRate: 0.40,
+        riskRewardRatio: 2.5
       },
       renko_breakout: {
         name: 'Renko Momentum Breakout',
+        description: 'Price-based Renko chart strategy focusing on momentum and trend continuation',
         parameters: {
           brickSize: 'ATR',
           atrPeriod: 14,
+          atrMultiplier: 2.0,
           confirmationBricks: 3,
-          momentumThreshold: 1.2
+          momentumThreshold: 1.2,
+          trendStrength: 0.7,
+          volumeMultiplier: 1.5
         },
-        indicators: ['Renko Bricks', 'ATR', 'Momentum'],
+        indicators: ['Renko Bricks', 'ATR', 'Momentum Oscillator', 'Volume', 'Trend Strength'],
         rules: {
-          entryConditions: ['Brick color change', 'Momentum surge', 'Trend continuation'],
-          exitConditions: ['Brick reversal', 'Momentum fade', 'Pattern completion']
-        }
+          entryConditions: {
+            primary: [
+              'Renko brick color change: Green after red bricks (or vice versa)',
+              'Momentum surge: 120% of average momentum',
+              'Trend continuation: 3+ consecutive same-color bricks',
+              'Volume confirmation: 150% of average volume'
+            ],
+            secondary: [
+              'ATR expansion indicating volatility',
+              'No major support/resistance nearby',
+              'Momentum oscillator above/below zero line'
+            ]
+          },
+          exitConditions: {
+            primary: 'Brick color reversal with momentum confirmation',
+            secondary: 'Momentum fade below threshold',
+            pattern: 'Doji-like brick formation',
+            time_exit: 'Exit after 20 bricks without progress'
+          },
+          riskManagement: {
+            stopLoss: '2x brick size from entry',
+            profitTarget: '6x brick size (3:1 ratio)',
+            positionSizing: 'Based on brick size volatility',
+            maxPositionSize: '2.5% of portfolio'
+          }
+        },
+        marketConditions: {
+          optimal: ['Trending market', 'Medium volatility', 'Clear momentum'],
+          avoid: ['Sideways market', 'Low volatility', 'Erratic price movement']
+        },
+        timeframes: ['Renko-based (time-independent)', 'Daily equivalent', '4-hour equivalent'],
+        assetClasses: ['Forex', 'Crypto', 'Stocks'],
+        complexity: 'Intermediate',
+        winRate: 0.50,
+        riskRewardRatio: 3.0
       },
       heikin_ashi: {
         name: 'Heikin Ashi Trend Follow',
+        description: 'Modified candlestick chart strategy using Heikin Ashi candles for trend identification',
         parameters: {
           emaPeriod: 20,
           confirmationCandles: 2,
           trendStrength: 0.7,
-          stopLossATR: 2
+          stopLossATR: 2,
+          macdFast: 12,
+          macdSlow: 26,
+          macdSignal: 9,
+          rsiPeriod: 14
         },
-        indicators: ['Heikin Ashi', 'EMA', 'MACD'],
+        indicators: ['Heikin Ashi Candles', 'EMA(20)', 'MACD', 'RSI', 'ATR'],
         rules: {
-          entryConditions: ['HA color change', 'EMA cross', 'MACD confirmation'],
-          exitConditions: ['HA doji', 'EMA recross', 'MACD divergence']
-        }
+          entryConditions: {
+            primary: [
+              'HA color change: Green after red candles (bullish) or red after green (bearish)',
+              'EMA cross: Price crosses above/below EMA(20)',
+              'MACD confirmation: MACD line crosses signal line same direction',
+              'Trend strength: No significant upper/lower shadows on HA candles'
+            ],
+            secondary: [
+              'RSI not in extreme zones (30-70 range)',
+              'Volume increasing on trend change',
+              'ATR showing normal volatility levels'
+            ]
+          },
+          exitConditions: {
+            primary: 'HA doji formation or long shadows appearing',
+            secondary: 'EMA recross in opposite direction',
+            momentum: 'MACD divergence or opposite cross',
+            time_exit: 'Exit if trend stalls for 10+ periods'
+          },
+          riskManagement: {
+            stopLoss: '2x ATR from entry point',
+            profitTarget: 'Trail with EMA(20)',
+            positionSizing: 'Based on ATR volatility',
+            maxPositionSize: '3% of portfolio'
+          }
+        },
+        marketConditions: {
+          optimal: ['Trending market', 'Normal volatility', 'Clear directional bias'],
+          avoid: ['Choppy market', 'High volatility', 'News-driven movements']
+        },
+        timeframes: ['Daily', '4-hour', '1-hour', '30-minute'],
+        assetClasses: ['Stocks', 'Forex', 'Crypto', 'Indices'],
+        complexity: 'Beginner to Intermediate',
+        winRate: 0.55,
+        riskRewardRatio: 1.8
       },
       elliott_wave: {
         name: 'Elliott Wave Analyst',
+        description: 'Ralph Nelson Elliott wave theory for market cycle analysis and trend prediction',
         parameters: {
           waveDegree: 'Minor',
-          fibLevels: [0.236, 0.382, 0.5, 0.618, 0.786],
+          fibLevels: [0.236, 0.382, 0.5, 0.618, 0.786, 1.0, 1.272, 1.618],
           rsiPeriod: 14,
-          minWaveSize: 50
+          minWaveSize: 50,
+          maxWaveSize: 500,
+          momentumDivergence: 0.15,
+          volumeConfirmation: 1.25,
+          trendlineTolerance: 0.02
         },
-        indicators: ['Wave Patterns', 'Fibonacci', 'RSI'],
+        indicators: ['Wave Patterns', 'Fibonacci Retracements/Extensions', 'RSI', 'MACD', 'Volume', 'Trendlines'],
         rules: {
-          entryConditions: ['Wave 3 or C start', 'Fib support', 'RSI momentum'],
-          exitConditions: ['Wave completion', 'Fib resistance', 'RSI divergence']
-        }
+          entryConditions: {
+            primary: [
+              'Wave identification: Clear 5-wave impulse pattern completion',
+              'Wave 3 characteristics: Never shortest wave, highest volume',
+              'Fibonacci confluence: 61.8% retracement + extension levels',
+              'RSI momentum: Confirming wave direction'
+            ],
+            secondary: [
+              'Volume pattern: Increasing on impulse waves (1,3,5)',
+              'Momentum divergence: RSI/MACD divergence at wave 5',
+              'Channel analysis: Price within trend channel',
+              'Degree alignment: Multiple wave degrees confirming'
+            ]
+          },
+          exitConditions: {
+            primary: 'Wave completion: 5-wave impulse or 3-wave correction complete',
+            secondary: 'Fibonacci resistance: Price reaches extension levels',
+            momentum: 'RSI divergence at wave extremes',
+            pattern: 'Overlapping waves indicating correction'
+          },
+          riskManagement: {
+            stopLoss: 'Below wave 1 low for wave 3 entries',
+            profitTarget: 'Fibonacci extensions (127.2%, 161.8%)',
+            positionSizing: 'Based on wave volatility',
+            maxPositionSize: '2% of portfolio per wave'
+          }
+        },
+        marketConditions: {
+          optimal: ['Trending market with clear cycles', 'Normal volatility', 'Established trend'],
+          avoid: ['Choppy market', 'Low volatility', 'Unclear wave structure']
+        },
+        timeframes: ['Daily', 'Weekly', '4-hour', '1-hour'],
+        assetClasses: ['Stocks', 'Indices', 'Forex', 'Crypto'],
+        complexity: 'Advanced',
+        winRate: 0.35,
+        riskRewardRatio: 3.5
       }
     }
 

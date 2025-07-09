@@ -98,6 +98,7 @@ import ConnectedTradingTab from '@/components/dashboard/ConnectedTradingTab'
 import ConnectedAgentsTab from '@/components/dashboard/ConnectedAgentsTab'
 import { ComprehensiveAgentsTab } from '@/components/dashboard/ComprehensiveAgentsTab'
 import ConnectedHistoryTab from '@/components/dashboard/ConnectedHistoryTab'
+import { ConnectedIntelligenceTab } from '@/components/dashboard/ConnectedIntelligenceTab'
 import ConnectedAnalyticsTab from '@/components/dashboard/ConnectedAnalyticsTab'
 import ConnectedFarmsTab from '@/components/dashboard/ConnectedFarmsTab'
 import ConnectedGoalsTab from '@/components/dashboard/ConnectedGoalsTab'
@@ -328,6 +329,12 @@ export function ModernDashboardV4() {
       label: 'Analytics',
       icon: <PieChart className="h-4 w-4" />,
       component: <ConnectedAnalyticsTab />
+    },
+    {
+      id: 'intelligence',
+      label: 'Intelligence',
+      icon: <Brain className="h-4 w-4" />,
+      component: <ConnectedIntelligenceTab />
     },
     {
       id: 'vault',
