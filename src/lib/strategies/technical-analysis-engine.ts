@@ -1309,5 +1309,19 @@ export class TechnicalAnalysisEngine extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const technicalAnalysisEngine = new TechnicalAnalysisEngine()
+// Singleton instance with lazy initialization
+let technicalAnalysisEngineInstance: TechnicalAnalysisEngine | null = null
+
+export function getTechnicalAnalysisEngine(): TechnicalAnalysisEngine {
+  if (!technicalAnalysisEngineInstance) {
+    technicalAnalysisEngineInstance = new TechnicalAnalysisEngine()
+  }
+  return technicalAnalysisEngineInstance
+}
+
+// For backward compatibility - but use getTechnicalAnalysisEngine() instead
+export const technicalAnalysisEngine = {
+  get instance() {
+    return getTechnicalAnalysisEngine()
+  }
+}

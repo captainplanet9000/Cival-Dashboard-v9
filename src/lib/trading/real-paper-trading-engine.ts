@@ -1149,8 +1149,26 @@ export class RealPaperTradingEngine extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const paperTradingEngine = new RealPaperTradingEngine()
+// Singleton instance with lazy initialization
+let paperTradingEngineInstance: RealPaperTradingEngine | null = null
+
+export function getPaperTradingEngine(): RealPaperTradingEngine {
+  if (!paperTradingEngineInstance) {
+    paperTradingEngineInstance = new RealPaperTradingEngine()
+  }
+  return paperTradingEngineInstance
+}
+
+// For backward compatibility - but use getPaperTradingEngine() instead
+export const paperTradingEngine = {
+  get instance() {
+    return getPaperTradingEngine()
+  }
+}
 
 // Export alias for API route compatibility
-export const realPaperTradingEngine = paperTradingEngine
+export const realPaperTradingEngine = {
+  get instance() {
+    return getPaperTradingEngine()
+  }
+}

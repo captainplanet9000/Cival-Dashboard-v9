@@ -7,11 +7,11 @@
 
 import { EventEmitter } from 'events'
 import { backendClient } from '@/lib/api/backend-client'
-import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
+import { getPaperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
 import type { TradingAgent, TradingStrategy, RiskLimits } from '@/lib/trading/real-paper-trading-engine'
 import { getAgentWalletManager, type AgentWallet } from '@/lib/agents/agent-wallet-manager'
 import { vaultIntegrationService, type VaultConfig } from '@/lib/vault/VaultIntegrationService'
-import { technicalAnalysisEngine } from '@/lib/strategies/technical-analysis-engine'
+import { getTechnicalAnalysisEngine } from '@/lib/strategies/technical-analysis-engine'
 import { getLLMDecisionIntegrationService } from '@/lib/agents/llm-decision-integration'
 import { getAutonomousTradingLoop } from '@/lib/agents/autonomous-trading-loop'
 
@@ -600,7 +600,7 @@ class EnhancedAgentCreationService extends EventEmitter {
       const strategyParams = this.getStrategyParameters(strategy.type, strategy.parameters)
       
       // Initialize the strategy in the technical analysis engine
-      technicalAnalysisEngine.initializeStrategy(strategy.type, strategyParams)
+      getTechnicalAnalysisEngine().initializeStrategy(strategy.type, strategyParams)
       
       // Set up strategy-specific knowledge in agent memory
       const strategyKnowledge = this.getStrategyKnowledge(strategy.type)
@@ -738,7 +738,7 @@ class EnhancedAgentCreationService extends EventEmitter {
   private async initializePaperTradingConnection(agent: CreatedAgent) {
     try {
       // Register agent with paper trading engine
-      await paperTradingEngine.registerAgent(agent.tradingAgent)
+      await getPaperTradingEngine().registerAgent(agent.tradingAgent)
       
       // Configure automatic execution settings
       await this.configurePaperTradingSettings(agent)
@@ -1206,5 +1206,19 @@ class EnhancedAgentCreationService extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const enhancedAgentCreationService = new EnhancedAgentCreationService()
+// Singleton instance with lazy initialization
+let enhancedAgentCreationServiceInstance: EnhancedAgentCreationService | null = null
+
+export function getEnhancedAgentCreationService(): EnhancedAgentCreationService {
+  if (!enhancedAgentCreationServiceInstance) {
+    enhancedAgentCreationServiceInstance = new EnhancedAgentCreationService()
+  }
+  return enhancedAgentCreationServiceInstance
+}
+
+// For backward compatibility - but use getEnhancedAgentCreationService() instead
+export const enhancedAgentCreationService = {
+  get instance() {
+    return getEnhancedAgentCreationService()
+  }
+}

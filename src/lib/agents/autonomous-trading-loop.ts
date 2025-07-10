@@ -7,10 +7,10 @@
 
 import { EventEmitter } from 'events'
 import { getLLMDecisionIntegrationService, type AgentDecision } from './llm-decision-integration'
-import { technicalAnalysisEngine, type TechnicalSignal } from '@/lib/strategies/technical-analysis-engine'
-import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
-import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
-import { globalThrottler } from '@/lib/utils/request-throttle'
+import { getTechnicalAnalysisEngine, type TechnicalSignal } from '@/lib/strategies/technical-analysis-engine'
+import { getAgentWalletManager } from '@/lib/agents/agent-wallet-manager'
+import { getPaperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
+import { getGlobalThrottler } from '@/lib/utils/request-throttle'
 import type { CreatedAgent } from './enhanced-agent-creation-service'
 
 export interface TradingLoopConfig {
@@ -254,7 +254,7 @@ class AutonomousTradingLoop extends EventEmitter {
       const marketData = await this.getMarketData(config.marketDataSources)
       
       // Analyze with technical analysis engine
-      const signals = technicalAnalysisEngine.analyzeWithStrategy(config.strategy, marketData)
+      const signals = getTechnicalAnalysisEngine().analyzeWithStrategy(config.strategy, marketData)
       
       // Assess market conditions
       const marketCondition = this.assessMarketCondition(marketData)
@@ -345,7 +345,7 @@ class AutonomousTradingLoop extends EventEmitter {
       
       // Execute through LLM decision service with throttling
       const llmService = getLLMDecisionIntegrationService()
-      const executionResult = await globalThrottler.throttledRequest(
+      const executionResult = await getGlobalThrottler().throttledRequest(
         async () => {
           return await llmService.executeDecision(decision)
         },
@@ -385,7 +385,7 @@ class AutonomousTradingLoop extends EventEmitter {
   ): Promise<TradingCycle['performance']> {
     try {
       // Get current wallet state
-      const wallet = await agentWalletManager.getWallet(agentId)
+      const wallet = await getAgentWalletManager().getWallet(agentId)
       const currentPnL = wallet?.unrealizedPnL || 0
       
       // Get recent performance

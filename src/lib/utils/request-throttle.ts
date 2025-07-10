@@ -236,13 +236,27 @@ export class RequestThrottler {
   }
 }
 
-// Global throttler instance
-export const globalThrottler = new RequestThrottler({
-  requestsPerSecond: 8, // Conservative limit
-  maxConcurrent: 3, // Limit concurrent requests
-  retryAttempts: 2,
-  retryDelay: 1500
-})
+// Singleton instance with lazy initialization
+let globalThrottlerInstance: RequestThrottler | null = null
+
+export function getGlobalThrottler(): RequestThrottler {
+  if (!globalThrottlerInstance) {
+    globalThrottlerInstance = new RequestThrottler({
+      requestsPerSecond: 8, // Conservative limit
+      maxConcurrent: 3, // Limit concurrent requests
+      retryAttempts: 2,
+      retryDelay: 1500
+    })
+  }
+  return globalThrottlerInstance
+}
+
+// For backward compatibility - but use getGlobalThrottler() instead
+export const globalThrottler = {
+  get instance() {
+    return getGlobalThrottler()
+  }
+}
 
 /**
  * Debounced function utility for frequent calls
@@ -326,7 +340,22 @@ export class RequestBatcher {
   }
 }
 
-export const globalBatcher = new RequestBatcher()
+// Singleton instance with lazy initialization
+let globalBatcherInstance: RequestBatcher | null = null
+
+export function getGlobalBatcher(): RequestBatcher {
+  if (!globalBatcherInstance) {
+    globalBatcherInstance = new RequestBatcher()
+  }
+  return globalBatcherInstance
+}
+
+// For backward compatibility
+export const globalBatcher = {
+  get instance() {
+    return getGlobalBatcher()
+  }
+}
 
 /**
  * Smart polling with exponential backoff
@@ -359,7 +388,7 @@ export class SmartPoller {
 
     const poll = async () => {
       try {
-        const result = await globalThrottler.throttledRequest(pollFn, {
+        const result = await getGlobalThrottler().throttledRequest(pollFn, {
           priority: 'low',
           cacheKey: `poll_${key}`
         })
@@ -407,4 +436,19 @@ export class SmartPoller {
   }
 }
 
-export const globalPoller = new SmartPoller()
+// Singleton instance with lazy initialization
+let globalPollerInstance: SmartPoller | null = null
+
+export function getGlobalPoller(): SmartPoller {
+  if (!globalPollerInstance) {
+    globalPollerInstance = new SmartPoller()
+  }
+  return globalPollerInstance
+}
+
+// For backward compatibility
+export const globalPoller = {
+  get instance() {
+    return getGlobalPoller()
+  }
+}
