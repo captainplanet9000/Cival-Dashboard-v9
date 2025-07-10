@@ -767,5 +767,19 @@ class LLMDecisionIntegrationService {
   }
 }
 
-// Export singleton instance
-export const llmDecisionIntegrationService = new LLMDecisionIntegrationService()
+// Singleton instance with lazy initialization
+let llmDecisionIntegrationServiceInstance: LLMDecisionIntegrationService | null = null
+
+export function getLLMDecisionIntegrationService(): LLMDecisionIntegrationService {
+  if (!llmDecisionIntegrationServiceInstance) {
+    llmDecisionIntegrationServiceInstance = new LLMDecisionIntegrationService()
+  }
+  return llmDecisionIntegrationServiceInstance
+}
+
+// For backward compatibility - but use getLLMDecisionIntegrationService() instead
+export const llmDecisionIntegrationService = {
+  get instance() {
+    return getLLMDecisionIntegrationService()
+  }
+}

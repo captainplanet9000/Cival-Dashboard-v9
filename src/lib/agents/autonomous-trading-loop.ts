@@ -6,7 +6,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { llmDecisionIntegrationService, type AgentDecision } from './llm-decision-integration'
+import { getLLMDecisionIntegrationService, type AgentDecision } from './llm-decision-integration'
 import { technicalAnalysisEngine, type TechnicalSignal } from '@/lib/strategies/technical-analysis-engine'
 import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
@@ -122,7 +122,8 @@ class AutonomousTradingLoop extends EventEmitter {
       this.initializeAgentPerformanceMetrics(agent.id)
       
       // Register agent with LLM decision service
-      await llmDecisionIntegrationService.registerAgent(agent)
+      const llmService = getLLMDecisionIntegrationService()
+      await llmService.registerAgent(agent)
       
       // Start the trading loop
       await this.startLoop(agent.id)
@@ -146,7 +147,8 @@ class AutonomousTradingLoop extends EventEmitter {
       this.activeLoops.delete(agentId)
       
       // Stop LLM decision loop
-      llmDecisionIntegrationService.stopDecisionLoop(agentId)
+      const llmService = getLLMDecisionIntegrationService()
+      llmService.stopDecisionLoop(agentId)
       
       console.log(`Trading loop stopped for agent ${agentId}`)
       return true
@@ -298,7 +300,8 @@ class AutonomousTradingLoop extends EventEmitter {
       }
       
       // Get decision from LLM service
-      const decision = await llmDecisionIntegrationService.makeAutonomousDecision(agentId)
+      const llmService = getLLMDecisionIntegrationService()
+      const decision = await llmService.makeAutonomousDecision(agentId)
       
       // Validate decision against risk limits
       if (decision && this.validateDecisionRisk(agentId, decision)) {
@@ -341,9 +344,10 @@ class AutonomousTradingLoop extends EventEmitter {
       }
       
       // Execute through LLM decision service with throttling
+      const llmService = getLLMDecisionIntegrationService()
       const executionResult = await globalThrottler.throttledRequest(
         async () => {
-          return await llmDecisionIntegrationService.executeDecision(decision)
+          return await llmService.executeDecision(decision)
         },
         {
           priority: 'high',
