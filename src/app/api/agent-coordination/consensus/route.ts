@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         }
       ],
       consensus_reached: Math.random() > 0.3, // 70% chance of consensus
-      final_recommendation: null,
+      final_recommendation: null as any,
       created_at: new Date().toISOString(),
       completed_at: new Date().toISOString()
     }

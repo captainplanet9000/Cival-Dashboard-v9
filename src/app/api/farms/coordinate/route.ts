@@ -126,9 +126,9 @@ async function analyzeFarmPerformance(farm: any, context?: any): Promise<Coordin
   // Calculate comprehensive farm metrics
   const metrics = {
     totalAgents: agents.length,
-    activeAgents: agents.filter(a => a.status === 'active').length,
-    averageWinRate: agents.reduce((sum, a) => sum + (a.performance?.winRate || 0), 0) / Math.max(agents.length, 1),
-    totalPnL: agents.reduce((sum, a) => sum + (a.performance?.totalPnL || 0), 0),
+    activeAgents: agents.filter((a: any) => a.status === 'active').length,
+    averageWinRate: agents.reduce((sum: number, a: any) => sum + (a.performance?.winRate || 0), 0) / Math.max(agents.length, 1),
+    totalPnL: agents.reduce((sum: number, a: any) => sum + (a.performance?.totalPnL || 0), 0),
     riskDistribution: calculateRiskDistribution(agents),
     performanceVariance: calculatePerformanceVariance(agents)
   }
@@ -197,7 +197,7 @@ async function optimizeFarmStrategy(farm: any, context?: any): Promise<Coordinat
 async function groupFarmAgents(farm: any, criteria?: any): Promise<CoordinationResponse> {
   const agents = farm.agents || []
   
-  let groupings = { high: [], medium: [], low: [] }
+  let groupings: { high: any[], medium: any[], low: any[] } = { high: [], medium: [], low: [] }
   
   switch (criteria?.type || 'performance') {
     case 'performance':
@@ -295,7 +295,7 @@ Risk Level: ${metrics.riskDistribution.high > metrics.totalAgents * 0.3 ? 'High'
 }
 
 function generateRecommendations(metrics: any, agents: any[]) {
-  const recommendations = []
+  const recommendations: string[] = []
   
   if (metrics.averageWinRate < 50) {
     recommendations.push('Consider reducing position sizes and implementing stricter risk controls')
@@ -317,7 +317,7 @@ function generateRecommendations(metrics: any, agents: any[]) {
 }
 
 function calculateOptimalAllocation(agents: any[], totalCapital: number) {
-  const rebalancing = []
+  const rebalancing: any[] = []
   const performanceScores = agents.map(agent => ({
     id: agent.id,
     score: calculatePerformanceScore(agent),
@@ -382,7 +382,7 @@ function analyzeStrategyEffectiveness(agents: any[], strategy: string) {
 }
 
 function generateOptimizationRecommendations(analysis: any, context?: any) {
-  const recommendations = []
+  const recommendations: string[] = []
   
   if (analysis.effectiveness === 'low') {
     recommendations.push(`Consider switching from ${analysis.strategy} to a more suitable strategy`)
@@ -427,7 +427,7 @@ function groupAgentsByRisk(agents: any[]) {
 }
 
 function groupAgentsByStrategy(agents: any[]) {
-  const strategies = {}
+  const strategies: { [key: string]: string[] } = {}
   agents.forEach(agent => {
     const strategy = agent.strategy || 'default'
     if (!strategies[strategy]) strategies[strategy] = []
@@ -463,7 +463,7 @@ async function updateAgentGroupings(groupings: any) {
 }
 
 function generateAgentCommunications(agents: any[], context?: any) {
-  const communications = []
+  const communications: any[] = []
   
   // Generate context-aware communications
   agents.forEach(agent => {

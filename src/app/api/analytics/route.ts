@@ -86,22 +86,9 @@ export async function GET(request: NextRequest) {
     const timeframe = searchParams.get('timeframe') || '24h';
     const symbol = searchParams.get('symbol');
 
-    // Try to get real analytics from backend first
-    try {
-      const analyticsResponse = await backendApi.getAnalytics ? 
-        await backendApi.getAnalytics(type || undefined, timeframe, symbol || undefined) : null;
-      
-      if (analyticsResponse?.data) {
-        return NextResponse.json({
-          success: true,
-          data: analyticsResponse.data,
-          source: 'backend',
-          timestamp: new Date().toISOString(),
-        });
-      }
-    } catch (error) {
-      console.warn('Backend analytics unavailable, using mock data:', error);
-    }
+    // Try to get real analytics from backend first (method not implemented yet)
+    // Will use mock data for now
+    console.log('Using mock analytics data - backend integration pending');
 
     // Fallback to mock data
     let data: any = mockAnalytics;

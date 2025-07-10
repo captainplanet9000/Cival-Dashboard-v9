@@ -1225,6 +1225,21 @@ class AgentMarketDataService {
   }
 }
 
-// Export singleton instance
-export const agentMarketDataService = new AgentMarketDataService()
+// Lazy initialization
+let agentMarketDataServiceInstance: AgentMarketDataService | null = null
+
+export function getAgentMarketDataService(): AgentMarketDataService {
+  if (!agentMarketDataServiceInstance) {
+    agentMarketDataServiceInstance = new AgentMarketDataService()
+  }
+  return agentMarketDataServiceInstance
+}
+
+// For backward compatibility
+export const agentMarketDataService = {
+  get instance() {
+    return getAgentMarketDataService()
+  }
+}
+
 export default agentMarketDataService

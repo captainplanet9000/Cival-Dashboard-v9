@@ -695,8 +695,22 @@ class RealMarketDataService extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const realMarketDataService = new RealMarketDataService()
+// Lazy initialization
+let realMarketDataServiceInstance: RealMarketDataService | null = null
+
+export function getRealMarketDataService(): RealMarketDataService {
+  if (!realMarketDataServiceInstance) {
+    realMarketDataServiceInstance = new RealMarketDataService()
+  }
+  return realMarketDataServiceInstance
+}
+
+// For backward compatibility
+export const realMarketDataService = {
+  get instance() {
+    return getRealMarketDataService()
+  }
+}
 
 // Export types
 export type { MarketData, TechnicalIndicators, MarketNews, MarketSentiment }

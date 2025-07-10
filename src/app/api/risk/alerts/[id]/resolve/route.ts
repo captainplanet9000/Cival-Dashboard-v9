@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const alertId = params.id
+    const { id: alertId } = await params
     
     // In a real implementation, would update alert in database
     // For now, we'll emit a WebSocket event to update the frontend

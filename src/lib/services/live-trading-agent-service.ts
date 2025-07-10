@@ -765,5 +765,21 @@ class LiveTradingAgentService extends EventEmitter {
   }
 }
 
-export const liveTradingAgentService = new LiveTradingAgentService()
+// Lazy initialization
+let liveTradingAgentServiceInstance: LiveTradingAgentService | null = null
+
+export function getLiveTradingAgentService(): LiveTradingAgentService {
+  if (!liveTradingAgentServiceInstance) {
+    liveTradingAgentServiceInstance = new LiveTradingAgentService()
+  }
+  return liveTradingAgentServiceInstance
+}
+
+// For backward compatibility
+export const liveTradingAgentService = {
+  get instance() {
+    return getLiveTradingAgentService()
+  }
+}
+
 export default liveTradingAgentService

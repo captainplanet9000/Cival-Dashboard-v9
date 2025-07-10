@@ -496,5 +496,21 @@ class DeFiService {
   }
 }
 
-export const defiService = new DeFiService()
+// Lazy initialization
+let defiServiceInstance: DeFiService | null = null
+
+export function getDefiService(): DeFiService {
+  if (!defiServiceInstance) {
+    defiServiceInstance = new DeFiService()
+  }
+  return defiServiceInstance
+}
+
+// For backward compatibility
+export const defiService = {
+  get instance() {
+    return getDefiService()
+  }
+}
+
 export default defiService

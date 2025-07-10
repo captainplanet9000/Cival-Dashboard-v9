@@ -453,6 +453,21 @@ class AlchemyService {
   }
 }
 
-// Export singleton instance
-export const alchemyService = new AlchemyService()
+// Lazy initialization
+let alchemyServiceInstance: AlchemyService | null = null
+
+export function getAlchemyService(): AlchemyService {
+  if (!alchemyServiceInstance) {
+    alchemyServiceInstance = new AlchemyService()
+  }
+  return alchemyServiceInstance
+}
+
+// For backward compatibility
+export const alchemyService = {
+  get instance() {
+    return getAlchemyService()
+  }
+}
+
 export default alchemyService

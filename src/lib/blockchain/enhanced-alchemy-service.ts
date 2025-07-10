@@ -747,6 +747,21 @@ class EnhancedAlchemyService {
   }
 }
 
-// Export singleton instance
-export const enhancedAlchemyService = new EnhancedAlchemyService()
+// Lazy initialization
+let enhancedAlchemyServiceInstance: EnhancedAlchemyService | null = null
+
+export function getEnhancedAlchemyService(): EnhancedAlchemyService {
+  if (!enhancedAlchemyServiceInstance) {
+    enhancedAlchemyServiceInstance = new EnhancedAlchemyService()
+  }
+  return enhancedAlchemyServiceInstance
+}
+
+// For backward compatibility
+export const enhancedAlchemyService = {
+  get instance() {
+    return getEnhancedAlchemyService()
+  }
+}
+
 export default enhancedAlchemyService

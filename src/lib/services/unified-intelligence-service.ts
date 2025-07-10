@@ -681,6 +681,21 @@ Focus on actionable insights for trading decisions.
   }
 }
 
-// Export singleton instance
-export const unifiedIntelligenceService = new UnifiedIntelligenceService()
+// Lazy initialization
+let unifiedIntelligenceServiceInstance: UnifiedIntelligenceService | null = null
+
+export function getUnifiedIntelligenceService(): UnifiedIntelligenceService {
+  if (!unifiedIntelligenceServiceInstance) {
+    unifiedIntelligenceServiceInstance = new UnifiedIntelligenceService()
+  }
+  return unifiedIntelligenceServiceInstance
+}
+
+// For backward compatibility
+export const unifiedIntelligenceService = {
+  get instance() {
+    return getUnifiedIntelligenceService()
+  }
+}
+
 export default unifiedIntelligenceService

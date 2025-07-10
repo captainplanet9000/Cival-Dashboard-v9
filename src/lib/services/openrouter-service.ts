@@ -836,6 +836,21 @@ export class OpenRouterService {
   }
 }
 
-// Export singleton instance
-export const openRouterService = new OpenRouterService()
+// Lazy initialization
+let openRouterServiceInstance: OpenRouterService | null = null
+
+export function getOpenRouterService(): OpenRouterService {
+  if (!openRouterServiceInstance) {
+    openRouterServiceInstance = new OpenRouterService()
+  }
+  return openRouterServiceInstance
+}
+
+// For backward compatibility
+export const openRouterService = {
+  get instance() {
+    return getOpenRouterService()
+  }
+}
+
 export default openRouterService

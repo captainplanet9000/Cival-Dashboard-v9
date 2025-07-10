@@ -813,6 +813,21 @@ export class SerpAPIService {
   }
 }
 
-// Export singleton instance
-export const serpApiService = new SerpAPIService()
+// Lazy initialization
+let serpApiServiceInstance: SerpAPIService | null = null
+
+export function getSerpApiService(): SerpAPIService {
+  if (!serpApiServiceInstance) {
+    serpApiServiceInstance = new SerpAPIService()
+  }
+  return serpApiServiceInstance
+}
+
+// For backward compatibility
+export const serpApiService = {
+  get instance() {
+    return getSerpApiService()
+  }
+}
+
 export default serpApiService

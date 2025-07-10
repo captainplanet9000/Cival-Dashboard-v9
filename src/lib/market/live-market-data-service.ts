@@ -420,5 +420,19 @@ export class LiveMarketDataService extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const liveMarketDataService = new LiveMarketDataService()
+// Lazy initialization
+let liveMarketDataServiceInstance: LiveMarketDataService | null = null
+
+export function getLiveMarketDataService(): LiveMarketDataService {
+  if (!liveMarketDataServiceInstance) {
+    liveMarketDataServiceInstance = new LiveMarketDataService()
+  }
+  return liveMarketDataServiceInstance
+}
+
+// For backward compatibility
+export const liveMarketDataService = {
+  get instance() {
+    return getLiveMarketDataService()
+  }
+}

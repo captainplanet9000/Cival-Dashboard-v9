@@ -586,8 +586,22 @@ export class PaperTradingValidationEngine {
   }
 }
 
-// Singleton instance
-export const paperTradingValidationEngine = new PaperTradingValidationEngine();
+// Lazy initialization
+let paperTradingValidationEngineInstance: PaperTradingValidationEngine | null = null
+
+export function getPaperTradingValidationEngine(): PaperTradingValidationEngine {
+  if (!paperTradingValidationEngineInstance) {
+    paperTradingValidationEngineInstance = new PaperTradingValidationEngine()
+  }
+  return paperTradingValidationEngineInstance
+}
+
+// For backward compatibility
+export const paperTradingValidationEngine = {
+  get instance() {
+    return getPaperTradingValidationEngine()
+  }
+}
 
 // Factory function
 export function createPaperTradingValidationEngine(): PaperTradingValidationEngine {

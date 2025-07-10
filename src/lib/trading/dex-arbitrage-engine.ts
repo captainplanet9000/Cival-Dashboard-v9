@@ -320,5 +320,21 @@ class DEXArbitrageEngine extends EventEmitter {
   }
 }
 
-export const dexArbitrageEngine = new DEXArbitrageEngine()
+// Lazy initialization
+let dexArbitrageEngineInstance: DEXArbitrageEngine | null = null
+
+export function getDexArbitrageEngine(): DEXArbitrageEngine {
+  if (!dexArbitrageEngineInstance) {
+    dexArbitrageEngineInstance = new DEXArbitrageEngine()
+  }
+  return dexArbitrageEngineInstance
+}
+
+// For backward compatibility
+export const dexArbitrageEngine = {
+  get instance() {
+    return getDexArbitrageEngine()
+  }
+}
+
 export default dexArbitrageEngine

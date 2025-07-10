@@ -615,8 +615,22 @@ class StrategyService {
   }
 }
 
-// Export singleton instance
-export const strategyService = new StrategyService()
+// Lazy initialization
+let strategyServiceInstance: StrategyService | null = null
+
+export function getStrategyService(): StrategyService {
+  if (!strategyServiceInstance) {
+    strategyServiceInstance = new StrategyService()
+  }
+  return strategyServiceInstance
+}
+
+// For backward compatibility
+export const strategyService = {
+  get instance() {
+    return getStrategyService()
+  }
+}
 
 // Export strategy types
 export const STRATEGY_TYPES = {

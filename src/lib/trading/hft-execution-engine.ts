@@ -611,5 +611,19 @@ export class HFTExecutionEngine extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const hftExecutionEngine = new HFTExecutionEngine()
+// Lazy initialization
+let hftExecutionEngineInstance: HFTExecutionEngine | null = null
+
+export function getHftExecutionEngine(): HFTExecutionEngine {
+  if (!hftExecutionEngineInstance) {
+    hftExecutionEngineInstance = new HFTExecutionEngine()
+  }
+  return hftExecutionEngineInstance
+}
+
+// For backward compatibility
+export const hftExecutionEngine = {
+  get instance() {
+    return getHftExecutionEngine()
+  }
+}

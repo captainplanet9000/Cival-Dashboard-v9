@@ -541,5 +541,21 @@ class DEXTradingEngine extends EventEmitter {
   }
 }
 
-export const dexTradingEngine = new DEXTradingEngine()
+// Lazy initialization
+let dexTradingEngineInstance: DEXTradingEngine | null = null
+
+export function getDexTradingEngine(): DEXTradingEngine {
+  if (!dexTradingEngineInstance) {
+    dexTradingEngineInstance = new DEXTradingEngine()
+  }
+  return dexTradingEngineInstance
+}
+
+// For backward compatibility
+export const dexTradingEngine = {
+  get instance() {
+    return getDexTradingEngine()
+  }
+}
+
 export default dexTradingEngine

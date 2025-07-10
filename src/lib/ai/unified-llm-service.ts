@@ -482,5 +482,19 @@ export class UnifiedLLMService {
   }
 }
 
-// Export singleton instance
-export const unifiedLLMService = new UnifiedLLMService()
+// Lazy initialization
+let unifiedLLMServiceInstance: UnifiedLLMService | null = null
+
+export function getUnifiedLLMService(): UnifiedLLMService {
+  if (!unifiedLLMServiceInstance) {
+    unifiedLLMServiceInstance = new UnifiedLLMService()
+  }
+  return unifiedLLMServiceInstance
+}
+
+// For backward compatibility
+export const unifiedLLMService = {
+  get instance() {
+    return getUnifiedLLMService()
+  }
+}

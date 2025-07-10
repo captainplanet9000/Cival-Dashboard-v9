@@ -19,7 +19,7 @@ import { StrategyOptimizationDashboard } from '@/components/strategy/StrategyOpt
 import { StrategyLearningTracker } from '@/components/strategy/StrategyLearningTracker'
 import StrategyPerformancePanel from '@/components/strategy/StrategyPerformancePanel'
 import StrategySignalFeed from '@/components/strategy/StrategySignalFeed'
-import { agentMarketDataService } from '@/lib/agents/agent-market-data-service'
+import { getAgentMarketDataService } from '@/lib/agents/agent-market-data-service'
 import { StrategyType } from '@/lib/supabase/strategy-service'
 
 export default function StrategyAnalyticsPage() {
@@ -97,7 +97,7 @@ export default function StrategyAnalyticsPage() {
   const checkSystemHealth = async () => {
     try {
       // Check if we can access the market data service
-      const healthCheck = await agentMarketDataService.getCurrentPrices('system', ['BTC'])
+      const healthCheck = await getAgentMarketDataService().getCurrentPrices('system', ['BTC'])
       
       setSystemHealth({
         strategyService: 'operational',
