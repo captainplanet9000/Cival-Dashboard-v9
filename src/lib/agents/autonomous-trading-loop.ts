@@ -742,5 +742,19 @@ class AutonomousTradingLoop extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const autonomousTradingLoop = new AutonomousTradingLoop()
+// Singleton instance with lazy initialization
+let autonomousTradingLoopInstance: AutonomousTradingLoop | null = null
+
+export function getAutonomousTradingLoop(): AutonomousTradingLoop {
+  if (!autonomousTradingLoopInstance) {
+    autonomousTradingLoopInstance = new AutonomousTradingLoop()
+  }
+  return autonomousTradingLoopInstance
+}
+
+// For backward compatibility - but use getAutonomousTradingLoop() instead
+export const autonomousTradingLoop = {
+  get instance() {
+    return getAutonomousTradingLoop()
+  }
+}

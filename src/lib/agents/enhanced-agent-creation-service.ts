@@ -9,11 +9,11 @@ import { EventEmitter } from 'events'
 import { backendClient } from '@/lib/api/backend-client'
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
 import type { TradingAgent, TradingStrategy, RiskLimits } from '@/lib/trading/real-paper-trading-engine'
-import { agentWalletManager, type AgentWallet } from '@/lib/agents/agent-wallet-manager'
+import { getAgentWalletManager, type AgentWallet } from '@/lib/agents/agent-wallet-manager'
 import { vaultIntegrationService, type VaultConfig } from '@/lib/vault/VaultIntegrationService'
 import { technicalAnalysisEngine } from '@/lib/strategies/technical-analysis-engine'
-import { llmDecisionIntegrationService } from '@/lib/agents/llm-decision-integration'
-import { autonomousTradingLoop } from '@/lib/agents/autonomous-trading-loop'
+import { getLLMDecisionIntegrationService } from '@/lib/agents/llm-decision-integration'
+import { getAutonomousTradingLoop } from '@/lib/agents/autonomous-trading-loop'
 
 export interface EnhancedAgentConfig {
   // Basic Configuration
@@ -462,7 +462,7 @@ class EnhancedAgentCreationService extends EventEmitter {
     
     try {
       // Create dedicated wallet using existing agent wallet manager
-      const wallet = await agentWalletManager.createWallet(
+      const wallet = await getAgentWalletManager().createWalletForAgent(
         agent.id,
         walletConfig.initialFunding || agent.config.initialCapital
       )
@@ -760,7 +760,7 @@ class EnhancedAgentCreationService extends EventEmitter {
     
     try {
       // Start the autonomous trading loop with all integrations
-      const success = await autonomousTradingLoop.startTradingLoop(agent)
+      const success = await getAutonomousTradingLoop().startTradingLoop(agent)
       
       if (success) {
         agent.performance.firstDecision = new Date()
@@ -789,7 +789,7 @@ class EnhancedAgentCreationService extends EventEmitter {
    */
   async stopAutonomousTrading(agentId: string): Promise<boolean> {
     try {
-      const success = autonomousTradingLoop.stopTradingLoop(agentId)
+      const success = getAutonomousTradingLoop().stopTradingLoop(agentId)
       
       if (success) {
         this.emit('autonomousTradingStopped', { agentId })
@@ -911,7 +911,7 @@ class EnhancedAgentCreationService extends EventEmitter {
       // Register with LLM decision integration service
       const agent = this.createdAgents.get(agentId)
       if (agent) {
-        await llmDecisionIntegrationService.registerAgent(agent)
+        await getLLMDecisionIntegrationService().registerAgent(agent)
         console.log(`LLM configured for agent ${agentId}`)
       }
     } catch (error) {
@@ -986,10 +986,10 @@ class EnhancedAgentCreationService extends EventEmitter {
     if (!agent) return null
     
     // Get trading loop performance metrics
-    const tradingMetrics = autonomousTradingLoop.getPerformanceMetrics(agentId)
+    const tradingMetrics = getAutonomousTradingLoop().getPerformanceMetrics(agentId)
     
     // Get LLM decision history
-    const decisionHistory = llmDecisionIntegrationService.getAgentDecisionHistory(agentId)
+    const decisionHistory = getLLMDecisionIntegrationService().getAgentDecisionHistory(agentId)
     
     return {
       ...agent.performance,
@@ -1010,8 +1010,8 @@ class EnhancedAgentCreationService extends EventEmitter {
     const agent = this.createdAgents.get(agentId)
     if (!agent) return null
     
-    const tradingLoop = autonomousTradingLoop.getLoopConfig(agentId)
-    const llmConfig = llmDecisionIntegrationService.getAgentConfig(agentId)
+    const tradingLoop = getAutonomousTradingLoop().getLoopConfig(agentId)
+    const llmConfig = getLLMDecisionIntegrationService().getAgentConfig(agentId)
     
     return {
       agent: {
@@ -1025,7 +1025,7 @@ class EnhancedAgentCreationService extends EventEmitter {
         wallet: agent.walletInfo,
         vault: agent.vaultInfo,
         trading: {
-          active: autonomousTradingLoop.getActiveLoops().includes(agentId),
+          active: getAutonomousTradingLoop().getActiveLoops().includes(agentId),
           config: tradingLoop
         },
         llm: {
@@ -1147,7 +1147,7 @@ class EnhancedAgentCreationService extends EventEmitter {
     return {
       totalAgents: agents.length,
       activeAgents: agents.filter(a => a.status === 'active').length,
-      tradingAgents: autonomousTradingLoop.getActiveLoops().length,
+      tradingAgents: getAutonomousTradingLoop().getActiveLoops().length,
       totalConnections: {
         wallet: agents.filter(a => a.connections.wallet).length,
         vault: agents.filter(a => a.connections.vault).length,
@@ -1183,13 +1183,13 @@ class EnhancedAgentCreationService extends EventEmitter {
     
     const totalCapital = agents.reduce((sum, agent) => sum + agent.config.initialCapital, 0)
     const totalPnL = agents.reduce((sum, agent) => {
-      const metrics = autonomousTradingLoop.getPerformanceMetrics(agent.id)
+      const metrics = getAutonomousTradingLoop().getPerformanceMetrics(agent.id)
       return sum + (metrics?.totalPnL || 0)
     }, 0)
     
     const avgWinRate = agents.length > 0 ? 
       agents.reduce((sum, agent) => {
-        const metrics = autonomousTradingLoop.getPerformanceMetrics(agent.id)
+        const metrics = getAutonomousTradingLoop().getPerformanceMetrics(agent.id)
         return sum + (metrics?.winRate || 0)
       }, 0) / agents.length : 0
     
@@ -1199,7 +1199,7 @@ class EnhancedAgentCreationService extends EventEmitter {
       totalReturn: totalCapital > 0 ? (totalPnL / totalCapital) * 100 : 0,
       avgWinRate: avgWinRate * 100,
       totalTrades: agents.reduce((sum, agent) => {
-        const metrics = autonomousTradingLoop.getPerformanceMetrics(agent.id)
+        const metrics = getAutonomousTradingLoop().getPerformanceMetrics(agent.id)
         return sum + (metrics?.successfulExecutions || 0)
       }, 0)
     }

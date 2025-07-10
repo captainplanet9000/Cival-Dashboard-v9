@@ -136,3 +136,25 @@ class PaperTradeFill(BaseModel):
         from_attributes = True
         validate_assignment = True
         extra = 'forbid'
+
+
+class PaperAccountSummary(BaseModel):
+    """Summary of a paper trading account."""
+    user_id: uuid.UUID = Field(..., description="Identifier of the user.")
+    total_equity: float = Field(default=0.0, description="Total account equity.")
+    cash_balance: float = Field(default=10000.0, description="Available cash balance.")
+    total_position_value: float = Field(default=0.0, description="Total value of all positions.")
+    total_unrealized_pnl: float = Field(default=0.0, description="Total unrealized P&L.")
+    total_realized_pnl: float = Field(default=0.0, description="Total realized P&L.")
+    total_pnl: float = Field(default=0.0, description="Total P&L (realized + unrealized).")
+    daily_pnl: float = Field(default=0.0, description="Daily P&L.")
+    total_return_percent: float = Field(default=0.0, description="Total return percentage.")
+    number_of_positions: int = Field(default=0, description="Number of open positions.")
+    long_positions: int = Field(default=0, description="Number of long positions.")
+    short_positions: int = Field(default=0, description="Number of short positions.")
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Last update timestamp.")
+    
+    class Config:
+        from_attributes = True
+        validate_assignment = True
+        extra = 'forbid'

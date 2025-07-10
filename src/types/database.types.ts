@@ -277,6 +277,374 @@ export type Database = {
         ]
       }
 
+      agent_positions: {
+        Row: {
+          id: string
+          agent_id: string
+          symbol: string
+          quantity: number
+          avg_cost: number
+          current_price: number | null
+          market_value: number | null
+          unrealized_pnl: number | null
+          realized_pnl: number | null
+          pnl_percent: number | null
+          last_updated: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          symbol: string
+          quantity: number
+          avg_cost: number
+          current_price?: number | null
+          market_value?: number | null
+          unrealized_pnl?: number | null
+          realized_pnl?: number | null
+          pnl_percent?: number | null
+          last_updated?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          symbol?: string
+          quantity?: number
+          avg_cost?: number
+          current_price?: number | null
+          market_value?: number | null
+          unrealized_pnl?: number | null
+          realized_pnl?: number | null
+          pnl_percent?: number | null
+          last_updated?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+
+      agent_performance: {
+        Row: {
+          id: string
+          agent_id: string
+          total_pnl: number | null
+          daily_pnl: number | null
+          weekly_pnl: number | null
+          monthly_pnl: number | null
+          win_rate: number | null
+          total_trades: number | null
+          successful_trades: number | null
+          failed_trades: number | null
+          max_drawdown: number | null
+          sharpe_ratio: number | null
+          last_updated: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          total_pnl?: number | null
+          daily_pnl?: number | null
+          weekly_pnl?: number | null
+          monthly_pnl?: number | null
+          win_rate?: number | null
+          total_trades?: number | null
+          successful_trades?: number | null
+          failed_trades?: number | null
+          max_drawdown?: number | null
+          sharpe_ratio?: number | null
+          last_updated?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          total_pnl?: number | null
+          daily_pnl?: number | null
+          weekly_pnl?: number | null
+          monthly_pnl?: number | null
+          win_rate?: number | null
+          total_trades?: number | null
+          successful_trades?: number | null
+          failed_trades?: number | null
+          max_drawdown?: number | null
+          sharpe_ratio?: number | null
+          last_updated?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+
+      agent_status: {
+        Row: {
+          id: string
+          agent_id: string
+          status: string
+          last_heartbeat: string | null
+          cpu_usage: number | null
+          memory_usage: number | null
+          active_positions: number | null
+          pending_orders: number | null
+          error_count: number | null
+          last_error: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          status: string
+          last_heartbeat?: string | null
+          cpu_usage?: number | null
+          memory_usage?: number | null
+          active_positions?: number | null
+          pending_orders?: number | null
+          error_count?: number | null
+          last_error?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          status?: string
+          last_heartbeat?: string | null
+          cpu_usage?: number | null
+          memory_usage?: number | null
+          active_positions?: number | null
+          pending_orders?: number | null
+          error_count?: number | null
+          last_error?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+
+      agent_market_data_subscriptions: {
+        Row: {
+          id: string
+          agent_id: string
+          symbol: string
+          subscription_type: string
+          is_active: boolean | null
+          last_data_timestamp: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          symbol: string
+          subscription_type: string
+          is_active?: boolean | null
+          last_data_timestamp?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          symbol?: string
+          subscription_type?: string
+          is_active?: boolean | null
+          last_data_timestamp?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+
+      agent_state: {
+        Row: {
+          id: string
+          agent_id: string
+          state_data: Json | null
+          strategy_params: Json | null
+          risk_params: Json | null
+          performance_metrics: Json | null
+          last_decision: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          state_data?: Json | null
+          strategy_params?: Json | null
+          risk_params?: Json | null
+          performance_metrics?: Json | null
+          last_decision?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          state_data?: Json | null
+          strategy_params?: Json | null
+          risk_params?: Json | null
+          performance_metrics?: Json | null
+          last_decision?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+
+      agent_decisions: {
+        Row: {
+          id: string
+          agent_id: string
+          decision_type: string
+          symbol: string | null
+          action: string | null
+          confidence: number | null
+          reasoning: string | null
+          market_data: Json | null
+          executed: boolean | null
+          execution_result: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          decision_type: string
+          symbol?: string | null
+          action?: string | null
+          confidence?: number | null
+          reasoning?: string | null
+          market_data?: Json | null
+          executed?: boolean | null
+          execution_result?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          decision_type?: string
+          symbol?: string | null
+          action?: string | null
+          confidence?: number | null
+          reasoning?: string | null
+          market_data?: Json | null
+          executed?: boolean | null
+          execution_result?: Json | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+
+      agent_trading_permissions: {
+        Row: {
+          agent_id: string
+          user_id: string | null
+          account_id: string
+          max_trade_size: number | null
+          max_position_size: number | null
+          max_daily_trades: number | null
+          allowed_symbols: Json | null
+          allowed_strategies: Json | null
+          risk_level: string | null
+          is_active: boolean | null
+          trades_today: number | null
+          position_value: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          user_id?: string | null
+          account_id: string
+          max_trade_size?: number | null
+          max_position_size?: number | null
+          max_daily_trades?: number | null
+          allowed_symbols?: Json | null
+          allowed_strategies?: Json | null
+          risk_level?: string | null
+          is_active?: boolean | null
+          trades_today?: number | null
+          position_value?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          user_id?: string | null
+          account_id?: string
+          max_trade_size?: number | null
+          max_position_size?: number | null
+          max_daily_trades?: number | null
+          allowed_symbols?: Json | null
+          allowed_strategies?: Json | null
+          risk_level?: string | null
+          is_active?: boolean | null
+          trades_today?: number | null
+          position_value?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+
+      agent_trades: {
+        Row: {
+          id: string
+          agent_id: string
+          symbol: string
+          side: string
+          quantity: number
+          price: number | null
+          order_type: string
+          status: string
+          filled_quantity: number | null
+          avg_fill_price: number | null
+          commission: number | null
+          pnl: number | null
+          order_timestamp: string | null
+          fill_timestamp: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          symbol: string
+          side: string
+          quantity: number
+          price?: number | null
+          order_type: string
+          status: string
+          filled_quantity?: number | null
+          avg_fill_price?: number | null
+          commission?: number | null
+          pnl?: number | null
+          order_timestamp?: string | null
+          fill_timestamp?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          symbol?: string
+          side?: string
+          quantity?: number
+          price?: number | null
+          order_type?: string
+          status?: string
+          filled_quantity?: number | null
+          avg_fill_price?: number | null
+          commission?: number | null
+          pnl?: number | null
+          order_timestamp?: string | null
+          fill_timestamp?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+
       goals: {
         Row: {
           goal_id: string

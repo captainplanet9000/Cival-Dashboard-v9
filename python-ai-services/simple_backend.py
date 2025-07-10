@@ -1239,6 +1239,39 @@ async def get_services_status():
         }
     )
 
+# Market proxy endpoints (commonly requested by frontend)
+@app.get("/api/market/proxy")
+async def market_proxy(provider: str = "messari", asset: str = "bitcoin", symbol: str = None):
+    """Market data proxy endpoint"""
+    # Use symbol if provided, otherwise use asset
+    target_symbol = symbol or asset
+    
+    # Mock market data based on common assets
+    mock_prices = {
+        "bitcoin": {"price": 43500.00, "change_24h": 2.5, "volume": 28500000000},
+        "ethereum": {"price": 2650.00, "change_24h": 3.2, "volume": 15200000000},
+        "solana": {"price": 95.75, "change_24h": 8.1, "volume": 2100000000},
+        "cardano": {"price": 0.85, "change_24h": -2.1, "volume": 850000000},
+        "polkadot": {"price": 12.50, "change_24h": 1.8, "volume": 320000000},
+        "avalanche": {"price": 35.25, "change_24h": 4.2, "volume": 580000000},
+        "polygon": {"price": 1.15, "change_24h": -0.8, "volume": 420000000},
+        "chainlink": {"price": 18.75, "change_24h": 6.5, "volume": 890000000},
+    }
+    
+    asset_data = mock_prices.get(target_symbol.lower(), mock_prices["bitcoin"])
+    
+    return APIResponse(
+        message=f"Market data for {target_symbol}",
+        data={
+            "symbol": target_symbol.upper(),
+            "provider": provider,
+            "price": asset_data["price"],
+            "change_24h": asset_data["change_24h"],
+            "volume_24h": asset_data["volume"],
+            "timestamp": datetime.now().isoformat()
+        }
+    )
+
 # Generic catch-all for unimplemented endpoints
 @app.get("/api/v1/{path:path}")
 async def generic_api_handler(path: str):
@@ -1261,7 +1294,45 @@ async def generic_api_post_handler(path: str, request: Request):
         data={"endpoint": path, "received_data": body, "status": "processed"}
     )
 
-# WebSocket endpoint
+# WebSocket endpoint (matches frontend expectation)
+@app.websocket("/")
+async def websocket_root(websocket: WebSocket):
+    """WebSocket endpoint for real-time communication"""
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            # Listen for messages from client
+            data = await websocket.receive_json()
+            message_type = data.get("type", "unknown")
+            
+            # Handle different message types
+            if message_type == "ping":
+                await ws_manager.send_message(websocket, {
+                    "type": "pong",
+                    "timestamp": datetime.now().isoformat()
+                })
+            elif message_type == "subscribe":
+                # Handle subscription requests
+                subscription_type = data.get("subscription", "general")
+                await ws_manager.send_message(websocket, {
+                    "type": "subscription_confirmed",
+                    "subscription": subscription_type,
+                    "timestamp": datetime.now().isoformat()
+                })
+            else:
+                # Echo unknown messages
+                await ws_manager.send_message(websocket, {
+                    "type": "echo",
+                    "received": data,
+                    "timestamp": datetime.now().isoformat()
+                })
+                
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        ws_manager.disconnect(websocket)
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time communication"""
@@ -1302,10 +1373,12 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 if __name__ == "__main__":
-    logger.info("Starting Cival Trading Dashboard Backend API...")
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 8001))  # Default to 8001 to avoid conflicts
+    logger.info(f"Starting Cival Trading Dashboard Backend API on {host}:{port}...")
     uvicorn.run(
         app, 
-        host="0.0.0.0", 
-        port=8000,
+        host=host, 
+        port=port,
         log_level="info"
     )

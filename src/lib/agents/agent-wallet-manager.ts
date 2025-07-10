@@ -323,5 +323,21 @@ class AgentWalletManager {
   }
 }
 
-export const agentWalletManager = new AgentWalletManager()
-export default agentWalletManager
+// Singleton instance with lazy initialization
+let agentWalletManagerInstance: AgentWalletManager | null = null
+
+export function getAgentWalletManager(): AgentWalletManager {
+  if (!agentWalletManagerInstance) {
+    agentWalletManagerInstance = new AgentWalletManager()
+  }
+  return agentWalletManagerInstance
+}
+
+// For backward compatibility - but use getAgentWalletManager() instead
+export const agentWalletManager = {
+  get instance() {
+    return getAgentWalletManager()
+  }
+}
+
+export default getAgentWalletManager

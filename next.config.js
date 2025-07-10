@@ -4,7 +4,7 @@ const nextConfig = {
   output: 'standalone',
   serverExternalPackages: ['ioredis'],
   typescript: {
-    // Temporarily ignore TypeScript errors for Railway deployment
+    // Temporarily ignore TypeScript errors for development
     ignoreBuildErrors: true,
   },
   eslint: {

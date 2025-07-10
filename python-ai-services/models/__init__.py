@@ -28,8 +28,7 @@ from .trading_history_models import (
     TradeSide,
     OrderStatus,
     OrderType,
-    TradeRecord,
-    TradingHistory
+    TradeRecord
 )
 
 from .hyperliquid_models import (
