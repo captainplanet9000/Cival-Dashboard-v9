@@ -119,6 +119,7 @@ export class OpenRouterService {
     this.client = new OpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: this.apiKey,
+      dangerouslyAllowBrowser: true, // Required for browser environment
       defaultHeaders: {
         'HTTP-Referer': 'https://cival-dashboard.vercel.app',
         'X-Title': 'Cival Trading Dashboard'

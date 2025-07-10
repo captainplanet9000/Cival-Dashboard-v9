@@ -93,7 +93,8 @@ class OpenAIProvider extends LLMProvider {
     }
     this.client = new OpenAI({
       apiKey: config.apiKey,
-      baseURL: config.baseURL
+      baseURL: config.baseURL,
+      dangerouslyAllowBrowser: true // Required for browser environment
     })
   }
 
@@ -377,7 +378,8 @@ class OpenRouterProvider extends LLMProvider {
     super(config)
     this.client = new OpenAI({
       apiKey: config.apiKey,
-      baseURL: config.baseURL || 'https://openrouter.ai/api/v1'
+      baseURL: config.baseURL || 'https://openrouter.ai/api/v1',
+      dangerouslyAllowBrowser: true // Required for browser environment
     })
   }
 
