@@ -617,5 +617,21 @@ class GoalProfitCollector extends EventEmitter {
   }
 }
 
-export const goalProfitCollector = new GoalProfitCollector()
+// Lazy initialization
+let goalProfitCollectorInstance: GoalProfitCollector | null = null
+
+export function getGoalProfitCollector(): GoalProfitCollector {
+  if (!goalProfitCollectorInstance) {
+    goalProfitCollectorInstance = new GoalProfitCollector()
+  }
+  return goalProfitCollectorInstance
+}
+
+// For backward compatibility
+export const goalProfitCollector = {
+  get instance() {
+    return getGoalProfitCollector()
+  }
+}
+
 export default goalProfitCollector

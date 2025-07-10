@@ -500,7 +500,22 @@ class PersistentAgentService extends EventEmitter {
 }
 
 // Export singleton instance
-export const persistentAgentService = new PersistentAgentService()
+// Lazy initialization
+let persistentAgentServiceInstance: PersistentAgentService | null = null
+
+export function getPersistentAgentService(): PersistentAgentService {
+  if (!persistentAgentServiceInstance) {
+    persistentAgentServiceInstance = new PersistentAgentService()
+  }
+  return persistentAgentServiceInstance
+}
+
+// For backward compatibility
+export const persistentAgentService = {
+  get instance() {
+    return getPersistentAgentService()
+  }
+}
 
 // Export types
 export type { PersistentAgent }

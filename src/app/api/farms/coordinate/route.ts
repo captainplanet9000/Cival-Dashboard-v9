@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseFarmsService } from '@/lib/services/supabase-farms-service'
-import { persistentAgentService } from '@/lib/agents/persistent-agent-service'
+import { getPersistentAgentService } from '@/lib/agents/persistent-agent-service'
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
 
 // LLM Integration for Farm Coordination
@@ -104,7 +104,7 @@ async function getFarmWithAgents(farmId: string) {
     if (!farm) return null
 
     // Get associated agents
-    const allAgents = persistentAgentService.getAllAgents()
+    const allAgents = getPersistentAgentService().getAllAgents()
     const farmAgents = allAgents.filter(agent => 
       agent.config?.farmId === farmId
     )
@@ -363,7 +363,7 @@ function calculatePerformanceScore(agent: any) {
 async function executeCapitalRebalance(rebalance: any) {
   // Update agent capital allocation
   if (rebalance.to !== 'farm_reserve') {
-    await persistentAgentService.updateAgentCapital(rebalance.to, rebalance.amount)
+    await getPersistentAgentService().updateAgentCapital(rebalance.to, rebalance.amount)
   }
   
   console.log(`💰 Capital rebalanced: ${rebalance.amount} from ${rebalance.from} to ${rebalance.to}`)
@@ -451,12 +451,15 @@ async function updateAgentGroupings(groupings: any) {
   // Update agent configurations with their group assignments
   for (const [group, agentIds] of Object.entries(groupings)) {
     for (const agentId of agentIds as string[]) {
-      const agent = persistentAgentService.getAgent(agentId)
+      const agent = getPersistentAgentService().getAgent(agentId)
       if (agent) {
         agent.config.group = group
-        await persistentAgentService.updateAgentPerformance(agentId, {
-          lastGroupUpdate: Date.now()
-        })
+        await getPersistentAgentService().updateAgentPerformance(agentId, {
+          totalPnL: agent.performance?.totalPnL || 0,
+          winRate: agent.performance?.winRate || 0,
+          totalTrades: agent.performance?.totalTrades || 0,
+          sharpeRatio: agent.performance?.sharpeRatio || 0
+        } as any)
       }
     }
   }
@@ -504,7 +507,7 @@ async function sendAgentCommunication(communication: any) {
   console.log(`📢 Agent ${communication.agentId}: ${communication.message} (Priority: ${communication.priority})`)
   
   // Update agent with communication log
-  const agent = persistentAgentService.getAgent(communication.agentId)
+  const agent = getPersistentAgentService().getAgent(communication.agentId)
   if (agent) {
     if (!agent.config.communications) agent.config.communications = []
     agent.config.communications.push({

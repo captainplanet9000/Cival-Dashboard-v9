@@ -10,9 +10,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { bankMasterAgent, PerformanceMetrics, ChatMessage, BankMasterDecision, ProfitCollection, VaultOperation } from '@/lib/agents/bank-master-agent'
-import { goalProfitCollector, GoalProfitMapping, ProfitCollectionRule } from '@/lib/agents/goal-profit-collector'
-import { autonomousTradingCoordinator } from '@/lib/agents/autonomous-trading-coordinator'
+import { getBankMasterAgent, PerformanceMetrics, ChatMessage, BankMasterDecision, ProfitCollection, VaultOperation } from '@/lib/agents/bank-master-agent'
+import { getGoalProfitCollector, GoalProfitMapping, ProfitCollectionRule } from '@/lib/agents/goal-profit-collector'
+import { getAutonomousTradingCoordinator } from '@/lib/agents/autonomous-trading-coordinator'
 import GoalsService from '@/lib/goals/goals-service'
 import FarmsService from '@/lib/farms/farms-service'
 import { masterWalletManager } from '@/lib/blockchain/master-wallet-manager'
@@ -176,7 +176,7 @@ export default function BankMasterDashboard() {
       setIsLoading(true)
       
       // Check if Bank Master is already active
-      const masterActive = bankMasterAgent.isActiveStatus()
+      const masterActive = getBankMasterAgent().isActiveStatus()
       setIsActive(masterActive)
       
       // Load initial data
@@ -194,40 +194,40 @@ export default function BankMasterDashboard() {
 
   const setupEventListeners = () => {
     // Bank Master events
-    bankMasterAgent.on('activated', () => {
+    getBankMasterAgent().on('activated', () => {
       setIsActive(true)
       refreshAllData()
     })
     
-    bankMasterAgent.on('deactivated', () => {
+    getBankMasterAgent().on('deactivated', () => {
       setIsActive(false)
     })
     
-    bankMasterAgent.on('performanceUpdated', (metrics: PerformanceMetrics) => {
+    getBankMasterAgent().on('performanceUpdated', (metrics: PerformanceMetrics) => {
       setPerformanceMetrics(metrics)
       updateStatsFromMetrics(metrics)
     })
     
-    bankMasterAgent.on('decisionMade', (decision: BankMasterDecision) => {
+    getBankMasterAgent().on('decisionMade', (decision: BankMasterDecision) => {
       setDecisions(prev => [decision, ...prev].slice(0, 20))
     })
     
-    bankMasterAgent.on('profitCollected', (collection: ProfitCollection) => {
+    getBankMasterAgent().on('profitCollected', (collection: ProfitCollection) => {
       setCollections(prev => [collection, ...prev].slice(0, 50))
       addProfitFlow(collection)
     })
     
-    bankMasterAgent.on('chatMessage', (message: ChatMessage) => {
+    getBankMasterAgent().on('chatMessage', (message: ChatMessage) => {
       setChatMessages(prev => [...prev, message])
     })
     
-    bankMasterAgent.on('emergencyStopExecuted', (data: any) => {
+    getBankMasterAgent().on('emergencyStopExecuted', (data: any) => {
       setEmergencyMode(true)
       setTimeout(() => setEmergencyMode(false), 30000) // Clear after 30 seconds
     })
 
     // Goal Profit Collector events
-    goalProfitCollector.on('goalProfitCollected', (mapping: GoalProfitMapping) => {
+    getGoalProfitCollector().on('goalProfitCollected', (mapping: GoalProfitMapping) => {
       addProfitFlow({
         id: `goal_${mapping.goalId}`,
         source: `Goal: ${mapping.goalName}`,
@@ -252,7 +252,7 @@ export default function BankMasterDashboard() {
       }
 
       // Load performance metrics
-      const metrics = bankMasterAgent.getPerformanceMetrics()
+      const metrics = getBankMasterAgent().getPerformanceMetrics()
       setPerformanceMetrics(metrics)
       
       if (metrics) {
@@ -375,7 +375,7 @@ export default function BankMasterDashboard() {
       setAgents(agentOverviews)
       
       // Also load fallback agents
-      const fallbackAgents = autonomousTradingCoordinator.getAllAgents()
+      const fallbackAgents = getAutonomousTradingCoordinator().getAllAgents()
       const fallbackOverviews: AgentOverview[] = fallbackAgents.map(agent => ({
         id: agent.id,
         name: agent.name,
@@ -438,13 +438,13 @@ export default function BankMasterDashboard() {
   }
 
   const loadBankMasterData = () => {
-    const masterDecisions = bankMasterAgent.getDecisions()
+    const masterDecisions = getBankMasterAgent().getDecisions()
     setDecisions(masterDecisions.slice(0, 20))
     
-    const masterCollections = bankMasterAgent.getProfitCollections()
+    const masterCollections = getBankMasterAgent().getProfitCollections()
     setCollections(masterCollections.slice(0, 50))
     
-    const masterOperations = bankMasterAgent.getVaultOperations()
+    const masterOperations = getBankMasterAgent().getVaultOperations()
     setVaultOperations(masterOperations.slice(0, 30))
   }
 
@@ -627,7 +627,7 @@ export default function BankMasterDashboard() {
 
   const handleActivateGoalCollector = async () => {
     try {
-      await goalProfitCollector.activate()
+      await getGoalProfitCollector().activate()
     } catch (error) {
       console.error('Failed to activate Goal Profit Collector:', error)
     }
@@ -789,7 +789,7 @@ export default function BankMasterDashboard() {
       if (!supabaseConnected || !bankMasterConfig) return
 
       // Trigger emergency collection
-      const success = await goalProfitCollector.emergencyCollectAll()
+      const success = await getGoalProfitCollector().emergencyCollectAll()
       
       if (success) {
         // Create collection record

@@ -615,6 +615,11 @@ class AgentTodoService {
 
   private async loadFromStorage(): Promise<void> {
     try {
+      // Check if we're in the browser environment
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return // Skip loading in server-side environment
+      }
+      
       const stored = localStorage.getItem('agent_todos')
       if (stored) {
         const data = JSON.parse(stored)
@@ -672,5 +677,20 @@ class AgentTodoService {
 }
 
 // Export singleton instance
-export const agentTodoService = new AgentTodoService()
+// Lazy initialization
+let agentTodoServiceInstance: AgentTodoService | null = null
+
+export function getAgentTodoService(): AgentTodoService {
+  if (!agentTodoServiceInstance) {
+    agentTodoServiceInstance = new AgentTodoService()
+  }
+  return agentTodoServiceInstance
+}
+
+// For backward compatibility
+export const agentTodoService = {
+  get instance() {
+    return getAgentTodoService()
+  }
+}
 export default agentTodoService

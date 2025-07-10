@@ -835,5 +835,20 @@ const DEFAULT_BANK_MASTER_CONFIG: BankMasterConfig = {
   mcpEnabled: true
 }
 
-export const bankMasterAgent = new BankMasterAgent(DEFAULT_BANK_MASTER_CONFIG)
+// Lazy initialization
+let bankMasterAgentInstance: BankMasterAgent | null = null
+
+export function getBankMasterAgent(): BankMasterAgent {
+  if (!bankMasterAgentInstance) {
+    bankMasterAgentInstance = new BankMasterAgent(DEFAULT_BANK_MASTER_CONFIG)
+  }
+  return bankMasterAgentInstance
+}
+
+// For backward compatibility
+export const bankMasterAgent = {
+  get instance() {
+    return getBankMasterAgent()
+  }
+}
 export default bankMasterAgent

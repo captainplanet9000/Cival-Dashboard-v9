@@ -680,5 +680,21 @@ class AutonomousTradingCoordinator extends EventEmitter {
   }
 }
 
-export const autonomousTradingCoordinator = new AutonomousTradingCoordinator()
+// Lazy initialization
+let autonomousTradingCoordinatorInstance: AutonomousTradingCoordinator | null = null
+
+export function getAutonomousTradingCoordinator(): AutonomousTradingCoordinator {
+  if (!autonomousTradingCoordinatorInstance) {
+    autonomousTradingCoordinatorInstance = new AutonomousTradingCoordinator()
+  }
+  return autonomousTradingCoordinatorInstance
+}
+
+// For backward compatibility
+export const autonomousTradingCoordinator = {
+  get instance() {
+    return getAutonomousTradingCoordinator()
+  }
+}
+
 export default autonomousTradingCoordinator
