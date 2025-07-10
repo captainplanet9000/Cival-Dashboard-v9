@@ -527,6 +527,8 @@ export class PaperTradingEventEmitter {
     fillQuantity: number,
     remainingQuantity: number
   ): void {
+    // TEMPORARILY DISABLED: paperTradingEventBus auto-instantiation disabled
+    /*
     paperTradingEventBus.emit('paper_order_filled', {
       agentId,
       accountId,
@@ -536,6 +538,7 @@ export class PaperTradingEventEmitter {
       remainingQuantity,
       timestamp: new Date().toISOString()
     });
+    */
   }
 
   static emitPositionOpened(
@@ -543,12 +546,15 @@ export class PaperTradingEventEmitter {
     accountId: string,
     position: AgentPaperPosition
   ): void {
+    // TEMPORARILY DISABLED: paperTradingEventBus auto-instantiation disabled
+    /*
     paperTradingEventBus.emit('paper_position_opened', {
       agentId,
       accountId,
       position,
       timestamp: new Date().toISOString()
     });
+    */
   }
 
   static emitRiskAlert(
@@ -556,12 +562,15 @@ export class PaperTradingEventEmitter {
     accountId: string,
     alert: AgentPaperTradingAlert
   ): void {
+    // TEMPORARILY DISABLED: paperTradingEventBus auto-instantiation disabled
+    /*
     paperTradingEventBus.emit('paper_risk_alert', {
       agentId,
       accountId,
       alert,
       timestamp: new Date().toISOString()
     });
+    */
   }
 
   static emitPerformanceUpdate(
@@ -574,12 +583,15 @@ export class PaperTradingEventEmitter {
       sharpeRatio: number;
     }
   ): void {
+    // TEMPORARILY DISABLED: paperTradingEventBus auto-instantiation disabled
+    /*
     paperTradingEventBus.emit('paper_performance_update', {
       agentId,
       accountId,
       performance,
       timestamp: new Date().toISOString()
     });
+    */
   }
 
   static emitAgentDecision(
@@ -587,22 +599,26 @@ export class PaperTradingEventEmitter {
     accountId: string,
     decision: AgentPaperTradingDecision
   ): void {
+    // TEMPORARILY DISABLED: paperTradingEventBus auto-instantiation disabled
+    /*
     paperTradingEventBus.emit('paper_agent_decision', {
       agentId,
       accountId,
       decision,
       timestamp: new Date().toISOString()
     });
+    */
   }
 }
 
 // React hook for paper trading events (optional)
 export function usePaperTradingEvents() {
+  // TEMPORARILY DISABLED: paperTradingEventBus auto-instantiation disabled
   return {
-    eventBus: paperTradingEventBus,
-    subscribe: paperTradingEventBus.subscribe.bind(paperTradingEventBus),
-    unsubscribe: paperTradingEventBus.unsubscribe.bind(paperTradingEventBus),
-    emit: paperTradingEventBus.emit.bind(paperTradingEventBus),
-    isConnected: paperTradingEventBus.isConnectedToServer.bind(paperTradingEventBus)
+    eventBus: null,
+    subscribe: () => '',
+    unsubscribe: () => false,
+    emit: () => {},
+    isConnected: () => false
   };
 }
