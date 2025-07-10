@@ -17,8 +17,8 @@ import {
 } from 'lucide-react'
 import { StrategyOptimizationDashboard } from '@/components/strategy/StrategyOptimizationDashboard'
 import { StrategyLearningTracker } from '@/components/strategy/StrategyLearningTracker'
-import { StrategyPerformancePanel } from '@/components/strategy/StrategyPerformancePanel'
-import { StrategySignalFeed } from '@/components/strategy/StrategySignalFeed'
+import StrategyPerformancePanel from '@/components/strategy/StrategyPerformancePanel'
+import StrategySignalFeed from '@/components/strategy/StrategySignalFeed'
 import { agentMarketDataService } from '@/lib/agents/agent-market-data-service'
 import { StrategyType } from '@/lib/supabase/strategy-service'
 
@@ -65,7 +65,7 @@ export default function StrategyAnalyticsPage() {
       description: 'Candlestick analysis for trend identification'
     },
     {
-      type: 'renko',
+      type: 'renko_breakout',
       name: 'Renko',
       description: 'Brick-based price movement analysis'
     }
@@ -265,11 +265,8 @@ export default function StrategyAnalyticsPage() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StrategyPerformancePanel agentId={selectedAgent || undefined} />
-              <StrategySignalFeed 
-                agentId={selectedAgent || undefined}
-                strategyType={selectedStrategy || undefined}
-              />
+              <StrategyPerformancePanel />
+              <StrategySignalFeed />
             </div>
           </TabsContent>
 
@@ -293,11 +290,7 @@ export default function StrategyAnalyticsPage() {
           {/* Signals Tab */}
           <TabsContent value="signals" className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
-              <StrategySignalFeed 
-                agentId={selectedAgent || undefined}
-                strategyType={selectedStrategy || undefined}
-                showFilters={true}
-              />
+              <StrategySignalFeed />
             </div>
           </TabsContent>
         </Tabs>

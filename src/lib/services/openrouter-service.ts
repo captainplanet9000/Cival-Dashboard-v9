@@ -114,7 +114,7 @@ export class OpenRouterService {
   }
 
   constructor() {
-    this.apiKey = process.env.OPENROUTER_API_KEY || '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'
+    this.apiKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || ''
     
     this.client = new OpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
