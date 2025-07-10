@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import FundingDashboard from '@/components/funding/FundingDashboard'
 import { autonomousTradingCoordinator, AutonomousAgent } from '@/lib/agents/autonomous-trading-coordinator'
-import { masterWalletManager } from '@/lib/blockchain/master-wallet-manager'
+import { getMasterWalletManager } from '@/lib/blockchain/master-wallet-manager'
 import { dexTradingEngine } from '@/lib/dex/dex-trading-engine'
 import { Wallet, Bot, TrendingUp, DollarSign, Activity, AlertTriangle, CheckCircle, Play, Pause, Square } from 'lucide-react'
 

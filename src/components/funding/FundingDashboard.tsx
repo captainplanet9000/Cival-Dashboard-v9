@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { masterWalletManager, MasterWallet, FundingTransaction, AgentAllocation } from '@/lib/blockchain/master-wallet-manager'
-import { testnetWalletManager } from '@/lib/blockchain/testnet-wallet-manager'
-import { agentWalletIntegration } from '@/lib/blockchain/agent-wallet-integration'
+import { getMasterWalletManager, MasterWallet, FundingTransaction, AgentAllocation } from '@/lib/blockchain/master-wallet-manager'
+import { getTestnetWalletManager } from '@/lib/blockchain/testnet-wallet-manager'
+import { getAgentWalletIntegration } from '@/lib/blockchain/agent-wallet-integration'
 import { Copy, ExternalLink, Wallet, Send, Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 export default function FundingDashboard() {
@@ -34,16 +34,16 @@ export default function FundingDashboard() {
 
   const loadFundingData = async () => {
     try {
-      const wallets = masterWalletManager.getAllMasterWallets()
+      const wallets = getMasterWalletManager().getAllMasterWallets()
       setMasterWallets(wallets)
       
-      const allocations = masterWalletManager.getAgentAllocations()
+      const allocations = getMasterWalletManager().getAgentAllocations()
       setAgentAllocations(allocations)
       
       // Load transactions for all wallets
       const allTransactions: FundingTransaction[] = []
       wallets.forEach(wallet => {
-        const txs = masterWalletManager.getFundingTransactions(wallet.id)
+        const txs = getMasterWalletManager().getFundingTransactions(wallet.id)
         allTransactions.push(...txs)
       })
       setFundingTransactions(allTransactions.sort((a, b) => 
@@ -57,25 +57,25 @@ export default function FundingDashboard() {
 
   const setupEventListeners = () => {
     // Listen for deposit detection
-    masterWalletManager.on('depositDetected', (data) => {
+    getMasterWalletManager().on('depositDetected', (data) => {
       setSuccess(`Deposit detected: $${data.amount.toFixed(2)}`)
       loadFundingData()
     })
 
     // Listen for allocation confirmations
-    masterWalletManager.on('allocationConfirmed', (data) => {
+    getMasterWalletManager().on('allocationConfirmed', (data) => {
       setSuccess(`Fund allocation confirmed: $${data.amount} to agent`)
       loadFundingData()
     })
 
     // Listen for withdrawal confirmations
-    masterWalletManager.on('withdrawalInitiated', (data) => {
+    getMasterWalletManager().on('withdrawalInitiated', (data) => {
       setSuccess(`Withdrawal initiated: $${data.transaction.amount}`)
       loadFundingData()
     })
 
     return () => {
-      masterWalletManager.removeAllListeners()
+      getMasterWalletManager().removeAllListeners()
     }
   }
 
@@ -83,7 +83,7 @@ export default function FundingDashboard() {
     setLoading(true)
     setError(null)
     try {
-      const wallet = await masterWalletManager.createMasterWallet(
+      const wallet = await getMasterWalletManager().createMasterWallet(
         `Master Wallet ${selectedChain}`,
         selectedChain,
         false // Start with testnet for safety
@@ -107,7 +107,7 @@ export default function FundingDashboard() {
     setLoading(true)
     setError(null)
     try {
-      await masterWalletManager.checkForDeposits(walletId)
+      await getMasterWalletManager().checkForDeposits(walletId)
       setSuccess('Checked for new deposits')
       loadFundingData()
     } catch (error) {
@@ -127,7 +127,7 @@ export default function FundingDashboard() {
     setLoading(true)
     setError(null)
     try {
-      const success = await masterWalletManager.allocateFundsToAgent(
+      const success = await getMasterWalletManager().allocateFundsToAgent(
         selectedAgentId,
         `Agent ${selectedAgentId}`,
         parseFloat(allocationAmount),
@@ -168,7 +168,7 @@ export default function FundingDashboard() {
   }
 
   const masterWallet = masterWallets.find(w => w.chain === selectedChain)
-  const summary = masterWalletManager.getAllocationSummary()
+  const summary = getMasterWalletManager().getAllocationSummary()
 
   return (
     <div className="p-6 space-y-6">

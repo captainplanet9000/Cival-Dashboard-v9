@@ -360,6 +360,11 @@ class SecureAPIManager {
    */
   private async loadStoredCredentials(): Promise<void> {
     try {
+      // Skip localStorage access during SSR/build
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const stored = localStorage.getItem('cival_encrypted_credentials')
       if (stored) {
         const decryptedData = this.decrypt(stored)
@@ -381,6 +386,11 @@ class SecureAPIManager {
    */
   private async persistCredentials(): Promise<void> {
     try {
+      // Skip localStorage access during SSR/build
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return
+      }
+      
       const credentialsArray = Array.from(this.credentials.values())
       const jsonData = JSON.stringify(credentialsArray)
       const encryptedData = this.encrypt(jsonData)
