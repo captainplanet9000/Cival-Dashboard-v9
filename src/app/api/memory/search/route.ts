@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
 
     let memories
     if (semantic) {
-      memories = await unifiedMemoryService.semanticSearch(agentId, query, limit)
+      memories = await getUnifiedMemoryService().semanticSearch(agentId, query, limit)
     } else {
-      memories = await unifiedMemoryService.retrieveMemories(agentId, {
+      memories = await getUnifiedMemoryService().retrieveMemories(agentId, {
         query,
         limit,
         sortBy: 'relevance'

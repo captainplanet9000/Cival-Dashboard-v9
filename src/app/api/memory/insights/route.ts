@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const insights = await unifiedMemoryService.getMemoryInsights(agentId)
+    const insights = await getUnifiedMemoryService().getMemoryInsights(agentId)
 
     return NextResponse.json({
       success: true,
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    await unifiedMemoryService.recordTradeOutcome(agentId, memoryId, outcome)
+    await getUnifiedMemoryService().recordTradeOutcome(agentId, memoryId, outcome)
 
     return NextResponse.json({
       success: true,

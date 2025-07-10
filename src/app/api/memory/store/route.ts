@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const memoryId = await unifiedMemoryService.storeMemory(
+    const memoryService = getUnifiedMemoryService()
+    const memoryId = await memoryService.storeMemory(
       agentId,
       content,
       memoryType,
@@ -92,7 +93,8 @@ export async function GET(request: NextRequest) {
       includeArchived: searchParams.get('includeArchived') === 'true'
     }
 
-    const memories = await unifiedMemoryService.retrieveMemories(agentId, options)
+    const memoryService = getUnifiedMemoryService()
+    const memories = await memoryService.retrieveMemories(agentId, options)
 
     return NextResponse.json({
       success: true,

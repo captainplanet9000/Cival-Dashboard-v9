@@ -18,7 +18,27 @@ export class KnowledgeEventEmitter {
   
   static getInstance(): KnowledgeEventEmitter {
     if (!KnowledgeEventEmitter.instance) {
-      KnowledgeEventEmitter.instance = new KnowledgeEventEmitter();
+      try {
+        KnowledgeEventEmitter.instance = new KnowledgeEventEmitter();
+      } catch (error) {
+        console.error('Failed to create KnowledgeEventEmitter:', error);
+        // Return a mock instance to prevent initialization errors
+        KnowledgeEventEmitter.instance = {
+          emitKnowledgeAccess: () => {},
+          emitGoalManagement: () => {},
+          emitLearningProgress: () => {},
+          emitKnowledgeRecommendation: () => {},
+          emitResourceUpload: () => {},
+          onKnowledgeAccess: () => {},
+          onGoalManagement: () => {},
+          onLearningProgress: () => {},
+          onKnowledgeRecommendation: () => {},
+          onResourceUpload: () => {},
+          emitGoalCreated: () => {},
+          emitResourceSearch: () => {},
+          emitResourceAccessed: () => {}
+        } as any;
+      }
     }
     return KnowledgeEventEmitter.instance;
   }

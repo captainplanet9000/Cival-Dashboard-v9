@@ -26,7 +26,7 @@ import {
   Clock,
   Star
 } from 'lucide-react'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 import { getSemanticSearchService } from '@/lib/memory/semantic-search-service'
 import { useMemoryUpdates } from '@/lib/realtime/websocket'
 
@@ -88,15 +88,15 @@ export function AdvancedMemoryAnalytics() {
   const loadAnalyticsData = async () => {
     try {
       // Load memory statistics
-      const stats = await unifiedMemoryService.getLearningMetrics(selectedAgent)
+      const stats = await getUnifiedMemoryService().getLearningMetrics(selectedAgent)
       setMemoryStats(stats)
 
       // Load memory clusters
-      const clusterData = await unifiedMemoryService.getMemoryClusters(selectedAgent)
+      const clusterData = await getUnifiedMemoryService().getMemoryClusters(selectedAgent)
       const analyzedClusters = await Promise.all(
         clusterData.map(async (cluster) => {
           // Get memories in this cluster
-          const memories = await unifiedMemoryService.retrieveMemories(selectedAgent, {
+          const memories = await getUnifiedMemoryService().retrieveMemories(selectedAgent, {
             clusterId: cluster.id,
             limit: 100
           })
@@ -143,7 +143,7 @@ export function AdvancedMemoryAnalytics() {
     
     setIsSearching(true)
     try {
-      const results = await unifiedMemoryService.semanticSearch(
+      const results = await getUnifiedMemoryService().semanticSearch(
         selectedAgent,
         searchQuery,
         10,

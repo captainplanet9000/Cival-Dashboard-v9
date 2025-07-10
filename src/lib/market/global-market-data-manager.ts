@@ -18,6 +18,7 @@ import {
   MarketEvent,
   MarketAnalysis
 } from '@/types/market-data'
+import { buildMarketProxyUrl } from '@/lib/utils/api-url-builder'
 
 class GlobalMarketDataManager {
   private static instance: GlobalMarketDataManager
@@ -438,19 +439,24 @@ class GlobalMarketDataManager {
         
         try {
           // Using our proxy to avoid CORS and protect API key
-          const response = await fetch(
-            `/api/market/proxy?provider=messari&asset=${asset}`,
-            { 
-              headers: { 
-                'Accept': 'application/json',
-                'X-Api-Key': apiKey 
-              },
-              cache: 'no-store'
-            }
-          )
+          const proxyUrl = buildMarketProxyUrl('messari', { asset })
+          
+          const response = await fetch(proxyUrl, { 
+            headers: { 
+              'Accept': 'application/json',
+              'X-Api-Key': apiKey 
+            },
+            cache: 'no-store'
+          })
           
           if (!response.ok) {
-            throw new Error(`Messari API error: ${response.status}`)
+            // Handle rate limiting with exponential backoff
+            if (response.status === 429) {
+              console.warn(`Messari rate limit exceeded for ${symbol}, implementing backoff`)
+              const backoffTime = Math.min(1000 * Math.pow(2, Math.floor(Math.random() * 4)), 8000) // 1s to 8s
+              await new Promise(resolve => setTimeout(resolve, backoffTime))
+            }
+            throw new Error(`Messari API error: ${response.status} ${response.statusText}`)
           }
           
           const data = await response.json()
@@ -506,16 +512,15 @@ class GlobalMarketDataManager {
         
         try {
           // Using our proxy to avoid CORS and protect API key
-          const response = await fetch(
-            `/api/market/proxy?provider=coinapi&symbol=${apiSymbol}`,
-            { 
-              headers: { 
-                'Accept': 'application/json',
-                'X-CoinAPI-Key': apiKey 
-              },
-              cache: 'no-store'
-            }
-          )
+          const proxyUrl = buildMarketProxyUrl('coinapi', { symbol: apiSymbol })
+          
+          const response = await fetch(proxyUrl, { 
+            headers: { 
+              'Accept': 'application/json',
+              'X-CoinAPI-Key': apiKey 
+            },
+            cache: 'no-store'
+          })
           
           if (!response.ok) {
             throw new Error(`CoinAPI error: ${response.status}`)
@@ -803,13 +808,12 @@ class GlobalMarketDataManager {
       const ids = symbols.map(s => symbolMap[s]).filter(Boolean).join(',')
       if (!ids) return []
 
-      const response = await fetch(
-        `/api/market/proxy?provider=coingecko&symbols=${ids}`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store'
-        }
-      )
+      const proxyUrl = buildMarketProxyUrl('coingecko', { symbols: ids })
+      
+      const response = await fetch(proxyUrl, { 
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      })
 
       if (!response.ok) {
         throw new Error(`CoinGecko API error: ${response.status}`)

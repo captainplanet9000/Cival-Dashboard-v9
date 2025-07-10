@@ -353,10 +353,29 @@ let wsClient: EnhancedWebSocketClient | null = null
 
 export function getWebSocketClient(): EnhancedWebSocketClient {
   if (!wsClient) {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/agui'
-    wsClient = EnhancedWebSocketClient.create(wsUrl, {
-      debug: process.env.NODE_ENV === 'development'
-    })
+    try {
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/agui'
+      wsClient = EnhancedWebSocketClient.create(wsUrl, {
+        debug: process.env.NODE_ENV === 'development'
+      })
+    } catch (error) {
+      console.error('Failed to create WebSocket client:', error)
+      // Create a mock client that doesn't cause initialization errors
+      wsClient = {
+        connect: () => {},
+        disconnect: () => {},
+        send: () => {},
+        sendEvent: () => {},
+        subscribe: () => () => {},
+        request: () => Promise.resolve({}),
+        on: () => {},
+        off: () => {},
+        emit: () => {},
+        isConnected: () => false,
+        getConnectionState: () => 'disconnected',
+        getQueueSize: () => 0
+      } as any
+    }
   }
   return wsClient
 }

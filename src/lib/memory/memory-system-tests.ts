@@ -6,7 +6,7 @@
  * Phase 4: Production Deployment and Testing
  */
 
-import { unifiedMemoryService } from './unified-memory-service'
+import { getUnifiedMemoryService } from './unified-memory-service'
 import { getSemanticSearchService } from './semantic-search-service'
 import { getPatternRecognitionService } from './pattern-recognition-service'
 import { getPerformanceOptimizationService } from './performance-optimization-service'
@@ -226,7 +226,7 @@ export class MemorySystemTestRunner {
     const startTime = Date.now()
     
     try {
-      const memoryId = await unifiedMemoryService.storeMemory(
+      const memoryId = await getUnifiedMemoryService().storeMemory(
         agentId,
         'Test memory for unit testing',
         'trade_decision',
@@ -261,7 +261,7 @@ export class MemorySystemTestRunner {
     const startTime = Date.now()
     
     try {
-      const memories = await unifiedMemoryService.retrieveMemories(agentId, {
+      const memories = await getUnifiedMemoryService().retrieveMemories(agentId, {
         limit: 10
       })
 
@@ -294,14 +294,14 @@ export class MemorySystemTestRunner {
     
     try {
       // First store a memory
-      const memoryId = await unifiedMemoryService.storeMemory(
+      const memoryId = await getUnifiedMemoryService().storeMemory(
         agentId,
         'Memory to update',
         'market_insight'
       )
 
       // Then update it
-      const success = await unifiedMemoryService.updateMemory(memoryId, {
+      const success = await getUnifiedMemoryService().updateMemory(memoryId, {
         content: 'Updated memory content',
         importanceScore: 0.9
       })
@@ -334,14 +334,14 @@ export class MemorySystemTestRunner {
     
     try {
       // Store a memory
-      const memoryId = await unifiedMemoryService.storeMemory(
+      const memoryId = await getUnifiedMemoryService().storeMemory(
         agentId,
         'Memory to archive',
         'risk_observation'
       )
 
       // Archive it
-      const success = await unifiedMemoryService.archiveMemory(memoryId)
+      const success = await getUnifiedMemoryService().archiveMemory(memoryId)
 
       if (!success) {
         throw new Error('Memory archiving returned false')
@@ -402,11 +402,11 @@ export class MemorySystemTestRunner {
     
     try {
       // Store some memories first
-      await unifiedMemoryService.storeMemory(agentId, 'Profitable BTC trade', 'trade_decision')
-      await unifiedMemoryService.storeMemory(agentId, 'Bitcoin price analysis', 'market_insight')
+      await getUnifiedMemoryService().storeMemory(agentId, 'Profitable BTC trade', 'trade_decision')
+      await getUnifiedMemoryService().storeMemory(agentId, 'Bitcoin price analysis', 'market_insight')
       
       // Perform semantic search
-      const results = await unifiedMemoryService.semanticSearch(agentId, 'Bitcoin trading', 5)
+      const results = await getUnifiedMemoryService().semanticSearch(agentId, 'Bitcoin trading', 5)
 
       if (!Array.isArray(results)) {
         throw new Error('Semantic search did not return array')
@@ -545,7 +545,7 @@ export class MemorySystemTestRunner {
     const startTime = Date.now()
     
     try {
-      const recommendations = await unifiedMemoryService.getPatternRecommendations(agentId)
+      const recommendations = await getUnifiedMemoryService().getPatternRecommendations(agentId)
 
       if (!Array.isArray(recommendations)) {
         throw new Error('Pattern recommendations did not return array')
@@ -611,7 +611,7 @@ export class MemorySystemTestRunner {
       // Store some memories
       const memoryIds = []
       for (let i = 0; i < 3; i++) {
-        const id = await unifiedMemoryService.storeMemory(
+        const id = await getUnifiedMemoryService().storeMemory(
           agentId,
           `Test memory ${i} for clustering`,
           'strategy_learning'
@@ -619,7 +619,7 @@ export class MemorySystemTestRunner {
         memoryIds.push(id)
       }
 
-      const clusterId = await unifiedMemoryService.createCluster(
+      const clusterId = await getUnifiedMemoryService().createCluster(
         agentId,
         'Test Cluster',
         'strategy',
@@ -658,7 +658,7 @@ export class MemorySystemTestRunner {
       // Store memories that should form patterns
       const tradeMemories = []
       for (let i = 0; i < 5; i++) {
-        const memoryId = await unifiedMemoryService.storeMemory(
+        const memoryId = await getUnifiedMemoryService().storeMemory(
           agentId,
           `Successful BTC trade ${i}`,
           'trade_decision',
@@ -711,7 +711,7 @@ export class MemorySystemTestRunner {
       }
 
       // Store market analysis memory
-      const analysisId = await unifiedMemoryService.storeMemory(
+      const analysisId = await getUnifiedMemoryService().storeMemory(
         agentId,
         `Market analysis: ${marketData.symbol} bullish momentum`,
         'market_insight',
@@ -720,7 +720,7 @@ export class MemorySystemTestRunner {
       )
 
       // Store trading decision memory
-      const decisionId = await unifiedMemoryService.storeMemory(
+      const decisionId = await getUnifiedMemoryService().storeMemory(
         agentId,
         `Trading decision: BUY ${marketData.symbol}`,
         'trade_decision',
@@ -734,7 +734,7 @@ export class MemorySystemTestRunner {
       )
 
       // Record trade outcome
-      await unifiedMemoryService.recordTradeOutcome(agentId, decisionId, {
+      await getUnifiedMemoryService().recordTradeOutcome(agentId, decisionId, {
         pnl: 250,
         success: true,
         executionTime: 150,
@@ -768,12 +768,12 @@ export class MemorySystemTestRunner {
       let updateReceived = false
       
       // Listen for memory updates
-      unifiedMemoryService.on('memoryStored', () => {
+      getUnifiedMemoryService().on('memoryStored', () => {
         updateReceived = true
       })
 
       // Store a memory to trigger update
-      await unifiedMemoryService.storeMemory(
+      await getUnifiedMemoryService().storeMemory(
         agentId,
         'Test memory for realtime updates',
         'pattern_recognition'
@@ -833,14 +833,14 @@ export class MemorySystemTestRunner {
     
     try {
       // Store memory
-      const memoryId = await unifiedMemoryService.storeMemory(
+      const memoryId = await getUnifiedMemoryService().storeMemory(
         agentId,
         'Persistence test memory',
         'performance_feedback'
       )
 
       // Retrieve memory to verify persistence
-      const memories = await unifiedMemoryService.retrieveMemories(agentId, {
+      const memories = await getUnifiedMemoryService().retrieveMemories(agentId, {
         limit: 1
       })
 
@@ -913,7 +913,7 @@ export class MemorySystemTestRunner {
       const promises = []
       for (let i = 0; i < memoryCount; i++) {
         promises.push(
-          unifiedMemoryService.storeMemory(
+          getUnifiedMemoryService().storeMemory(
             agentId,
             `Performance test memory ${i}`,
             'trade_decision'
@@ -960,7 +960,7 @@ export class MemorySystemTestRunner {
       
       for (let i = 0; i < searchCount; i++) {
         searchPromises.push(
-          unifiedMemoryService.semanticSearch(agentId, `search query ${i}`, 5)
+          getUnifiedMemoryService().semanticSearch(agentId, `search query ${i}`, 5)
         )
       }
 
@@ -1172,7 +1172,7 @@ export class MemorySystemTestRunner {
       const promises = []
       for (let i = 0; i < memoryCount; i++) {
         promises.push(
-          unifiedMemoryService.storeMemory(
+          getUnifiedMemoryService().storeMemory(
             agentId,
             `Stress test memory ${i}`,
             'trade_decision',
@@ -1219,15 +1219,15 @@ export class MemorySystemTestRunner {
       const operations = [
         // Storage operations
         ...Array.from({ length: 20 }, (_, i) => 
-          unifiedMemoryService.storeMemory(agentId, `Concurrent store ${i}`, 'trade_decision')
+          getUnifiedMemoryService().storeMemory(agentId, `Concurrent store ${i}`, 'trade_decision')
         ),
         // Retrieval operations
         ...Array.from({ length: 10 }, () => 
-          unifiedMemoryService.retrieveMemories(agentId, { limit: 5 })
+          getUnifiedMemoryService().retrieveMemories(agentId, { limit: 5 })
         ),
         // Search operations
         ...Array.from({ length: 5 }, (_, i) => 
-          unifiedMemoryService.semanticSearch(agentId, `concurrent search ${i}`, 3)
+          getUnifiedMemoryService().semanticSearch(agentId, `concurrent search ${i}`, 3)
         )
       ]
 
@@ -1269,14 +1269,14 @@ export class MemorySystemTestRunner {
       // Test with very large memory content
       const largeContent = 'A'.repeat(100000) // 100KB content
       
-      const memoryId = await unifiedMemoryService.storeMemory(
+      const memoryId = await getUnifiedMemoryService().storeMemory(
         agentId,
         largeContent,
         'market_insight'
       )
 
       // Test retrieval of large memory
-      const memories = await unifiedMemoryService.retrieveMemories(agentId, {
+      const memories = await getUnifiedMemoryService().retrieveMemories(agentId, {
         limit: 1
       })
 
@@ -1354,17 +1354,17 @@ export class MemorySystemTestRunner {
 
       // Test 1: Invalid memory type
       try {
-        await unifiedMemoryService.storeMemory(agentId, 'Test', 'invalid_type' as any)
+        await getUnifiedMemoryService().storeMemory(agentId, 'Test', 'invalid_type' as any)
       } catch (error) {
         recoveryTests++
         // Should gracefully handle invalid type
-        const fallbackId = await unifiedMemoryService.storeMemory(agentId, 'Test', 'trade_decision')
+        const fallbackId = await getUnifiedMemoryService().storeMemory(agentId, 'Test', 'trade_decision')
         if (fallbackId) recoverySuccesses++
       }
 
       // Test 2: Missing required fields
       try {
-        await unifiedMemoryService.storeMemory('', '', 'trade_decision')
+        await getUnifiedMemoryService().storeMemory('', '', 'trade_decision')
       } catch (error) {
         recoveryTests++
         // Should handle missing fields gracefully
@@ -1384,7 +1384,7 @@ export class MemorySystemTestRunner {
       for (const op of mixedOperations) {
         try {
           if (op.valid && op.content) {
-            await unifiedMemoryService.storeMemory(agentId, op.content, 'trade_decision')
+            await getUnifiedMemoryService().storeMemory(agentId, op.content, 'trade_decision')
             partialSuccesses++
           }
         } catch (error) {

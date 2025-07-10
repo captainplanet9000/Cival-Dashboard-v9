@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const metrics = await unifiedMemoryService.getLearningMetrics(agentId)
+    const metrics = await getUnifiedMemoryService().getLearningMetrics(agentId)
 
     return NextResponse.json({
       success: true,

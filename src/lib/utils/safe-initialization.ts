@@ -10,8 +10,9 @@ export function createSafeEventEmitter() {
   try {
     // Use dynamic import to avoid require()
     if (typeof window === 'undefined') {
-      // Node.js environment
-      return new (eval('require')('events').EventEmitter)()
+      // Node.js environment - use direct import instead of eval
+      const { EventEmitter } = require('events')
+      return new EventEmitter()
     } else {
       // Browser environment - return fallback
       return {

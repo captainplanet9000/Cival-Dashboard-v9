@@ -21,7 +21,7 @@ import {
   Zap,
   Activity
 } from 'lucide-react'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 import { useMemoryUpdates, useMemoryInsights } from '@/lib/realtime/websocket'
 
 interface TradingDecision {
@@ -61,7 +61,7 @@ export function MemoryIntegratedTrading() {
 
   const loadRecentMemories = async () => {
     try {
-      const memories = await unifiedMemoryService.retrieveMemories(selectedAgent, {
+      const memories = await getUnifiedMemoryService().retrieveMemories(selectedAgent, {
         limit: 5,
         sortBy: 'recent'
       })
@@ -78,7 +78,7 @@ export function MemoryIntegratedTrading() {
     
     try {
       // 1. Analyze recent memories for trading context
-      const relevantMemories = await unifiedMemoryService.retrieveMemories(selectedAgent, {
+      const relevantMemories = await getUnifiedMemoryService().retrieveMemories(selectedAgent, {
         memoryTypes: ['trade_decision', 'market_insight', 'strategy_learning'],
         limit: 10
       })
@@ -93,7 +93,7 @@ export function MemoryIntegratedTrading() {
       const priceChange = (Math.random() - 0.5) * 10
 
       // 3. Store market observation as memory
-      const marketMemoryId = await unifiedMemoryService.storeMemory(
+      const marketMemoryId = await getUnifiedMemoryService().storeMemory(
         selectedAgent,
         `Market analysis: ${selectedSymbol} at $${currentPrice.toFixed(2)}, ${priceChange > 0 ? '+' : ''}${priceChange.toFixed(2)}% change`,
         'market_insight',
@@ -138,7 +138,7 @@ export function MemoryIntegratedTrading() {
       }
 
       // 5. Store trading decision as memory
-      const decisionMemoryId = await unifiedMemoryService.storeMemory(
+      const decisionMemoryId = await getUnifiedMemoryService().storeMemory(
         selectedAgent,
         `Trading decision: ${decision.toUpperCase()} ${selectedSymbol} with ${(confidence * 100).toFixed(1)}% confidence - ${reasoning}`,
         'trade_decision',
@@ -185,7 +185,7 @@ export function MemoryIntegratedTrading() {
           ? Math.random() * 500 + 50
           : -(Math.random() * 300 + 25)
 
-        await unifiedMemoryService.recordTradeOutcome(selectedAgent, decisionMemoryId, {
+        await getUnifiedMemoryService().recordTradeOutcome(selectedAgent, decisionMemoryId, {
           outcome,
           pnl,
           executionPrice: currentPrice,
@@ -193,7 +193,7 @@ export function MemoryIntegratedTrading() {
           duration: '5m'
         })
 
-        await unifiedMemoryService.storeMemory(
+        await getUnifiedMemoryService().storeMemory(
           selectedAgent,
           `Trade outcome: ${outcome.toUpperCase()} - P&L: $${pnl.toFixed(2)} on ${selectedSymbol}`,
           'performance_feedback',

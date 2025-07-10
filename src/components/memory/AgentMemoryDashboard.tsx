@@ -18,7 +18,7 @@ import {
   Zap
 } from 'lucide-react'
 import { 
-  unifiedMemoryService, 
+  getUnifiedMemoryService, 
   type UnifiedMemory, 
   type MemorySearchOptions 
 } from '@/lib/memory/unified-memory-service'
@@ -53,14 +53,15 @@ export function AgentMemoryDashboard() {
       }
     }
 
-    unifiedMemoryService.on('memoryStored', handleMemoryUpdate)
-    unifiedMemoryService.on('memoryUpdated', handleMemoryUpdate)
-    unifiedMemoryService.on('memoryArchived', handleMemoryUpdate)
+    const memoryService = getUnifiedMemoryService()
+    memoryService.on('memoryStored', handleMemoryUpdate)
+    memoryService.on('memoryUpdated', handleMemoryUpdate)
+    memoryService.on('memoryArchived', handleMemoryUpdate)
 
     return () => {
-      unifiedMemoryService.off('memoryStored', handleMemoryUpdate)
-      unifiedMemoryService.off('memoryUpdated', handleMemoryUpdate)
-      unifiedMemoryService.off('memoryArchived', handleMemoryUpdate)
+      memoryService.off('memoryStored', handleMemoryUpdate)
+      memoryService.off('memoryUpdated', handleMemoryUpdate)
+      memoryService.off('memoryArchived', handleMemoryUpdate)
     }
   }, [selectedAgent])
 
@@ -123,8 +124,9 @@ export function AgentMemoryDashboard() {
 
     try {
       setLoading(true)
-      const agentMemories = await unifiedMemoryService.retrieveMemories(selectedAgent, { limit: 20 })
-      const stats = await unifiedMemoryService.getLearningMetrics(selectedAgent)
+      const memoryService = getUnifiedMemoryService()
+      const agentMemories = await memoryService.retrieveMemories(selectedAgent, { limit: 20 })
+      const stats = await memoryService.getLearningMetrics(selectedAgent)
       
       setMemories(agentMemories)
       setMemoryStats(stats)
@@ -150,7 +152,8 @@ export function AgentMemoryDashboard() {
       }
 
       // Store this as a market insight memory
-      const memoryId = await unifiedMemoryService.storeMemory(
+      const memoryService = getUnifiedMemoryService()
+      const memoryId = await memoryService.storeMemory(
         selectedAgent,
         `Market analysis for ${mockMarketData.symbol}: Price ${mockMarketData.price.toFixed(2)}, 24h change ${mockMarketData.changePercent24h.toFixed(2)}%`,
         'market_insight',
@@ -163,7 +166,7 @@ export function AgentMemoryDashboard() {
       )
 
       // Simulate decision based on recent memories
-      const recentMemories = await unifiedMemoryService.retrieveMemories(selectedAgent, { limit: 5 })
+      const recentMemories = await memoryService.retrieveMemories(selectedAgent, { limit: 5 })
       
       // Simple decision logic based on market data and recent memories
       let decision = 'hold'
@@ -181,7 +184,7 @@ export function AgentMemoryDashboard() {
       }
 
       // Store the decision memory
-      await unifiedMemoryService.storeMemory(
+      await memoryService.storeMemory(
         selectedAgent,
         `Trading decision: ${decision.toUpperCase()} ${mockMarketData.symbol} with ${(confidence * 100).toFixed(1)}% confidence`,
         'trade_decision',

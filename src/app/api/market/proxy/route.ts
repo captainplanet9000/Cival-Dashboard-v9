@@ -1,4 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { marketDataLogger } from '@/lib/market/market-data-logger'
+
+// Global rate limiting for APIs
+declare global {
+  var lastMessariRequest: number
+  var lastCoinAPIRequest: number
+}
+
+// Initialize globals
+if (!global.lastMessariRequest) global.lastMessariRequest = 0
+if (!global.lastCoinAPIRequest) global.lastCoinAPIRequest = 0
 
 /**
  * CORS-safe market data proxy API
@@ -8,7 +19,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    // Fix for Railway deployment - handle the URL properly
+    const url = new URL(request.url)
+    const { searchParams } = url
     const provider = searchParams.get('provider') || 'messari'
     const symbols = searchParams.get('symbols') || 'bitcoin,ethereum,solana'
     // For specific asset lookup (Messari)
@@ -89,13 +102,73 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`🔄 Proxying request to ${provider}: ${apiUrl}`)
+    marketDataLogger.info(provider, `Proxying request to ${apiUrl}`, { asset, symbol, symbols })
 
+    // Add rate limiting for Messari and CoinAPI to avoid 429 errors
+    if (provider === 'messari') {
+      // Simple in-memory rate limiting
+      const now = Date.now()
+      const lastRequest = global.lastMessariRequest || 0
+      const minInterval = 600 // 600ms between requests (100 requests per minute)
+      
+      if (now - lastRequest < minInterval) {
+        const waitTime = minInterval - (now - lastRequest)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+      }
+      
+      global.lastMessariRequest = Date.now()
+    }
+    
+    if (provider === 'coinapi') {
+      // CoinAPI rate limiting
+      const now = Date.now()
+      const lastRequest = global.lastCoinAPIRequest || 0
+      const minInterval = 600 // 600ms between requests (100 requests per minute)
+      
+      if (now - lastRequest < minInterval) {
+        const waitTime = minInterval - (now - lastRequest)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+      }
+      
+      global.lastCoinAPIRequest = Date.now()
+    }
+
+    const startTime = Date.now()
     const response = await fetch(apiUrl, {
       headers,
       next: { revalidate: 15 } // Cache for 15 seconds
     })
+    const responseTime = Date.now() - startTime
+    
+    marketDataLogger.logApiRequest(provider, apiUrl, response.status, responseTime, asset || symbol)
 
     if (!response.ok) {
+      // Handle rate limiting specifically
+      if (response.status === 429) {
+        marketDataLogger.logRateLimit(provider, { 
+          status: response.status, 
+          responseTime, 
+          url: apiUrl 
+        })
+        console.warn(`${provider} rate limit exceeded, returning cached or fallback data`)
+        return NextResponse.json(
+          { 
+            error: 'Rate limit exceeded',
+            message: `${provider} API rate limit reached. Please try again later.`,
+            status: 429,
+            timestamp: new Date().toISOString()
+          },
+          { 
+            status: 429,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+              'Retry-After': '60' // Suggest retry after 60 seconds
+            }
+          }
+        )
+      }
       throw new Error(`${provider} API returned ${response.status}: ${response.statusText}`)
     }
 
@@ -112,12 +185,19 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    marketDataLogger.error(provider || 'unknown', 'Market data proxy error', { 
+      error: errorMessage, 
+      asset, 
+      symbol, 
+      symbols 
+    })
     console.error('Market data proxy error:', error)
     
     return NextResponse.json(
       { 
         error: 'Failed to fetch market data',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: errorMessage,
         timestamp: new Date().toISOString()
       },
       { 

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { buildMarketProxyUrl } from '@/lib/utils/api-url-builder'
+import { marketDataFallback } from '@/lib/market/market-data-fallback'
 
 /**
  * Market Data Service - Real cryptocurrency price feeds
@@ -23,7 +25,6 @@ interface MarketDataProvider {
 
 class CoinGeckoProvider implements MarketDataProvider {
   name = 'CoinGecko'
-  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
@@ -40,16 +41,20 @@ class CoinGeckoProvider implements MarketDataProvider {
       }
 
       const ids = symbols.map(s => symbolMap[s]).filter(Boolean).join(',')
-      const response = await fetch(
-        `${this.proxyUrl}?provider=coingecko&symbols=${ids}`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store' // Disable caching for real-time data
-        }
-      )
+      const proxyUrl = buildMarketProxyUrl('coingecko', { symbols: ids })
+      const response = await fetch(proxyUrl, { 
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store' // Disable caching for real-time data
+      })
 
       if (!response.ok) {
-        throw new Error(`CoinGecko API error: ${response.status}`)
+        // Handle rate limiting and other errors gracefully
+        if (response.status === 429) {
+          console.warn('CoinGecko rate limit exceeded, will retry with exponential backoff')
+          await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
+          throw new Error(`CoinGecko rate limit exceeded: ${response.status}`)
+        }
+        throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
@@ -78,7 +83,6 @@ class CoinGeckoProvider implements MarketDataProvider {
 
 class BinanceProvider implements MarketDataProvider {
   name = 'Binance'
-  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
@@ -96,13 +100,11 @@ class BinanceProvider implements MarketDataProvider {
 
       const binanceSymbols = symbols.map(s => symbolMap[s]).filter(Boolean).join(',')
 
-      const response = await fetch(
-        `${this.proxyUrl}?provider=binance&symbols=${binanceSymbols}`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store'
-        }
-      )
+      const proxyUrl = buildMarketProxyUrl('binance', { symbols: binanceSymbols })
+      const response = await fetch(proxyUrl, { 
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      })
 
       if (!response.ok) {
         throw new Error(`Binance API error: ${response.status}`)
@@ -135,7 +137,6 @@ class BinanceProvider implements MarketDataProvider {
 
 class CoinbaseProvider implements MarketDataProvider {
   name = 'Coinbase'
-  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
@@ -154,7 +155,8 @@ class CoinbaseProvider implements MarketDataProvider {
       const prices: MarketPrice[] = []
       
       // Fetch exchange rates to get current prices
-      const response = await fetch(`${this.proxyUrl}?provider=coinbase`, {
+      const proxyUrl = buildMarketProxyUrl('coinbase')
+      const response = await fetch(proxyUrl, {
         headers: { 'Accept': 'application/json' },
         cache: 'no-store'
       })
@@ -195,7 +197,6 @@ class CoinbaseProvider implements MarketDataProvider {
 
 class CoinCapProvider implements MarketDataProvider {
   name = 'CoinCap'
-  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
@@ -211,13 +212,11 @@ class CoinCapProvider implements MarketDataProvider {
         'LINK/USD': 'chainlink'
       }
 
-      const response = await fetch(
-        `${this.proxyUrl}?provider=coincap&symbols=${Object.values(symbolMap).join(',')}`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store'
-        }
-      )
+      const proxyUrl = buildMarketProxyUrl('coincap', { symbols: Object.values(symbolMap).join(',') })
+      const response = await fetch(proxyUrl, { 
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      })
 
       if (!response.ok) {
         throw new Error(`CoinCap API error: ${response.status}`)
@@ -250,7 +249,6 @@ class CoinCapProvider implements MarketDataProvider {
 
 class CoinPaprikaProvider implements MarketDataProvider {
   name = 'CoinPaprika'
-  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
@@ -266,13 +264,11 @@ class CoinPaprikaProvider implements MarketDataProvider {
         'LINK/USD': 'link-chainlink'
       }
 
-      const response = await fetch(
-        `${this.proxyUrl}?provider=coinpaprika&symbols=${Object.values(symbolMap).join(',')}`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store'
-        }
-      )
+      const proxyUrl = buildMarketProxyUrl('coinpaprika', { symbols: Object.values(symbolMap).join(',') })
+      const response = await fetch(proxyUrl, { 
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      })
 
       if (!response.ok) {
         throw new Error(`CoinPaprika API error: ${response.status}`)
@@ -305,18 +301,15 @@ class CoinPaprikaProvider implements MarketDataProvider {
 
 class CoinDeskProvider implements MarketDataProvider {
   name = 'CoinDesk'
-  private proxyUrl = '/api/market/proxy'
 
   async fetchPrices(symbols: string[]): Promise<MarketPrice[]> {
     try {
       // CoinDesk focuses on Bitcoin but has expanded coverage
-      const response = await fetch(
-        `${this.proxyUrl}?provider=coindesk`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store'
-        }
-      )
+      const proxyUrl = buildMarketProxyUrl('coindesk')
+      const response = await fetch(proxyUrl, { 
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      })
 
       if (!response.ok) {
         throw new Error(`CoinDesk API error: ${response.status}`)
@@ -443,6 +436,9 @@ class MarketDataService {
         const prices = await provider.fetchPrices(symbols)
         
         if (prices.length > 0) {
+          // Update fallback data with successful fetches
+          marketDataFallback.updateFallbackData(prices)
+          
           // Cache in both Redis and local cache
           this.cache.set(cacheKey, { data: prices, timestamp: Date.now() })
           
@@ -467,9 +463,9 @@ class MarketDataService {
       }
     }
 
-    // If all providers fail, return empty array
-    console.error('All market data providers failed')
-    return []
+    // If all providers fail, use fallback system
+    console.error('All market data providers failed, using fallback data')
+    return marketDataFallback.getFallbackPrices(symbols)
   }
 
   subscribe(callback: (prices: MarketPrice[]) => void): () => void {

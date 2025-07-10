@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const checkpointId = await unifiedMemoryService.createCheckpoint(
+    const checkpointId = await getUnifiedMemoryService().createCheckpoint(
       agentId,
       name,
       type,
@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const success = await unifiedMemoryService.restoreCheckpoint(checkpointId)
+    const success = await getUnifiedMemoryService().restoreCheckpoint(checkpointId)
 
     if (!success) {
       return NextResponse.json(

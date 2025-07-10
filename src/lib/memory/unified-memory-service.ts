@@ -1320,6 +1320,21 @@ class UnifiedMemoryService extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const unifiedMemoryService = new UnifiedMemoryService()
+// Singleton instance with lazy initialization
+let unifiedMemoryServiceInstance: UnifiedMemoryService | null = null
+
+export function getUnifiedMemoryService(): UnifiedMemoryService {
+  if (!unifiedMemoryServiceInstance) {
+    unifiedMemoryServiceInstance = new UnifiedMemoryService()
+  }
+  return unifiedMemoryServiceInstance
+}
+
+// For backward compatibility - but use getUnifiedMemoryService() instead
+export const unifiedMemoryService = {
+  get instance() {
+    return getUnifiedMemoryService()
+  }
+}
+
 export type { UnifiedMemory, MemoryCluster, MemoryInsight, MemorySearchOptions, LearningMetrics }

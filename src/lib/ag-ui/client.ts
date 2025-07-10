@@ -302,21 +302,59 @@ export class AGUIClient {
 let agUIClient: AGUIClient | null = null;
 
 export function createAGUIClient(config: AGUIClientConfig): AGUIClient {
-  if (agUIClient) {
-    agUIClient.disconnect();
+  try {
+    if (agUIClient) {
+      agUIClient.disconnect();
+    }
+    
+    agUIClient = new AGUIClient(config);
+    return agUIClient;
+  } catch (error) {
+    console.error('Failed to create AG-UI client:', error);
+    // Return a mock client to prevent initialization errors
+    return {
+      connect: () => Promise.resolve(),
+      disconnect: () => {},
+      sendEvent: () => Promise.resolve(),
+      on: () => {},
+      off: () => {},
+      getSession: () => null,
+      getAgents: () => [],
+      updateState: () => {},
+      updateContext: () => {}
+    } as any;
   }
-  
-  agUIClient = new AGUIClient(config);
-  return agUIClient;
 }
 
 export function getAGUIClient(): AGUIClient | null {
+  if (!agUIClient) {
+    try {
+      // Try to create a default client
+      const defaultConfig: AGUIClientConfig = {
+        endpoint: process.env.NEXT_PUBLIC_AGUI_ENDPOINT || 'http://localhost:8000',
+        transport: 'websocket',
+        reconnect: true,
+        maxReconnectAttempts: 3,
+        reconnectDelay: 1000,
+        headers: {}
+      };
+      agUIClient = createAGUIClient(defaultConfig);
+    } catch (error) {
+      console.error('Failed to initialize AG-UI client:', error);
+      return null;
+    }
+  }
   return agUIClient;
 }
 
 export function disconnectAGUI(): void {
   if (agUIClient) {
-    agUIClient.disconnect();
-    agUIClient = null;
+    try {
+      agUIClient.disconnect();
+      agUIClient = null;
+    } catch (error) {
+      console.error('Error disconnecting AG-UI client:', error);
+      agUIClient = null;
+    }
   }
 }

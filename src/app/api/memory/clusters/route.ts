@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unifiedMemoryService } from '@/lib/memory/unified-memory-service'
+import { getUnifiedMemoryService } from '@/lib/memory/unified-memory-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const clusters = await unifiedMemoryService.getMemoryClusters(agentId)
+    const clusters = await getUnifiedMemoryService().getMemoryClusters(agentId)
 
     return NextResponse.json({
       success: true,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const clusterId = await unifiedMemoryService.createCluster(
+    const clusterId = await getUnifiedMemoryService().createCluster(
       agentId,
       name,
       type,
