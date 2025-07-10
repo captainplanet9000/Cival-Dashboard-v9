@@ -574,12 +574,19 @@ class RealMarketDataService extends EventEmitter {
       this.generateMockData(symbol)
     })
     
-    // Update mock data every 5 seconds
-    this.updateInterval = setInterval(() => {
-      this.subscribedSymbols.forEach(symbol => {
-        this.generateMockData(symbol)
-      })
-    }, 5000)
+    // DISABLED: Aggressive mock data updates causing performance issues
+    // this.updateInterval = setInterval(() => {
+    //   this.subscribedSymbols.forEach(symbol => {
+    //     this.generateMockData(symbol)
+    //   })
+    // }, 5000)
+    
+    // Generate initial mock data only
+    this.subscribedSymbols.forEach(symbol => {
+      this.generateMockData(symbol)
+    })
+    
+    console.log('Real market data aggressive polling DISABLED to improve performance')
   }
 
   private generateMockData(symbol: string) {

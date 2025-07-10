@@ -455,5 +455,21 @@ class TestnetWalletManager extends EventEmitter {
   }
 }
 
-export const testnetWalletManager = new TestnetWalletManager()
+// Lazy initialization to prevent circular dependencies
+let _testnetWalletManagerInstance: TestnetWalletManager | null = null
+
+export const getTestnetWalletManager = (): TestnetWalletManager => {
+  if (!_testnetWalletManagerInstance) {
+    _testnetWalletManagerInstance = new TestnetWalletManager()
+  }
+  return _testnetWalletManagerInstance
+}
+
+// Backward compatibility
+export const testnetWalletManager = {
+  get instance() {
+    return getTestnetWalletManager()
+  }
+}
+
 export default testnetWalletManager

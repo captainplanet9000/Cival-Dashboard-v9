@@ -425,5 +425,21 @@ class AgentDecisionTracker extends EventEmitter {
   }
 }
 
-export const agentDecisionTracker = new AgentDecisionTracker()
+// Lazy initialization to prevent circular dependencies
+let _agentDecisionTrackerInstance: AgentDecisionTracker | null = null
+
+export const getAgentDecisionTracker = (): AgentDecisionTracker => {
+  if (!_agentDecisionTrackerInstance) {
+    _agentDecisionTrackerInstance = new AgentDecisionTracker()
+  }
+  return _agentDecisionTrackerInstance
+}
+
+// Backward compatibility
+export const agentDecisionTracker = {
+  get instance() {
+    return getAgentDecisionTracker()
+  }
+}
+
 export default agentDecisionTracker

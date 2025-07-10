@@ -3,8 +3,8 @@
 import { EventEmitter } from 'events'
 import { ethers } from 'ethers'
 import { alchemyService } from './alchemy-service'
-import { testnetWalletManager } from './testnet-wallet-manager'
-import { agentWalletIntegration } from './agent-wallet-integration'
+import { getTestnetWalletManager } from './testnet-wallet-manager'
+import { getAgentWalletIntegration } from './agent-wallet-integration'
 
 export interface MasterWallet {
   id: string
@@ -291,9 +291,9 @@ class MasterWalletManager extends EventEmitter {
       }
       
       // Get or create agent wallets
-      let agentWallets = testnetWalletManager.getWalletsForAgent(agentId)
+      let agentWallets = getTestnetWalletManager().getWalletsForAgent(agentId)
       if (agentWallets.length === 0) {
-        agentWallets = await testnetWalletManager.createWalletsForAgent(agentId, agentName)
+        agentWallets = await getTestnetWalletManager().createWalletsForAgent(agentId, agentName)
       }
       
       const agentWallet = agentWallets.find(w => w.chain === chain)
@@ -516,5 +516,21 @@ class MasterWalletManager extends EventEmitter {
   }
 }
 
-export const masterWalletManager = new MasterWalletManager()
+// Lazy initialization to prevent circular dependencies
+let _masterWalletManagerInstance: MasterWalletManager | null = null
+
+export const getMasterWalletManager = (): MasterWalletManager => {
+  if (!_masterWalletManagerInstance) {
+    _masterWalletManagerInstance = new MasterWalletManager()
+  }
+  return _masterWalletManagerInstance
+}
+
+// Backward compatibility
+export const masterWalletManager = {
+  get instance() {
+    return getMasterWalletManager()
+  }
+}
+
 export default masterWalletManager

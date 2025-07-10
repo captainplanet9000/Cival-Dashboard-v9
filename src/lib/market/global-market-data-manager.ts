@@ -39,14 +39,14 @@ class GlobalMarketDataManager {
       fallback: 'coingecko'
     },
     updateIntervals: {
-      realtime: 1000,     // 1 second
-      batch: 5000,        // 5 seconds
-      historical: 300000  // 5 minutes
+      realtime: 60000,     // 1 minute (reduced from 1 second)
+      batch: 300000,       // 5 minutes (reduced from 5 seconds)
+      historical: 1800000  // 30 minutes (reduced from 5 minutes)
     },
     caching: {
-      realtime: 5,        // 5 seconds
-      historical: 3600,   // 1 hour
-      analysis: 1800      // 30 minutes
+      realtime: 300,       // 5 minutes (increased from 5 seconds)
+      historical: 3600,    // 1 hour
+      analysis: 1800       // 30 minutes
     },
     symbols: {
       crypto: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOT/USD', 'AVAX/USD', 'MATIC/USD', 'LINK/USD'],
@@ -92,11 +92,11 @@ class GlobalMarketDataManager {
 
   private async initializeProviders(): Promise<void> {
     try {
-      // Messari Provider (Primary)
+      // Messari Provider (Primary) - Conservative rate limiting
       this.providers.set('messari', {
         name: 'Messari',
         priority: 1,
-        rateLimit: 100,
+        rateLimit: 10, // Reduced from 100 to 10 requests per minute
         lastRequest: new Date(0),
         isHealthy: true,
         fetchPrices: this.fetchMessariPrices.bind(this),
@@ -188,10 +188,12 @@ class GlobalMarketDataManager {
     // Start WebSocket connection
     this.initializeWebSocket()
     
-    // Start batch updates
-    setInterval(() => {
-      this.updateAllPrices()
-    }, this.config.updateIntervals.batch)
+    // DISABLED: Aggressive batch updates causing API rate limits
+    // setInterval(() => {
+    //   this.updateAllPrices()
+    // }, this.config.updateIntervals.batch)
+    
+    console.log('Market data aggressive polling DISABLED to prevent API rate limits')
   }
 
   private createStream(id: string, symbols: string[], interval: number): MarketDataStream {

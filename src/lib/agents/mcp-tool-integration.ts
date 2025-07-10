@@ -970,5 +970,19 @@ class MCPToolIntegrationService extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const mcpToolIntegrationService = new MCPToolIntegrationService()
+// Lazy initialization to prevent circular dependencies
+let _mcpToolIntegrationServiceInstance: MCPToolIntegrationService | null = null
+
+export const getMCPToolIntegrationService = (): MCPToolIntegrationService => {
+  if (!_mcpToolIntegrationServiceInstance) {
+    _mcpToolIntegrationServiceInstance = new MCPToolIntegrationService()
+  }
+  return _mcpToolIntegrationServiceInstance
+}
+
+// Backward compatibility
+export const mcpToolIntegrationService = {
+  get instance() {
+    return getMCPToolIntegrationService()
+  }
+}

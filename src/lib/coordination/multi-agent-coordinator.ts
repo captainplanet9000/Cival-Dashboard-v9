@@ -1,7 +1,7 @@
 'use client'
 
 import { EventEmitter } from 'events'
-import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
+import { getAgentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
 import { redisAgentService } from '@/lib/redis/redis-agent-service'
 import { realMarketDataService } from '@/lib/market/real-market-data-service'
 import { realLLMDecisionService, type LLMDecision } from '@/lib/llm/real-llm-decision-service'
@@ -328,7 +328,7 @@ class MultiAgentCoordinator extends EventEmitter {
     switch (strategy.rules.conflictResolution) {
       case 'confidence':
         // Get conflicting agent's decision confidence
-        const conflictingAgent = await agentLifecycleManager.getAgent(conflict.conflictingAgent)
+        const conflictingAgent = await getAgentLifecycleManager().getAgent(conflict.conflictingAgent)
         const conflictingDecisions = await redisAgentService.getRecentDecisions(conflict.conflictingAgent, 1)
         
         if (conflictingDecisions.length > 0) {
@@ -349,8 +349,8 @@ class MultiAgentCoordinator extends EventEmitter {
         
       case 'seniority':
         // Check agent creation time (seniority)
-        const currentAgent = await agentLifecycleManager.getAgent(decision.symbol) // This should be agentId
-        const conflictAgent = await agentLifecycleManager.getAgent(conflict.conflictingAgent)
+        const currentAgent = await getAgentLifecycleManager().getAgent(decision.symbol) // This should be agentId
+        const conflictAgent = await getAgentLifecycleManager().getAgent(conflict.conflictingAgent)
         
         if (currentAgent && conflictAgent) {
           const currentSeniority = new Date(currentAgent.created_at).getTime()
@@ -420,7 +420,7 @@ class MultiAgentCoordinator extends EventEmitter {
   ): Promise<LLMDecision> {
     
     // Get agent's current capital
-    const agent = await agentLifecycleManager.getAgent(agentId)
+    const agent = await getAgentLifecycleManager().getAgent(agentId)
     if (!agent) return decision
     
     const availableCapital = agent.current_capital
@@ -529,7 +529,7 @@ class MultiAgentCoordinator extends EventEmitter {
   // Get current positions across all agents
   private async getCurrentPositions(): Promise<MarketPosition[]> {
     const positions: MarketPosition[] = []
-    const agents = await agentLifecycleManager.getAllAgents()
+    const agents = await getAgentLifecycleManager().getAllAgents()
     
     for (const agent of agents) {
       if (agent.realTimeState?.currentPositions) {
@@ -703,8 +703,22 @@ class MultiAgentCoordinator extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const multiAgentCoordinator = new MultiAgentCoordinator()
+// Lazy initialization to prevent circular dependencies
+let _multiAgentCoordinatorInstance: MultiAgentCoordinator | null = null
+
+export const getMultiAgentCoordinator = (): MultiAgentCoordinator => {
+  if (!_multiAgentCoordinatorInstance) {
+    _multiAgentCoordinatorInstance = new MultiAgentCoordinator()
+  }
+  return _multiAgentCoordinatorInstance
+}
+
+// Backward compatibility
+export const multiAgentCoordinator = {
+  get instance() {
+    return getMultiAgentCoordinator()
+  }
+}
 
 // Export types
 export type { 

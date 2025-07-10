@@ -500,8 +500,22 @@ class AgentLifecycleManager extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const agentLifecycleManager = new AgentLifecycleManager()
+// Lazy initialization to prevent circular dependencies
+let _agentLifecycleManagerInstance: AgentLifecycleManager | null = null
+
+export const getAgentLifecycleManager = (): AgentLifecycleManager => {
+  if (!_agentLifecycleManagerInstance) {
+    _agentLifecycleManagerInstance = new AgentLifecycleManager()
+  }
+  return _agentLifecycleManagerInstance
+}
+
+// Backward compatibility
+export const agentLifecycleManager = {
+  get instance() {
+    return getAgentLifecycleManager()
+  }
+}
 
 // Export types
 export type { AgentLifecycleManager, LiveAgent }

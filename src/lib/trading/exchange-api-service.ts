@@ -732,5 +732,19 @@ export class ExchangeAPIService extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const exchangeAPIService = new ExchangeAPIService()
+// Lazy initialization to prevent circular dependencies
+let _exchangeAPIServiceInstance: ExchangeAPIService | null = null
+
+export const getExchangeAPIService = (): ExchangeAPIService => {
+  if (!_exchangeAPIServiceInstance) {
+    _exchangeAPIServiceInstance = new ExchangeAPIService()
+  }
+  return _exchangeAPIServiceInstance
+}
+
+// Backward compatibility
+export const exchangeAPIService = {
+  get instance() {
+    return getExchangeAPIService()
+  }
+}

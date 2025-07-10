@@ -2,7 +2,7 @@
 
 import { EventEmitter } from 'events'
 import { defiService, ArbitrageOpportunity } from './defi-service'
-import { agentWalletIntegration } from './agent-wallet-integration'
+import { getAgentWalletIntegration } from './agent-wallet-integration'
 
 export interface ArbitrageBot {
   id: string
@@ -236,13 +236,13 @@ class DexArbitrageService extends EventEmitter {
       this.emit('arbitrageStarted', execution)
 
       // Get agent configuration
-      const agentConfig = agentWalletIntegration.getAgentConfig(bot.agentId)
+      const agentConfig = getAgentWalletIntegration().getAgentConfig(bot.agentId)
       if (!agentConfig) {
         throw new Error(`Agent configuration not found for ${bot.agentId}`)
       }
 
       // Get agent wallets
-      const wallets = agentWalletIntegration.getAgentWallets(bot.agentId)
+      const wallets = getAgentWalletIntegration().getAgentWallets(bot.agentId)
       if (wallets.length === 0) {
         throw new Error(`No wallets found for agent ${bot.agentId}`)
       }
@@ -440,5 +440,21 @@ class DexArbitrageService extends EventEmitter {
   }
 }
 
-export const dexArbitrageService = new DexArbitrageService()
+// Lazy initialization to prevent circular dependencies
+let _dexArbitrageServiceInstance: DexArbitrageService | null = null
+
+export const getDexArbitrageService = (): DexArbitrageService => {
+  if (!_dexArbitrageServiceInstance) {
+    _dexArbitrageServiceInstance = new DexArbitrageService()
+  }
+  return _dexArbitrageServiceInstance
+}
+
+// Backward compatibility
+export const dexArbitrageService = {
+  get instance() {
+    return getDexArbitrageService()
+  }
+}
+
 export default dexArbitrageService

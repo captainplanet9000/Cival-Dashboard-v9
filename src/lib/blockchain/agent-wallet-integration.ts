@@ -1,7 +1,7 @@
 'use client'
 
 import { EventEmitter } from 'events'
-import { testnetWalletManager, TestnetWallet } from './testnet-wallet-manager'
+import { getTestnetWalletManager, TestnetWallet } from './testnet-wallet-manager'
 import { defiService, SwapQuote, ArbitrageOpportunity } from './defi-service'
 import { alchemyService } from './alchemy-service'
 
@@ -66,15 +66,15 @@ class AgentWalletIntegration extends EventEmitter {
 
   private async initializeIntegration() {
     // Listen for wallet events
-    testnetWalletManager.on('walletCreated', (wallet: TestnetWallet) => {
+    getTestnetWalletManager().on('walletCreated', (wallet: TestnetWallet) => {
       this.emit('walletCreated', wallet)
     })
 
-    testnetWalletManager.on('transactionCreated', (transaction: any) => {
+    getTestnetWalletManager().on('transactionCreated', (transaction: any) => {
       this.emit('transactionCreated', transaction)
     })
 
-    testnetWalletManager.on('arbitrageCompleted', (result: any) => {
+    getTestnetWalletManager().on('arbitrageCompleted', (result: any) => {
       this.handleArbitrageResult(result)
     })
 
@@ -88,7 +88,7 @@ class AgentWalletIntegration extends EventEmitter {
       const wallets: TestnetWallet[] = []
       
       for (const chain of config.chains) {
-        const wallet = await testnetWalletManager.createWalletForAgent(
+        const wallet = await getTestnetWalletManager().createWalletForAgent(
           config.agentId,
           config.agentName,
           chain
@@ -484,5 +484,21 @@ class AgentWalletIntegration extends EventEmitter {
   }
 }
 
-export const agentWalletIntegration = new AgentWalletIntegration()
+// Lazy initialization to prevent circular dependencies
+let _agentWalletIntegrationInstance: AgentWalletIntegration | null = null
+
+export const getAgentWalletIntegration = (): AgentWalletIntegration => {
+  if (!_agentWalletIntegrationInstance) {
+    _agentWalletIntegrationInstance = new AgentWalletIntegration()
+  }
+  return _agentWalletIntegrationInstance
+}
+
+// Backward compatibility
+export const agentWalletIntegration = {
+  get instance() {
+    return getAgentWalletIntegration()
+  }
+}
+
 export default agentWalletIntegration

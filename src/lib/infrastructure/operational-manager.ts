@@ -497,5 +497,19 @@ export class OperationalManager extends EventEmitter {
   }
 }
 
-// Singleton instance
-export const operationalManager = new OperationalManager()
+// Lazy initialization to prevent circular dependencies
+let _operationalManagerInstance: OperationalManager | null = null
+
+export const getOperationalManager = (): OperationalManager => {
+  if (!_operationalManagerInstance) {
+    _operationalManagerInstance = new OperationalManager()
+  }
+  return _operationalManagerInstance
+}
+
+// Backward compatibility
+export const operationalManager = {
+  get instance() {
+    return getOperationalManager()
+  }
+}

@@ -1231,5 +1231,19 @@ class AgentMemorySystem extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const agentMemorySystem = new AgentMemorySystem()
+// Lazy initialization to prevent circular dependencies
+let _agentMemorySystemInstance: AgentMemorySystem | null = null
+
+export const getAgentMemorySystem = (): AgentMemorySystem => {
+  if (!_agentMemorySystemInstance) {
+    _agentMemorySystemInstance = new AgentMemorySystem()
+  }
+  return _agentMemorySystemInstance
+}
+
+// Backward compatibility
+export const agentMemorySystem = {
+  get instance() {
+    return getAgentMemorySystem()
+  }
+}
