@@ -1131,5 +1131,19 @@ class MultiStrategyFarmCoordinator extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const multiStrategyFarmCoordinator = new MultiStrategyFarmCoordinator()
+// Lazy initialization to prevent circular dependencies
+let _multiStrategyFarmCoordinatorInstance: MultiStrategyFarmCoordinator | null = null
+
+export const getMultiStrategyFarmCoordinator = (): MultiStrategyFarmCoordinator => {
+  if (!_multiStrategyFarmCoordinatorInstance) {
+    _multiStrategyFarmCoordinatorInstance = new MultiStrategyFarmCoordinator()
+  }
+  return _multiStrategyFarmCoordinatorInstance
+}
+
+// Backward compatibility
+export const multiStrategyFarmCoordinator = {
+  get instance() {
+    return getMultiStrategyFarmCoordinator()
+  }
+}

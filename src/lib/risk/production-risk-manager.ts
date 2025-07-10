@@ -468,5 +468,19 @@ export const defaultProductionLimits: RiskLimits = {
   correlationThreshold: 0.8
 }
 
-// Singleton instance
-export const productionRiskManager = new ProductionRiskManager(defaultProductionLimits)
+// Lazy initialization to prevent circular dependencies
+let _productionRiskManagerInstance: ProductionRiskManager | null = null
+
+export const getProductionRiskManager = (): ProductionRiskManager => {
+  if (!_productionRiskManagerInstance) {
+    _productionRiskManagerInstance = new ProductionRiskManager(defaultProductionLimits)
+  }
+  return _productionRiskManagerInstance
+}
+
+// Backward compatibility
+export const productionRiskManager = {
+  get instance() {
+    return getProductionRiskManager()
+  }
+}

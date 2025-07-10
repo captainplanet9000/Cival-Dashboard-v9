@@ -568,5 +568,19 @@ export class DataValidationError extends Error {
   }
 }
 
-// Singleton instance
-export const dataIntegrationManager = new DataIntegrationManager()
+// Lazy initialization to prevent circular dependencies
+let _dataIntegrationManagerInstance: DataIntegrationManager | null = null
+
+export const getDataIntegrationManager = (): DataIntegrationManager => {
+  if (!_dataIntegrationManagerInstance) {
+    _dataIntegrationManagerInstance = new DataIntegrationManager()
+  }
+  return _dataIntegrationManagerInstance
+}
+
+// Backward compatibility
+export const dataIntegrationManager = {
+  get instance() {
+    return getDataIntegrationManager()
+  }
+}

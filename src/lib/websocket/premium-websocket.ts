@@ -719,7 +719,22 @@ export class PremiumWebSocketClient {
 // ===== SINGLETON INSTANCE =====
 
 // TEMPORARILY DISABLED: Auto-instantiation causing circular dependency
-export const premiumWebSocketClient = new PremiumWebSocketClient()
+// Lazy initialization to prevent circular dependencies
+let _premiumWebSocketClientInstance: PremiumWebSocketClient | null = null
+
+export const getPremiumWebSocketClient = (): PremiumWebSocketClient => {
+  if (!_premiumWebSocketClientInstance) {
+    _premiumWebSocketClientInstance = new PremiumWebSocketClient()
+  }
+  return _premiumWebSocketClientInstance
+}
+
+// Backward compatibility
+export const premiumWebSocketClient = {
+  get instance() {
+    return getPremiumWebSocketClient()
+  }
+}
 
 // ===== LEGACY COMPATIBILITY =====
 
