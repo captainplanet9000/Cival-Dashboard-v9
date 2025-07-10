@@ -90,6 +90,47 @@ export interface GoalUpdate {
   timestamp: number;
 }
 
+export interface MemoryUpdate {
+  agentId: string;
+  memoryId: string;
+  memoryType: 'trade_decision' | 'market_insight' | 'strategy_learning' | 'risk_observation' | 'pattern_recognition' | 'performance_feedback';
+  content: string;
+  importanceScore: number;
+  action: 'stored' | 'updated' | 'archived' | 'deleted';
+  timestamp: number;
+}
+
+export interface MemoryInsight {
+  agentId: string;
+  insightType: 'pattern_discovered' | 'strategy_improved' | 'risk_identified' | 'performance_analysis';
+  description: string;
+  confidence: number;
+  memoryIds: string[];
+  impact: {
+    performanceChange: number;
+    confidenceChange: number;
+    strategyAdjustment?: string;
+  };
+  timestamp: number;
+}
+
+export interface AgentLearningUpdate {
+  agentId: string;
+  learningMetrics: {
+    totalMemories: number;
+    avgImportanceScore: number;
+    learningEfficiency: number;
+    adaptationScore: number;
+    patternRecognitionScore: number;
+  };
+  recentActivity: {
+    memoriesAddedToday: number;
+    insightsGenerated: number;
+    patternsRecognized: number;
+  };
+  timestamp: number;
+}
+
 // ============================================================================
 // ORCHESTRATION-SPECIFIC WEBSOCKET EVENTS
 // ============================================================================
@@ -228,6 +269,9 @@ export type WebSocketMessage =
   | { type: 'risk_alert'; data: RiskAlert }
   | { type: 'farm_update'; data: FarmUpdate }
   | { type: 'goal_update'; data: GoalUpdate }
+  | { type: 'memory_update'; data: MemoryUpdate }
+  | { type: 'memory_insight'; data: MemoryInsight }
+  | { type: 'agent_learning_update'; data: AgentLearningUpdate }
   | { type: 'agent_assigned'; data: AgentAssignmentEvent }
   | { type: 'capital_reallocated'; data: CapitalReallocationEvent }
   | { type: 'performance_updated'; data: PerformanceUpdateEvent }
@@ -261,6 +305,7 @@ export class TradingWebSocketClient {
     const messageTypes = [
       'market_data', 'portfolio_update', 'agent_update', 
       'trading_signal', 'risk_alert', 'farm_update', 'goal_update',
+      'memory_update', 'memory_insight', 'agent_learning_update',
       'agent_assigned', 'capital_reallocated', 'performance_updated',
       'farm_status_changed', 'goal_progress_updated', 'orchestration_event',
       'connect', 'disconnect', 'error'
@@ -426,6 +471,15 @@ export class TradingWebSocketClient {
         break;
       case 'goal_update':
         this.emit('goal_update', message.data);
+        break;
+      case 'memory_update':
+        this.emit('memory_update', message.data);
+        break;
+      case 'memory_insight':
+        this.emit('memory_insight', message.data);
+        break;
+      case 'agent_learning_update':
+        this.emit('agent_learning_update', message.data);
         break;
       // Orchestration-specific events
       case 'agent_assigned':
@@ -741,4 +795,105 @@ export function useGoalUpdates() {
   }, [client, isConnected]);
 
   return goalUpdates;
+}
+
+// Memory updates hook
+export function useMemoryUpdates(agentId?: string) {
+  const { client, isConnected } = useWebSocket();
+  const [memoryUpdates, setMemoryUpdates] = useState<MemoryUpdate[]>([]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleMemoryUpdate = (data: MemoryUpdate) => {
+      // Filter by agent if specified
+      if (agentId && data.agentId !== agentId) return;
+      
+      setMemoryUpdates(prev => [data, ...prev.slice(0, 49)]); // Keep last 50 updates
+    };
+
+    client.on('memory_update', handleMemoryUpdate);
+    
+    // Subscribe to memory updates for specific agent or all agents
+    const channel = agentId ? `memory_updates:${agentId}` : 'memory_updates';
+    client.subscribe(channel);
+
+    return () => {
+      client.off('memory_update', handleMemoryUpdate);
+      client.unsubscribe(channel);
+    };
+  }, [client, isConnected, agentId]);
+
+  return memoryUpdates;
+}
+
+// Memory insights hook
+export function useMemoryInsights(agentId?: string) {
+  const { client, isConnected } = useWebSocket();
+  const [insights, setInsights] = useState<MemoryInsight[]>([]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleMemoryInsight = (data: MemoryInsight) => {
+      // Filter by agent if specified
+      if (agentId && data.agentId !== agentId) return;
+      
+      setInsights(prev => [data, ...prev.slice(0, 19)]); // Keep last 20 insights
+    };
+
+    client.on('memory_insight', handleMemoryInsight);
+    
+    // Subscribe to memory insights for specific agent or all agents
+    const channel = agentId ? `memory_insights:${agentId}` : 'memory_insights';
+    client.subscribe(channel);
+
+    return () => {
+      client.off('memory_insight', handleMemoryInsight);
+      client.unsubscribe(channel);
+    };
+  }, [client, isConnected, agentId]);
+
+  return insights;
+}
+
+// Agent learning updates hook
+export function useAgentLearningUpdates(agentId?: string) {
+  const { client, isConnected } = useWebSocket();
+  const [learningUpdates, setLearningUpdates] = useState<AgentLearningUpdate[]>([]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleLearningUpdate = (data: AgentLearningUpdate) => {
+      // Filter by agent if specified
+      if (agentId && data.agentId !== agentId) return;
+      
+      setLearningUpdates(prev => {
+        const existingIndex = prev.findIndex(l => l.agentId === data.agentId);
+        if (existingIndex >= 0) {
+          // Update existing agent learning data
+          const updated = [...prev];
+          updated[existingIndex] = data;
+          return updated;
+        } else {
+          // Add new agent learning data
+          return [data, ...prev.slice(0, 9)]; // Keep last 10 agent updates
+        }
+      });
+    };
+
+    client.on('agent_learning_update', handleLearningUpdate);
+    
+    // Subscribe to learning updates for specific agent or all agents
+    const channel = agentId ? `agent_learning:${agentId}` : 'agent_learning';
+    client.subscribe(channel);
+
+    return () => {
+      client.off('agent_learning_update', handleLearningUpdate);
+      client.unsubscribe(channel);
+    };
+  }, [client, isConnected, agentId]);
+
+  return learningUpdates;
 }

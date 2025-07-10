@@ -5,9 +5,21 @@
  * Provides real-time AI decision making for autonomous trading agents
  */
 
-import { EventEmitter } from 'events'
+import { createSafeEventEmitter } from '@/lib/utils/safe-initialization'
 import { technicalAnalysisEngine, type TechnicalSignal, type MarketData } from '@/lib/strategies/technical-analysis-engine'
-import { unifiedLLMService, type AIDecisionRequest, type AIDecision } from '@/lib/ai/unified-llm-service'
+// Lazy import to prevent circular dependencies
+const getUnifiedLLMService = async () => {
+  try {
+    const { unifiedLLMService } = await import('@/lib/ai/unified-llm-service')
+    return unifiedLLMService
+  } catch (error) {
+    console.warn('UnifiedLLMService not available, using fallback')
+    return null
+  }
+}
+
+// Export types separately to avoid import issues
+export type { AIDecisionRequest, AIDecision } from '@/lib/ai/unified-llm-service'
 import { agentWalletManager } from '@/lib/agents/agent-wallet-manager'
 import type { CreatedAgent } from './enhanced-agent-creation-service'
 
@@ -84,15 +96,28 @@ export interface LLMAgentConfig {
   maxPositionSize: number
 }
 
-class LLMDecisionIntegrationService extends EventEmitter {
+class LLMDecisionIntegrationService {
+  private eventEmitter = createSafeEventEmitter()
   private agentConfigs: Map<string, LLMAgentConfig> = new Map()
   private agentDecisionHistory: Map<string, AgentDecision[]> = new Map()
   private activeDecisionLoops: Map<string, NodeJS.Timeout> = new Map()
   private contextBuilders: Map<string, (agentId: string) => Promise<AgentDecisionContext>> = new Map()
   
   constructor() {
-    super()
     this.initializeContextBuilders()
+  }
+  
+  // Event emitter methods
+  on(event: string, listener: (...args: any[]) => void) {
+    this.eventEmitter.on(event, listener)
+  }
+  
+  emit(event: string, ...args: any[]) {
+    this.eventEmitter.emit(event, ...args)
+  }
+  
+  off(event: string, listener: (...args: any[]) => void) {
+    this.eventEmitter.off(event, listener)
   }
   
   /**
@@ -261,7 +286,40 @@ class LLMDecisionIntegrationService extends EventEmitter {
       }
       
       // Get AI decision
-      const aiDecision = await unifiedLLMService.makeDecision(llmRequest)
+      const llmService = await getUnifiedLLMService()
+      if (!llmService) {
+        // Fallback decision
+        const aiDecision: any = {
+          action: 'hold',
+          confidence: 0.5,
+          reasoning: 'LLM service unavailable, using conservative approach',
+          riskLevel: 'medium',
+          expectedOutcome: 'Maintain current positions',
+          timeframe: '1h'
+        }
+        
+        const agentDecision: AgentDecision = {
+          id: `decision_${agentId}_${Date.now()}`,
+          agentId,
+          timestamp: new Date(),
+          decision: aiDecision,
+          context,
+          executionStatus: 'pending',
+          confidence: aiDecision.confidence,
+          reasoning: aiDecision.reasoning,
+          metadata: {
+            strategyType: config.strategyType,
+            technicalSignals: context.technicalSignals.length,
+            riskLevel: aiDecision.riskLevel,
+            marketConditions: this.assessMarketConditions(context.currentMarketData),
+            fallbackMode: true
+          }
+        }
+        
+        return agentDecision
+      }
+      
+      const aiDecision = await llmService.makeDecision(llmRequest)
       
       // Create agent decision
       const agentDecision: AgentDecision = {

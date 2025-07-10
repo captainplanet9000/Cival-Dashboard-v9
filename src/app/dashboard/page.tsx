@@ -6,11 +6,11 @@
 'use client'
 
 import React from 'react'
-import ModernDashboard from '@/components/dashboard/ModernDashboard'
+import SafeDashboardWrapper from '@/components/dashboard/SafeDashboardWrapper'
 
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic'
 
 export default function DashboardPage() {
-  return <ModernDashboard />
+  return <SafeDashboardWrapper />
 }
