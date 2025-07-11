@@ -41,6 +41,11 @@ import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDa
 import { useMarketData } from '@/lib/market/market-data-service'
 import { AnimatedPrice, AnimatedCounter } from '@/components/ui/animated-components'
 
+// Import ML Analytics Components
+import { MLInsightsPanel } from '@/components/analytics/MLInsightsPanel'
+import { PortfolioOptimizer } from '@/components/analytics/PortfolioOptimizer'
+import { MarketPredictions } from '@/components/analytics/MarketPredictions'
+
 // Import Swagger API Documentation
 import SwaggerApiDocs from '@/components/api-docs/SwaggerApiDocs'
 
@@ -1055,6 +1060,9 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
   }
   
   const analyticsSubTabs = [
+    { id: 'ml-insights', label: 'ML Insights', component: <MLInsightsPanel /> },
+    { id: 'portfolio-optimizer', label: 'Portfolio Optimizer', component: <PortfolioOptimizer /> },
+    { id: 'market-predictions', label: 'Market Predictions', component: <MarketPredictions /> },
     { id: 'history', label: 'Trading History', component: <TradingHistoryPanel /> },
     { id: 'performance', label: 'Performance', component: <PerformanceAnalyticsPanel /> },
     { id: 'risk', label: 'Risk Analysis', component: <RiskAnalyticsPanel /> },
@@ -1062,11 +1070,6 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
     { id: 'portfolio', label: 'Portfolio', component: <RealPortfolioAnalyticsDashboard /> },
     { id: 'backtesting', label: 'Backtesting', component: <RealBacktestingDashboard /> },
     { id: 'classic-advanced', label: 'Classic Advanced', component: <RealAnalyticsDashboard /> },
-    { id: 'advanced-analytics', label: 'Premium Analytics', component: <AdvancedAnalytics /> },
-    { id: 'realtime-charts', label: 'Real-time Charts', component: <RealTimeCharts /> },
-    { id: 'performance-metrics', label: 'Performance Metrics', component: <PerformanceMetrics /> },
-    { id: 'risk-analytics', label: 'Risk Analytics', component: <RiskAnalytics /> },
-    { id: 'portfolio-optimizer', label: 'Portfolio Optimizer', component: <PortfolioOptimizer /> },
     { id: 'api-docs', label: 'API Documentation', component: <SwaggerApiDocs /> }
   ]
   

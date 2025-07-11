@@ -896,6 +896,30 @@ class BackendAPIClient {
       }
     }
   }
+
+  // Add missing methods for LiveMarketDataPanel
+  async fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}): Promise<Response> {
+    const { timeout = 10000, ...fetchOptions } = options
+    
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
+    
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      return response
+    } catch (error) {
+      clearTimeout(timeoutId)
+      throw error
+    }
+  }
+
+  getBackendUrl(): string {
+    return this.baseURL
+  }
 }
 
 export const backendApi = new BackendAPIClient()
