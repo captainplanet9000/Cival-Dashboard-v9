@@ -14,7 +14,7 @@ import {
   AlertTriangle, Shield, Power, Pause, Play, StopCircle, 
   CheckCircle, XCircle, Clock, Zap, AlertCircle, 
   Activity, TrendingDown, Settings, Eye, Timer,
-  CircuitBoard, RefreshCw, Database, Bell, Target
+  CircuitBoard, RefreshCw, Database, Bell, Target, Calendar
 } from 'lucide-react'
 
 // Types matching the backend service

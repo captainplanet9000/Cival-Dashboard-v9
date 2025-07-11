@@ -17,7 +17,7 @@ import {
   Activity, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Zap,
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
   Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search, Brain, Coins,
-  Gears
+  Cog
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -352,7 +352,7 @@ export function ModernDashboardV4() {
     {
       id: 'autonomous',
       label: 'Autonomous',
-      icon: <Gears className="h-4 w-4" />,
+      icon: <Cog className="h-4 w-4" />,
       component: <AutonomousControlCenter />
     },
     {
