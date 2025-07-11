@@ -64,6 +64,58 @@ export class AgentDecisionLoop {
   private activeLoops = new Map<string, NodeJS.Timeout>()
   private agentStates = new Map<string, Agent>()
   
+  async createNewAgent(agentConfig: {
+    name: string
+    type: string
+    strategy: any
+    symbols: string[]
+    maxRiskPerTrade: number
+    decisionInterval: number
+  }): Promise<string> {
+    try {
+      const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      console.log(`🎯 Creating new agent ${agentId}`)
+      
+      // Create new agent object
+      const newAgent: Agent = {
+        id: agentId,
+        name: agentConfig.name,
+        type: agentConfig.type,
+        status: 'stopped',
+        config: {
+          decisionInterval: agentConfig.decisionInterval,
+          maxRiskPerTrade: agentConfig.maxRiskPerTrade,
+          symbols: agentConfig.symbols,
+          strategy: agentConfig.strategy
+        },
+        performance: {
+          totalPnL: 0,
+          winRate: 0,
+          trades: 0,
+          successfulDecisions: 0,
+          totalDecisions: 0
+        },
+        memory: {
+          recentDecisions: [],
+          lessons: [],
+          performance: {},
+          thoughts: [],
+          context: '',
+          lastUpdate: Date.now()
+        }
+      }
+
+      // Save agent to storage
+      await this.saveAgent(newAgent)
+      console.log(`✅ Agent ${agentId} created and saved`)
+      
+      return agentId
+    } catch (error) {
+      console.error(`❌ Failed to create agent:`, error)
+      throw error
+    }
+  }
+
   async startAgent(agentId: string): Promise<void> {
     try {
       console.log(`🚀 Starting agent ${agentId}`)
@@ -212,6 +264,28 @@ export class AgentDecisionLoop {
     }
   }
   
+  private async saveAgent(agent: Agent): Promise<void> {
+    try {
+      // Try to save to backend first
+      await backendApi.post('/api/v1/agents', {
+        agent_id: agent.id,
+        name: agent.name,
+        type: agent.type,
+        status: agent.status,
+        config: agent.config,
+        performance: agent.performance,
+        memory: agent.memory
+      })
+      console.log(`💾 Agent ${agent.id} saved to backend`)
+    } catch (error) {
+      console.warn('Backend agent save failed, using localStorage:', error)
+    }
+    
+    // Always save to localStorage as fallback
+    localStorage.setItem(`agent_${agent.id}`, JSON.stringify(agent))
+    console.log(`💾 Agent ${agent.id} saved to localStorage`)
+  }
+
   private async loadAgent(agentId: string): Promise<Agent | null> {
     try {
       // Try to load from backend first
@@ -693,6 +767,41 @@ export class AgentDecisionLoop {
   // Public methods for agent management
   getActiveAgents(): string[] {
     return Array.from(this.activeLoops.keys())
+  }
+
+  async getAllActiveAgents(): Promise<Agent[]> {
+    try {
+      // Try to get from backend first
+      const response = await backendApi.get('/api/v1/agents')
+      if (response.data && Array.isArray(response.data)) {
+        return response.data.map(agent => this.transformBackendAgent(agent))
+      }
+    } catch (error) {
+      console.warn('Backend agents load failed, using localStorage:', error)
+    }
+
+    // Fallback to localStorage + in-memory states
+    const agents: Agent[] = []
+    
+    // Get all agent IDs from localStorage
+    const agentIds = Object.keys(localStorage)
+      .filter(key => key.startsWith('agent_'))
+      .map(key => key.replace('agent_', ''))
+    
+    for (const agentId of agentIds) {
+      const agent = await this.loadAgent(agentId)
+      if (agent) {
+        // Update with current state if available
+        const currentState = this.agentStates.get(agentId)
+        if (currentState) {
+          agents.push({ ...agent, ...currentState })
+        } else {
+          agents.push(agent)
+        }
+      }
+    }
+    
+    return agents
   }
   
   getAgentStatus(agentId: string): string {

@@ -140,44 +140,29 @@ export function useAgentData() {
   }) => {
     try {
       setLoading(true)
+      console.log('🎯 Creating new agent with config:', agentConfig)
       
-      const agentId = await agentDecisionLoop.startAgent({
-        id: `agent_${Date.now()}`,
-        name: agentConfig.name,
-        type: agentConfig.type,
-        status: 'active',
-        config: {
-          decisionInterval: agentConfig.decisionInterval,
-          maxRiskPerTrade: agentConfig.maxRiskPerTrade,
-          symbols: agentConfig.symbols,
-          strategy: agentConfig.strategy
-        },
-        performance: {
-          totalPnL: 0,
-          winRate: 0,
-          trades: 0,
-          successfulDecisions: 0,
-          totalDecisions: 0
-        },
-        memory: {
-          recentDecisions: [],
-          lessons: [],
-          performance: {},
-          thoughts: [],
-          context: '',
-          lastUpdate: Date.now()
-        }
-      })
-
-      // Create wallet for the agent
-      await agentWalletManager.createWalletForAgent(agentId, 10000)
+      // Step 1: Create the agent (this saves it to storage)
+      const agentId = await agentDecisionLoop.createNewAgent(agentConfig)
+      console.log('✅ Agent created with ID:', agentId)
       
-      // Refresh data to include new agent
+      // Step 2: Create wallet for the agent
+      try {
+        await agentWalletManager.createWalletForAgent(agentId, 10000)
+        console.log('💰 Wallet created for agent:', agentId)
+      } catch (walletError) {
+        console.warn('Wallet creation failed, continuing without wallet:', walletError)
+      }
+      
+      // Step 3: Refresh data to include new agent
       await refreshAgentData()
+      console.log('🔄 Agent data refreshed')
       
       return agentId
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create agent')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create agent'
+      console.error('❌ Agent creation failed:', errorMessage)
+      setError(errorMessage)
       throw err
     } finally {
       setLoading(false)
@@ -204,15 +189,16 @@ export function useAgentData() {
 
   const resumeAgent = useCallback(async (agentId: string) => {
     try {
-      const agent = agents.find(a => a.id === agentId)
-      if (agent) {
-        await agentDecisionLoop.startAgent(agent)
-        await refreshAgentData()
-      }
+      console.log('▶️ Resuming agent:', agentId)
+      await agentDecisionLoop.startAgent(agentId)
+      await refreshAgentData()
+      console.log('✅ Agent resumed successfully')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resume agent')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resume agent'
+      console.error('❌ Failed to resume agent:', errorMessage)
+      setError(errorMessage)
     }
-  }, [agents, refreshAgentData])
+  }, [refreshAgentData])
 
   return {
     agents,

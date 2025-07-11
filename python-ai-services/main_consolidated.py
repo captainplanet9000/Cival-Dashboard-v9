@@ -808,6 +808,208 @@ async def get_all_agents_status():
         raise HTTPException(status_code=500, detail=f"Agents status error: {str(e)}")
 
 # Enhanced Agent Management Endpoints
+
+# Agent CRUD Operations
+@app.post("/api/v1/agents")
+async def create_agent(agent_data: dict):
+    """Create a new agent"""
+    try:
+        agent_id = agent_data.get("agent_id") or f"agent_{int(datetime.now().timestamp())}"
+        
+        agent_record = {
+            "agent_id": agent_id,
+            "name": agent_data.get("name", "Unnamed Agent"),
+            "type": agent_data.get("type", "trading"),
+            "status": agent_data.get("status", "stopped"),
+            "config": agent_data.get("config", {}),
+            "performance": agent_data.get("performance", {
+                "total_pnl": 0,
+                "win_rate": 0,
+                "trades": 0,
+                "successful_decisions": 0,
+                "total_decisions": 0
+            }),
+            "memory": agent_data.get("memory", {
+                "recent_decisions": [],
+                "lessons": [],
+                "performance": {},
+                "thoughts": [],
+                "context": "",
+                "last_update": datetime.now().timestamp()
+            }),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # For now, just return the agent data - in production this would save to database
+        logger.info(f"Agent created: {agent_id}")
+        
+        # Broadcast agent creation via WebSocket
+        await websocket_manager.broadcast_agent_update({
+            "type": "agent_created",
+            "agent": agent_record
+        })
+        
+        return agent_record
+    except Exception as e:
+        logger.error(f"Failed to create agent: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent creation error: {str(e)}")
+
+@app.get("/api/v1/agents")
+async def get_all_agents():
+    """Get all agents"""
+    try:
+        # Mock agents data - in production this would come from database
+        agents = [
+            {
+                "agent_id": "agent_marcus_momentum",
+                "name": "Marcus Momentum",
+                "type": "momentum_trading",
+                "status": "active",
+                "config": {
+                    "decision_interval": 30000,
+                    "max_risk_per_trade": 0.05,
+                    "symbols": ["BTC/USD", "ETH/USD"],
+                    "strategy": {"type": "momentum"}
+                },
+                "performance": {
+                    "total_pnl": 1247.85,
+                    "win_rate": 0.72,
+                    "trades": 45,
+                    "successful_decisions": 32,
+                    "total_decisions": 45
+                },
+                "memory": {
+                    "recent_decisions": [],
+                    "lessons": ["Be cautious during high volatility"],
+                    "performance": {"win_rate": 0.72},
+                    "thoughts": ["Market showing bullish momentum"],
+                    "context": "Active trading session",
+                    "last_update": datetime.now().timestamp()
+                },
+                "created_at": "2025-01-15T10:00:00Z",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "agent_id": "agent_alex_arbitrage", 
+                "name": "Alex Arbitrage",
+                "type": "arbitrage",
+                "status": "monitoring",
+                "config": {
+                    "decision_interval": 15000,
+                    "max_risk_per_trade": 0.03,
+                    "symbols": ["BTC/USD", "ETH/USD", "SOL/USD"],
+                    "strategy": {"type": "arbitrage"}
+                },
+                "performance": {
+                    "total_pnl": 892.34,
+                    "win_rate": 0.83,
+                    "trades": 67,
+                    "successful_decisions": 56,
+                    "total_decisions": 67
+                },
+                "memory": {
+                    "recent_decisions": [],
+                    "lessons": ["Watch for exchange connectivity issues"],
+                    "performance": {"win_rate": 0.83},
+                    "thoughts": ["Monitoring cross-exchange spreads"],
+                    "context": "Arbitrage opportunities tracking",
+                    "last_update": datetime.now().timestamp()
+                },
+                "created_at": "2025-01-15T10:30:00Z",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        ]
+        return {"agents": agents, "count": len(agents)}
+    except Exception as e:
+        logger.error(f"Failed to get agents: {e}")
+        raise HTTPException(status_code=500, detail=f"Agents retrieval error: {str(e)}")
+
+@app.get("/api/v1/agents/{agent_id}")
+async def get_agent(agent_id: str):
+    """Get specific agent by ID"""
+    try:
+        # Mock agent data - in production this would come from database
+        agent = {
+            "agent_id": agent_id,
+            "name": f"Agent {agent_id}",
+            "type": "trading",
+            "status": "active",
+            "config": {
+                "decision_interval": 30000,
+                "max_risk_per_trade": 0.05,
+                "symbols": ["BTC/USD", "ETH/USD"],
+                "strategy": {"type": "momentum"}
+            },
+            "performance": {
+                "total_pnl": 500.00,
+                "win_rate": 0.65,
+                "trades": 20,
+                "successful_decisions": 13,
+                "total_decisions": 20
+            },
+            "memory": {
+                "recent_decisions": [],
+                "lessons": [],
+                "performance": {"win_rate": 0.65},
+                "thoughts": [],
+                "context": "",
+                "last_update": datetime.now().timestamp()
+            },
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        return agent
+    except Exception as e:
+        logger.error(f"Failed to get agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent retrieval error: {str(e)}")
+
+@app.put("/api/v1/agents/{agent_id}")
+async def update_agent(agent_id: str, agent_data: dict):
+    """Update agent configuration"""
+    try:
+        updated_agent = {
+            "agent_id": agent_id,
+            "name": agent_data.get("name", f"Agent {agent_id}"),
+            "type": agent_data.get("type", "trading"),
+            "status": agent_data.get("status", "stopped"),
+            "config": agent_data.get("config", {}),
+            "performance": agent_data.get("performance", {}),
+            "memory": agent_data.get("memory", {}),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        logger.info(f"Agent updated: {agent_id}")
+        
+        # Broadcast agent update via WebSocket
+        await websocket_manager.broadcast_agent_update({
+            "type": "agent_updated",
+            "agent": updated_agent
+        })
+        
+        return updated_agent
+    except Exception as e:
+        logger.error(f"Failed to update agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent update error: {str(e)}")
+
+@app.delete("/api/v1/agents/{agent_id}")
+async def delete_agent(agent_id: str):
+    """Delete an agent"""
+    try:
+        # In production, this would delete from database
+        logger.info(f"Agent deleted: {agent_id}")
+        
+        # Broadcast agent deletion via WebSocket
+        await websocket_manager.broadcast_agent_update({
+            "type": "agent_deleted",
+            "agent_id": agent_id
+        })
+        
+        return {"message": f"Agent {agent_id} deleted successfully"}
+    except Exception as e:
+        logger.error(f"Failed to delete agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Agent deletion error: {str(e)}")
+
 @app.post("/api/v1/agents/{agent_id}/execute-decision")
 async def execute_agent_decision(agent_id: str, decision_params: dict):
     """Execute a trading decision for a specific agent"""
@@ -10519,6 +10721,352 @@ async def execute_arbitrage_opportunity(opportunity_id: str):
     except Exception as e:
         logger.error(f"Error executing arbitrage opportunity: {e}")
         raise HTTPException(status_code=500, detail=f"Execution error: {str(e)}")
+
+# ==================== FARMS MANAGEMENT ENDPOINTS ====================
+
+@app.post("/api/v1/farms")
+async def create_farm(farm_data: dict):
+    """Create a new farm"""
+    try:
+        farm_id = farm_data.get("id") or f"farm_{int(datetime.now().timestamp())}"
+        
+        farm_record = {
+            "id": farm_id,
+            "name": farm_data.get("name", "Unnamed Farm"),
+            "description": farm_data.get("description", ""),
+            "strategy": farm_data.get("strategy", "multi_strategy"),
+            "agentCount": farm_data.get("agentCount", 0),
+            "totalCapital": farm_data.get("totalCapital", 0.0),
+            "coordinationMode": farm_data.get("coordinationMode", "coordinated"),
+            "status": farm_data.get("status", "stopped"),
+            "agents": farm_data.get("agents", []),
+            "performance": {
+                "totalValue": farm_data.get("totalCapital", 0.0),
+                "totalPnL": 0.0,
+                "winRate": 0.0,
+                "tradeCount": 0,
+                "roiPercent": 0.0,
+                "activeAgents": 0,
+                "avgAgentPerformance": 0.0
+            },
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "updatedAt": datetime.now(timezone.utc).isoformat()
+        }
+        
+        logger.info(f"Farm created: {farm_id}")
+        return farm_record
+    except Exception as e:
+        logger.error(f"Failed to create farm: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm creation error: {str(e)}")
+
+@app.get("/api/v1/farms")
+async def get_all_farms():
+    """Get all farms"""
+    try:
+        # Mock farms data
+        farms = [
+            {
+                "id": "farm_momentum_alpha",
+                "name": "Momentum Alpha Farm",
+                "description": "High-performance momentum trading agents",
+                "strategy": "momentum_trading",
+                "agentCount": 3,
+                "totalCapital": 75000.0,
+                "coordinationMode": "coordinated",
+                "status": "active",
+                "agents": ["agent_marcus_momentum", "agent_beta_momentum"],
+                "performance": {
+                    "totalValue": 78234.56,
+                    "totalPnL": 3234.56,
+                    "winRate": 0.74,
+                    "tradeCount": 156,
+                    "roiPercent": 4.31,
+                    "activeAgents": 2,
+                    "avgAgentPerformance": 0.72
+                },
+                "createdAt": "2025-01-15T09:00:00Z",
+                "updatedAt": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": "farm_arbitrage_beta",
+                "name": "Arbitrage Beta Farm", 
+                "description": "Cross-exchange arbitrage specialists",
+                "strategy": "arbitrage",
+                "agentCount": 2,
+                "totalCapital": 50000.0,
+                "coordinationMode": "independent",
+                "status": "active",
+                "agents": ["agent_alex_arbitrage"],
+                "performance": {
+                    "totalValue": 51892.34,
+                    "totalPnL": 1892.34,
+                    "winRate": 0.83,
+                    "tradeCount": 89,
+                    "roiPercent": 3.78,
+                    "activeAgents": 1,
+                    "avgAgentPerformance": 0.83
+                },
+                "createdAt": "2025-01-15T10:00:00Z",
+                "updatedAt": datetime.now(timezone.utc).isoformat()
+            }
+        ]
+        return {"farms": farms, "count": len(farms)}
+    except Exception as e:
+        logger.error(f"Failed to get farms: {e}")
+        raise HTTPException(status_code=500, detail=f"Farms retrieval error: {str(e)}")
+
+@app.get("/api/v1/farms/stats")
+async def get_farms_stats():
+    """Get farms statistics"""
+    try:
+        stats = {
+            "total": 2,
+            "active": 2,
+            "totalValue": 130126.90,
+            "totalPnL": 5126.90,
+            "avgPerformance": 0.785
+        }
+        return stats
+    except Exception as e:
+        logger.error(f"Failed to get farms stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Farms stats error: {str(e)}")
+
+@app.put("/api/v1/farms/{farm_id}/status")
+async def update_farm_status(farm_id: str, status_data: dict):
+    """Update farm status"""
+    try:
+        new_status = status_data.get("status", "stopped")
+        
+        result = {
+            "farm_id": farm_id,
+            "status": new_status,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "message": f"Farm {farm_id} status updated to {new_status}"
+        }
+        
+        logger.info(f"Farm {farm_id} status updated to {new_status}")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to update farm status: {e}")
+        raise HTTPException(status_code=500, detail=f"Farm status update error: {str(e)}")
+
+# ==================== GOALS MANAGEMENT ENDPOINTS ====================
+
+@app.post("/api/v1/goals")
+async def create_goal(goal_data: dict):
+    """Create a new goal"""
+    try:
+        goal_id = goal_data.get("id") or f"goal_{int(datetime.now().timestamp())}"
+        
+        goal_record = {
+            "id": goal_id,
+            "name": goal_data.get("name", "Unnamed Goal"),
+            "description": goal_data.get("description", ""),
+            "goalType": goal_data.get("goalType", "profit_target"),
+            "targetAmount": goal_data.get("targetAmount", 0.0),
+            "currentValue": goal_data.get("currentValue", 0.0),
+            "targetDate": goal_data.get("targetDate"),
+            "priority": goal_data.get("priority", "medium"),
+            "assignedAgents": goal_data.get("assignedAgents", []),
+            "status": goal_data.get("status", "active"),
+            "progress": 0.0,
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "updatedAt": datetime.now(timezone.utc).isoformat()
+        }
+        
+        logger.info(f"Goal created: {goal_id}")
+        return goal_record
+    except Exception as e:
+        logger.error(f"Failed to create goal: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal creation error: {str(e)}")
+
+@app.get("/api/v1/goals")
+async def get_all_goals():
+    """Get all goals"""
+    try:
+        # Mock goals data
+        goals = [
+            {
+                "id": "goal_profit_q1",
+                "name": "Q1 Profit Target",
+                "description": "Achieve 15% return in Q1 2025",
+                "goalType": "profit_target",
+                "targetAmount": 15000.0,
+                "currentValue": 5126.90,
+                "targetDate": "2025-03-31",
+                "priority": "high",
+                "assignedAgents": ["agent_marcus_momentum", "agent_alex_arbitrage"],
+                "status": "in_progress",
+                "progress": 34.18,
+                "createdAt": "2025-01-01T00:00:00Z",
+                "updatedAt": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": "goal_winrate_momentum",
+                "name": "Momentum Strategy Win Rate",
+                "description": "Maintain 75%+ win rate for momentum trading",
+                "goalType": "win_rate",
+                "targetAmount": 75.0,
+                "currentValue": 74.0,
+                "targetDate": "2025-06-30",
+                "priority": "medium",
+                "assignedAgents": ["agent_marcus_momentum"],
+                "status": "in_progress",
+                "progress": 98.67,
+                "createdAt": "2025-01-15T00:00:00Z",
+                "updatedAt": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": "goal_risk_management",
+                "name": "Risk Control",
+                "description": "Keep maximum drawdown under 5%",
+                "goalType": "risk_management",
+                "targetAmount": 5.0,
+                "currentValue": 2.3,
+                "targetDate": "2025-12-31",
+                "priority": "high",
+                "assignedAgents": [],
+                "status": "achieved",
+                "progress": 100.0,
+                "createdAt": "2025-01-01T00:00:00Z",
+                "updatedAt": datetime.now(timezone.utc).isoformat()
+            }
+        ]
+        return {"goals": goals, "count": len(goals)}
+    except Exception as e:
+        logger.error(f"Failed to get goals: {e}")
+        raise HTTPException(status_code=500, detail=f"Goals retrieval error: {str(e)}")
+
+@app.get("/api/v1/goals/stats")
+async def get_goals_stats():
+    """Get goals statistics"""
+    try:
+        stats = {
+            "total": 3,
+            "active": 2,
+            "completed": 1,
+            "in_progress": 2,
+            "avg_progress": 77.6
+        }
+        return stats
+    except Exception as e:
+        logger.error(f"Failed to get goals stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Goals stats error: {str(e)}")
+
+@app.put("/api/v1/goals/{goal_id}/progress")
+async def update_goal_progress(goal_id: str, progress_data: dict):
+    """Update goal progress"""
+    try:
+        new_progress = progress_data.get("progress", 0.0)
+        current_value = progress_data.get("currentValue", 0.0)
+        
+        result = {
+            "goal_id": goal_id,
+            "progress": new_progress,
+            "currentValue": current_value,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "message": f"Goal {goal_id} progress updated to {new_progress}%"
+        }
+        
+        logger.info(f"Goal {goal_id} progress updated to {new_progress}%")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to update goal progress: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal progress update error: {str(e)}")
+
+# ==================== WEBSOCKET ENDPOINTS ====================
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time updates"""
+    await websocket_manager.connect(websocket)
+    try:
+        # Send initial connection confirmation
+        await websocket.send_text(json.dumps({
+            "type": "connection_established",
+            "message": "Connected to MCP Trading Platform",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }))
+        
+        # Keep connection alive and handle incoming messages
+        while True:
+            try:
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                
+                # Handle different message types
+                if message.get("type") == "ping":
+                    await websocket.send_text(json.dumps({
+                        "type": "pong",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }))
+                elif message.get("type") == "subscribe":
+                    # Handle subscription requests
+                    await websocket.send_text(json.dumps({
+                        "type": "subscription_confirmed",
+                        "channels": message.get("channels", []),
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }))
+                    
+            except WebSocketDisconnect:
+                break
+            except json.JSONDecodeError:
+                # Handle invalid JSON gracefully
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Invalid JSON format",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }))
+            except Exception as e:
+                logger.error(f"WebSocket error: {e}")
+                break
+                
+    except WebSocketDisconnect:
+        pass
+    finally:
+        websocket_manager.disconnect(websocket)
+
+@app.get("/api/v1/websocket/status")
+async def get_websocket_status():
+    """Get WebSocket connection status"""
+    try:
+        return {
+            "active_connections": len(websocket_manager.active_connections),
+            "status": "operational",
+            "endpoint": "/ws",
+            "supported_events": [
+                "portfolio_update",
+                "agent_update", 
+                "market_update",
+                "trading_signal",
+                "farm_update",
+                "goal_update"
+            ],
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get WebSocket status: {e}")
+        raise HTTPException(status_code=500, detail=f"WebSocket status error: {str(e)}")
+
+# Test endpoint to trigger WebSocket broadcasts
+@app.post("/api/v1/websocket/broadcast")
+async def trigger_websocket_broadcast(broadcast_data: dict):
+    """Trigger a WebSocket broadcast (for testing)"""
+    try:
+        message_type = broadcast_data.get("type", "test_message")
+        data = broadcast_data.get("data", {})
+        
+        await websocket_manager.broadcast(data, message_type)
+        
+        return {
+            "success": True,
+            "message": f"Broadcast sent to {len(websocket_manager.active_connections)} connections",
+            "type": message_type,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to trigger broadcast: {e}")
+        raise HTTPException(status_code=500, detail=f"Broadcast error: {str(e)}")
 
 # Main entry point
 if __name__ == "__main__":
