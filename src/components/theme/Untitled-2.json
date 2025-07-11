@@ -1,0 +1,228 @@
+{
+  "mcpServers": {
+    "mcp-server-firecrawl": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@mendableai/mcp-server-firecrawl",
+        "--config",
+        "\"{\\\"fireCrawlApiKey\\\":\\\"fc-40d3938d94314262ae057ff2a800b51e\\\"}\""
+      ]
+    },
+    "desktop-commander": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@wonderwhy-er/desktop-commander",
+        "--config",
+        "\"{}\""
+      ]
+    },
+    "think-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@PhillipRt/think-mcp-server",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "exa": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "exa",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "mcp-taskmanager": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@kazuph/mcp-taskmanager",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "code-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@block/code-mcp",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "railway-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@mh8974/railway-mcp",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25",
+        "--profile",
+        "faithful-sunset-12VagK"
+      ]
+    },
+    "terminal-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@weidwonder/terminal-mcp-server",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "n8n-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@guinness77/n8n-mcp-server",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "DeepResearchMCP": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@ameeralns/DeepResearchMCP",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "memory-bank-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@aakarsh-sasi/memory-bank-mcp",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    "supabase-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@supabase-community/supabase-mcp",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25",
+        "--profile",
+        "faithful-sunset-12VagK"
+      ]
+    },
+    "MCP_DOCKER": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-l",
+        "mcp.client=claude-desktop",
+        "--rm",
+        "-i",
+        "alpine/socat",
+        "STDIO",
+        "TCP:host.docker.internal:8811"
+      ]
+    },
+    "context7-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@upstash/context7-mcp",
+        "--key",
+        "e9820cd5-c518-4f68-8c3b-4ba2e5103a25"
+      ]
+    },
+    {
+  "mcpServers": {
+    "redis": {
+      "command": "/path/to/uv",
+      "args": [
+        "--directory",
+        "/path/to/mcp-redis",
+        "run",
+        "src/main.py"
+      ],
+      "env": {
+        "REDIS_HOST": "redis-13924.c256.us-east-1-2.ec2.redns.redis-cloud.com",
+        "REDIS_PORT": "13924",
+        "REDIS_USERNAME": "default",
+        "REDIS_PWD": "6kGX8jsHE6gsDrW2XYh3p2wU0iLEQWga",
+        "REDIS_SSL": "True",
+        "REDIS_CERT_REQS": "required"
+      }
+    }
+  }
+},
+"redis": {
+      "command": "/path/to/uv",
+      "args": [
+        "--directory",
+        "/path/to/mcp-redis",
+        "run",
+        "src/main.py"
+      ],
+      "env": {
+        "REDIS_HOST": "redis-13924.c256.us-east-1-2.ec2.redns.redis-cloud.com",
+        "REDIS_PORT": "13924",
+        "REDIS_USERNAME": "default",
+        "REDIS_PWD": "6kGX8jsHE6gsDrW2XYh3p2wU0iLEQWga",
+        "REDIS_SSL": "True",
+        "REDIS_CERT_REQS": "required"
+      }
+    }
+  }
+}

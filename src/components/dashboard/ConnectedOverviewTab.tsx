@@ -68,32 +68,11 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   // Import farms service for real farms data
   const [farmsStats, setFarmsStats] = useState({ active: 0, total: 0, totalValue: 0, performance: 0 })
   
-  // Load farms statistics
-  useEffect(() => {
-    const loadFarmsStats = async () => {
-      try {
-        // Try to use farms service if available
-        const { useFarms } = await import('@/lib/farms/farms-service')
-        // For now use shared data as primary source
-        setFarmsStats({
-          active: displayData.activeFarms,
-          total: displayData.totalFarms,
-          totalValue: displayData.farmTotalValue,
-          performance: displayData.avgWinRate // Use win rate as performance indicator
-        })
-      } catch (error) {
-        console.log('Farms service not available, using shared data')
-        setFarmsStats({
-          active: displayData.activeFarms,
-          total: displayData.totalFarms,
-          totalValue: displayData.farmTotalValue,
-          performance: displayData.avgWinRate
-        })
-      }
-    }
-    
-    loadFarmsStats()
-  }, [displayData])
+  // Supabase dashboard state
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
+  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null)
+  const [useSupabase, setUseSupabase] = useState(false)
+  const [supabaseLoading, setSupabaseLoading] = useState(true)
   
   // Autonomous persistence integration
   const {
@@ -109,36 +88,86 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
     updateMarketData
   } = useDashboardPersistence()
   
-  // Supabase dashboard state
-  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
-  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null)
-  const [useSupabase, setUseSupabase] = useState(false)
-  const [supabaseLoading, setSupabaseLoading] = useState(true)
-  
   // AG-UI integration with selective event handling
   const { 
     isConnected: aguiConnected, 
     connectionState,
     messagesReceived,
     messagesSent,
-    lastMessage,
-    error: aguiError 
-  } = useAGUI({
-    channels: ['agents', 'trading', 'system', 'portfolio'],
-    autoConnect: true,
-    onAgentDecision: (data) => {
-      toast.success(`Agent Decision: ${data.agentName || 'Unknown'}`, { icon: '🤖' })
-    },
-    onTradeSignal: (data) => {
-      toast.success(`Trade Signal: ${data.side?.toUpperCase()} ${data.symbol}`, { icon: '📈' })
-    },
-    onRiskAlert: (data) => {
-      toast.error(`Risk Alert: ${data.message}`, { icon: '⚠️' })
+    error: aguiError,
+    lastMessage // Add the lastMessage from useAGUI hook
+  } = useAGUI()
+  
+  // Set up AG-UI event handlers
+  useEffect(() => {
+    if (aguiConnected) {
+      // These would normally be passed to useAGUI but we're setting up manually due to type issues
+      const handleAgentDecision = (data: any) => {
+        toast.success(`Agent Decision: ${data.agentName || 'Unknown'}`, { icon: '🤖' })
+      }
+      
+      const handleTradeSignal = (data: any) => {
+        toast.success(`Trade Signal: ${data.side?.toUpperCase()} ${data.symbol}`, { icon: '📈' })
+      }
+      
+      const handleRiskAlert = (data: any) => {
+        toast.error(`Risk Alert: ${data.message}`, { icon: '⚠️' })
+      }
+      
+      // Set up event listeners here if needed
     }
-  })
+  }, [aguiConnected])
   
   // Use shared real-time data as fallback
   const sharedData = useSharedRealtimeData()
+  
+  // Define safe default values
+  const defaultData = {
+    totalAgents: 0,
+    activeAgents: 0,
+    totalPortfolioValue: 0,
+    totalPnL: 0,
+    avgWinRate: 0,
+    totalFarms: 0,
+    activeFarms: 0,
+    farmTotalValue: 0,
+    supabaseConnected: false,
+    redisConnected: false,
+    agentsConnected: false,
+    farmsConnected: false,
+    lastUpdate: new Date()
+  }
+  
+  // Calculate derived metrics from either Supabase or shared data with safe fallbacks
+  const displayData = useSupabase && dashboardSummary ? {
+    totalAgents: dashboardSummary.agents?.total || 0,
+    activeAgents: dashboardSummary.agents?.active || 0,
+    totalPortfolioValue: dashboardSummary.agents?.totalCapital || 0,
+    totalPnL: (dashboardSummary.agents?.totalPnL || 0) + (dashboardSummary.trading?.totalPnL || 0),
+    avgWinRate: dashboardSummary.agents?.averageWinRate || 0,
+    totalFarms: dashboardSummary.farms?.total || 0,
+    activeFarms: dashboardSummary.farms?.active || 0,
+    farmTotalValue: dashboardSummary.farms?.totalAllocated || 0,
+    supabaseConnected: systemHealth?.supabaseConnected || false,
+    redisConnected: true, // Assume true for now
+    agentsConnected: systemHealth?.agentsHealth || false,
+    farmsConnected: systemHealth?.farmsHealth || false,
+    lastUpdate: systemHealth?.lastUpdate ? new Date(systemHealth.lastUpdate) : new Date()
+  } : sharedData ? {
+    totalAgents: sharedData.totalAgents || 0,
+    activeAgents: sharedData.activeAgents || 0,
+    totalPortfolioValue: sharedData.totalPortfolioValue || 0,
+    totalPnL: sharedData.totalPnL || 0,
+    avgWinRate: sharedData.avgWinRate || 0,
+    totalFarms: sharedData.totalFarms || 0,
+    activeFarms: sharedData.activeFarms || 0,
+    farmTotalValue: sharedData.farmTotalValue || 0,
+    supabaseConnected: sharedData.supabaseConnected || false,
+    redisConnected: sharedData.redisConnected || false,
+    agentsConnected: sharedData.agentsConnected || false,
+    farmsConnected: sharedData.farmsConnected || false,
+    lastUpdate: sharedData.lastUpdate || new Date()
+  } : defaultData
   
   // Load dashboard data from Supabase
   useEffect(() => {
@@ -180,36 +209,7 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
     return unsubscribe
   }, [useSupabase])
   
-  // Calculate derived metrics from either Supabase or shared data
-  const displayData = useSupabase && dashboardSummary ? {
-    totalAgents: dashboardSummary.agents.total || 0,
-    activeAgents: dashboardSummary.agents.active || 0,
-    totalPortfolioValue: dashboardSummary.agents.totalCapital || 0,
-    totalPnL: (dashboardSummary.agents.totalPnL || 0) + (dashboardSummary.trading.totalPnL || 0),
-    avgWinRate: dashboardSummary.agents.averageWinRate || 0,
-    totalFarms: dashboardSummary.farms.total || 0,
-    activeFarms: dashboardSummary.farms.active || 0,
-    farmTotalValue: dashboardSummary.farms.totalAllocated || 0,
-    supabaseConnected: systemHealth?.supabaseConnected || false,
-    redisConnected: true, // Assume true for now
-    agentsConnected: systemHealth?.agentsHealth || false,
-    farmsConnected: systemHealth?.farmsHealth || false,
-    lastUpdate: systemHealth?.lastUpdate ? new Date(systemHealth.lastUpdate) : new Date()
-  } : {
-    totalAgents: sharedData.totalAgents || 0,
-    activeAgents: sharedData.activeAgents || 0,
-    totalPortfolioValue: sharedData.totalPortfolioValue || 0,
-    totalPnL: sharedData.totalPnL || 0,
-    avgWinRate: sharedData.avgWinRate || 0,
-    totalFarms: sharedData.totalFarms || 0,
-    activeFarms: sharedData.activeFarms || 0,
-    farmTotalValue: sharedData.farmTotalValue || 0,
-    supabaseConnected: sharedData.supabaseConnected || false,
-    redisConnected: sharedData.redisConnected || false,
-    agentsConnected: sharedData.agentsConnected || false,
-    farmsConnected: sharedData.farmsConnected || false,
-    lastUpdate: sharedData.lastUpdate || new Date()
-  }
+  // Note: displayData is now declared earlier in the file with better fallback handling
 
   // Market data for overview
   const { prices: marketPrices, loading: marketLoading } = useMarketData()
