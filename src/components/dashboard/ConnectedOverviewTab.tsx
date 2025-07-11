@@ -824,14 +824,20 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                 onClick={() => handleNavigateTo('trading')}
               >
                 <div className="text-sm text-muted-foreground mb-1">Bitcoin</div>
-                <AnimatedPrice 
-                  value={btcPrice}
-                  currency="$"
-                  precision={0}
-                  size="md"
-                  className="text-lg font-bold"
-                />
-                <div className="text-xs text-muted-foreground">BTC/USD • Live</div>
+                {btcPrice ? (
+                  <AnimatedPrice 
+                    value={btcPrice}
+                    currency="$"
+                    precision={0}
+                    size="md"
+                    className="text-lg font-bold"
+                  />
+                ) : (
+                  <div className="text-lg font-bold text-gray-400">Loading...</div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  BTC/USD • {isLiveData ? '🔴 Live' : '📊 Cached'}
+                </div>
               </motion.div>
               <motion.div 
                 className="text-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
@@ -839,14 +845,20 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                 onClick={() => handleNavigateTo('trading')}
               >
                 <div className="text-sm text-muted-foreground mb-1">Ethereum</div>
-                <AnimatedPrice 
-                  value={ethPrice}
-                  currency="$"
-                  precision={0}
-                  size="md"
-                  className="text-lg font-bold"
-                />
-                <div className="text-xs text-muted-foreground">ETH/USD • Live</div>
+                {ethPrice ? (
+                  <AnimatedPrice 
+                    value={ethPrice}
+                    currency="$"
+                    precision={0}
+                    size="md"
+                    className="text-lg font-bold"
+                  />
+                ) : (
+                  <div className="text-lg font-bold text-gray-400">Loading...</div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  ETH/USD • {isLiveData ? '🔴 Live' : '📊 Cached'}
+                </div>
               </motion.div>
               <motion.div 
                 className="text-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer"
@@ -854,14 +866,20 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                 onClick={() => handleNavigateTo('trading')}
               >
                 <div className="text-sm text-muted-foreground mb-1">Solana</div>
-                <AnimatedPrice 
-                  value={solPrice}
-                  currency="$"
-                  precision={2}
-                  size="md"
-                  className="text-lg font-bold"
-                />
-                <div className="text-xs text-muted-foreground">SOL/USD • Live</div>
+                {solPrice ? (
+                  <AnimatedPrice 
+                    value={solPrice}
+                    currency="$"
+                    precision={2}
+                    size="md"
+                    className="text-lg font-bold"
+                  />
+                ) : (
+                  <div className="text-lg font-bold text-gray-400">Loading...</div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  SOL/USD • {isLiveData ? '🔴 Live' : '📊 Cached'}
+                </div>
               </motion.div>
             <motion.div 
               className="text-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
@@ -869,15 +887,21 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
               onClick={() => handleNavigateTo('trading')}
             >
               <div className="text-sm text-muted-foreground mb-1">Portfolio</div>
-              <AnimatedPrice 
-                value={displayData.totalPortfolioValue}
-                currency="$"
-                precision={0}
-                size="md"
-                className="text-lg font-bold text-green-600"
-                showTrend={false}
-              />
-              <div className="text-xs text-muted-foreground">Total Value • Managed</div>
+              {displayData.totalPortfolioValue !== undefined ? (
+                <AnimatedPrice 
+                  value={displayData.totalPortfolioValue || 0}
+                  currency="$"
+                  precision={0}
+                  size="md"
+                  className="text-lg font-bold text-green-600"
+                  showTrend={false}
+                />
+              ) : (
+                <div className="text-lg font-bold text-gray-400">Loading...</div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Total Value • {liveBackendConnected ? '🔴 Live' : '📊 Cached'}
+              </div>
             </motion.div>
             </div>
           </ApiCallErrorBoundary>

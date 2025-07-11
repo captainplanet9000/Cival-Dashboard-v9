@@ -6,7 +6,7 @@ import { TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react'
 
 // Animated Price Display Component
 interface AnimatedPriceProps {
-  value: number
+  value: number | undefined
   previousValue?: number
   symbol?: string
   currency?: string
@@ -26,9 +26,20 @@ export function AnimatedPrice({
   showTrend = true,
   size = 'md'
 }: AnimatedPriceProps) {
-  const [displayValue, setDisplayValue] = useState(value)
+  // Handle undefined values gracefully
+  const safeValue = value ?? 0
+  const [displayValue, setDisplayValue] = useState(safeValue)
   const [isIncreasing, setIsIncreasing] = useState<boolean | null>(null)
   const [showChange, setShowChange] = useState(false)
+  
+  // Return loading state if value is undefined
+  if (value === undefined) {
+    return (
+      <div className={`text-gray-400 ${className}`}>
+        Loading...
+      </div>
+    )
+  }
 
   const sizeClasses = {
     sm: 'text-sm',
@@ -38,13 +49,13 @@ export function AnimatedPrice({
   }
 
   useEffect(() => {
-    if (previousValue !== undefined && previousValue !== value) {
-      setIsIncreasing(value > previousValue)
+    if (previousValue !== undefined && previousValue !== safeValue && value !== undefined) {
+      setIsIncreasing(safeValue > previousValue)
       setShowChange(true)
       
       // Animate number change
       const startValue = displayValue
-      const endValue = value
+      const endValue = safeValue
       const duration = 1000
       const startTime = Date.now()
 
@@ -72,7 +83,7 @@ export function AnimatedPrice({
   }, [value, previousValue, displayValue])
 
   const changePercentage = previousValue && previousValue !== 0 
-    ? ((value - previousValue) / previousValue) * 100 
+    ? ((safeValue - previousValue) / previousValue) * 100 
     : 0
 
   return (
