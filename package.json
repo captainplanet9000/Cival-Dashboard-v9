@@ -98,6 +98,7 @@
     "@tiptap/extension-table": "^2.24.0",
     "@tiptap/react": "^2.24.0",
     "@tiptap/starter-kit": "^2.24.0",
+    "@types/ioredis": "^5.0.0",
     "@types/three": "^0.178.1",
     "@types/uuid": "^10.0.0",
     "alchemy-sdk": "^3.6.1",

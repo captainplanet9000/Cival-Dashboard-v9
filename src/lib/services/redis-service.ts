@@ -13,6 +13,10 @@ class RedisService {
   private client: any;
   private isConnected: boolean = false;
   private isServerSide: boolean = typeof window === 'undefined';
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectDelay: number = 1000;
+  private connectionConfig: any = null;
 
   constructor() {
     // Only initialize Redis on server side
@@ -23,46 +27,122 @@ class RedisService {
       return
     }
 
+    this.initializeConnection();
+  }
+
+  private initializeConnection() {
     // Use Redis Cloud URL from environment or fallback to local
     const redisUrl = process.env.REDIS_URL || process.env.NEXT_PUBLIC_REDIS_URL
     
     if (redisUrl) {
-      // Parse Redis Cloud URL: redis://default:password@host:port
-      this.client = new Redis(redisUrl, {
+      // Enhanced Redis Cloud configuration with robust error handling
+      this.connectionConfig = {
+        url: redisUrl,
         maxRetriesPerRequest: 3,
         lazyConnect: true,
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         connectTimeout: 10000,
         commandTimeout: 5000,
-      })
+        family: 4, // Force IPv4
+        keepAlive: true,
+        retryDelayOnClusterDown: 300,
+        retryDelayOnTimeout: 100,
+        maxRetriesPerRequest: 3,
+        enableOfflineQueue: false,
+      }
+      this.client = new Redis(redisUrl, this.connectionConfig)
       console.log('🔧 Redis: Configured with Redis Cloud URL')
     } else {
       // Fallback to local Redis
-      this.client = new Redis({
+      this.connectionConfig = {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
         maxRetriesPerRequest: 3,
         lazyConnect: true,
-      })
+        connectTimeout: 5000,
+        commandTimeout: 3000,
+        retryDelayOnFailover: 100,
+      }
+      this.client = new Redis(this.connectionConfig)
       console.log('🔧 Redis: Configured for local development')
     }
 
     if (this.client) {
-      this.client.on('connect', () => {
-        console.log('Redis connected');
-        this.isConnected = true;
-      });
+      this.setupEventHandlers();
+      this.performInitialConnection();
+    }
+  }
 
-      this.client.on('error', (error) => {
-        console.error('Redis connection error:', error);
-        this.isConnected = false;
-      });
+  private setupEventHandlers() {
+    this.client.on('connect', () => {
+      console.log('✅ Redis: Connected successfully');
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+    });
 
-      this.client.on('close', () => {
-        console.log('Redis connection closed');
-        this.isConnected = false;
-      });
+    this.client.on('ready', () => {
+      console.log('✅ Redis: Ready for commands');
+      this.isConnected = true;
+    });
+
+    this.client.on('error', (error: any) => {
+      console.error('❌ Redis connection error:', error.message);
+      this.isConnected = false;
+      this.handleConnectionError(error);
+    });
+
+    this.client.on('close', () => {
+      console.log('🔌 Redis: Connection closed');
+      this.isConnected = false;
+    });
+
+    this.client.on('reconnecting', (ms: number) => {
+      console.log(`🔄 Redis: Reconnecting in ${ms}ms (attempt ${this.reconnectAttempts + 1})`);
+    });
+
+    this.client.on('end', () => {
+      console.log('🔚 Redis: Connection ended');
+      this.isConnected = false;
+    });
+  }
+
+  private handleConnectionError(error: any) {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      setTimeout(() => {
+        console.log(`🔄 Redis: Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+        this.attemptReconnection();
+      }, this.reconnectDelay * this.reconnectAttempts);
+    } else {
+      console.error('❌ Redis: Max reconnection attempts reached, giving up');
+    }
+  }
+
+  private async attemptReconnection() {
+    try {
+      if (this.client) {
+        await this.client.connect();
+      }
+    } catch (error) {
+      console.error('❌ Redis: Reconnection failed:', error);
+    }
+  }
+
+  private async performInitialConnection() {
+    try {
+      console.log('🚀 Redis: Attempting initial connection...');
+      await this.client.connect();
+      console.log('✅ Redis: Initial connection successful');
+      
+      // Test the connection with a ping
+      const pong = await this.client.ping();
+      if (pong === 'PONG') {
+        console.log('🏓 Redis: Ping successful');
+      }
+    } catch (error) {
+      console.error('❌ Redis: Initial connection failed:', error);
+      this.isConnected = false;
     }
   }
 

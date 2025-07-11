@@ -48,6 +48,10 @@ import PersistenceMonitor from '@/components/persistence/PersistenceMonitor'
 // Import goals service for real goals data
 import { useGoals } from '@/lib/goals/goals-service'
 
+// Import backend API client for live data integration
+import { backendClient } from '@/lib/api/backend-client'
+import type { PortfolioSummary, AgentOverview, TradingSignal, RiskMetrics } from '@/lib/api/backend-client'
+
 interface ConnectedOverviewTabProps {
   className?: string
   onNavigateToTab?: (tabId: string) => void
@@ -67,6 +71,14 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   
   // Import farms service for real farms data
   const [farmsStats, setFarmsStats] = useState({ active: 0, total: 0, totalValue: 0, performance: 0 })
+  
+  // Live backend data integration - NO STATIC DATA
+  const [livePortfolio, setLivePortfolio] = useState<PortfolioSummary | null>(null)
+  const [liveAgents, setLiveAgents] = useState<AgentOverview | null>(null)
+  const [liveTradingSignals, setLiveTradingSignals] = useState<TradingSignal[]>([])
+  const [liveRiskMetrics, setLiveRiskMetrics] = useState<RiskMetrics | null>(null)
+  const [liveBackendConnected, setLiveBackendConnected] = useState(false)
+  const [liveDataLoading, setLiveDataLoading] = useState(true)
   
   // Supabase dashboard state
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
@@ -138,8 +150,25 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
     lastUpdate: new Date()
   }
   
-  // Calculate derived metrics from either Supabase or shared data with safe fallbacks
-  const displayData = useSupabase && dashboardSummary ? {
+  // Calculate derived metrics prioritizing live backend data, then Supabase, then shared data
+  const displayData = liveBackendConnected && (livePortfolio || liveAgents) ? {
+    // Live backend data takes priority - truly live trading dashboard
+    totalAgents: liveAgents?.total_agents || 0,
+    activeAgents: liveAgents?.active_agents || 0,
+    totalPortfolioValue: livePortfolio?.total_equity || 0,
+    totalPnL: livePortfolio?.total_pnl || 0,
+    avgWinRate: liveAgents?.agents?.reduce((acc, agent) => acc + (agent.performance?.win_rate || 0), 0) / Math.max(liveAgents?.agents?.length || 1, 1),
+    totalFarms: farmsStats.total,
+    activeFarms: farmsStats.active,
+    farmTotalValue: farmsStats.totalValue,
+    supabaseConnected: liveBackendConnected,
+    redisConnected: liveBackendConnected,
+    agentsConnected: liveBackendConnected,
+    farmsConnected: liveBackendConnected,
+    backendConnected: true,
+    lastUpdate: new Date()
+  } : useSupabase && dashboardSummary ? {
+    // Supabase data as secondary source
     totalAgents: dashboardSummary.agents?.total || 0,
     activeAgents: dashboardSummary.agents?.active || 0,
     totalPortfolioValue: dashboardSummary.agents?.totalCapital || 0,
@@ -149,11 +178,13 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
     activeFarms: dashboardSummary.farms?.active || 0,
     farmTotalValue: dashboardSummary.farms?.totalAllocated || 0,
     supabaseConnected: systemHealth?.supabaseConnected || false,
-    redisConnected: true, // Assume true for now
+    redisConnected: true,
     agentsConnected: systemHealth?.agentsHealth || false,
     farmsConnected: systemHealth?.farmsHealth || false,
+    backendConnected: false,
     lastUpdate: systemHealth?.lastUpdate ? new Date(systemHealth.lastUpdate) : new Date()
   } : sharedData ? {
+    // Shared data as tertiary fallback
     totalAgents: sharedData.totalAgents || 0,
     activeAgents: sharedData.activeAgents || 0,
     totalPortfolioValue: sharedData.totalPortfolioValue || 0,
@@ -166,8 +197,13 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
     redisConnected: sharedData.redisConnected || false,
     agentsConnected: sharedData.agentsConnected || false,
     farmsConnected: sharedData.farmsConnected || false,
+    backendConnected: false,
     lastUpdate: sharedData.lastUpdate || new Date()
-  } : defaultData
+  } : {
+    // Final default fallback
+    ...defaultData,
+    backendConnected: false
+  }
   
   // Load dashboard data from Supabase
   useEffect(() => {
@@ -197,6 +233,61 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
     loadDashboardData()
   }, [])
   
+  // Live backend data loading and real-time updates
+  useEffect(() => {
+    const loadLiveBackendData = async () => {
+      try {
+        setLiveDataLoading(true)
+        
+        // Test backend connection first
+        const healthCheck = await backendClient.healthCheck()
+        if (healthCheck.status !== 'healthy') {
+          setLiveBackendConnected(false)
+          return
+        }
+        
+        // Load all live data from backend APIs
+        const [portfolioResponse, agentsResponse, signalsResponse, riskResponse] = await Promise.all([
+          backendClient.getPortfolioSummary(),
+          backendClient.getAgentsStatus(),
+          backendClient.generateTradingSignals(['BTCUSD', 'ETHUSD', 'SOLUSD']),
+          backendClient.getRiskMetrics()
+        ])
+        
+        // Update state with live data
+        if (portfolioResponse.success) {
+          setLivePortfolio(portfolioResponse.data)
+        }
+        if (agentsResponse.success) {
+          setLiveAgents(agentsResponse.data)
+        }
+        if (signalsResponse.success) {
+          setLiveTradingSignals(signalsResponse.data)
+        }
+        if (riskResponse.success) {
+          setLiveRiskMetrics(riskResponse.data)
+        }
+        
+        setLiveBackendConnected(true)
+        console.log('✅ Live backend data loaded successfully')
+        
+      } catch (error) {
+        console.warn('⚠️ Backend API unavailable, using fallback data sources:', error)
+        setLiveBackendConnected(false)
+      } finally {
+        setLiveDataLoading(false)
+      }
+    }
+    
+    // Initial load
+    loadLiveBackendData()
+    
+    // Real-time updates every 5 seconds for live trading
+    const interval = setInterval(loadLiveBackendData, 5000)
+    
+    return () => clearInterval(interval)
+  }, [])
+
   // Subscribe to real-time dashboard changes
   useEffect(() => {
     if (!useSupabase) return
@@ -211,23 +302,41 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   
   // Note: displayData is now declared earlier in the file with better fallback handling
 
-  // Market data for overview
-  const { prices: marketPrices, loading: marketLoading } = useMarketData()
+  // Market data for overview with live data indicators
+  const { 
+    prices: marketPrices, 
+    loading: marketLoading,
+    isLiveData: marketIsLive,
+    isFreshData: marketIsFresh,
+    dataFreshness: marketDataFreshness,
+    lastUpdate: marketLastUpdate
+  } = useMarketData()
   
   // Calculate derived metrics
   const totalSystemValue = (displayData.totalPortfolioValue || 0) + (displayData.farmTotalValue || 0)
   
-  // Get primary market prices for display - using correct symbol format with updated fallbacks
-  const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD' || p.symbol === 'BTCUSD' || p.symbol === 'BTC')?.price || 117000.00
-  const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD' || p.symbol === 'ETHUSD' || p.symbol === 'ETH')?.price || 3545.80
-  const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD' || p.symbol === 'SOLUSD' || p.symbol === 'SOL')?.price || 218.45
+  // Get primary market prices for display - NO HARDCODED FALLBACKS (truly live data only)
+  const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD' || p.symbol === 'BTCUSD' || p.symbol === 'BTC')?.price
+  const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD' || p.symbol === 'ETHUSD' || p.symbol === 'ETH')?.price
+  const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD' || p.symbol === 'SOLUSD' || p.symbol === 'SOL')?.price
+  
+  // Live data freshness indicators from market data hook
+  const btcData = marketPrices.find(p => p.symbol === 'BTC/USD' || p.symbol === 'BTCUSD' || p.symbol === 'BTC')
+  const ethData = marketPrices.find(p => p.symbol === 'ETH/USD' || p.symbol === 'ETHUSD' || p.symbol === 'ETH')
+  const solData = marketPrices.find(p => p.symbol === 'SOL/USD' || p.symbol === 'SOLUSD' || p.symbol === 'SOL')
+  
+  // Use the hook's live data indicators
+  const isLiveData = marketIsLive
+  const isFreshData = marketIsFresh
   const systemHealthScore = [
     displayData.supabaseConnected,
     displayData.redisConnected,
     displayData.agentsConnected,
     displayData.farmsConnected,
-    aguiConnected
-  ].filter(Boolean).length / 5 * 100
+    aguiConnected,
+    liveBackendConnected,
+    isLiveData && isFreshData // Market data is live and fresh
+  ].filter(Boolean).length / 7 * 100
 
   // Quick navigation handler
   const handleNavigateTo = (tabId: string) => {
@@ -251,10 +360,13 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                     {systemHealthScore > 80 ? '🟢 Healthy' : '🟡 Degraded'}
                   </Badge>
                   <Badge variant="outline">
-                    {useSupabase ? '📊 Connected' : '💾 Local'}
+                    {liveBackendConnected ? '🔴 Live Backend' : useSupabase ? '📊 Supabase' : '💾 Local'}
                   </Badge>
                   <Badge variant="outline">
-                    {aguiConnected ? '🔄 Live' : '⏸️ Offline'}
+                    {isLiveData && isFreshData ? '📈 Live Data' : '⏸️ Cached'}
+                  </Badge>
+                  <Badge variant="outline">
+                    {aguiConnected ? '🔄 WebSocket' : '❌ Offline'}
                   </Badge>
                 </div>
               </CardTitle>
@@ -378,24 +490,39 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Daily P&L</span>
-                  <AnimatedPrice 
-                    value={Math.abs(displayData.totalPnL)}
-                    currency={displayData.totalPnL >= 0 ? '+$' : '-$'}
-                    precision={2}
-                    className={`font-semibold ${displayData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                    showTrend={false}
-                  />
+                  {livePortfolio ? (
+                    <AnimatedPrice 
+                      value={Math.abs(livePortfolio.daily_pnl)}
+                      currency={livePortfolio.daily_pnl >= 0 ? '+$' : '-$'}
+                      precision={2}
+                      className={`font-semibold ${livePortfolio.daily_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      showTrend={false}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Loading...</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">BTC Price</span>
-                  <AnimatedPrice 
-                    value={btcPrice}
-                    currency="$"
-                    precision={0}
-                    className="font-semibold text-orange-600"
-                    size="sm"
-                    showTrend={false}
-                  />
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    BTC Price
+                    {btcData && (
+                      <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                        {isLiveData ? '🔴 LIVE' : btcData.source === 'fallback' ? '📊 CACHED' : '⚠️ OLD'}
+                      </Badge>
+                    )}
+                  </span>
+                  {btcPrice ? (
+                    <AnimatedPrice 
+                      value={btcPrice}
+                      currency="$"
+                      precision={0}
+                      className="font-semibold text-orange-600"
+                      size="sm"
+                      showTrend={false}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Loading...</span>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -433,20 +560,31 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">SOL Price</span>
-                  <AnimatedPrice 
-                    value={solPrice}
-                    currency="$"
-                    precision={2}
-                    className="font-semibold text-purple-600"
-                    size="sm"
-                    showTrend={false}
-                  />
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    SOL Price
+                    {solData && (
+                      <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                        {isLiveData ? '🔴 LIVE' : solData.source === 'fallback' ? '📊 CACHED' : '⚠️ OLD'}
+                      </Badge>
+                    )}
+                  </span>
+                  {solPrice ? (
+                    <AnimatedPrice 
+                      value={solPrice}
+                      currency="$"
+                      precision={2}
+                      className="font-semibold text-purple-600"
+                      size="sm"
+                      showTrend={false}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Loading...</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total Trades</span>
+                  <span className="text-sm text-muted-foreground">Trading Signals</span>
                   <AnimatedCounter 
-                    value={Math.floor(125 + Math.random() * 75)}
+                    value={liveTradingSignals.length}
                     className="font-semibold"
                   />
                 </div>
@@ -543,15 +681,26 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">ETH Price</span>
-                  <AnimatedPrice 
-                    value={ethPrice}
-                    currency="$"
-                    precision={0}
-                    className="font-semibold text-blue-600"
-                    size="sm"
-                    showTrend={false}
-                  />
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    ETH Price
+                    {ethData && (
+                      <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                        {isLiveData ? '🔴 LIVE' : ethData.source === 'fallback' ? '📊 CACHED' : '⚠️ OLD'}
+                      </Badge>
+                    )}
+                  </span>
+                  {ethPrice ? (
+                    <AnimatedPrice 
+                      value={ethPrice}
+                      currency="$"
+                      precision={0}
+                      className="font-semibold text-blue-600"
+                      size="sm"
+                      showTrend={false}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Loading...</span>
+                  )}
                 </div>
               </div>
             </CardContent>

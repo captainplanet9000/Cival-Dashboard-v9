@@ -859,8 +859,8 @@ class MarketDataService {
     return () => this.updateCallbacks.delete(callback)
   }
 
-  // Start real-time updates
-  startRealTimeUpdates(symbols?: string[], intervalMs = 30000) {
+  // Start real-time updates with aggressive refresh for live trading
+  startRealTimeUpdates(symbols?: string[], intervalMs = 5000) {
     const interval = setInterval(async () => {
       try {
         await this.fetchMarketPrices(symbols)
@@ -880,13 +880,15 @@ class MarketDataService {
   }
 }
 
-// Custom hook for React components
+// Custom hook for React components with live data focus
 export function useMarketData(symbols?: string[]) {
   const [prices, setPrices] = useState<MarketPrice[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [useFallbackData, setUseFallbackData] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [dataFreshness, setDataFreshness] = useState<'live' | 'cached' | 'stale' | 'offline'>('offline')
 
   useEffect(() => {
     const marketDataService = MarketDataService.getInstance()
@@ -953,14 +955,31 @@ export function useMarketData(symbols?: string[]) {
 
     loadInitialData()
 
-    // Subscribe to real-time updates with error handling
+    // Subscribe to real-time updates with error handling and freshness tracking
     const unsubscribe = marketDataService.subscribe((updatedPrices) => {
       try {
-        setPrices(updatedPrices.filter(p => targetSymbols.includes(p.symbol)))
+        const filteredPrices = updatedPrices.filter(p => targetSymbols.includes(p.symbol))
+        setPrices(filteredPrices)
         setIsConnected(true)
+        setUseFallbackData(false)
+        setLastUpdate(new Date())
+        
+        // Determine data freshness based on source and timing
+        const hasLiveData = filteredPrices.some(p => p.source !== 'fallback' && p.source !== 'mock')
+        const isRecent = filteredPrices.some(p => 
+          new Date().getTime() - p.lastUpdate.getTime() < 30000 // 30 seconds
+        )
+        
+        if (hasLiveData && isRecent) {
+          setDataFreshness('live')
+        } else if (hasLiveData) {
+          setDataFreshness('cached')
+        } else {
+          setDataFreshness('stale')
+        }
       } catch (subErr) {
         console.warn('Market data WebSocket update error:', subErr)
-        // Don't update state here, keep using the last good data
+        setDataFreshness('stale')
       }
     })
 
@@ -995,7 +1014,12 @@ export function useMarketData(symbols?: string[]) {
     isLoading, 
     error, 
     isConnected, 
-    useFallbackData 
+    useFallbackData,
+    lastUpdate,
+    dataFreshness,
+    // Helper properties for components
+    isLiveData: dataFreshness === 'live',
+    isFreshData: dataFreshness === 'live' || dataFreshness === 'cached'
   }
 }
 
