@@ -11,12 +11,12 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       status: 'healthy',
       providers: {
-        messari: { status: 'unknown', lastCheck: null },
-        coinapi: { status: 'unknown', lastCheck: null },
-        coingecko: { status: 'unknown', lastCheck: null },
-        coincap: { status: 'unknown', lastCheck: null },
-        coinpaprika: { status: 'unknown', lastCheck: null },
-        coindesk: { status: 'unknown', lastCheck: null }
+        messari: { status: 'unknown', lastCheck: null as string | null },
+        coinapi: { status: 'unknown', lastCheck: null as string | null },
+        coingecko: { status: 'unknown', lastCheck: null as string | null },
+        coincap: { status: 'unknown', lastCheck: null as string | null },
+        coinpaprika: { status: 'unknown', lastCheck: null as string | null },
+        coindesk: { status: 'unknown', lastCheck: null as string | null }
       },
       rateLimit: {
         messari: global.lastMessariRequest ? new Date(global.lastMessariRequest).toISOString() : null,

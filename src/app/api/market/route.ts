@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (symbol) {
-      const symbolData = marketData.find(s => s.symbol === symbol.toUpperCase());
+      const symbolData = marketData.find((s: any) => s.symbol === symbol.toUpperCase());
       if (!symbolData) {
         return NextResponse.json(
           { success: false, error: 'Symbol not found' },
@@ -80,9 +80,9 @@ export async function GET(request: NextRequest) {
     // Filter by type if needed
     let filteredData = marketData;
     if (type === 'crypto') {
-      filteredData = marketData.filter(s => s.symbol.includes('/USD') || s.symbol.includes('-USD'));
+      filteredData = marketData.filter((s: any) => s.symbol.includes('/USD') || s.symbol.includes('-USD'));
     } else if (type === 'stocks') {
-      filteredData = marketData.filter(s => !s.symbol.includes('/USD') && !s.symbol.includes('-USD'));
+      filteredData = marketData.filter((s: any) => !s.symbol.includes('/USD') && !s.symbol.includes('-USD'));
     }
     
     return NextResponse.json({

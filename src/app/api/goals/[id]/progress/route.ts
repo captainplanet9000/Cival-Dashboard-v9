@@ -50,7 +50,7 @@ export async function PUT(
     }
     
     // Update milestones
-    goal.milestones.forEach(milestone => {
+    goal.milestones.forEach((milestone: any) => {
       if (goal.progress >= milestone.percentage && !milestone.completedAt) {
         milestone.completedAt = new Date().toISOString()
       }

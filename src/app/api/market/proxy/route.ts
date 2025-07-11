@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     })
     const responseTime = Date.now() - startTime
     
-    marketDataLogger.logApiRequest(provider, apiUrl, response.status, responseTime, asset || symbol)
+    marketDataLogger.logApiRequest(provider, apiUrl, response.status, responseTime, asset || symbol || 'unknown')
 
     if (!response.ok) {
       // Handle rate limiting specifically
@@ -186,7 +186,15 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    marketDataLogger.error(provider || 'unknown', 'Market data proxy error', { 
+    // Use URL params directly since variables might be out of scope
+    const url = new URL(request.url)
+    const { searchParams } = url
+    const provider = searchParams.get('provider') || 'unknown'
+    const asset = searchParams.get('asset')
+    const symbol = searchParams.get('symbol')
+    const symbols = searchParams.get('symbols')
+    
+    marketDataLogger.error(provider, 'Market data proxy error', { 
       error: errorMessage, 
       asset, 
       symbol, 

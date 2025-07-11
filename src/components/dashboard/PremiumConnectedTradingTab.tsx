@@ -23,7 +23,7 @@ import RiskManagementSuite from '@/components/premium-ui/compliance/risk-managem
 
 // Import existing components as fallbacks
 import RealTradingInterface from '@/components/trading/RealTradingInterface'
-import TradingCharts from '@/components/TradingCharts'
+import TradingCharts from '@/components/trading/TradingCharts'
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
 import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
 

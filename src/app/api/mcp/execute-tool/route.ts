@@ -182,10 +182,15 @@ export async function GET(request: NextRequest) {
     const healthChecks = await Promise.allSettled(
       Object.entries(MCP_SERVERS).map(async ([name, url]) => {
         try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000);
+          
           const response = await fetch(`${url}/health`, {
             method: 'GET',
-            timeout: 5000
+            signal: controller.signal
           });
+          
+          clearTimeout(timeout);
           
           const data = response.ok ? await response.json() : null;
           
@@ -238,10 +243,15 @@ export async function GET(request: NextRequest) {
     const toolDiscovery = await Promise.allSettled(
       Object.entries(MCP_SERVERS).map(async ([name, url]) => {
         try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000);
+          
           const response = await fetch(`${url}/mcp/tools`, {
             method: 'GET',
-            timeout: 5000
+            signal: controller.signal
           });
+          
+          clearTimeout(timeout);
           
           if (response.ok) {
             const data = await response.json();

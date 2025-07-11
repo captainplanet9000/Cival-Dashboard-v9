@@ -49,7 +49,7 @@ import MCPDashboard from '@/components/mcp/MCPDashboard'
 import dynamic from 'next/dynamic'
 
 // Import simpler components without WebSocket dependencies
-import SimpleAnalytics from '../SimpleAnalytics'
+import SimpleAnalytics from './SimpleAnalytics'
 
 // Import missing UI components for forms
 import { Input } from '@/components/ui/input'

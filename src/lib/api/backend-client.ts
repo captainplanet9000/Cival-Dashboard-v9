@@ -663,8 +663,7 @@ class BackendClient {
 // Export singleton instance
 export const backendClient = new BackendClient()
 
-// Export as backendApi for compatibility with existing code
-export const backendApi = backendClient
+// Remove duplicate export - using the new implementation below
 
 // Export for custom instances
 export { BackendClient }
@@ -688,3 +687,215 @@ export type {
   SentimentAnalysis,
   TradingDecision
 }
+
+// Simple Backend API Client implementation
+class BackendAPIClient {
+  private baseURL: string
+
+  constructor() {
+    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  }
+
+  async getFlashLoanOpportunities(filters?: any): Promise<APIResponse<any>> {
+    try {
+      const params = new URLSearchParams(filters)
+      const response = await fetch(`${this.baseURL}/api/v1/flashloan/opportunities?${params}`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Flash loan opportunities unavailable',
+        data: [],
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async executeFlashLoan(data: any): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/flashloan/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Flash loan execution failed',
+        data: null,
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async getFlashLoanProtocols(): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/flashloan/protocols`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Flash loan protocols unavailable',
+        data: [],
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  // Core Trading Methods
+  async getPortfolioSummary(): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/portfolio/summary`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Portfolio unavailable',
+        data: { totalValue: 0, dailyPnL: 0, positions: [] },
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async getAgentStatus(): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/agents/status`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Agent status unavailable',
+        data: { activeAgents: 0, totalAgents: 0 },
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async getMarketData(symbols: string[] = ['BTC', 'ETH']): Promise<APIResponse<any>> {
+    try {
+      const params = new URLSearchParams({ symbols: symbols.join(',') })
+      const response = await fetch(`${this.baseURL}/api/v1/market/live-data?${params}`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Market data unavailable',
+        data: [],
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async executeOrder(order: any): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/trading/paper/order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order)
+      })
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Order execution failed',
+        data: null,
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async getRiskMetrics(): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/risk/metrics`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Risk metrics unavailable',
+        data: { var: 0, sharpeRatio: 0, maxDrawdown: 0 },
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async getStrategyPerformance(): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/strategies/performance`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Strategy performance unavailable',
+        data: [],
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async createStrategy(strategy: any): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/strategies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(strategy)
+      })
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Strategy creation failed',
+        data: null,
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async startAgent(agentId: string): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/agents/${agentId}/start`, {
+        method: 'POST'
+      })
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Agent start failed',
+        data: null,
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async stopAgent(agentId: string): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/agents/${agentId}/stop`, {
+        method: 'POST'
+      })
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Agent stop failed',
+        data: null,
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+
+  async getSystemHealth(): Promise<APIResponse<any>> {
+    try {
+      const response = await fetch(`${this.baseURL}/health`)
+      return await response.json()
+    } catch (error) {
+      return {
+        success: false,
+        message: 'System health check failed',
+        data: { status: 'offline' },
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+}
+
+export const backendApi = new BackendAPIClient()

@@ -186,11 +186,9 @@ export async function POST(request: NextRequest) {
       
       const newFarm = await supabaseFarmsService.createFarm({
         name: body.name,
-        strategy_type: body.strategy,
-        target_allocation: body.totalCapital || 10000,
-        max_agents: body.agentCount || 10,
-        min_agents: body.minAgents || 1,
-        risk_tolerance: body.riskTolerance || 0.5,
+        farm_type: body.strategy,
+        total_allocated_usd: body.totalCapital || 10000,
+        agent_count: body.agentCount || 10,
         performance_requirements: {
           min_sharpe_ratio: 1.0,
           max_drawdown: 0.15,
@@ -265,10 +263,10 @@ export async function PUT(request: NextRequest) {
       
       const updatedFarm = await supabaseFarmsService.updateFarm(id, {
         name: updateData.name,
-        strategy_type: updateData.strategy,
-        target_allocation: updateData.totalCapital,
-        max_agents: updateData.agentCount,
-        auto_assignment_enabled: updateData.status === 'active'
+        farm_type: updateData.strategy,
+        total_allocated_usd: updateData.totalCapital,
+        agent_count: updateData.agentCount,
+        is_active: updateData.status === 'active'
       })
       
       const apiFormat = convertSupabaseFarmToApiFormat(updatedFarm)
