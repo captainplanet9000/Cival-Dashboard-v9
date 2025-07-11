@@ -466,6 +466,132 @@ class BackendClient {
     return this.request('/api/v1/performance/status')
   }
 
+  // Flash Loan endpoints
+  async getFlashLoanOpportunities(filters?: {
+    chain?: string
+    riskLevel?: string
+    minProfit?: number
+  }): Promise<APIResponse<any>> {
+    const params = new URLSearchParams()
+    if (filters?.chain) params.append('chain', filters.chain)
+    if (filters?.riskLevel) params.append('risk', filters.riskLevel)
+    if (filters?.minProfit) params.append('min_profit', filters.minProfit.toString())
+    
+    return this.request(`/api/v1/flashloans/opportunities${params.toString() ? `?${params}` : ''}`)
+  }
+
+  async executeFlashLoan(data: {
+    opportunity_id: string
+    agent_id?: string
+    strategy_id: string
+    simulation_only?: boolean
+  }): Promise<APIResponse<any>> {
+    return this.request('/api/v1/flashloans/execute', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getFlashLoanProtocols(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/flashloans/protocols')
+  }
+
+  async getFlashLoanHistory(filters?: {
+    agent_id?: string
+    status?: string
+    limit?: number
+  }): Promise<APIResponse<any>> {
+    const params = new URLSearchParams()
+    if (filters?.agent_id) params.append('agent_id', filters.agent_id)
+    if (filters?.status) params.append('status', filters.status)
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+    
+    return this.request(`/api/v1/flashloans/history${params.toString() ? `?${params}` : ''}`)
+  }
+
+  async getFlashLoanProfitRules(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/flashloans/profit-rules')
+  }
+
+  async createFlashLoanProfitRule(rule: {
+    rule_name: string
+    trigger_type: 'profit_amount' | 'profit_percentage' | 'opportunity_score'
+    trigger_value: number
+    secure_percentage: number
+    reinvest_percentage: number
+    reserve_percentage: number
+    min_profit_usd: number
+    max_loan_usd: number
+  }): Promise<APIResponse<any>> {
+    return this.request('/api/v1/flashloans/profit-rules', {
+      method: 'POST',
+      body: JSON.stringify(rule)
+    })
+  }
+
+  async getFlashLoanProfitHistory(filters?: {
+    start_date?: string
+    end_date?: string
+    agent_id?: string
+  }): Promise<APIResponse<any>> {
+    const params = new URLSearchParams()
+    if (filters?.start_date) params.append('start_date', filters.start_date)
+    if (filters?.end_date) params.append('end_date', filters.end_date)
+    if (filters?.agent_id) params.append('agent_id', filters.agent_id)
+    
+    return this.request(`/api/v1/flashloans/profit-history${params.toString() ? `?${params}` : ''}`)
+  }
+
+  async distributeFlashLoanProfits(txId: string, distribution: {
+    secured_amount: number
+    reinvested_amount: number
+    reserved_amount: number
+    goal_contribution: number
+  }): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/flashloans/transactions/${txId}/distribute-profits`, {
+      method: 'POST',
+      body: JSON.stringify(distribution)
+    })
+  }
+
+  async getFlashLoanStats(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/flashloans/stats')
+  }
+
+  // HyperLend endpoints
+  async getHyperLendPositions(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/hyperlend/positions')
+  }
+
+  async createHyperLendPosition(position: {
+    asset: string
+    amount: number
+    leverage: number
+    collateral: number
+  }): Promise<APIResponse<any>> {
+    return this.request('/api/v1/hyperlend/positions', {
+      method: 'POST',
+      body: JSON.stringify(position)
+    })
+  }
+
+  // Market overview
+  async getMarketOverview(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/market/overview')
+  }
+
+  // Profit tracking
+  async getProfitTracking(filters?: {
+    period?: string
+    agent_id?: string
+  }): Promise<APIResponse<any>> {
+    const params = new URLSearchParams()
+    if (filters?.period) params.append('period', filters.period)
+    if (filters?.agent_id) params.append('agent_id', filters.agent_id)
+    
+    return this.request(`/api/v1/profit-tracking${params.toString() ? `?${params}` : ''}`)
+  }
+
   // Service registry
   async getServicesStatus(): Promise<APIResponse<any>> {
     return this.request('/api/v1/services')

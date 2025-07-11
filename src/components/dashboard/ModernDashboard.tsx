@@ -158,6 +158,12 @@ const FlashLoanView = dynamic(() => import('@/components/dashboard/FlashLoanView
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading FlashLoan...</div>
 })
+
+// Import Enhanced Flash Loan View with profit integration
+const EnhancedFlashLoanView = dynamic(() => import('@/components/dashboard/EnhancedFlashLoanView'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Flash Loans...</div>
+})
 const HyperLendView = dynamic(() => import('@/components/dashboard/HyperLendView'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading HyperLend...</div>
@@ -317,6 +323,12 @@ export function ModernDashboardV4() {
       label: 'Trading',
       icon: <TrendingUp className="h-4 w-4" />,
       component: <ConnectedTradingTab />
+    },
+    {
+      id: 'flashloans',
+      label: 'Flash Loans',
+      icon: <Zap className="h-4 w-4" />,
+      component: <EnhancedFlashLoanView />
     },
     {
       id: 'defi',
