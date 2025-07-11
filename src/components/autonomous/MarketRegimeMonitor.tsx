@@ -108,25 +108,27 @@ export default function MarketRegimeMonitor() {
 
     const mockCurrentRegime: RegimeDetection = {
       regime_id: 'regime-001',
-      primary_regime: 'bull_market',
-      secondary_regimes: ['trending', 'low_volatility'],
+      primary_regime: 'bull_market_rally',
+      secondary_regimes: ['btc_dominance', 'institutional_accumulation'],
       confidence: 'high',
       probability_scores: {
-        bull_market: 0.75,
-        trending: 0.65,
-        low_volatility: 0.55,
-        bear_market: 0.15,
-        high_volatility: 0.25,
-        sideways: 0.30
+        bull_market_rally: 0.88,
+        btc_dominance: 0.82,
+        institutional_accumulation: 0.76,
+        bear_market: 0.08,
+        high_volatility: 0.15,
+        sideways: 0.12
       },
       market_conditions: mockMarketConditions,
       detected_at: new Date(Date.now() - 600000).toISOString(),
-      expected_duration: 7776000, // 90 days
-      risk_level: 0.35,
-      recommended_actions: ['increase_position', 'change_strategy'],
+      expected_duration: 5184000, // 60 days (current bull run momentum)
+      risk_level: 0.28, // Lower risk in strong bull market
+      recommended_actions: ['capitalize_btc_117k_breakout', 'scale_altcoin_positions', 'monitor_whale_accumulation'],
       metadata: {
-        detection_model: 'rule_based_v1',
-        data_points_used: 1000
+        detection_model: 'ml_enhanced_v2',
+        data_points_used: 2500,
+        btc_price_level: 117000,
+        market_sentiment: 'extremely_bullish'
       }
     }
 
@@ -165,7 +167,7 @@ export default function MarketRegimeMonitor() {
           risk_change: -0.05
         },
         implementation_priority: 1,
-        rationale: 'Bull market regime favors momentum strategies with increased allocation',
+        rationale: 'BTC breakout above $117k signals strong bull momentum requiring increased exposure',
         created_at: new Date(Date.now() - 300000).toISOString(),
         expires_at: new Date(Date.now() + 86400000).toISOString()
       },

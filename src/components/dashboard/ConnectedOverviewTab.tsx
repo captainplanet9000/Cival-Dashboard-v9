@@ -217,10 +217,10 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   // Calculate derived metrics
   const totalSystemValue = (displayData.totalPortfolioValue || 0) + (displayData.farmTotalValue || 0)
   
-  // Get primary market prices for display - using correct symbol format
-  const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD' || p.symbol === 'BTCUSD' || p.symbol === 'BTC')?.price || 96420.50
-  const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD' || p.symbol === 'ETHUSD' || p.symbol === 'ETH')?.price || 3285.75
-  const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD' || p.symbol === 'SOLUSD' || p.symbol === 'SOL')?.price || 205.32
+  // Get primary market prices for display - using correct symbol format with updated fallbacks
+  const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD' || p.symbol === 'BTCUSD' || p.symbol === 'BTC')?.price || 117000.00
+  const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD' || p.symbol === 'ETHUSD' || p.symbol === 'ETH')?.price || 3545.80
+  const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD' || p.symbol === 'SOLUSD' || p.symbol === 'SOL')?.price || 218.45
   const systemHealthScore = [
     displayData.supabaseConnected,
     displayData.redisConnected,
