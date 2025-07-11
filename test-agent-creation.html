@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Agent Creation</title>
+</head>
+<body>
+    <h1>Agent Creation Test</h1>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message) {
+            log.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+        
+        // Simulate the agent creation flow
+        addLog('🧪 Testing agent creation flow...');
+        
+        // Mock the AgentDecisionLoop functionality
+        class MockAgentDecisionLoop {
+            async createNewAgent(config) {
+                addLog('🎯 Creating new agent with config: ' + JSON.stringify(config));
+                
+                const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                addLog('✅ Agent created with ID: ' + agentId);
+                
+                // Mock saving to storage
+                const agent = {
+                    id: agentId,
+                    name: config.name,
+                    type: config.type,
+                    status: 'stopped',
+                    config: config,
+                    performance: {
+                        totalPnL: 0,
+                        winRate: 0,
+                        trades: 0,
+                        successfulDecisions: 0,
+                        totalDecisions: 0
+                    },
+                    memory: {
+                        recentDecisions: [],
+                        lessons: [],
+                        performance: {},
+                        thoughts: [],
+                        context: '',
+                        lastUpdate: Date.now()
+                    }
+                };
+                
+                localStorage.setItem(`agent_${agentId}`, JSON.stringify(agent));
+                addLog('💾 Agent saved to localStorage');
+                
+                return agentId;
+            }
+        }
+        
+        // Test the creation flow
+        async function testAgentCreation() {
+            try {
+                const loop = new MockAgentDecisionLoop();
+                
+                const config = {
+                    name: 'Test Agent Alpha',
+                    type: 'trading-agent',
+                    strategy: { type: 'momentum' },
+                    symbols: ['BTC/USD', 'ETH/USD'],
+                    maxRiskPerTrade: 0.05,
+                    decisionInterval: 30000
+                };
+                
+                const agentId = await loop.createNewAgent(config);
+                addLog('🎉 Agent creation test completed successfully!');
+                addLog('Agent ID: ' + agentId);
+                
+                // Verify it was saved
+                const saved = localStorage.getItem(`agent_${agentId}`);
+                if (saved) {
+                    addLog('✅ Agent verification: Found in localStorage');
+                    const agent = JSON.parse(saved);
+                    addLog('📋 Agent name: ' + agent.name);
+                    addLog('📋 Agent type: ' + agent.type);
+                    addLog('📋 Agent status: ' + agent.status);
+                } else {
+                    addLog('❌ Agent verification: NOT found in localStorage');
+                }
+                
+            } catch (error) {
+                addLog('❌ Test failed: ' + error.message);
+            }
+        }
+        
+        // Run the test
+        testAgentCreation();
+    </script>
+</body>
+</html>
