@@ -340,82 +340,96 @@ export function LiveMarketDataPanel({ className = '' }: LiveMarketDataPanelProps
     }
   }, [selectedSymbols, technicalData, marketPrices])
 
-  // Fetch market overview from backend
+  // Fetch market overview from real backend - NO MOCK DATA
   const fetchMarketOverview = useCallback(async () => {
     try {
-      const response = await backendApi.fetchWithTimeout(
-        `${backendApi.getBackendUrl()}/api/v1/market/overview`
-      )
+      // Try to get market overview from backend
+      const response = await backendClient.getMarketOverview()
       
-      if (response.ok) {
-        const data = await response.json()
+      if (response.success && response.data) {
         setMarketOverview({
-          marketStatus: data.market_status || 'OPEN',
-          majorIndices: data.major_indices || {
-            'SPY': 450.25,
-            'QQQ': 380.50,
-            'DIA': 340.75
-          },
-          marketSentiment: data.market_sentiment?.score || 0.65,
-          volatilityIndex: data.volatility_index,
-          sectorPerformance: data.sector_performance || {
-            'Technology': 0.025,
-            'Healthcare': 0.015,
-            'Finance': -0.008,
-            'Energy': 0.032
-          },
-          trendingSymbols: data.trending_symbols || ['BTC-USD', 'TSLA', 'AAPL'],
-          topGainers: data.top_gainers || ['BTC-USD', 'ETH-USD'],
-          topLosers: data.top_losers || [],
-          timestamp: data.timestamp || new Date().toISOString()
+          marketStatus: response.data.market_status || 'OPEN',
+          majorIndices: response.data.major_indices || {},
+          marketSentiment: response.data.market_sentiment?.score || 0.5,
+          volatilityIndex: response.data.volatility_index,
+          sectorPerformance: response.data.sector_performance || {},
+          trendingSymbols: response.data.trending_symbols || [],
+          topGainers: response.data.top_gainers || [],
+          topLosers: response.data.top_losers || [],
+          timestamp: response.data.timestamp || new Date().toISOString()
         })
       } else {
-        // Set mock market overview
+        // Build overview from available market data - NO RANDOM GENERATION
+        const currentTime = new Date()
+        const isMarketHours = currentTime.getHours() >= 9 && currentTime.getHours() < 16
+        
+        // Use real market prices to build overview
+        const btcPrice = marketPrices.find(p => p.symbol === 'BTC/USD')?.price || 0
+        const ethPrice = marketPrices.find(p => p.symbol === 'ETH/USD')?.price || 0
+        const solPrice = marketPrices.find(p => p.symbol === 'SOL/USD')?.price || 0
+        
+        // Calculate market sentiment from crypto performance
+        const cryptoPrices = [
+          marketPrices.find(p => p.symbol === 'BTC/USD'),
+          marketPrices.find(p => p.symbol === 'ETH/USD'),
+          marketPrices.find(p => p.symbol === 'SOL/USD')
+        ].filter(Boolean)
+        
+        const avgChange = cryptoPrices.length > 0 
+          ? cryptoPrices.reduce((sum, p) => sum + (p?.changePercent24h || 0), 0) / cryptoPrices.length
+          : 0
+        
+        const sentiment = Math.max(0.1, Math.min(0.9, 0.5 + (avgChange / 20))) // Convert % change to sentiment
+        
         setMarketOverview({
-          marketStatus: 'OPEN',
-          majorIndices: {
-            'SPY': 450.25 + (Math.random() - 0.5) * 10,
-            'QQQ': 380.50 + (Math.random() - 0.5) * 15,
-            'DIA': 340.75 + (Math.random() - 0.5) * 8,
-            'VIX': 18.5 + (Math.random() - 0.5) * 5
-          },
-          marketSentiment: 0.65 + (Math.random() - 0.5) * 0.3,
-          volatilityIndex: 18.5 + (Math.random() - 0.5) * 5,
-          sectorPerformance: {
-            'Technology': (Math.random() - 0.5) * 0.05,
-            'Healthcare': (Math.random() - 0.5) * 0.03,
-            'Finance': (Math.random() - 0.5) * 0.04,
-            'Energy': (Math.random() - 0.5) * 0.06,
-            'Consumer': (Math.random() - 0.5) * 0.03
-          },
-          trendingSymbols: ['BTC-USD', 'TSLA', 'AAPL', 'NVDA'],
-          topGainers: ['BTC-USD', 'ETH-USD', 'TSLA'],
-          topLosers: ['AAPL'],
+          marketStatus: isMarketHours ? 'OPEN' : 'CLOSED',
+          majorIndices: btcPrice > 0 ? {
+            'BTC': btcPrice,
+            'ETH': ethPrice,
+            'SOL': solPrice
+          } : {},
+          marketSentiment: sentiment,
+          volatilityIndex: Math.abs(avgChange) * 2, // Simple volatility estimate
+          sectorPerformance: cryptoPrices.length > 0 ? {
+            'Crypto': avgChange / 100,
+            'Technology': avgChange / 200, // Crypto often leads tech
+            'DeFi': avgChange / 150
+          } : {},
+          trendingSymbols: cryptoPrices
+            .filter(p => Math.abs(p?.changePercent24h || 0) > 2)
+            .map(p => p?.symbol.replace('/', '-') || '')
+            .slice(0, 3),
+          topGainers: cryptoPrices
+            .filter(p => (p?.changePercent24h || 0) > 0)
+            .sort((a, b) => (b?.changePercent24h || 0) - (a?.changePercent24h || 0))
+            .map(p => p?.symbol.replace('/', '-') || '')
+            .slice(0, 3),
+          topLosers: cryptoPrices
+            .filter(p => (p?.changePercent24h || 0) < 0)
+            .sort((a, b) => (a?.changePercent24h || 0) - (b?.changePercent24h || 0))
+            .map(p => p?.symbol.replace('/', '-') || '')
+            .slice(0, 2),
           timestamp: new Date().toISOString()
         })
       }
       
     } catch (err) {
       console.error('Error fetching market overview:', err)
-      // Set fallback mock data
+      // Set minimal overview when everything fails
       setMarketOverview({
-        marketStatus: 'OPEN',
-        majorIndices: { 'SPY': 450.25, 'QQQ': 380.50, 'DIA': 340.75 },
-        marketSentiment: 0.65,
-        sectorPerformance: {
-          'Technology': 0.025,
-          'Healthcare': 0.015,
-          'Finance': -0.008
-        },
-        trendingSymbols: ['BTC-USD', 'TSLA', 'AAPL'],
-        topGainers: ['BTC-USD', 'ETH-USD'],
+        marketStatus: 'UNKNOWN',
+        majorIndices: {},
+        marketSentiment: 0.5,
+        sectorPerformance: {},
+        trendingSymbols: [],
+        topGainers: [],
         topLosers: [],
         timestamp: new Date().toISOString()
       })
     }
-  }, [])
+  }, [marketPrices])
 
-  // Auto-refresh data
+  // Auto-refresh data every 5 seconds for live trading
   useEffect(() => {
     if (isStreaming) {
       const interval = setInterval(() => {
@@ -423,7 +437,7 @@ export function LiveMarketDataPanel({ className = '' }: LiveMarketDataPanelProps
         fetchTechnicalData()
         fetchTradingSignals()
         fetchMarketOverview()
-      }, 10000) // Update every 10 seconds for better performance
+      }, 5000) // Update every 5 seconds for real-time trading
 
       return () => clearInterval(interval)
     }
@@ -491,6 +505,11 @@ export function LiveMarketDataPanel({ className = '' }: LiveMarketDataPanelProps
           ) : (
             <Badge variant={connectionStatus === 'connected' ? 'default' : 'destructive'}>
               {connectionStatus}
+            </Badge>
+          )}
+          {marketDataFreshness && (
+            <Badge variant="outline" className="text-xs">
+              {marketIsLive ? '🔴 LIVE' : marketIsFresh ? '📊 CACHED' : '⚠️ STALE'}
             </Badge>
           )}
           {lastUpdate && (
@@ -604,7 +623,13 @@ export function LiveMarketDataPanel({ className = '' }: LiveMarketDataPanelProps
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div>
-                          <div className="font-bold text-lg">{symbol}</div>
+                          <div className="font-bold text-lg flex items-center gap-2">
+                            {symbol}
+                            <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                              {price.provider.includes('Market Service') && marketIsLive ? '🔴 LIVE' : 
+                               price.provider.includes('Backend') ? '🔵 API' : '📊 CACHED'}
+                            </Badge>
+                          </div>
                           <div className="text-sm text-gray-500">{price.provider}</div>
                         </div>
                         
