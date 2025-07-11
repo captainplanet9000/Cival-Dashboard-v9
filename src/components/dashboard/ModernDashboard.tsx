@@ -16,7 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Activity, TrendingUp, TrendingDown, DollarSign, Bot, Shield, Zap,
   Target, BarChart3, RefreshCw, Bell, Users, Calendar, Wallet, PieChart,
-  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search, Brain, Coins
+  Plus, Menu, X, Star, Clock, Settings, ArrowUpRight, ArrowDownRight, Search, Brain, Coins,
+  Gears
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -163,6 +164,12 @@ const FlashLoanView = dynamic(() => import('@/components/dashboard/FlashLoanView
 const EnhancedFlashLoanView = dynamic(() => import('@/components/dashboard/EnhancedFlashLoanView'), { 
   ssr: false,
   loading: () => <div className="p-6 text-center">Loading Flash Loans...</div>
+})
+
+// Import Autonomous Control Center
+const AutonomousControlCenter = dynamic(() => import('@/components/autonomous/AutonomousControlCenter'), { 
+  ssr: false,
+  loading: () => <div className="p-6 text-center">Loading Autonomous Systems...</div>
 })
 const HyperLendView = dynamic(() => import('@/components/dashboard/HyperLendView'), { 
   ssr: false,
@@ -341,6 +348,12 @@ export function ModernDashboardV4() {
       label: 'Analytics',
       icon: <PieChart className="h-4 w-4" />,
       component: <ConnectedAnalyticsTab />
+    },
+    {
+      id: 'autonomous',
+      label: 'Autonomous',
+      icon: <Gears className="h-4 w-4" />,
+      component: <AutonomousControlCenter />
     },
     {
       id: 'intelligence',
