@@ -5,26 +5,43 @@
 type EventListener = (...args: any[]) => void;
 
 class EventEmitter {
-  private events: Record<string, EventListener[]> = {}
+  private events: Map<string, EventListener[]> = new Map()
 
-  on(event: string, listener: EventListener): this {
-    if (!this.events[event]) {
-      this.events[event] = []
+  on(event: string, listener: EventListener) {
+    if (!this.events.has(event)) {
+      this.events.set(event, [])
     }
-    this.events[event].push(listener)
+    this.events.get(event)!.push(listener)
     return this
   }
 
-  emit(event: string, ...args: any[]): boolean {
-    if (!this.events[event]) return false
-    this.events[event].forEach(listener => listener(...args))
-    return true
+  emit(event: string, ...args: any[]) {
+    if (!this.events.has(event)) return false
+    
+    const listeners = this.events.get(event)!
+    for (const listener of listeners) {
+      listener(...args)
+    }
+    
+    return listeners.length > 0
   }
 
-  removeListener(event: string, listener: EventListener): this {
-    if (!this.events[event]) return this
-    this.events[event] = this.events[event].filter(l => l !== listener)
+  off(event: string, listener: EventListener) {
+    if (!this.events.has(event)) return this
+    
+    const listeners = this.events.get(event)!
+    const index = listeners.indexOf(listener)
+    
+    if (index !== -1) {
+      listeners.splice(index, 1)
+    }
+    
     return this
+  }
+  
+  listenerCount(event: string): number {
+    if (!this.events.has(event)) return 0
+    return this.events.get(event)!.length
   }
 }
 
@@ -265,19 +282,19 @@ export class RealPaperTradingEngine extends EventEmitter {
     ]
 
     // Check if live data is available
-    const hasExchangeAPI = exchangeAPIService.isLive()
+    const hasExchangeAPI = exchangeAPIService.instance.isLive()
     
     if (hasExchangeAPI) {
       this.useLiveData = true
       console.log('🟢 Paper Trading Engine: Using live market data')
       
       // Set up live data listener
-      liveMarketDataService.on('marketData', (data: LiveMarketData) => {
+      liveMarketDataService.instance.on('marketData', (data: LiveMarketData) => {
         this.handleLiveMarketData(data)
       })
       
       // Start live data feeds
-      liveMarketDataService.startLiveData(this.liveDataSymbols)
+      liveMarketDataService.instance.startLiveData(this.liveDataSymbols)
     } else {
       console.log('🟡 Paper Trading Engine: No live data available, using mock data')
     }

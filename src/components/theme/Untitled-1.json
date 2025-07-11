@@ -1,0 +1,17 @@
+"redis": {
+      "command": "/path/to/uv",
+      "args": [
+        "--directory",
+        "/path/to/mcp-redis",
+        "run",
+        "src/main.py"
+      ],
+      "env": {
+        "REDIS_HOST": "redis-13924.c256.us-east-1-2.ec2.redns.redis-cloud.com",
+        "REDIS_PORT": "13924",
+        "REDIS_USERNAME": "default",
+        "REDIS_PWD": "6kGX8jsHE6gsDrW2XYh3p2wU0iLEQWga",
+        "REDIS_SSL": "True",
+        "REDIS_CERT_REQS": "required"
+      }
+    }

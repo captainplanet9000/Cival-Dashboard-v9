@@ -2,24 +2,180 @@
 
 import { useState, useEffect } from 'react'
 import { buildMarketProxyUrl } from '@/lib/utils/api-url-builder'
-import { marketDataFallback } from '@/lib/market/market-data-fallback'
-
 /**
  * Market Data Service - Real cryptocurrency price feeds
  * Provides live market data from multiple sources with fallbacks
  */
 
+// Export market price interface with all required fields
 interface MarketPrice {
-  symbol: string
-  price: number
-  change24h: number
-  changePercent24h: number
-  volume24h: number
-  lastUpdate: Date
+  symbol: string;
+  price: number;
+  change24h: number;
+  changePercent24h: number;
+  volume24h: number;
+  high24h: number;
+  low24h: number;
+  open24h: number;
+  source: string;
+  lastUpdate: Date;
+}
+
+interface InternalMarketPrice {
+  symbol: string;
+  price: number;
+  change24h: number;
+  changePercent24h: number;
+  volume24h: number;
+  high24h: number;
+  low24h: number;
+  open24h: number;
+  source: string;
+  lastUpdate: Date;
 }
 
 interface MarketDataProvider {
-  name: string
+  name: string;
+  fetchPrices(symbols: string[]): Promise<MarketPrice[]>
+}
+
+class MarketDataFallback {
+  // Define type for fallback data with index signature
+  private fallbackData: Record<string, Partial<MarketPrice>> = {
+    'BTC/USD': { 
+      price: 86420.50, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0, 
+      high24h: 87000, 
+      low24h: 86000, 
+      open24h: 86500,
+      source: 'fallback'
+    },
+    'ETH/USD': { 
+      price: 3085.75, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0,
+      high24h: 3100, 
+      low24h: 3050, 
+      open24h: 3080,
+      source: 'fallback'
+    },
+    'SOL/USD': { 
+      price: 195.32, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0,
+      high24h: 200, 
+      low24h: 190, 
+      open24h: 195,
+      source: 'fallback'
+    },
+    'ADA/USD': { 
+      price: 0.79, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0,
+      high24h: 0.80, 
+      low24h: 0.78, 
+      open24h: 0.79,
+      source: 'fallback'
+    },
+    'DOT/USD': { 
+      price: 5.45, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0,
+      high24h: 5.5, 
+      low24h: 5.4, 
+      open24h: 5.45,
+      source: 'fallback'
+    },
+    'AVAX/USD': { 
+      price: 34.90, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0,
+      high24h: 35, 
+      low24h: 34, 
+      open24h: 34.5,
+      source: 'fallback'
+    },
+    'MATIC/USD': { 
+      price: 0.42, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0,
+      high24h: 0.43, 
+      low24h: 0.41, 
+      open24h: 0.42,
+      source: 'fallback'
+    },
+    'LINK/USD': { 
+      price: 18.18, 
+      change24h: 0, 
+      changePercent24h: 0, 
+      volume24h: 0,
+      high24h: 18.5, 
+      low24h: 18.0, 
+      open24h: 18.2,
+      source: 'fallback'
+    }
+  }
+
+  // Update fallback data from successful API calls
+  updateFallbackData(prices: MarketPrice[]): void {
+    for (const price of prices) {
+      if (price.symbol in this.fallbackData) {
+        this.fallbackData[price.symbol] = {
+          ...this.fallbackData[price.symbol],
+          price: price.price,
+          change24h: price.change24h,
+          changePercent24h: price.changePercent24h,
+          volume24h: price.volume24h,
+          high24h: price.high24h,
+          low24h: price.low24h,
+          open24h: price.open24h,
+          source: price.source
+        };
+      }
+    }
+  }
+  
+  // Helper method to safely access fallback data for a symbol
+  getFallbackForSymbol(symbol: string): Partial<MarketPrice> | undefined {
+    // Check if symbol exists in fallbackData before accessing
+    if (symbol in this.fallbackData) {
+      return this.fallbackData[symbol];
+    }
+    return undefined;
+  }
+
+  // Get fallback data for specified symbols
+  getFallbackPrices(symbols: string[]): MarketPrice[] {
+    return symbols.map(symbol => {
+      const fallbackData = this.getFallbackForSymbol(symbol) || {};
+      return {
+        symbol,
+        price: fallbackData.price || 0,
+        change24h: fallbackData.change24h || 0,
+        changePercent24h: fallbackData.changePercent24h || 0,
+        volume24h: fallbackData.volume24h || 0,
+        high24h: fallbackData.high24h || 0,
+        low24h: fallbackData.low24h || 0,
+        open24h: fallbackData.open24h || 0,
+        source: fallbackData.source || 'fallback',
+        lastUpdate: new Date()
+      };
+    });
+  }
+}
+
+const marketDataFallback = new MarketDataFallback()
+
+interface MarketDataProvider {
+  name: string;
   fetchPrices(symbols: string[]): Promise<MarketPrice[]>
 }
 
@@ -68,6 +224,10 @@ class CoinGeckoProvider implements MarketDataProvider {
             change24h: data[id].usd_24h_change || 0,
             changePercent24h: data[id].usd_24h_change || 0,
             volume24h: data[id].usd_24h_vol || 0,
+            high24h: data[id].usd * 1.01, // Estimate
+            low24h: data[id].usd * 0.99, // Estimate
+            open24h: data[id].usd * (1 - (data[id].usd_24h_change || 0) / 100), // Estimate
+            source: 'coingecko',
             lastUpdate: new Date()
           })
         }
@@ -122,6 +282,10 @@ class BinanceProvider implements MarketDataProvider {
             change24h: parseFloat(ticker.priceChange),
             changePercent24h: parseFloat(ticker.priceChangePercent),
             volume24h: parseFloat(ticker.volume),
+            high24h: parseFloat(ticker.lastPrice) * 1.01, // Estimate
+            low24h: parseFloat(ticker.lastPrice) * 0.99, // Estimate
+            open24h: parseFloat(ticker.lastPrice) * (1 - parseFloat(ticker.priceChangePercent) / 100), // Estimate
+            source: 'binance',
             lastUpdate: new Date()
           })
         }
@@ -181,6 +345,10 @@ class CoinbaseProvider implements MarketDataProvider {
               change24h: 0, // Coinbase exchange rates don't include 24h change
               changePercent24h: 0,
               volume24h: 0,
+              high24h: price * 1.01, // Estimate
+              low24h: price * 0.99, // Estimate
+              open24h: price, // Estimate
+              source: 'coinbase',
               lastUpdate: new Date()
             })
           }
@@ -234,6 +402,10 @@ class CoinCapProvider implements MarketDataProvider {
             change24h: parseFloat(asset.changePercent24Hr || 0),
             changePercent24h: parseFloat(asset.changePercent24Hr || 0),
             volume24h: parseFloat(asset.volumeUsd24Hr || 0),
+            high24h: parseFloat(asset.priceUsd) * 1.01, // Estimate
+            low24h: parseFloat(asset.priceUsd) * 0.99, // Estimate
+            open24h: parseFloat(asset.priceUsd) * (1 - parseFloat(asset.changePercent24Hr || 0) / 100), // Estimate
+            source: 'coincap',
             lastUpdate: new Date()
           })
         }
@@ -286,6 +458,10 @@ class CoinPaprikaProvider implements MarketDataProvider {
             change24h: ticker.quotes?.USD?.percent_change_24h || 0,
             changePercent24h: ticker.quotes?.USD?.percent_change_24h || 0,
             volume24h: ticker.quotes?.USD?.volume_24h || 0,
+            high24h: (ticker.quotes?.USD?.price || 0) * 1.01, // Estimate
+            low24h: (ticker.quotes?.USD?.price || 0) * 0.99, // Estimate
+            open24h: (ticker.quotes?.USD?.price || 0) * (1 - (ticker.quotes?.USD?.percent_change_24h || 0) / 100), // Estimate
+            source: 'coinpaprika',
             lastUpdate: new Date()
           })
         }
@@ -326,6 +502,10 @@ class CoinDeskProvider implements MarketDataProvider {
           change24h: 0, // CoinDesk BPI doesn't include 24h change
           changePercent24h: 0,
           volume24h: 0,
+          high24h: data.bpi.USD.rate_float, // Same as current price
+          low24h: data.bpi.USD.rate_float * 0.99, // Estimate
+          open24h: data.bpi.USD.rate_float, // Estimate
+          source: 'coindesk',
           lastUpdate: new Date(data.time?.updated || Date.now())
         })
       }
@@ -355,7 +535,7 @@ class MockProvider implements MarketDataProvider {
     }
 
     // Generate realistic daily changes
-    const changes = {
+    const changes: Record<string, number> = {
       'BTC/USD': 1.25,
       'ETH/USD': 2.1,
       'SOL/USD': -0.75,
@@ -366,14 +546,24 @@ class MockProvider implements MarketDataProvider {
       'LINK/USD': -0.5
     }
 
-    return symbols.map(symbol => ({
-      symbol,
-      price: mockPrices[symbol] || 100,
-      change24h: changes[symbol] || (Math.random() - 0.5) * 5,
-      changePercent24h: changes[symbol] || (Math.random() - 0.5) * 5,
-      volume24h: Math.random() * 1000000000,
-      lastUpdate: new Date()
-    }))
+    return symbols.map(symbol => {
+      // Safe access with type checking
+      const price = symbol in mockPrices ? mockPrices[symbol] : 100;
+      const change = symbol in changes ? changes[symbol] : (Math.random() - 0.5) * 5;
+      
+      return {
+        symbol,
+        price,
+        change24h: change,
+        changePercent24h: change,
+        volume24h: Math.random() * 1000000000,
+        high24h: price * 1.02, // Estimate high
+        low24h: price * 0.98, // Estimate low
+        open24h: price * (1 - change / 100), // Estimate open
+        source: 'mock',
+        lastUpdate: new Date()
+      };
+    })
   }
 }
 
@@ -497,41 +687,120 @@ class MarketDataService {
 // Custom hook for React components
 export function useMarketData(symbols?: string[]) {
   const [prices, setPrices] = useState<MarketPrice[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [useFallbackData, setUseFallbackData] = useState(false)
 
   useEffect(() => {
-    const service = MarketDataService.getInstance()
-    
-    // Initial fetch
-    const fetchData = async () => {
+    const marketDataService = MarketDataService.getInstance()
+    const targetSymbols = symbols || [
+      'BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD',
+      'DOT/USD', 'AVAX/USD', 'MATIC/USD', 'LINK/USD'
+    ]
+
+    // First load from cache or fetch initial data
+    const loadInitialData = async () => {
       try {
-        setLoading(true)
+        setIsLoading(true)
+        let initialPrices: MarketPrice[] = []
+        
+        try {
+          initialPrices = await marketDataService.fetchMarketPrices(targetSymbols)
+          setIsConnected(true)
+          setUseFallbackData(false)
+        } catch (fetchErr) {
+          console.warn('Market data fetch failed, using fallback data:', fetchErr)
+          initialPrices = targetSymbols.map(symbol => {
+            // Safely access fallback data with type checking
+            const fallbackData = marketDataFallback.getFallbackForSymbol(symbol)
+            return {
+              symbol,
+              price: fallbackData?.price || 0,
+              change24h: fallbackData?.change24h || 0,
+              changePercent24h: fallbackData?.changePercent24h || 0,
+              volume24h: fallbackData?.volume24h || 0,
+              high24h: fallbackData?.high24h || 0,
+              low24h: fallbackData?.low24h || 0,
+              open24h: fallbackData?.open24h || 0,
+              source: 'fallback',
+              lastUpdate: new Date()
+            }
+          })
+          setUseFallbackData(true)
+          // Don't set error state here since we're using fallback data
+        }
+        
+        setPrices(initialPrices)
         setError(null)
-        const data = await service.fetchMarketPrices(symbols)
-        setPrices(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch market data')
+      } catch (err: any) {
+        console.error('Market data initialization error:', err)
+        setError(err)
+        // Provide minimal fallback data even in catastrophic error case
+        setPrices(targetSymbols.map(symbol => ({
+          symbol,
+          price: 0,
+          change24h: 0,
+          changePercent24h: 0,
+          volume24h: 0,
+          high24h: 0,
+          low24h: 0,
+          open24h: 0,
+          source: 'fallback',
+          lastUpdate: new Date()
+        })))
+        setUseFallbackData(true)
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
 
-    fetchData()
+    loadInitialData()
 
-    // Subscribe to updates
-    const unsubscribe = service.subscribe(setPrices)
+    // Subscribe to real-time updates with error handling
+    const unsubscribe = marketDataService.subscribe((updatedPrices) => {
+      try {
+        setPrices(updatedPrices.filter(p => targetSymbols.includes(p.symbol)))
+        setIsConnected(true)
+      } catch (subErr) {
+        console.warn('Market data WebSocket update error:', subErr)
+        // Don't update state here, keep using the last good data
+      }
+    })
 
-    // Start real-time updates
-    const stopUpdates = service.startRealTimeUpdates(symbols)
+    // Handle WebSocket connection errors
+    const handleWebSocketError = (event: Event) => {
+      console.warn('Market data WebSocket error:', event)
+      setIsConnected(false)
+      // If we get a WebSocket error, don't immediately switch to fallback
+      // as the connection may recover
+    }
+
+    // Add WebSocket error listener
+    window.addEventListener('error', handleWebSocketError)
+
+    // Start real-time updates with error handling
+    try {
+      marketDataService.startRealTimeUpdates(targetSymbols)
+    } catch (wsErr) {
+      console.warn('Failed to start real-time market updates:', wsErr)
+      setIsConnected(false)
+      setUseFallbackData(true)
+    }
 
     return () => {
       unsubscribe()
-      stopUpdates()
+      window.removeEventListener('error', handleWebSocketError)
     }
-  }, [symbols?.join(',')])
+  }, [symbols])
 
-  return { prices, loading, error }
+  return { 
+    prices, 
+    isLoading, 
+    error, 
+    isConnected, 
+    useFallbackData 
+  }
 }
 
 export default MarketDataService

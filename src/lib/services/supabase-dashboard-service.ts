@@ -78,64 +78,112 @@ export class SupabaseDashboardService {
    */
   async getDashboardSummary(): Promise<DashboardSummary> {
     try {
-      // Fetch all stats in parallel
-      const [agentStats, farmStats, goalStats] = await Promise.all([
-        supabaseAgentsService.getAgentStats().catch(() => ({
-          totalAgents: 0,
-          activeAgents: 0,
+      // Fetch all stats in parallel with enhanced error handling
+      const [agentStats, farmStats, goalStats, tradingStats] = await Promise.all([
+        supabaseAgentsService.getAgentStats().catch(error => {
+          console.warn('❌ Failed to load agent stats:', error?.message || 'Unknown error');
+          return {
+            totalAgents: 0,
+            activeAgents: 0,
+            totalCapital: 0,
+            totalPnL: 0,
+            averageWinRate: 0
+          };
+        }),
+        supabaseFarmsService.getFarmStats().catch(error => {
+          console.warn('❌ Failed to load farm stats:', error?.message || 'Unknown error');
+          return {
+            totalFarms: 0,
+            activeFarms: 0,
+            totalAllocated: 0,
+            averagePerformance: 0
+          };
+        }),
+        supabaseGoalsService.getGoalStats().catch(error => {
+          console.warn('❌ Failed to load goal stats:', error?.message || 'Unknown error');
+          return {
+            totalGoals: 0,
+            activeGoals: 0,
+            completedGoals: 0,
+            averageProgress: 0,
+            totalAllocated: 0
+          };
+        }),
+        this.getTradingStats().catch(error => {
+          console.warn('❌ Failed to load trading stats:', error?.message || 'Unknown error');
+          return {
+            totalTrades: 0,
+            totalPnL: 0,
+            winRate: 0,
+            activeSessions: 0
+          };
+        })
+      ])
+
+      // Create a complete summary with fallbacks at every level
+      const summary: DashboardSummary = {
+        agents: {
+          total: agentStats?.totalAgents || 0,
+          active: agentStats?.activeAgents || 0,
+          totalCapital: agentStats?.totalCapital || 0,
+          totalPnL: agentStats?.totalPnL || 0,
+          averageWinRate: agentStats?.averageWinRate || 0
+        },
+        farms: {
+          total: farmStats?.totalFarms || 0,
+          active: farmStats?.activeFarms || 0,
+          totalAllocated: farmStats?.totalAllocated || 0,
+          averagePerformance: farmStats?.averagePerformance || 0
+        },
+        goals: {
+          total: goalStats?.totalGoals || 0,
+          active: goalStats?.activeGoals || 0,
+          completed: goalStats?.completedGoals || 0,
+          averageProgress: goalStats?.averageProgress || 0,
+          totalAllocated: 0 // Not tracked in current schema
+        },
+        trading: tradingStats || {
+          totalTrades: 0,
+          totalPnL: 0,
+          winRate: 0,
+          activeSessions: 0
+        }
+      };
+      
+      return summary
+    } catch (error) {
+      console.error('Failed to get dashboard summary:', error)
+      
+      // Instead of throwing errors that crash the UI, return a fallback summary
+      // This ensures the dashboard will always render something
+      return {
+        agents: {
+          total: 0,
+          active: 0,
           totalCapital: 0,
           totalPnL: 0,
           averageWinRate: 0
-        })),
-        supabaseFarmsService.getFarmStats().catch(() => ({
-          totalFarms: 0,
-          activeFarms: 0,
-          totalAllocated: 0,
-          averagePerformance: 0
-        })),
-        supabaseGoalsService.getGoalStats().catch(() => ({
-          totalGoals: 0,
-          activeGoals: 0,
-          completedGoals: 0,
-          averageProgress: 0,
-          totalAllocated: 0
-        }))
-      ])
-
-      // Get recent trading activity
-      const tradingStats = await this.getTradingStats().catch(() => ({
-        totalTrades: 0,
-        totalPnL: 0,
-        winRate: 0,
-        activeSessions: 0
-      }))
-
-      return {
-        agents: {
-          total: agentStats.totalAgents,
-          active: agentStats.activeAgents,
-          totalCapital: agentStats.totalCapital,
-          totalPnL: agentStats.totalPnL,
-          averageWinRate: agentStats.averageWinRate
         },
         farms: {
-          total: farmStats.totalFarms,
-          active: farmStats.activeFarms,
-          totalAllocated: farmStats.totalAllocated,
-          averagePerformance: farmStats.averagePerformance
+          total: 0,
+          active: 0,
+          totalAllocated: 0,
+          averagePerformance: 0
         },
         goals: {
-          total: goalStats.totalGoals,
-          active: goalStats.activeGoals,
-          completed: goalStats.completedGoals,
-          averageProgress: goalStats.averageProgress,
-          totalAllocated: goalStats.totalAllocated
+          total: 0,
+          active: 0,
+          completed: 0,
+          averageProgress: 0,
+          totalAllocated: 0
         },
-        trading: tradingStats
+        trading: {
+          totalTrades: 0,
+          totalPnL: 0,
+          winRate: 0,
+          activeSessions: 0
+        }
       }
-    } catch (error) {
-      console.error('Error getting dashboard summary:', error)
-      throw error
     }
   }
 
