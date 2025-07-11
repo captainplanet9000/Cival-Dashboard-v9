@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -361,7 +362,15 @@ export function LiveBlockchainDashboard({
                     <div key={token.contractAddress} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         {token.logo && (
-                          <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                          <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                            <Image 
+                              src={token.logo} 
+                              alt={token.symbol} 
+                              width={32} 
+                              height={32} 
+                              className="rounded-full object-cover" 
+                            />
+                          </div>
                         )}
                         <div>
                           <p className="font-medium">{token.name}</p>

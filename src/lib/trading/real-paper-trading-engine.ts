@@ -5,9 +5,9 @@
 type EventListener = (...args: any[]) => void;
 
 class EventEmitter {
-  private events: Map<string, Function[]> = new Map()
+  private events: Map<string, EventListener[]> = new Map()
 
-  on(event: string, listener: Function) {
+  on(event: string, listener: EventListener) {
     if (!this.events.has(event)) {
       this.events.set(event, [])
     }
@@ -26,7 +26,7 @@ class EventEmitter {
     return listeners.length > 0
   }
 
-  off(event: string, listener: Function) {
+  off(event: string, listener: EventListener) {
     if (!this.events.has(event)) return this
     
     const listeners = this.events.get(event)!
