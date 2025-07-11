@@ -86,8 +86,45 @@ export function ConnectedCalendarTab({ className }: ConnectedCalendarTabProps) {
     return () => clearInterval(interval)
   }, [])
 
-  const loadEventsData = () => {
+  const loadEventsData = async () => {
     try {
+      // Try to load events from the backend API first
+      const { backendClient } = await import('@/lib/api/backend-client')
+      
+      try {
+        const response = await backendClient.getCalendarEvents()
+        
+        if (response.success && response.events) {
+          // Convert backend events to frontend format
+          const backendEvents = response.events.map((event: any) => ({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            type: event.type,
+            date: event.date || format(new Date(), 'yyyy-MM-dd'),
+            time: event.time || '09:00',
+            status: event.status,
+            priority: event.priority,
+            recurring: event.recurring,
+            notifications: event.notifications,
+            agentId: event.agent_id,
+            taskId: event.task_id
+          }))
+          
+          // Combine with local events
+          const storedEvents = localStorage.getItem('trading_calendar_events')
+          const localEvents = storedEvents ? JSON.parse(storedEvents) : []
+          
+          const allEvents = [...backendEvents, ...localEvents]
+          setEvents(allEvents)
+          console.log('Events loaded from API:', backendEvents.length, 'backend +', localEvents.length, 'local')
+          return
+        }
+      } catch (apiError) {
+        console.warn('API events unavailable, using fallback:', apiError)
+      }
+      
+      // Fallback to localStorage and default events
       const storedEvents = localStorage.getItem('trading_calendar_events')
       const eventsData = storedEvents ? JSON.parse(storedEvents) : []
       
@@ -162,43 +199,93 @@ export function ConnectedCalendarTab({ className }: ConnectedCalendarTabProps) {
       return
     }
 
-    const eventId = `event_${Date.now()}`
-    const event: ScheduledEvent = {
-      id: eventId,
-      title: newEvent.title,
-      description: newEvent.description,
-      type: newEvent.type,
-      date: newEvent.date,
-      time: newEvent.time,
-      status: 'scheduled',
-      priority: newEvent.priority,
-      agentId: newEvent.agentId || undefined,
-      recurring: newEvent.recurring,
-      notifications: newEvent.notifications
+    try {
+      // Try to create event via API first
+      const { backendClient } = await import('@/lib/api/backend-client')
+      
+      const eventData = {
+        title: newEvent.title,
+        description: newEvent.description,
+        type: newEvent.type,
+        date: newEvent.date,
+        time: newEvent.time,
+        priority: newEvent.priority,
+        agent_id: newEvent.agentId || undefined,
+        recurring: newEvent.recurring,
+        notifications: newEvent.notifications
+      }
+      
+      try {
+        const response = await backendClient.createCalendarEvent(eventData)
+        
+        if (response.success) {
+          toast.success(`Event "${eventData.title}" scheduled successfully`)
+          
+          // Reset form and close dialog
+          setNewEvent({
+            title: '',
+            description: '',
+            type: 'analysis',
+            date: format(new Date(), 'yyyy-MM-dd'),
+            time: '09:00',
+            priority: 'medium',
+            agentId: '',
+            recurring: false,
+            notifications: true
+          })
+          setShowCreateDialog(false)
+          
+          // Reload events
+          await loadEventsData()
+          return
+        }
+      } catch (apiError) {
+        console.warn('API event creation failed, using localStorage:', apiError)
+      }
+      
+      // Fallback to localStorage
+      const eventId = `event_${Date.now()}`
+      const event: ScheduledEvent = {
+        id: eventId,
+        title: newEvent.title,
+        description: newEvent.description,
+        type: newEvent.type,
+        date: newEvent.date,
+        time: newEvent.time,
+        status: 'scheduled',
+        priority: newEvent.priority,
+        agentId: newEvent.agentId || undefined,
+        recurring: newEvent.recurring,
+        notifications: newEvent.notifications
+      }
+
+      // Store event in localStorage
+      const existingEvents = localStorage.getItem('trading_calendar_events')
+      const allEvents = existingEvents ? JSON.parse(existingEvents) : []
+      allEvents.push(event)
+      localStorage.setItem('trading_calendar_events', JSON.stringify(allEvents))
+
+      // Reset form and close dialog
+      setNewEvent({
+        title: '',
+        description: '',
+        type: 'analysis',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: '09:00',
+        priority: 'medium',
+        agentId: '',
+        recurring: false,
+        notifications: true
+      })
+      setShowCreateDialog(false)
+      
+      toast.success(`Event "${event.title}" scheduled locally`)
+      await loadEventsData()
+      
+    } catch (error) {
+      console.error('Failed to create event:', error)
+      toast.error('Failed to create event')
     }
-
-    // Store event
-    const existingEvents = localStorage.getItem('trading_calendar_events')
-    const allEvents = existingEvents ? JSON.parse(existingEvents) : []
-    allEvents.push(event)
-    localStorage.setItem('trading_calendar_events', JSON.stringify(allEvents))
-
-    // Reset form and close dialog
-    setNewEvent({
-      title: '',
-      description: '',
-      type: 'analysis',
-      date: format(new Date(), 'yyyy-MM-dd'),
-      time: '09:00',
-      priority: 'medium',
-      agentId: '',
-      recurring: false,
-      notifications: true
-    })
-    setShowCreateDialog(false)
-    
-    toast.success(`Event "${event.title}" scheduled successfully`)
-    loadEventsData()
   }
 
   const updateEventStatus = (eventId: string, newStatus: ScheduledEvent['status']) => {

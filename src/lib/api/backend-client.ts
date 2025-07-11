@@ -190,6 +190,49 @@ export interface TradingDecision {
   take_profit?: number
 }
 
+export interface CalendarData {
+  [date: string]: {
+    trading_date: string
+    total_pnl: number
+    total_trades: number
+    winning_trades: number
+    active_agents: number
+    net_profit: number
+  }
+}
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  description: string
+  type: 'trade' | 'analysis' | 'rebalance' | 'meeting' | 'market' | 'automated'
+  date?: string
+  time?: string
+  cron_expression?: string
+  priority: 'low' | 'medium' | 'high'
+  status: 'scheduled' | 'completed' | 'cancelled' | 'missed'
+  recurring: boolean
+  notifications: boolean
+  agent_id?: string
+  task_id?: string
+}
+
+export interface SchedulerStatus {
+  service: string
+  initialized: boolean
+  running: boolean
+  scheduled_tasks: number
+  active_executions: number
+  worker_count: number
+  queue_size: number
+  metrics: {
+    tasks_executed_today: number
+    successful_executions: number
+    failed_executions: number
+    average_execution_time: number
+  }
+}
+
 class BackendClient {
   private baseURL: string
   private timeout: number = 10000
@@ -592,6 +635,40 @@ class BackendClient {
     return this.request(`/api/v1/profit-tracking${params.toString() ? `?${params}` : ''}`)
   }
 
+  // Calendar endpoints
+  async getCalendarData(year: number, month: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/calendar/data/${year}/${month}`)
+  }
+
+  async getCalendarEvents(startDate?: string, endDate?: string): Promise<APIResponse<any>> {
+    const params = new URLSearchParams()
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    
+    return this.request(`/api/v1/calendar/events${params.toString() ? `?${params}` : ''}`)
+  }
+
+  async createCalendarEvent(eventData: {
+    title: string
+    description?: string
+    type: string
+    date: string
+    time: string
+    priority?: string
+    agent_id?: string
+    recurring?: boolean
+    notifications?: boolean
+  }): Promise<APIResponse<any>> {
+    return this.request('/api/v1/calendar/events', {
+      method: 'POST',
+      body: JSON.stringify(eventData)
+    })
+  }
+
+  async getSchedulerStatus(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/calendar/scheduler/status')
+  }
+
   // Service registry
   async getServicesStatus(): Promise<APIResponse<any>> {
     return this.request('/api/v1/services')
@@ -685,7 +762,10 @@ export type {
   LLMRequest,
   LLMResponse,
   SentimentAnalysis,
-  TradingDecision
+  TradingDecision,
+  CalendarData,
+  CalendarEvent,
+  SchedulerStatus
 }
 
 // Simple Backend API Client implementation

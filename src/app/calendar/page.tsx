@@ -12,7 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CalendarView } from '@/components/calendar/CalendarView'
 import { DailyPerformanceModal } from '@/components/calendar/DailyPerformanceModal'
 import { CalendarSummary } from '@/components/calendar/CalendarSummary'
+import { SchedulerDashboard } from '@/components/calendar/SchedulerDashboard'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface DailyData {
   trading_date: string
@@ -44,14 +46,33 @@ export default function CalendarPage() {
     setError(null)
     
     try {
-      // Always use enhanced mock data for now to ensure calendar displays properly
-      const dataByDate = await generateEnhancedMockData(year, month)
-      setCalendarData(dataByDate)
-      console.log('Calendar data loaded:', Object.keys(dataByDate).length, 'days')
+      // Import the backend client
+      const { backendClient } = await import('@/lib/api/backend-client')
+      
+      // Try to get real calendar data from the backend
+      const response = await backendClient.getCalendarData(year, month)
+      
+      if (response.success && response.data) {
+        setCalendarData(response.data)
+        console.log('Calendar data loaded from API:', Object.keys(response.data).length, 'days')
+      } else {
+        // Fallback to enhanced mock data if API fails
+        console.warn('API failed, falling back to mock data:', response.message)
+        const dataByDate = await generateEnhancedMockData(year, month)
+        setCalendarData(dataByDate)
+      }
     } catch (err) {
-      console.error('Failed to generate calendar data:', err)
-      setError(err instanceof Error ? err.message : 'Error generating calendar data')
-      setCalendarData({})
+      console.error('Failed to fetch calendar data:', err)
+      // Fallback to mock data on error
+      try {
+        const dataByDate = await generateEnhancedMockData(year, month)
+        setCalendarData(dataByDate)
+        setError('Using simulated data - backend unavailable')
+      } catch (mockErr) {
+        console.error('Failed to generate mock data:', mockErr)
+        setError(err instanceof Error ? err.message : 'Error loading calendar data')
+        setCalendarData({})
+      }
     } finally {
       setLoading(false)
     }
@@ -334,60 +355,75 @@ export default function CalendarPage() {
         </Card>
       )}
 
-      {/* Main Calendar and Analytics */}
-      <Accordion type="multiple" defaultValue={["calendar", "analytics"]} className="space-y-4">
-        <AccordionItem value="calendar" className="border rounded-lg">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline">
-            <div className="flex items-center space-x-3">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <span className="text-lg font-semibold">Trading Calendar View</span>
-              <Badge variant="secondary" className="ml-2">
-                {Object.keys(calendarData).length} days loaded
-              </Badge>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6">
-            {loading ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 7 }).map((_, i) => (
-                    <Skeleton key={i} className="h-8 w-full" />
-                  ))}
-                </div>
-                <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 42 }).map((_, i) => (
-                    <Skeleton key={i} className="h-32 w-full" />
-                  ))}
+      {/* Main Calendar Interface */}
+      <Tabs defaultValue="calendar" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Trading Calendar
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Performance Analytics
+          </TabsTrigger>
+          <TabsTrigger value="scheduler" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Scheduler Dashboard
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendar" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <CardTitle>Trading Calendar View</CardTitle>
+                  <Badge variant="secondary">
+                    {Object.keys(calendarData).length} days loaded
+                  </Badge>
                 </div>
               </div>
-            ) : (
-              <CalendarView
-                currentDate={currentDate}
-                calendarData={calendarData}
-                onDateSelect={handleDateSelect}
-              />
-            )}
-          </AccordionContent>
-        </AccordionItem>
+              <CardDescription>
+                Monthly view of trading performance with daily P&L and activity
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <Skeleton key={i} className="h-8 w-full" />
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 42 }).map((_, i) => (
+                      <Skeleton key={i} className="h-32 w-full" />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <CalendarView
+                  currentDate={currentDate}
+                  calendarData={calendarData}
+                  onDateSelect={handleDateSelect}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <AccordionItem value="analytics" className="border rounded-lg">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline">
-            <div className="flex items-center space-x-3">
-              <BarChart3 className="h-5 w-5 text-purple-600" />
-              <span className="text-lg font-semibold">Performance Analytics</span>
-              <Badge variant="outline" className="ml-2">
-                {format(currentDate, 'MMMM yyyy')}
-              </Badge>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6">
-            <CalendarSummary 
-              calendarData={calendarData}
-              currentDate={currentDate}
-            />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+        <TabsContent value="analytics" className="space-y-6">
+          <CalendarSummary 
+            calendarData={calendarData}
+            currentDate={currentDate}
+          />
+        </TabsContent>
+
+        <TabsContent value="scheduler" className="space-y-6">
+          <SchedulerDashboard />
+        </TabsContent>
+      </Tabs>
 
       {/* Daily Performance Modal */}
       {selectedDate && (

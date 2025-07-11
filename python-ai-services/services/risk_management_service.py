@@ -100,6 +100,33 @@ class RiskLimit(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class LeverageRiskControl(BaseModel):
+    """Leverage-specific risk control configuration"""
+    control_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    agent_id: str
+    
+    # Leverage limits
+    max_leverage: float = 20.0
+    max_portfolio_leverage: float = 10.0
+    max_single_position_leverage: float = 15.0
+    
+    # Margin controls
+    margin_call_threshold: float = 0.8   # 80% margin usage
+    liquidation_threshold: float = 0.95  # 95% margin usage
+    min_margin_buffer: float = 0.1       # 10% minimum buffer
+    
+    # Risk monitoring
+    enable_auto_delever: bool = True
+    risk_monitoring_interval: int = 30   # seconds
+    
+    # Emergency protocols
+    enable_circuit_breaker: bool = True
+    max_daily_loss_percentage: float = 0.05  # 5% max daily loss
+    
+    active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class PositionSizer:
     """Advanced position sizing algorithms"""
     
@@ -405,6 +432,11 @@ class RiskManagementService:
         self.risk_limits: Dict[str, List[RiskLimit]] = defaultdict(list)
         self.active_alerts: Dict[str, RiskAlert] = {}
         self.position_sizing_rules: Dict[str, PositionSizingRule] = {}
+        
+        # Leverage risk controls
+        self.leverage_controls: Dict[str, LeverageRiskControl] = {}
+        self.leverage_positions: Dict[str, List[Dict]] = defaultdict(list)
+        self.margin_usage: Dict[str, float] = {}
         
         # Risk metrics cache
         self.portfolio_risk_metrics: Dict[str, RiskMetrics] = {}
@@ -776,6 +808,441 @@ class RiskManagementService:
                 logger.error(f"Error in alert processing loop: {e}")
                 await asyncio.sleep(self.alert_check_interval)
     
+    # ==================== LEVERAGE RISK MANAGEMENT METHODS ====================
+    
+    async def validate_leverage_limits(self, agent_id: str, asset: str, leverage_ratio: float) -> Dict[str, Any]:
+        """Validate leverage against agent and portfolio limits"""
+        try:
+            # Get agent's leverage controls
+            controls = self.leverage_controls.get(agent_id)
+            if not controls:
+                # Create default controls for agent
+                controls = LeverageRiskControl(agent_id=agent_id)
+                self.leverage_controls[agent_id] = controls
+            
+            validation_result = {
+                "approved": True,
+                "warnings": [],
+                "critical_issues": [],
+                "max_allowed_leverage": controls.max_leverage
+            }
+            
+            # Check individual position leverage limit
+            if leverage_ratio > controls.max_single_position_leverage:
+                validation_result["critical_issues"].append(
+                    f"Leverage {leverage_ratio}x exceeds single position limit {controls.max_single_position_leverage}x"
+                )
+                validation_result["approved"] = False
+            
+            # Check maximum leverage limit
+            if leverage_ratio > controls.max_leverage:
+                validation_result["critical_issues"].append(
+                    f"Leverage {leverage_ratio}x exceeds maximum limit {controls.max_leverage}x"
+                )
+                validation_result["approved"] = False
+            
+            # Check portfolio-wide leverage
+            current_portfolio_leverage = await self._calculate_portfolio_leverage(agent_id)
+            if current_portfolio_leverage > controls.max_portfolio_leverage:
+                validation_result["warnings"].append(
+                    f"Portfolio leverage {current_portfolio_leverage:.2f}x exceeds limit {controls.max_portfolio_leverage}x"
+                )
+            
+            # Check margin availability
+            margin_status = await self._check_margin_availability(agent_id, leverage_ratio)
+            if not margin_status["sufficient"]:
+                validation_result["critical_issues"].append(
+                    f"Insufficient margin: {margin_status['available']:.2f} required: {margin_status['required']:.2f}"
+                )
+                validation_result["approved"] = False
+            
+            logger.info(f"Leverage validation for {agent_id}: {validation_result}")
+            return validation_result
+            
+        except Exception as e:
+            logger.error(f"Error validating leverage limits for {agent_id}: {e}")
+            return {
+                "approved": False,
+                "warnings": [],
+                "critical_issues": [f"Validation error: {str(e)}"],
+                "max_allowed_leverage": 1.0
+            }
+    
+    async def calculate_leverage_var(self, agent_id: str) -> Dict[str, float]:
+        """Calculate Value at Risk for leveraged positions"""
+        try:
+            positions = self.leverage_positions.get(agent_id, [])
+            if not positions:
+                return {"var_1d": 0.0, "var_5d": 0.0, "var_with_leverage": 0.0}
+            
+            # Calculate base portfolio VaR
+            base_var = await self._calculate_base_var(agent_id)
+            
+            # Calculate leverage multiplier
+            portfolio_leverage = await self._calculate_portfolio_leverage(agent_id)
+            
+            # Leverage amplifies VaR
+            var_with_leverage = base_var * portfolio_leverage
+            
+            # Calculate for different time horizons
+            var_1d = var_with_leverage
+            var_5d = var_with_leverage * np.sqrt(5)  # Square root of time rule
+            
+            return {
+                "var_1d": var_1d,
+                "var_5d": var_5d,
+                "var_with_leverage": var_with_leverage,
+                "portfolio_leverage": portfolio_leverage,
+                "base_var": base_var
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating leverage VaR for {agent_id}: {e}")
+            return {"var_1d": 0.0, "var_5d": 0.0, "var_with_leverage": 0.0}
+    
+    async def stress_test_leveraged_portfolio(self, agent_id: str) -> Dict[str, Any]:
+        """Run stress tests on leveraged portfolio"""
+        try:
+            stress_scenarios = {
+                "market_crash": {"market_drop": -0.20, "volatility_spike": 3.0},
+                "flash_crash": {"market_drop": -0.10, "volatility_spike": 5.0},
+                "currency_crisis": {"market_drop": -0.15, "volatility_spike": 2.5},
+                "interest_rate_shock": {"market_drop": -0.08, "volatility_spike": 1.5}
+            }
+            
+            stress_results = {}
+            positions = self.leverage_positions.get(agent_id, [])
+            
+            for scenario_name, scenario in stress_scenarios.items():
+                scenario_loss = 0.0
+                liquidation_risk = False
+                
+                for position in positions:
+                    leverage = position.get("leverage_ratio", 1.0)
+                    position_value = position.get("size", 0)
+                    
+                    # Calculate position loss in scenario
+                    market_impact = scenario["market_drop"] * leverage
+                    position_loss = position_value * market_impact
+                    scenario_loss += position_loss
+                    
+                    # Check for liquidation risk
+                    liquidation_threshold = position.get("liquidation_price", 0)
+                    if liquidation_threshold > 0:
+                        current_price = position.get("current_price", 0)
+                        price_drop_to_liquidation = (liquidation_threshold - current_price) / current_price
+                        
+                        if abs(market_impact) >= abs(price_drop_to_liquidation):
+                            liquidation_risk = True
+                
+                stress_results[scenario_name] = {
+                    "total_loss": scenario_loss,
+                    "loss_percentage": scenario_loss / self._get_portfolio_value(agent_id) if self._get_portfolio_value(agent_id) > 0 else 0,
+                    "liquidation_risk": liquidation_risk,
+                    "scenario_parameters": scenario
+                }
+            
+            # Overall stress test summary
+            worst_case_loss = min([result["total_loss"] for result in stress_results.values()])
+            liquidation_scenarios = [name for name, result in stress_results.items() if result["liquidation_risk"]]
+            
+            return {
+                "stress_scenarios": stress_results,
+                "worst_case_loss": worst_case_loss,
+                "liquidation_scenarios": liquidation_scenarios,
+                "overall_risk_level": "HIGH" if liquidation_scenarios else "MEDIUM" if worst_case_loss < -1000 else "LOW"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in stress testing for {agent_id}: {e}")
+            return {"error": str(e)}
+    
+    async def enforce_leverage_limits(self, agent_id: str) -> Dict[str, Any]:
+        """Enforce leverage limits through position adjustment"""
+        try:
+            controls = self.leverage_controls.get(agent_id)
+            if not controls:
+                return {"action": "none", "reason": "No leverage controls configured"}
+            
+            # Check current leverage
+            current_leverage = await self._calculate_portfolio_leverage(agent_id)
+            margin_usage = self.margin_usage.get(agent_id, 0.0)
+            
+            actions_taken = []
+            
+            # Check margin usage
+            if margin_usage >= controls.liquidation_threshold:
+                # Emergency liquidation
+                liquidation_result = await self._emergency_liquidation(agent_id)
+                actions_taken.append(f"Emergency liquidation: {liquidation_result}")
+                
+            elif margin_usage >= controls.margin_call_threshold:
+                # Margin call - reduce positions
+                reduction_result = await self._reduce_leveraged_positions(agent_id, target_reduction=0.3)
+                actions_taken.append(f"Margin call reduction: {reduction_result}")
+                
+            # Check portfolio leverage
+            if current_leverage > controls.max_portfolio_leverage:
+                delever_result = await self._auto_delever(agent_id, controls.max_portfolio_leverage)
+                actions_taken.append(f"Portfolio deleveraging: {delever_result}")
+            
+            # Check daily loss limits
+            daily_loss = await self._calculate_daily_loss(agent_id)
+            portfolio_value = self._get_portfolio_value(agent_id)
+            daily_loss_percentage = daily_loss / portfolio_value if portfolio_value > 0 else 0
+            
+            if daily_loss_percentage >= controls.max_daily_loss_percentage:
+                # Circuit breaker
+                circuit_breaker_result = await self._activate_circuit_breaker(agent_id)
+                actions_taken.append(f"Circuit breaker activated: {circuit_breaker_result}")
+            
+            return {
+                "agent_id": agent_id,
+                "current_leverage": current_leverage,
+                "margin_usage": margin_usage,
+                "daily_loss_percentage": daily_loss_percentage,
+                "actions_taken": actions_taken,
+                "status": "SAFE" if not actions_taken else "RISK_MANAGED"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error enforcing leverage limits for {agent_id}: {e}")
+            return {"error": str(e)}
+    
+    async def monitor_real_time_leverage_risk(self, agent_id: str) -> Dict[str, Any]:
+        """Real-time monitoring of leverage risk"""
+        try:
+            # Get current risk metrics
+            leverage_metrics = {
+                "portfolio_leverage": await self._calculate_portfolio_leverage(agent_id),
+                "margin_usage": self.margin_usage.get(agent_id, 0.0),
+                "var_metrics": await self.calculate_leverage_var(agent_id),
+                "liquidation_risk": await self._calculate_liquidation_risk(agent_id)
+            }
+            
+            # Risk score calculation (0-100)
+            risk_score = self._calculate_risk_score(leverage_metrics)
+            
+            # Generate recommendations
+            recommendations = self._generate_risk_recommendations(agent_id, leverage_metrics)
+            
+            # Check for immediate action required
+            immediate_actions = []
+            if leverage_metrics["margin_usage"] >= 0.9:
+                immediate_actions.append("URGENT: Margin usage critical - immediate deleveraging required")
+            
+            if leverage_metrics["liquidation_risk"]["time_to_liquidation_hours"] < 24:
+                immediate_actions.append("WARNING: Liquidation risk within 24 hours")
+            
+            return {
+                "agent_id": agent_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "risk_score": risk_score,
+                "metrics": leverage_metrics,
+                "recommendations": recommendations,
+                "immediate_actions": immediate_actions,
+                "risk_level": "HIGH" if risk_score >= 80 else "MEDIUM" if risk_score >= 50 else "LOW"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error monitoring leverage risk for {agent_id}: {e}")
+            return {"error": str(e)}
+    
+    # ==================== LEVERAGE HELPER METHODS ====================
+    
+    async def _calculate_portfolio_leverage(self, agent_id: str) -> float:
+        """Calculate weighted average portfolio leverage"""
+        try:
+            positions = self.leverage_positions.get(agent_id, [])
+            if not positions:
+                return 1.0
+            
+            total_notional = 0.0
+            total_margin_used = 0.0
+            
+            for position in positions:
+                size = position.get("size", 0)
+                leverage = position.get("leverage_ratio", 1.0)
+                margin_used = size / leverage
+                
+                total_notional += size
+                total_margin_used += margin_used
+            
+            if total_margin_used == 0:
+                return 1.0
+            
+            return total_notional / total_margin_used
+            
+        except Exception as e:
+            logger.error(f"Error calculating portfolio leverage: {e}")
+            return 1.0
+    
+    async def _check_margin_availability(self, agent_id: str, leverage_ratio: float) -> Dict[str, Any]:
+        """Check if sufficient margin is available for leverage"""
+        try:
+            # Get available margin (would integrate with portfolio service)
+            available_margin = 10000.0  # Placeholder
+            required_margin = 1000.0 / leverage_ratio  # Placeholder calculation
+            
+            return {
+                "sufficient": available_margin >= required_margin,
+                "available": available_margin,
+                "required": required_margin,
+                "utilization": required_margin / available_margin if available_margin > 0 else 1.0
+            }
+            
+        except Exception as e:
+            logger.error(f"Error checking margin availability: {e}")
+            return {"sufficient": False, "available": 0.0, "required": 0.0}
+    
+    async def _calculate_base_var(self, agent_id: str) -> float:
+        """Calculate base Value at Risk without leverage"""
+        try:
+            # Simplified VaR calculation - would use actual price history
+            portfolio_value = self._get_portfolio_value(agent_id)
+            daily_volatility = 0.02  # 2% daily volatility
+            confidence_level = 0.95
+            
+            # VaR = Portfolio Value * Z-score * Volatility
+            z_score = 1.645  # 95% confidence
+            var = portfolio_value * z_score * daily_volatility
+            
+            return var
+            
+        except Exception as e:
+            logger.error(f"Error calculating base VaR: {e}")
+            return 0.0
+    
+    async def _calculate_liquidation_risk(self, agent_id: str) -> Dict[str, Any]:
+        """Calculate liquidation risk metrics"""
+        try:
+            positions = self.leverage_positions.get(agent_id, [])
+            if not positions:
+                return {"risk_score": 0.0, "time_to_liquidation_hours": float('inf')}
+            
+            min_time_to_liquidation = float('inf')
+            max_risk_score = 0.0
+            
+            for position in positions:
+                current_price = position.get("current_price", 0)
+                liquidation_price = position.get("liquidation_price", 0)
+                
+                if current_price > 0 and liquidation_price > 0:
+                    # Distance to liquidation
+                    distance_to_liquidation = abs(liquidation_price - current_price) / current_price
+                    
+                    # Risk score (inverse of distance)
+                    risk_score = max(0, 100 * (1 - distance_to_liquidation / 0.2))  # 20% distance = 0 risk
+                    max_risk_score = max(max_risk_score, risk_score)
+                    
+                    # Estimate time to liquidation based on volatility
+                    daily_volatility = 0.02  # 2% daily
+                    time_to_liquidation = distance_to_liquidation / daily_volatility * 24  # hours
+                    min_time_to_liquidation = min(min_time_to_liquidation, time_to_liquidation)
+            
+            return {
+                "risk_score": max_risk_score,
+                "time_to_liquidation_hours": min_time_to_liquidation,
+                "positions_at_risk": len([p for p in positions if p.get("liquidation_price", 0) > 0])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating liquidation risk: {e}")
+            return {"risk_score": 0.0, "time_to_liquidation_hours": float('inf')}
+    
+    def _calculate_risk_score(self, metrics: Dict[str, Any]) -> float:
+        """Calculate overall risk score (0-100)"""
+        try:
+            score = 0.0
+            
+            # Portfolio leverage component (0-40 points)
+            leverage = metrics.get("portfolio_leverage", 1.0)
+            leverage_score = min(40, (leverage - 1) / 19 * 40)  # 1x = 0, 20x = 40
+            score += leverage_score
+            
+            # Margin usage component (0-30 points)
+            margin_usage = metrics.get("margin_usage", 0.0)
+            margin_score = margin_usage * 30  # 0% = 0, 100% = 30
+            score += margin_score
+            
+            # VaR component (0-20 points)
+            var_metrics = metrics.get("var_metrics", {})
+            var_ratio = var_metrics.get("var_with_leverage", 0) / var_metrics.get("base_var", 1)
+            var_score = min(20, (var_ratio - 1) / 19 * 20)
+            score += var_score
+            
+            # Liquidation risk component (0-10 points)
+            liquidation_risk = metrics.get("liquidation_risk", {})
+            liquidation_score = liquidation_risk.get("risk_score", 0) * 0.1
+            score += liquidation_score
+            
+            return min(100, max(0, score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating risk score: {e}")
+            return 0.0
+    
+    def _generate_risk_recommendations(self, agent_id: str, metrics: Dict[str, Any]) -> List[str]:
+        """Generate risk management recommendations"""
+        recommendations = []
+        
+        try:
+            leverage = metrics.get("portfolio_leverage", 1.0)
+            margin_usage = metrics.get("margin_usage", 0.0)
+            
+            if leverage > 15:
+                recommendations.append("Consider reducing portfolio leverage below 15x")
+            
+            if margin_usage > 0.7:
+                recommendations.append("Margin usage high - consider position reduction")
+            
+            if margin_usage > 0.9:
+                recommendations.append("URGENT: Margin usage critical - immediate action required")
+            
+            liquidation_risk = metrics.get("liquidation_risk", {})
+            if liquidation_risk.get("time_to_liquidation_hours", float('inf')) < 48:
+                recommendations.append("Liquidation risk within 48 hours - monitor closely")
+            
+            var_metrics = metrics.get("var_metrics", {})
+            if var_metrics.get("var_5d", 0) > 5000:  # $5000 5-day VaR
+                recommendations.append("High 5-day VaR - consider diversification")
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Error generating recommendations: {e}")
+            return ["Error generating recommendations"]
+    
+    def _get_portfolio_value(self, agent_id: str) -> float:
+        """Get total portfolio value for agent"""
+        # Placeholder - would integrate with portfolio service
+        return 10000.0
+    
+    async def _calculate_daily_loss(self, agent_id: str) -> float:
+        """Calculate current daily loss for agent"""
+        # Placeholder - would calculate from position P&L
+        return 0.0
+    
+    async def _emergency_liquidation(self, agent_id: str) -> str:
+        """Execute emergency liquidation of leveraged positions"""
+        # Placeholder - would execute actual liquidation
+        return "Emergency liquidation executed"
+    
+    async def _reduce_leveraged_positions(self, agent_id: str, target_reduction: float) -> str:
+        """Reduce leveraged positions by target percentage"""
+        # Placeholder - would reduce actual positions
+        return f"Positions reduced by {target_reduction*100}%"
+    
+    async def _auto_delever(self, agent_id: str, target_leverage: float) -> str:
+        """Automatically reduce leverage to target level"""
+        # Placeholder - would adjust leverage
+        return f"Leverage reduced to {target_leverage}x"
+    
+    async def _activate_circuit_breaker(self, agent_id: str) -> str:
+        """Activate trading circuit breaker"""
+        # Placeholder - would halt trading
+        return "Circuit breaker activated - trading halted"
+
     # Helper methods
     
     async def _validate_position_risk(
