@@ -49,15 +49,8 @@ import { MarketPredictions } from '@/components/analytics/MarketPredictions'
 // Import Swagger API Documentation
 import SwaggerApiDocs from '@/components/api-docs/SwaggerApiDocs'
 
-// Import premium analytics components (Placeholder components for missing premium features)
-// import { AdvancedAnalytics } from '@/components/premium-ui/analytics/advanced-analytics'
-// import { RealTimeCharts } from '@/components/premium-ui/charts/real-time-charts'
-// import { PerformanceMetrics } from '@/components/premium-ui/analytics/performance-metrics'
-// import { RiskAnalytics } from '@/components/premium-ui/analytics/risk-analytics'
-// import { PortfolioOptimizer } from '@/components/premium-ui/analytics/portfolio-optimizer'
-// import { AdvancedDataTable } from '@/components/premium-ui/tables/advanced-data-table'
-// import { RiskManagementSuite } from '@/components/premium-ui/compliance/risk-management-suite'
-// import { DashboardGrid } from '@/components/premium-ui/layouts/dashboard-grid'
+// Import backend client for real data integration
+import { backendClient } from '@/lib/api/backend-client'
 
 // Placeholder components for missing premium analytics features
 const AdvancedAnalytics = () => (
@@ -332,6 +325,41 @@ export function ConnectedAnalyticsTab({ className }: ConnectedAnalyticsTabProps)
       riskMetrics
     }
   }, [state, timeRange])
+
+  // Real backend data loading
+  const [realAnalyticsData, setRealAnalyticsData] = useState<any>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
+  const fetchRealAnalyticsData = async () => {
+    try {
+      setAnalyticsLoading(true)
+      
+      // Fetch performance analytics from backend
+      const performanceResponse = await backendClient.getPerformanceAnalytics({
+        start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+        end: new Date().toISOString()
+      })
+      
+      if (performanceResponse.success) {
+        setRealAnalyticsData(performanceResponse.data)
+        console.log('✅ Real analytics data loaded from backend')
+      } else {
+        console.warn('Backend analytics unavailable, using computed data')
+      }
+    } catch (error) {
+      console.warn('Error fetching analytics data, using fallback:', error)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRealAnalyticsData()
+    
+    // Refresh analytics every 5 minutes
+    const interval = setInterval(fetchRealAnalyticsData, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [timeRange])
   
   // Performance Analytics Panel
   const PerformanceAnalyticsPanel = () => (

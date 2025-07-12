@@ -448,6 +448,137 @@ class BackendClient {
     return this.request<RiskMetrics>('/api/v1/risk/metrics')
   }
 
+  // Autonomous Coordinator endpoints
+  async getCoordinatorStatus(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/autonomous/coordinator/status')
+  }
+
+  async updateCoordinatorSettings(settings: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/autonomous/coordinator/update-settings', {
+      method: 'POST',
+      body: JSON.stringify(settings)
+    })
+  }
+
+  async getSystemConnections(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/autonomous/system/connections')
+  }
+
+  // Agent Management endpoints
+  async createAgent(agentData: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/agents/create', {
+      method: 'POST',
+      body: JSON.stringify(agentData)
+    })
+  }
+
+  async updateAgent(agentId: string, agentData: any): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/update`, {
+      method: 'PUT',
+      body: JSON.stringify(agentData)
+    })
+  }
+
+  async deleteAgent(agentId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async startAgent(agentId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/start`, {
+      method: 'POST'
+    })
+  }
+
+  async stopAgent(agentId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/stop`, {
+      method: 'POST'
+    })
+  }
+
+  async getAgentPerformance(agentId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/performance`)
+  }
+
+  // Trading Operations endpoints
+  async createTradingOrder(orderData: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData)
+    })
+  }
+
+  async getTradingPositions(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/positions')
+  }
+
+  async createTradingStrategy(strategyData: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/strategies', {
+      method: 'POST',
+      body: JSON.stringify(strategyData)
+    })
+  }
+
+  // Analytics endpoints
+  async getPerformanceAnalytics(dateRange?: { start: string; end: string }): Promise<APIResponse<any>> {
+    const params = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : ''
+    return this.request(`/api/v1/analytics/performance${params}`)
+  }
+
+  async generateReport(reportType: string, parameters: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/analytics/reports/generate', {
+      method: 'POST',
+      body: JSON.stringify({ report_type: reportType, parameters })
+    })
+  }
+
+  // Farm Management endpoints
+  async createFarm(farmData: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/farms/create', {
+      method: 'POST',
+      body: JSON.stringify(farmData)
+    })
+  }
+
+  async updateFarm(farmId: string, farmData: any): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/farms/${farmId}/update`, {
+      method: 'PUT',
+      body: JSON.stringify(farmData)
+    })
+  }
+
+  async getFarmPerformance(farmId: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/farms/${farmId}/performance`)
+  }
+
+  // Goals Management endpoints
+  async createGoal(goalData: any): Promise<APIResponse<any>> {
+    return this.request('/api/v1/goals/create', {
+      method: 'POST',
+      body: JSON.stringify(goalData)
+    })
+  }
+
+  async updateGoalProgress(goalId: string, progressData: any): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/goals/${goalId}/progress`, {
+      method: 'PUT',
+      body: JSON.stringify(progressData)
+    })
+  }
+
+  async getGoalAnalytics(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/goals/analytics')
+  }
+
+  // Utility method for storing agent configuration
+  async storeAgentConfig(agentId: string, config: any): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/agents/${agentId}/config`, {
+      method: 'POST',
+      body: JSON.stringify(config)
+    })
+  }
+
   async runStressTest(scenarios: any): Promise<APIResponse<any>> {
     return this.request('/api/v1/risk/stress-test', {
       method: 'POST',

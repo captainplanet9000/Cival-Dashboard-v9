@@ -251,7 +251,33 @@ const TradingTerminal = () => {
     if (!selectedPrice || !amount) return
 
     try {
-      // Create paper trading order
+      // Create order data for backend API
+      const orderData = {
+        symbol: selectedPair,
+        side,
+        type: orderType,
+        amount: parseFloat(amount),
+        price: orderType === 'market' ? selectedPrice.price : parseFloat(price || '0'),
+        agentId: 'trading-terminal',
+        timestamp: new Date().toISOString()
+      }
+
+      // Try to place order via backend API first
+      try {
+        const apiResponse = await backendClient.createTradingOrder(orderData)
+        if (apiResponse.success) {
+          toast.success(`${side.toUpperCase()} order placed via API for ${amount} ${selectedPair}`)
+          setAmount('')
+          setPrice('')
+          return
+        } else {
+          console.warn('API order placement failed, falling back to paper trading engine')
+        }
+      } catch (apiError) {
+        console.warn('API unavailable, using paper trading engine fallback')
+      }
+
+      // Fallback to paper trading engine
       const order: Order = {
         id: `order_${Date.now()}`,
         symbol: selectedPair,
@@ -266,7 +292,7 @@ const TradingTerminal = () => {
 
       const result = await paperTradingEngine.placeOrder(order)
       if (result.success) {
-        toast.success(`${side.toUpperCase()} order placed for ${amount} ${selectedPair}`)
+        toast.success(`${side.toUpperCase()} order placed (paper trading) for ${amount} ${selectedPair}`)
         setAmount('')
         setPrice('')
       } else {

@@ -551,6 +551,71 @@ function AgentPerformancePanel({ agentPerformance }: { agentPerformance: Map<str
       setLoading(false)
     }
   }
+
+  // Agent management functions
+  const handleStartAgent = async (agentId: string) => {
+    try {
+      const response = await backendClient.startAgent(agentId)
+      if (response.success) {
+        console.log(`✅ Agent ${agentId} started successfully`)
+        // Refresh data to show updated status
+        await fetchRealPerformanceData()
+      } else {
+        console.error(`❌ Failed to start agent ${agentId}:`, response.message)
+      }
+    } catch (error) {
+      console.error(`❌ Error starting agent ${agentId}:`, error)
+    }
+  }
+
+  const handleStopAgent = async (agentId: string) => {
+    try {
+      const response = await backendClient.stopAgent(agentId)
+      if (response.success) {
+        console.log(`✅ Agent ${agentId} stopped successfully`)
+        // Refresh data to show updated status
+        await fetchRealPerformanceData()
+      } else {
+        console.error(`❌ Failed to stop agent ${agentId}:`, response.message)
+      }
+    } catch (error) {
+      console.error(`❌ Error stopping agent ${agentId}:`, error)
+    }
+  }
+
+  const handleDeleteAgent = async (agentId: string) => {
+    if (!confirm(`Are you sure you want to delete agent ${agentId}? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await backendClient.deleteAgent(agentId)
+      if (response.success) {
+        console.log(`✅ Agent ${agentId} deleted successfully`)
+        // Refresh data to remove deleted agent
+        await fetchRealPerformanceData()
+      } else {
+        console.error(`❌ Failed to delete agent ${agentId}:`, response.message)
+      }
+    } catch (error) {
+      console.error(`❌ Error deleting agent ${agentId}:`, error)
+    }
+  }
+
+  const handleUpdateAgent = async (agentId: string, updates: any) => {
+    try {
+      const response = await backendClient.updateAgent(agentId, updates)
+      if (response.success) {
+        console.log(`✅ Agent ${agentId} updated successfully`)
+        // Refresh data to show updates
+        await fetchRealPerformanceData()
+      } else {
+        console.error(`❌ Failed to update agent ${agentId}:`, response.message)
+      }
+    } catch (error) {
+      console.error(`❌ Error updating agent ${agentId}:`, error)
+    }
+  }
   
   const sortedAgents = realPerformanceData.sort((a, b) => {
     switch (sortBy) {

@@ -27,7 +27,7 @@ import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, TrendingUp, CheckCircle2, Loader2 } from 'lucide-react'
+import { AlertCircle, TrendingUp, CheckCircle2, Loader2, Coins } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'react-hot-toast'
 import {
@@ -35,6 +35,8 @@ import {
   TradingAgent,
   MarketPrice
 } from '@/lib/trading/real-paper-trading-engine'
+import { backendClient } from '@/lib/api/backend-client'
+import { getAgentWalletIntegration } from '@/lib/blockchain/agent-wallet-integration'
 
 // Trading form schema
 const tradingFormSchema = z.object({
@@ -63,6 +65,8 @@ export function TradingForm({ className }: TradingFormProps) {
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [portfolio, setPortfolio] = useState<any>(null)
+  const [useRealTrading, setUseRealTrading] = useState(false)
+  const [walletIntegration, setWalletIntegration] = useState<any>(null)
 
   const form = useForm<TradingFormValues>({
     resolver: zodResolver(tradingFormSchema),
@@ -82,12 +86,23 @@ export function TradingForm({ className }: TradingFormProps) {
   const symbol = form.watch('symbol')
 
   useEffect(() => {
+    // Initialize wallet integration
+    const initializeWalletIntegration = async () => {
+      try {
+        const integration = getAgentWalletIntegration()
+        setWalletIntegration(integration)
+      } catch (error) {
+        console.warn('Wallet integration not available:', error)
+      }
+    }
+
     // Start the trading engine if not already running
     if (!paperTradingEngine.listenerCount('pricesUpdated')) {
       paperTradingEngine.start()
     }
 
-    // Load agents and market data
+    // Initialize systems
+    initializeWalletIntegration()
     loadData()
 
     // Listen for updates
@@ -102,8 +117,34 @@ export function TradingForm({ className }: TradingFormProps) {
     }
   }, [])
 
-  const loadData = () => {
-    const allAgents = paperTradingEngine.getAllAgents()
+  const loadData = async () => {
+    // Load paper trading agents
+    const paperAgents = paperTradingEngine.getAllAgents()
+    
+    // Try to load real agents from backend
+    let realAgents: TradingAgent[] = []
+    try {
+      const agentResponse = await backendClient.getAgentsStatus()
+      if (agentResponse.success && agentResponse.data?.agents) {
+        realAgents = agentResponse.data.agents.map((agent: any) => ({
+          id: agent.id,
+          name: agent.name,
+          strategy: agent.strategy,
+          status: agent.status,
+          portfolio: {
+            cash: agent.performance?.total_pnl || 0,
+            positions: [],
+            totalValue: agent.performance?.total_pnl || 0
+          },
+          isRealAgent: true // Flag to identify real agents
+        }))
+      }
+    } catch (error) {
+      console.warn('Could not load real agents:', error)
+    }
+    
+    // Combine agents
+    const allAgents = [...paperAgents, ...realAgents]
     setAgents(allAgents)
     
     if (allAgents.length > 0 && !selectedAgent) {
@@ -111,6 +152,7 @@ export function TradingForm({ className }: TradingFormProps) {
       setPortfolio(allAgents[0].portfolio)
     }
 
+    // Load market prices
     const prices = paperTradingEngine.getAllMarketPrices()
     setMarketPrices(prices)
   }
@@ -170,7 +212,7 @@ export function TradingForm({ className }: TradingFormProps) {
         throw new Error('Insufficient balance for this order')
       }
 
-      // Create order
+      // Create order object
       const order = {
         agentId: selectedAgent,
         symbol: data.symbol,
@@ -184,11 +226,97 @@ export function TradingForm({ className }: TradingFormProps) {
         reduceOnly: data.reduceOnly
       }
 
-      // Execute the order
-      const result = await paperTradingEngine.executeOrder(selectedAgent, order)
+      let result: any
+
+      // Determine if this is a real agent and if we should use real trading
+      const isRealAgent = (agent as any).isRealAgent
+      const shouldUseRealTrading = useRealTrading && isRealAgent && walletIntegration
+
+      if (shouldUseRealTrading) {
+        // Execute real trading order with wallet integration
+        toast.loading('Executing real trade with blockchain wallet...', { id: 'order-execution' })
+        
+        try {
+          // First, execute through backend API for real trading
+          const backendOrder = {
+            symbol: data.symbol,
+            side: data.side,
+            quantity: quantity,
+            price: data.orderType === 'market' ? undefined : parseFloat(data.price || '0'),
+            order_type: data.orderType === 'market' ? 'market' : 'limit',
+            strategy: agent.strategy || 'manual'
+          }
+          
+          const apiResult = await backendClient.createOrder(backendOrder)
+          
+          if (apiResult.success) {
+            // Also execute wallet transaction if wallet integration is available
+            if (walletIntegration) {
+              try {
+                const walletResult = await walletIntegration.executeTradeForAgent(
+                  selectedAgent,
+                  {
+                    symbol: data.symbol,
+                    amount: orderValue,
+                    action: data.side,
+                    orderType: data.orderType
+                  }
+                )
+                
+                if (walletResult.success) {
+                  result = {
+                    success: true,
+                    orderId: apiResult.data?.order_id,
+                    walletTxHash: walletResult.transactionHash,
+                    message: 'Real trade executed successfully'
+                  }
+                } else {
+                  throw new Error(walletResult.error || 'Wallet transaction failed')
+                }
+              } catch (walletError) {
+                console.warn('Wallet execution failed, but API order succeeded:', walletError)
+                result = {
+                  success: true,
+                  orderId: apiResult.data?.order_id,
+                  message: 'API order executed (wallet transaction failed)',
+                  warning: 'Wallet integration unavailable'
+                }
+              }
+            } else {
+              result = {
+                success: true,
+                orderId: apiResult.data?.order_id,
+                message: 'Real trade executed via API'
+              }
+            }
+          } else {
+            throw new Error(apiResult.message || 'API order execution failed')
+          }
+          
+        } catch (realTradingError) {
+          console.warn('Real trading failed, falling back to paper trading:', realTradingError)
+          toast.dismiss('order-execution')
+          toast.warning('Real trading failed, executing as paper trade')
+          
+          // Fallback to paper trading
+          result = await paperTradingEngine.executeOrder(selectedAgent, order)
+        }
+      } else {
+        // Execute paper trading order
+        result = await paperTradingEngine.executeOrder(selectedAgent, order)
+      }
       
       if (result.success) {
-        toast.success(`${data.side.toUpperCase()} order executed successfully!`)
+        const mode = shouldUseRealTrading ? 'REAL' : 'PAPER'
+        toast.success(`${mode} ${data.side.toUpperCase()} order executed successfully!`, { id: 'order-execution' })
+        
+        if (result.walletTxHash) {
+          toast.success(`Blockchain TX: ${result.walletTxHash.substring(0, 10)}...`, { duration: 5000 })
+        }
+        
+        if (result.warning) {
+          toast.warning(result.warning, { duration: 3000 })
+        }
         
         // Reset form
         form.reset({
@@ -209,7 +337,7 @@ export function TradingForm({ className }: TradingFormProps) {
 
     } catch (error) {
       console.error('Order submission error:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to execute order')
+      toast.error(error instanceof Error ? error.message : 'Failed to execute order', { id: 'order-execution' })
     } finally {
       setIsSubmitting(false)
     }
@@ -222,6 +350,36 @@ export function TradingForm({ className }: TradingFormProps) {
         <CardDescription>Execute trades with advanced order types</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Trading Mode Toggle */}
+        <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium">Trading Mode</label>
+              <p className="text-xs text-muted-foreground">
+                {useRealTrading ? 'Execute real trades with blockchain wallets' : 'Paper trading simulation'}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">Paper</span>
+              <Switch
+                checked={useRealTrading}
+                onCheckedChange={setUseRealTrading}
+              />
+              <span className="text-sm">Real</span>
+            </div>
+          </div>
+          
+          {useRealTrading && (
+            <Alert className="mt-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                <strong>⚠️ WARNING:</strong> Real trading mode will execute actual trades with real funds.
+                Only select agents with wallet integration enabled.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         {/* Agent Selection and Portfolio Info */}
         <div className="mb-6 space-y-4">
           {agents.length > 0 ? (
@@ -229,12 +387,19 @@ export function TradingForm({ className }: TradingFormProps) {
               <div>
                 <label className="text-sm font-medium">Trading Agent</label>
                 <EnhancedDropdown
-                  options={agents.map((agent): DropdownOption => ({
-                    value: agent.id,
-                    label: agent.name,
-                    description: `$${agent.portfolio.cash.toFixed(2)} available`,
-                    icon: <TrendingUp className="h-4 w-4" />
-                  }))}
+                  options={agents.map((agent): DropdownOption => {
+                    const isRealAgent = (agent as any).isRealAgent
+                    const hasWallet = walletIntegration && isRealAgent
+                    
+                    return {
+                      value: agent.id,
+                      label: agent.name,
+                      description: `$${(agent.portfolio.cash || 0).toFixed(2)} available ${isRealAgent ? '(Real)' : '(Paper)'}${hasWallet ? ' 🔗' : ''}`,
+                      icon: isRealAgent ? 
+                        <Coins className="h-4 w-4 text-green-600" /> : 
+                        <TrendingUp className="h-4 w-4" />
+                    }
+                  })}
                   value={selectedAgent}
                   onValueChange={handleAgentChange}
                   placeholder="Select agent"
@@ -495,19 +660,23 @@ export function TradingForm({ className }: TradingFormProps) {
 
             <Button 
               type="submit" 
-              className="w-full" 
+              className={`w-full ${useRealTrading ? 'bg-red-600 hover:bg-red-700' : ''}`}
               size="lg"
               disabled={isSubmitting || agents.length === 0}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Executing Order...
+                  Executing {useRealTrading ? 'Real' : 'Paper'} Order...
                 </>
               ) : (
                 <>
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  Place {side === 'buy' ? 'Buy' : 'Sell'} Order
+                  {useRealTrading ? (
+                    <Coins className="mr-2 h-4 w-4" />
+                  ) : (
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                  )}
+                  Place {useRealTrading ? 'REAL' : 'Paper'} {side === 'buy' ? 'Buy' : 'Sell'} Order
                 </>
               )}
             </Button>

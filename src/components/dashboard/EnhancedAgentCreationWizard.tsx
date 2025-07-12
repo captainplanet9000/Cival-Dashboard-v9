@@ -23,6 +23,9 @@ import {
   ChevronRight, ChevronLeft, CheckCircle, AlertCircle,
   TrendingUp, Coins, Lock, Activity
 } from 'lucide-react'
+import { backendClient } from '@/lib/api/backend-client'
+import { getAgentWalletIntegration } from '@/lib/blockchain/agent-wallet-integration'
+import { toast } from 'react-hot-toast'
 
 interface AgentConfig {
   // Basic Configuration
@@ -35,6 +38,13 @@ interface AgentConfig {
   risk_tolerance: 'conservative' | 'moderate' | 'aggressive'
   initial_capital: number
   max_position_size: number
+  
+  // Wallet Configuration (NEW)
+  use_real_wallets: boolean
+  master_wallet_allocation: number
+  chains: ('ethereum' | 'arbitrum')[]
+  allowed_tokens: string[]
+  max_trade_size: number
   
   // Leverage Configuration
   leverage_enabled: boolean
@@ -53,6 +63,7 @@ interface AgentConfig {
   goal_creation_enabled: boolean
   performance_tracking: boolean
   state_persistence: boolean
+  auto_trading: boolean
 }
 
 interface EnhancedAgentCreationWizardProps {
@@ -82,6 +93,13 @@ export default function EnhancedAgentCreationWizard({
     initial_capital: 10000,
     max_position_size: 2500,
     
+    // Wallet Configuration (NEW)
+    use_real_wallets: false, // Start with testnet for safety
+    master_wallet_allocation: 1000,
+    chains: ['ethereum'],
+    allowed_tokens: ['USDC', 'USDT', 'ETH', 'WBTC'],
+    max_trade_size: 1000,
+    
     // Leverage Configuration
     leverage_enabled: true,
     max_leverage: 10,
@@ -98,7 +116,8 @@ export default function EnhancedAgentCreationWizard({
     // Advanced Settings
     goal_creation_enabled: true,
     performance_tracking: true,
-    state_persistence: true
+    state_persistence: true,
+    auto_trading: false // Start with manual approval for safety
   })
 
   const steps = [
@@ -113,6 +132,12 @@ export default function EnhancedAgentCreationWizard({
       title: 'Risk & Capital',
       description: 'Risk tolerance and capital allocation',
       icon: Shield
+    },
+    {
+      id: 'wallet',
+      title: 'Wallet Setup',
+      description: 'Blockchain wallet configuration',
+      icon: Coins
     },
     {
       id: 'leverage',
@@ -183,31 +208,130 @@ export default function EnhancedAgentCreationWizard({
   const createAgent = async () => {
     try {
       setIsCreating(true)
+      toast.loading('Creating agent and setting up wallets...', { id: 'agent-creation' })
       
-      // Call the enhanced agent creation API
-      const response = await fetch('/api/v1/autonomous/agents/create', {
+      // Step 1: Create agent in database
+      const agentData = {
+        name: config.name,
+        description: config.description,
+        agent_type: config.agent_type,
+        trading_style: config.trading_style,
+        risk_tolerance: config.risk_tolerance,
+        initial_capital: config.initial_capital,
+        max_position_size: config.max_position_size,
+        leverage_enabled: config.leverage_enabled,
+        max_leverage: config.max_leverage,
+        auto_deleveraging: config.auto_deleveraging,
+        margin_call_threshold: config.margin_call_threshold,
+        profit_securing_enabled: config.profit_securing_enabled,
+        milestone_amounts: config.milestone_amounts,
+        auto_secure_on_milestone: config.auto_secure_on_milestone,
+        borrow_percentage: config.borrow_percentage,
+        preferred_protocol: config.preferred_protocol,
+        goal_creation_enabled: config.goal_creation_enabled,
+        performance_tracking: config.performance_tracking,
+        state_persistence: config.state_persistence,
+        auto_trading: config.auto_trading,
+        status: 'active',
+        created_at: new Date().toISOString()
+      }
+
+      // Create agent via API endpoint
+      const agentResponse = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+        body: JSON.stringify(agentData)
       })
       
-      if (!response.ok) {
-        throw new Error('Failed to create agent')
+      if (!agentResponse.ok) {
+        const error = await agentResponse.json()
+        throw new Error(error.message || 'Failed to create agent')
       }
       
-      const result = await response.json()
+      const agentResult = await agentResponse.json()
+      const agentId = agentResult.data?.id || `agent_${Date.now()}`
+      
+      // Step 2: Set up wallet integration
+      const walletIntegration = getAgentWalletIntegration()
+      
+      const walletConfig = {
+        agentId,
+        agentName: config.name,
+        agentType: config.agent_type as 'trading' | 'arbitrage' | 'liquidity' | 'yield_farming',
+        chains: config.chains,
+        riskLevel: config.risk_tolerance as 'low' | 'medium' | 'high',
+        maxTradeSize: config.max_trade_size,
+        allowedTokens: config.allowed_tokens,
+        tradingStrategy: config.trading_style,
+        autoTrading: config.auto_trading,
+        useRealWallets: config.use_real_wallets,
+        masterWalletAllocation: config.master_wallet_allocation
+      }
+      
+      // Register agent with wallet system
+      const walletSuccess = await walletIntegration.registerAgent(walletConfig)
+      
+      if (!walletSuccess) {
+        console.warn('Wallet registration failed, but agent was created')
+      }
+      
+      // Step 3: Store agent configuration in Supabase
+      try {
+        await backendClient.storeAgentConfig(agentId, {
+          ...agentData,
+          wallet_config: walletConfig,
+          wallet_integration: walletSuccess
+        })
+      } catch (error) {
+        console.warn('Failed to store agent config in Supabase:', error)
+      }
+      
+      const result = {
+        success: true,
+        agent: {
+          agent_id: agentId,
+          name: config.name,
+          type: config.agent_type,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          wallet_integration: walletSuccess,
+          use_real_wallets: config.use_real_wallets,
+          chains: config.chains,
+          master_wallet_allocation: config.master_wallet_allocation
+        },
+        leverage_enabled: config.leverage_enabled,
+        profit_securing_enabled: config.profit_securing_enabled,
+        milestone_tracking_enabled: config.milestone_amounts.length > 0,
+        wallet_setup: walletSuccess
+      }
+      
       setCreationResult(result)
       
       if (result.success && onAgentCreated) {
         onAgentCreated(result.agent)
       }
       
+      toast.success(`Agent "${config.name}" created successfully!`, { id: 'agent-creation' })
+      
+      // Display wallet information
+      if (walletSuccess) {
+        const walletSummary = walletIntegration.getAgentWalletSummary(agentId)
+        toast.success(
+          `Agent wallets ${config.use_real_wallets ? '(REAL)' : '(Testnet)'} created on ${config.chains.join(', ')}`,
+          { duration: 5000 }
+        )
+      }
+      
     } catch (error) {
       console.error('Error creating agent:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create agent. Please try again.'
+      
       setCreationResult({ 
         success: false, 
-        error: 'Failed to create agent. Please try again.' 
+        error: errorMessage
       })
+      
+      toast.error(errorMessage, { id: 'agent-creation' })
     } finally {
       setIsCreating(false)
     }
@@ -431,8 +555,127 @@ export default function EnhancedAgentCreationWizard({
                 </div>
               )}
 
-              {/* Step 2: Leverage Settings */}
+              {/* Step 2: Wallet Configuration */}
               {currentStep === 2 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="use_real_wallets">Use Real Blockchain Wallets</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enable real blockchain trading (⚠️ REAL MONEY) vs testnet simulation
+                      </p>
+                    </div>
+                    <Switch
+                      id="use_real_wallets"
+                      checked={config.use_real_wallets}
+                      onCheckedChange={(checked) => updateConfig({ use_real_wallets: checked })}
+                    />
+                  </div>
+
+                  {config.use_real_wallets && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>⚠️ WARNING:</strong> Real wallets use actual cryptocurrency. 
+                        Ensure you understand the risks before enabling.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="master_wallet_allocation">Master Wallet Allocation ($)</Label>
+                      <Input
+                        id="master_wallet_allocation"
+                        type="number"
+                        value={config.master_wallet_allocation}
+                        onChange={(e) => updateConfig({ master_wallet_allocation: Number(e.target.value) })}
+                        min="100"
+                        max="50000"
+                        step="100"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Amount allocated from master wallet to this agent
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="max_trade_size">Max Trade Size ($)</Label>
+                      <Input
+                        id="max_trade_size"
+                        type="number"
+                        value={config.max_trade_size}
+                        onChange={(e) => updateConfig({ max_trade_size: Number(e.target.value) })}
+                        min="10"
+                        max={config.master_wallet_allocation}
+                        step="10"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Maximum size per individual trade
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label>Supported Blockchains</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: 'ethereum', label: 'Ethereum', desc: 'ETH mainnet & testnet' },
+                        { value: 'arbitrum', label: 'Arbitrum', desc: 'L2 scaling solution' }
+                      ].map(chain => (
+                        <div
+                          key={chain.value}
+                          className={`
+                            p-3 border rounded-lg cursor-pointer transition-colors
+                            ${config.chains.includes(chain.value as 'ethereum' | 'arbitrum')
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-muted hover:border-primary/50'
+                            }
+                          `}
+                          onClick={() => {
+                            const newChains = config.chains.includes(chain.value as 'ethereum' | 'arbitrum')
+                              ? config.chains.filter(c => c !== chain.value)
+                              : [...config.chains, chain.value as 'ethereum' | 'arbitrum']
+                            updateConfig({ chains: newChains.length > 0 ? newChains : ['ethereum'] })
+                          }}
+                        >
+                          <div className="text-sm font-medium">{chain.label}</div>
+                          <div className="text-xs text-muted-foreground">{chain.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label>Allowed Tokens</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {['USDC', 'USDT', 'ETH', 'WBTC', 'DAI', 'LINK'].map(token => (
+                        <div
+                          key={token}
+                          className={`
+                            p-2 border rounded cursor-pointer transition-colors text-center text-sm
+                            ${config.allowed_tokens.includes(token)
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-muted hover:border-primary/50'
+                            }
+                          `}
+                          onClick={() => {
+                            const newTokens = config.allowed_tokens.includes(token)
+                              ? config.allowed_tokens.filter(t => t !== token)
+                              : [...config.allowed_tokens, token]
+                            updateConfig({ allowed_tokens: newTokens.length > 0 ? newTokens : ['USDC'] })
+                          }}
+                        >
+                          {token}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Leverage Settings */}
+              {currentStep === 3 && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -511,8 +754,8 @@ export default function EnhancedAgentCreationWizard({
                 </div>
               )}
 
-              {/* Step 3: Profit Securing */}
-              {currentStep === 3 && (
+              {/* Step 4: Profit Securing */}
+              {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -620,8 +863,8 @@ export default function EnhancedAgentCreationWizard({
                 </div>
               )}
 
-              {/* Step 4: Advanced Features */}
-              {currentStep === 4 && (
+              {/* Step 5: Advanced Features */}
+              {currentStep === 5 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 gap-6">
                     <div className="flex items-center justify-between">
@@ -665,7 +908,31 @@ export default function EnhancedAgentCreationWizard({
                         onCheckedChange={(checked) => updateConfig({ state_persistence: checked })}
                       />
                     </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="auto_trading">Auto Trading</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Allow agent to execute trades automatically without approval
+                        </p>
+                      </div>
+                      <Switch
+                        id="auto_trading"
+                        checked={config.auto_trading}
+                        onCheckedChange={(checked) => updateConfig({ auto_trading: checked })}
+                      />
+                    </div>
                   </div>
+
+                  {config.auto_trading && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>⚠️ WARNING:</strong> Auto trading will execute trades without manual approval. 
+                        Ensure proper risk management is configured.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <Alert>
                     <Activity className="h-4 w-4" />
@@ -677,8 +944,8 @@ export default function EnhancedAgentCreationWizard({
                 </div>
               )}
 
-              {/* Step 5: Review & Create */}
-              {currentStep === 5 && (
+              {/* Step 6: Review & Create */}
+              {currentStep === 6 && (
                 <div className="space-y-6">
                   {!creationResult ? (
                     <div className="space-y-4">
@@ -767,6 +1034,36 @@ export default function EnhancedAgentCreationWizard({
 
                         <Card>
                           <CardHeader className="pb-3">
+                            <CardTitle className="text-sm">Wallet Configuration</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Mode:</span>
+                              <span className="font-medium">
+                                {config.use_real_wallets ? 'Real Wallets' : 'Testnet'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Allocation:</span>
+                              <span className="font-medium">${config.master_wallet_allocation.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Chains:</span>
+                              <span className="font-medium">{config.chains.join(', ')}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Max Trade:</span>
+                              <span className="font-medium">${config.max_trade_size.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Tokens:</span>
+                              <span className="font-medium">{config.allowed_tokens.length} types</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="pb-3">
                             <CardTitle className="text-sm">Advanced Features</CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-2 text-sm">
@@ -786,6 +1083,12 @@ export default function EnhancedAgentCreationWizard({
                               <span>Persistence:</span>
                               <span className="font-medium">
                                 {config.state_persistence ? 'Yes' : 'No'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Auto Trading:</span>
+                              <span className="font-medium">
+                                {config.auto_trading ? 'Yes' : 'No'}
                               </span>
                             </div>
                           </CardContent>

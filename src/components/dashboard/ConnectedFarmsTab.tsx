@@ -32,6 +32,9 @@ import { enhancedAgentCreationService } from '@/lib/agents/enhanced-agent-creati
 // Import paper trading engine
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
 
+// Import backend client for real API integration
+import { backendClient } from '@/lib/api/backend-client'
+
 // Simple farm interface
 interface Farm {
   id: string
@@ -181,13 +184,9 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
       
       // Call backend API to update farm status
       try {
-        const response = await fetch(`/api/farms/${farmId}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        })
+        const updateResult = await backendClient.updateFarm(farmId, { status: newStatus })
         
-        if (response.ok) {
+        if (updateResult.success) {
           // Update local state
           const updatedFarms = farms.map(f => 
             f.id === farmId ? { ...f, status: newStatus } : f
@@ -203,14 +202,23 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
           
           toast.success(`Farm ${farm.name} ${newStatus === 'active' ? 'started' : 'paused'}`)
         } else {
-          throw new Error('Backend request failed')
+          throw new Error(updateResult.message || 'Backend request failed')
         }
       } catch (apiError) {
+        console.warn('Backend API unavailable, using local mode:', apiError)
         // Fallback to local update if backend fails
         const updatedFarms = farms.map(f => 
           f.id === farmId ? { ...f, status: newStatus } : f
         )
         setFarms(updatedFarms)
+        
+        // Still try to start/stop agents locally
+        if (newStatus === 'active') {
+          await startFarmTrading(farm)
+        } else {
+          await pauseFarmTrading(farm)
+        }
+        
         toast.success(`Farm ${farm.name} ${newStatus === 'active' ? 'started' : 'paused'} (local mode)`)
       }
       
@@ -267,31 +275,25 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
         return
       }
 
-      // Call the coordination API
-      const response = await fetch('/api/farms/coordinate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Call the coordination API via backend client
+      const coordinationData = {
+        farmId: activeFarm.id,
+        action,
+        context: {
+          marketConditions: 'Normal trading conditions',
+          customInstructions: `Perform ${action} action on ${activeFarm.name}`
         },
-        body: JSON.stringify({
-          farmId: activeFarm.id,
-          action,
-          context: {
-            marketConditions: 'Normal trading conditions',
-            customInstructions: `Perform ${action} action on ${activeFarm.name}`
-          },
-          groupingCriteria: {
-            type: 'performance',
-            parameters: {}
-          }
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Coordination request failed')
+        groupingCriteria: {
+          type: 'performance',
+          parameters: {}
+        }
       }
 
-      const result = await response.json()
+      const result = await backendClient.coordinateAgentDecision([activeFarm.id], coordinationData)
+
+      if (!result.success) {
+        throw new Error(result.message || 'Coordination request failed')
+      }
       
       // Show results based on action type
       switch (action) {
@@ -350,17 +352,13 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
         
         try {
           // Call backend to assign agent to farm
-          const response = await fetch('/api/agents/assign-to-farm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              agentId: agent.id,
-              farmId: targetFarm.id,
-              role: 'trader'
-            })
+          const assignResult = await backendClient.updateAgent(agent.id, {
+            farm_id: targetFarm.id,
+            role: 'trader',
+            status: 'active'
           })
           
-          if (response.ok) {
+          if (assignResult.success) {
             assignedCount++
             
             // Update local farm agent count
@@ -369,6 +367,8 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
                 ? { ...f, agentCount: f.agentCount + 1, agents: [...f.agents, agent.id] }
                 : f
             ))
+          } else {
+            console.warn('Agent assignment failed:', assignResult.message)
           }
         } catch (assignError) {
           console.error('Error assigning agent:', assignError)
@@ -389,20 +389,27 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
   const createRealFarm = async (config: any): Promise<Farm | null> => {
     try {
       // Call backend to create farm
-      const response = await fetch('/api/farms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-      })
+      const farmCreateData = {
+        name: config.name,
+        description: config.description,
+        farm_type: config.strategy,
+        total_allocated_usd: config.totalCapital,
+        agent_count: config.agentCount,
+        coordination_mode: config.coordinationMode,
+        risk_level: config.riskLevel || 'medium',
+        is_active: true
+      }
       
-      if (response.ok) {
-        const farmData = await response.json()
+      const farmResult = await backendClient.createFarm(farmCreateData)
+      
+      if (farmResult.success && farmResult.data) {
+        const farmData = farmResult.data
         
         // Create agents for the farm
-        const agents = await createAgentsForFarm(farmData.id, config.agentCount, config.strategy)
+        const agents = await createAgentsForFarm(farmData.id || farmData.farm_id, config.agentCount, config.strategy)
         
         return {
-          id: farmData.id || `farm_${Date.now()}`,
+          id: farmData.id || farmData.farm_id || `farm_${Date.now()}`,
           name: config.name,
           description: config.description,
           strategy: config.strategy,
@@ -421,11 +428,35 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
             activeAgents: agents.length
           }
         }
+      } else {
+        throw new Error(farmResult.message || 'Failed to create farm via backend')
       }
     } catch (error) {
       console.error('Error creating farm:', error)
+      toast.warning('Backend unavailable, creating farm in local mode')
+      
+      // Fallback to local farm creation
+      return {
+        id: `farm_${Date.now()}`,
+        name: config.name,
+        description: config.description,
+        strategy: config.strategy,
+        agentCount: config.agentCount,
+        totalCapital: config.totalCapital,
+        coordinationMode: config.coordinationMode,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        agents: [],
+        performance: {
+          totalValue: config.totalCapital,
+          totalPnL: 0,
+          winRate: getStrategyWinRate(config.strategy),
+          tradeCount: 0,
+          roiPercent: 0,
+          activeAgents: 0
+        }
+      }
     }
-    return null
   }
   
   const createAgentsForFarm = async (farmId: string, count: number, strategy: string) => {
@@ -433,34 +464,88 @@ export function ConnectedFarmsTab({ className }: ConnectedFarmsTabProps) {
     
     for (let i = 0; i < count; i++) {
       try {
-        // Create agent with enhanced agent creation service
+        // Create agent with backend API
         const agentConfig = {
           name: `${strategy} Agent ${i + 1}`,
-          strategy: strategy,
-          farmId: farmId,
-          capital: 10000,
-          riskLevel: getStrategyRiskLevel(strategy).toLowerCase()
+          description: `Autonomous trading agent for ${strategy} strategy`,
+          agent_type: strategy,
+          trading_style: `${strategy}_optimized`,
+          risk_tolerance: getStrategyRiskLevel(strategy).toLowerCase(),
+          initial_capital: 10000,
+          max_position_size: 2500,
+          farm_id: farmId,
+          status: 'active'
         }
         
-        const agentId = await enhancedAgentCreationService.createAutonomousAgent(agentConfig)
-        if (agentId) {
+        // Create via backend API
+        const agentResult = await backendClient.createAgent(agentConfig)
+        
+        if (agentResult.success && agentResult.data) {
+          const agentId = agentResult.data.id || agentResult.data.agent_id || `agent_${farmId}_${i + 1}`
           agents.push({ id: agentId, ...agentConfig })
           
-          // Also register with paper trading engine
-          await paperTradingEngine.registerAgent({
-            id: agentId,
+          // Also register with paper trading engine for local simulation
+          try {
+            await paperTradingEngine.registerAgent({
+              id: agentId,
+              name: agentConfig.name,
+              strategy: { type: strategy as any, parameters: {} },
+              initialCapital: agentConfig.initial_capital,
+              riskLimits: {
+                maxPositionSize: agentConfig.max_position_size,
+                maxDailyLoss: agentConfig.initial_capital * 0.05,
+                maxDrawdown: 0.15
+              }
+            })
+          } catch (paperEngineError) {
+            console.warn('Paper trading engine registration failed:', paperEngineError)
+          }
+        } else {
+          // Fallback to enhanced agent creation service
+          const agentId = await enhancedAgentCreationService.createAutonomousAgent({
             name: agentConfig.name,
-            strategy: { type: strategy as any, parameters: {} },
-            initialCapital: agentConfig.capital,
-            riskLimits: {
-              maxPositionSize: agentConfig.capital * 0.1,
-              maxDailyLoss: agentConfig.capital * 0.05,
-              maxDrawdown: 0.15
-            }
+            strategy: strategy,
+            farmId: farmId,
+            capital: agentConfig.initial_capital,
+            riskLevel: agentConfig.risk_tolerance
           })
+          
+          if (agentId) {
+            agents.push({ id: agentId, ...agentConfig })
+          }
         }
       } catch (error) {
         console.error(`Error creating agent ${i + 1}:`, error)
+        
+        // Fallback to local agent creation
+        try {
+          const agentId = `agent_${farmId}_${i + 1}_${Date.now()}`
+          const localAgent = {
+            id: agentId,
+            name: `${strategy} Agent ${i + 1}`,
+            strategy: strategy,
+            farmId: farmId,
+            capital: 10000,
+            riskLevel: getStrategyRiskLevel(strategy).toLowerCase()
+          }
+          
+          agents.push(localAgent)
+          
+          // Register with paper trading engine
+          await paperTradingEngine.registerAgent({
+            id: agentId,
+            name: localAgent.name,
+            strategy: { type: strategy as any, parameters: {} },
+            initialCapital: localAgent.capital,
+            riskLimits: {
+              maxPositionSize: localAgent.capital * 0.1,
+              maxDailyLoss: localAgent.capital * 0.05,
+              maxDrawdown: 0.15
+            }
+          })
+        } catch (fallbackError) {
+          console.error(`Failed to create fallback agent ${i + 1}:`, fallbackError)
+        }
       }
     }
     
