@@ -90,6 +90,11 @@ const navigation = [
     icon: ShoppingCart,
   },
   {
+    name: "Leverage Engine",
+    href: "/leverage",
+    icon: Zap,
+  },
+  {
     name: "Portfolio",
     href: "/portfolio",
     icon: PieChart,

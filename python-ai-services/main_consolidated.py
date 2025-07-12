@@ -7064,6 +7064,10 @@ app.include_router(autonomous_router)
 from api.v1.expert_agents_routes import router as expert_agents_router
 app.include_router(expert_agents_router)
 
+# Include Leverage Engine API endpoints
+from api.v1.leverage_routes import router as leverage_router
+app.include_router(leverage_router)
+
 # Chat Terminal API Endpoints
 @app.post("/api/v1/chat/message")
 async def handle_chat_message(request: Dict[str, Any]):
