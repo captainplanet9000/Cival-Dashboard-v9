@@ -3,7 +3,7 @@
 import { EventEmitter } from 'events'
 import { productionRiskManager } from '@/lib/risk/production-risk-manager'
 import { exchangeAPIService } from '@/lib/trading/exchange-api-service'
-import { liveMarketDataService } from '@/lib/market/live-market-data-service'
+import { EnhancedLiveMarketService } from '@/lib/market/enhanced-live-market-service'
 
 export interface HFTOrder {
   id: string

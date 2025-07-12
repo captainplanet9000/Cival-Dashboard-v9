@@ -25,7 +25,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { backendClient } from '@/lib/api/backend-client'
-import { useMarketData } from '@/lib/market/market-data-service'
+import { useEnhancedLiveMarketData } from '@/lib/market/enhanced-live-market-service'
 
 interface PriceData {
   symbol: string
@@ -95,16 +95,16 @@ export function LiveMarketDataPanel({ className = '' }: LiveMarketDataPanelProps
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
   const [error, setError] = useState<string | null>(null)
 
-  // Use enhanced market data service with live indicators
+  // Use enhanced live market data service with comprehensive quality tracking
   const { 
     prices: marketPrices, 
     loading: marketDataLoading, 
     error: marketDataError,
     isLiveData: marketIsLive,
-    isFreshData: marketIsFresh,
-    dataFreshness: marketDataFreshness,
-    lastUpdate: marketLastUpdate
-  } = useMarketData(selectedSymbols.map(s => s.replace('-', '/')))
+    dataQuality: marketDataQuality,
+    lastUpdate: marketLastUpdate,
+    refresh: refreshMarketData
+  } = useEnhancedLiveMarketData(selectedSymbols.map(s => s.replace('-', '/')))
 
   // Fetch real-time price data from enhanced market data service and backend
   const fetchPriceData = useCallback(async () => {
@@ -133,14 +133,14 @@ export function LiveMarketDataPanel({ className = '' }: LiveMarketDataPanelProps
               high24h: serviceData.high24h,
               low24h: serviceData.low24h,
               timestamp: serviceData.lastUpdate.toISOString(),
-              provider: `Market Service (${serviceData.source})`
+              provider: `Enhanced Market Service (${serviceData.provider}) - ${serviceData.dataQuality} quality`
             }
           }
         })
         
         if (Object.keys(updatedPriceData).length > 0) {
           setPriceData(prev => ({ ...prev, ...updatedPriceData }))
-          setConnectionStatus(marketIsLive ? 'connected' : 'disconnected')
+          setConnectionStatus(marketIsLive && marketDataQuality === 'excellent' ? 'connected' : 'disconnected')
           setLastUpdate(marketLastUpdate || new Date())
           setIsLoading(false)
           return

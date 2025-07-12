@@ -29,8 +29,8 @@ import {
 // Import notification service
 import { useNotifications } from '@/lib/notifications/apprise-service'
 
-// Import market data hook to connect to real data
-import { useMarketData } from '@/lib/market/market-data-service'
+// Import enhanced market data hook to connect to live data
+import { useEnhancedLiveMarketData } from '@/lib/market/enhanced-live-market-service'
 
 interface RealAdvancedTradingAgentsPanelProps {
   className?: string
@@ -69,8 +69,13 @@ export function RealAdvancedTradingAgentsPanel({ className }: RealAdvancedTradin
     getPaperTradingPerformance
   } = useRealTradingAgents()
   
-  // Real market data
-  const { prices: marketPrices, loading: marketLoading } = useMarketData()
+  // Enhanced live market data
+  const { 
+    prices: marketPrices, 
+    loading: marketLoading,
+    dataQuality: marketDataQuality,
+    isLiveData: marketIsLive 
+  } = useEnhancedLiveMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD'])
   
   const { notifyAgentDecision, notifyRiskAlert } = useNotifications()
   

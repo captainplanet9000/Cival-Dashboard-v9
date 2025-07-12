@@ -4,7 +4,19 @@
  * Supports CoinAPI, CoinMarketCap, Alpha Vantage, and other premium sources
  */
 
-import { MarketPrice } from './market-data-service'
+import { EnhancedMarketPrice } from './enhanced-live-market-service'
+
+// Base MarketPrice interface for compatibility
+export interface MarketPrice {
+  symbol: string
+  price: number
+  change24h: number
+  changePercent24h: number
+  volume24h: number
+  high24h: number
+  low24h: number
+  timestamp: Date
+}
 
 export interface EnhancedMarketData extends MarketPrice {
   marketCap?: number

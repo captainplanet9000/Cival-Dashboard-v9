@@ -8,8 +8,8 @@ import {
   NewsData 
 } from './advanced-trading-agents'
 
-// Import real market data service
-import { useMarketData } from '@/lib/market/market-data-service'
+// Import enhanced live market data service
+import { EnhancedMarketPrice } from '@/lib/market/enhanced-live-market-service'
 
 // Import paper trading engine
 import { paperTradingEngine } from '@/lib/trading/real-paper-trading-engine'
@@ -83,8 +83,8 @@ class RealTradingAgentsService {
     }
   }
 
-  // Get real market data from the existing market service
-  public getRealMarketData(symbol: string, existingPrices: any[]): MarketData {
+  // Get real market data from the enhanced live market service
+  public getRealMarketData(symbol: string, existingPrices: EnhancedMarketPrice[]): MarketData {
     try {
       // Find price data for the symbol from the existing market data
       const priceData = existingPrices.find(p => 
@@ -98,7 +98,7 @@ class RealTradingAgentsService {
         throw new Error('Price data not found')
       }
 
-      // Convert to MarketData format with technical indicators
+      // Convert to MarketData format with enhanced live data and technical indicators
       const marketData: MarketData = {
         symbol: symbol,
         price: priceData.price || 0,
@@ -110,11 +110,16 @@ class RealTradingAgentsService {
           ma50: priceData.price * (0.98 + Math.random() * 0.04), // Simulated MA50
           ma200: priceData.price * (0.95 + Math.random() * 0.1), // Simulated MA200
           bollinger: {
-            upper: priceData.price * 1.02,
+            upper: priceData.high24h || (priceData.price * 1.02),
             middle: priceData.price,
-            lower: priceData.price * 0.98
+            lower: priceData.low24h || (priceData.price * 0.98)
           }
-        }
+        },
+        // Add enhanced data quality information
+        dataQuality: priceData.dataQuality,
+        provider: priceData.provider,
+        confidence: priceData.confidence,
+        freshness: priceData.freshness
       }
 
       return marketData

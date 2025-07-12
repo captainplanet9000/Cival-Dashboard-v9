@@ -33,10 +33,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 // Import Interactive Trading Chart
 import InteractiveTradingChart from '@/components/charts/InteractiveTradingChartWrapper'
 
-// Import market data services
-import { useGlobalMarketData } from '@/lib/market/global-market-data-manager'
+// Import enhanced live market data services
+import { useEnhancedLiveMarketData } from '@/lib/market/enhanced-live-market-service'
 import { agentMarketDataService } from '@/lib/agents/agent-market-data-service'
 import { MarketPrice, TradingSignal } from '@/types/market-data'
+import { backendClient } from '@/lib/api/backend-client'
 
 // Import premium trading components (existing only)
 import { AdvancedOrderEntry } from '@/components/premium-ui/trading/advanced-order-entry'
@@ -50,11 +51,19 @@ import { HighFrequencyTradingEngine } from '@/components/trading/HighFrequencyTr
 import { OrderManagementSystem } from '@/components/trading/OrderManagementSystem'
 import { StrategyExecutionEngine } from '@/components/strategies/StrategyExecutionEngine'
 
-// Live Market Data Trading Dashboard
+// Enhanced Live Market Data Trading Dashboard
 const TradingDashboard = () => {
-  const { prices, loading, error } = useGlobalMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD', 'AAPL', 'TSLA', 'MSFT', 'NVDA'])
+  const { 
+    prices, 
+    loading, 
+    error,
+    dataQuality,
+    isLiveData,
+    refresh: refreshMarketData
+  } = useEnhancedLiveMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD', 'AAPL', 'TSLA', 'MSFT', 'NVDA'])
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USD')
   const [tradingSignals, setTradingSignals] = useState<TradingSignal[]>([])
+  const [backendConnected, setBackendConnected] = useState(false)
   
   const selectedPrice = prices.find(p => p.symbol === selectedSymbol)
 

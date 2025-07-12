@@ -7,12 +7,13 @@
  */
 
 import { getSupabaseQueueService, type TradingMessage } from '../queues/supabase-queue-service'
-import { getMockDataService, type MockTrade, type MockSymbol } from '../mock/comprehensive-mock-data'
+import { backendClient, type TradingOrder, type OrderResponse } from '../api/backend-client'
+import { EnhancedMarketPrice } from '../market/enhanced-live-market-service'
 
 export interface QueuedTradingOrder {
   id: string
   agentId: string
-  symbol: MockSymbol
+  symbol: string
   side: 'buy' | 'sell'
   quantity: number
   orderType: 'market' | 'limit' | 'stop_loss' | 'take_profit'
@@ -36,14 +37,14 @@ export interface OrderExecutionResult {
   executedPrice: number
   fees: number
   timestamp: Date
-  trade?: MockTrade
+  trade?: OrderResponse
   reason?: string
 }
 
 export interface TradingSignal {
   id: string
   agentId: string
-  symbol: MockSymbol
+  symbol: string
   signal: 'buy' | 'sell' | 'hold'
   strength: number // 0-1
   confidence: number // 0-1
@@ -67,7 +68,7 @@ export interface RiskAlert {
 }
 
 export interface MarketDataUpdate {
-  symbol: MockSymbol
+  symbol: string
   price: number
   change24h: number
   volume24h: number
@@ -77,8 +78,8 @@ export interface MarketDataUpdate {
 
 class QueueTradingService {
   private queueService = getSupabaseQueueService()
-  private mockService = getMockDataService()
   private initialized = false
+  private backendConnected = false
   private orderCounter = 0
   private signalCounter = 0
   private alertCounter = 0

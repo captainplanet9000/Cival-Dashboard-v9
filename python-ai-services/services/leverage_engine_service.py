@@ -1,7 +1,8 @@
 """
-Advanced Leverage Engine Service
+Enhanced Leverage Engine Service
 Provides up to 20x leverage capabilities for autonomous trading agents
-Integrated with risk management and portfolio optimization
+Integrated with risk management, portfolio optimization, and profit securing
+Connected to autonomous agent coordination and goal completion systems
 """
 
 import asyncio
@@ -82,7 +83,7 @@ class LeverageRiskMetrics(BaseModel):
 
 
 class LeverageEngineService:
-    """Advanced leverage engine with 20x capability"""
+    """Enhanced leverage engine with 20x capability, profit securing integration, and autonomous coordination"""
     
     MAX_LEVERAGE = 20.0
     MARGIN_CALL_THRESHOLD = 0.8   # 80% margin usage
@@ -97,13 +98,53 @@ class LeverageEngineService:
         self.portfolio_service = None
         self.supabase = None
         
+        # Enhanced integrations
+        self.profit_securing_service = None
+        self.autonomous_coordinator = None
+        self.state_persistence = None
+        self.profit_milestones: Dict[str, List[Dict]] = defaultdict(list)  # Per agent
+        self.goal_linkages: Dict[str, List[str]] = defaultdict(list)  # goalId -> positionIds
+        
     async def initialize(self):
-        """Initialize service dependencies"""
+        """Initialize service dependencies including profit securing and autonomous coordination"""
         try:
             self.risk_management = await get_risk_management_service()
             self.portfolio_service = await get_portfolio_management_service()
             self.supabase = get_supabase_client()
-            logger.info("Leverage engine service initialized successfully")
+            
+            # Initialize enhanced integrations
+            try:
+                from ..core.service_registry import get_registry
+                registry = get_registry()
+                
+                # Get profit securing service
+                try:
+                    from .smart_profit_securing_service import get_smart_profit_securing_service
+                    self.profit_securing_service = await get_smart_profit_securing_service()
+                    logger.info("✅ Profit securing service integrated with leverage engine")
+                except ImportError:
+                    logger.warning("Profit securing service not available - continuing without integration")
+                
+                # Get autonomous coordinator
+                try:
+                    self.autonomous_coordinator = registry.get_service("autonomous_agent_coordinator")
+                    if self.autonomous_coordinator:
+                        logger.info("✅ Autonomous coordinator integrated with leverage engine")
+                except Exception:
+                    logger.warning("Autonomous coordinator not available - continuing without integration")
+                
+                # Get state persistence
+                try:
+                    self.state_persistence = registry.get_service("autonomous_state_persistence")
+                    if self.state_persistence:
+                        logger.info("✅ State persistence integrated with leverage engine")
+                except Exception:
+                    logger.warning("State persistence not available - continuing without integration")
+                    
+            except Exception as e:
+                logger.warning(f"Enhanced integrations not fully available: {e}")
+            
+            logger.info("Enhanced leverage engine service initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize leverage engine: {e}")
             raise
@@ -629,15 +670,383 @@ class LeverageEngineService:
         except Exception as e:
             logger.error(f"Error closing position: {e}")
             return False
+    
+    # Enhanced Integration Methods
+    
+    async def integrate_with_profit_securing(self, agent_id: str, profit_rules: Dict[str, Any]) -> bool:
+        """Integrate agent with profit securing system"""
+        try:
+            if not self.profit_securing_service:
+                logger.warning("Profit securing service not available")
+                return False
+            
+            # Set up profit milestones for agent
+            milestones = profit_rules.get('milestones', [100, 1000, 10000, 50000])
+            self.profit_milestones[agent_id] = [
+                {
+                    'amount': milestone,
+                    'triggered': False,
+                    'secure_percentage': 50 + (i * 5),  # Increasing percentages
+                    'protocol': ['aave', 'compound', 'makerdao'][i % 3]
+                }
+                for i, milestone in enumerate(milestones)
+            ]
+            
+            # Configure auto-profit securing
+            await self.profit_securing_service.configure_agent_rules(agent_id, {
+                'auto_secure_on_milestone': True,
+                'milestone_amounts': milestones,
+                'leverage_integration': True,
+                'borrow_percentage': 20  # Always 20% of secured amount
+            })
+            
+            logger.info(f"✅ Integrated agent {agent_id} with profit securing system")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error integrating profit securing for {agent_id}: {e}")
+            return False
+    
+    async def calculate_leverage_adjusted_profits(self, position_id: str) -> Dict[str, Any]:
+        """Calculate profits for leveraged position with profit securing considerations"""
+        try:
+            # Find position across all agents
+            position = None
+            agent_id = None
+            
+            for aid, positions in self.active_positions.items():
+                for pos in positions:
+                    if pos.position_id == position_id:
+                        position = pos
+                        agent_id = aid
+                        break
+                if position:
+                    break
+            
+            if not position:
+                return {'error': 'Position not found'}
+            
+            # Calculate leverage-adjusted profits
+            base_profit = position.unrealized_pnl
+            leverage_multiplier = Decimal(str(position.leverage_ratio))
+            total_profit = base_profit * leverage_multiplier
+            
+            # Check for milestone triggers
+            milestones_triggered = []
+            if agent_id in self.profit_milestones:
+                for milestone in self.profit_milestones[agent_id]:
+                    if not milestone['triggered'] and float(total_profit) >= milestone['amount']:
+                        milestone['triggered'] = True
+                        milestones_triggered.append(milestone)
+            
+            # Calculate profit securing amounts
+            profit_securing_data = {}
+            if milestones_triggered and self.profit_securing_service:
+                for milestone in milestones_triggered:
+                    secure_amount = float(total_profit) * (milestone['secure_percentage'] / 100)
+                    borrow_amount = secure_amount * 0.20  # 20% of secured
+                    
+                    profit_securing_data[f"milestone_{milestone['amount']}"] = {
+                        'total_profit': float(total_profit),
+                        'secure_amount': secure_amount,
+                        'borrow_amount': borrow_amount,
+                        'protocol': milestone['protocol'],
+                        'remaining_for_trading': float(total_profit) - secure_amount + borrow_amount
+                    }
+            
+            return {
+                'position_id': position_id,
+                'agent_id': agent_id,
+                'base_profit': float(base_profit),
+                'leverage_ratio': position.leverage_ratio,
+                'leverage_adjusted_profit': float(total_profit),
+                'milestones_triggered': len(milestones_triggered),
+                'profit_securing_data': profit_securing_data,
+                'margin_used': float(position.margin_used),
+                'liquidation_price': float(position.liquidation_price)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating leverage adjusted profits: {e}")
+            return {'error': str(e)}
+    
+    async def handle_goal_completion_leverage_adjustment(self, goal_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle leverage adjustments when goals are completed"""
+        try:
+            agent_id = goal_data.get('agent_id')
+            goal_id = goal_data.get('goal_id')
+            completion_profit = goal_data.get('completion_profit', 0)
+            
+            if not agent_id:
+                return {'error': 'Agent ID required'}
+            
+            # Get current leverage positions for agent
+            positions = self.active_positions.get(agent_id, [])
+            
+            # Calculate total leveraged profits
+            total_leveraged_profit = sum(
+                pos.unrealized_pnl * Decimal(str(pos.leverage_ratio))
+                for pos in positions
+            )
+            
+            # Trigger profit securing if service available
+            profit_secure_result = {}
+            if self.profit_securing_service and completion_profit > 0:
+                profit_secure_result = await self.profit_securing_service.secure_goal_completion_profit(
+                    goal_id, agent_id, float(total_leveraged_profit)
+                )
+            
+            # Adjust leverage based on goal completion
+            adjustment_factor = 1.0
+            if completion_profit > 10000:  # Large profit
+                adjustment_factor = 0.8  # Reduce leverage
+            elif completion_profit > 1000:
+                adjustment_factor = 0.9
+            else:
+                adjustment_factor = 1.1  # Increase leverage slightly
+            
+            # Apply leverage adjustments
+            adjustments_made = []
+            for position in positions:
+                new_leverage = min(
+                    self.MAX_LEVERAGE,
+                    max(1.0, position.leverage_ratio * adjustment_factor)
+                )
+                
+                if new_leverage != position.leverage_ratio:
+                    position.leverage_ratio = new_leverage
+                    position.updated_at = datetime.now(timezone.utc)
+                    
+                    # Recalculate liquidation price
+                    position.liquidation_price = await self._calculate_liquidation_price(
+                        position.entry_price, position.side, new_leverage
+                    )
+                    
+                    adjustments_made.append({
+                        'position_id': position.position_id,
+                        'old_leverage': position.leverage_ratio / adjustment_factor,
+                        'new_leverage': new_leverage,
+                        'new_liquidation_price': float(position.liquidation_price)
+                    })
+            
+            # Link goal to positions
+            if goal_id:
+                self.goal_linkages[goal_id] = [pos.position_id for pos in positions]
+            
+            # Coordinate with autonomous system
+            if self.autonomous_coordinator:
+                await self.autonomous_coordinator.handle_goal_completion_workflow({
+                    'agent_id': agent_id,
+                    'goal_id': goal_id,
+                    'leverage_adjustments': adjustments_made,
+                    'profit_secured': profit_secure_result.get('secured_amount', 0),
+                    'borrowed_amount': profit_secure_result.get('borrowed_amount', 0)
+                })
+            
+            logger.info(f"✅ Handled goal completion leverage adjustment for agent {agent_id}")
+            
+            return {
+                'success': True,
+                'agent_id': agent_id,
+                'goal_id': goal_id,
+                'total_leveraged_profit': float(total_leveraged_profit),
+                'adjustments_made': adjustments_made,
+                'profit_secure_result': profit_secure_result
+            }
+            
+        except Exception as e:
+            logger.error(f"Error handling goal completion leverage adjustment: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    async def coordinate_with_autonomous_agents(self, coordination_request: Dict[str, Any]) -> Dict[str, Any]:
+        """Coordinate leverage operations with autonomous agent system"""
+        try:
+            request_type = coordination_request.get('type')
+            agent_ids = coordination_request.get('agent_ids', [])
+            
+            if request_type == 'profit_milestone_reached':
+                # Handle profit milestone coordination
+                milestone_data = coordination_request.get('milestone_data', {})
+                agent_id = milestone_data.get('agent_id')
+                milestone_amount = milestone_data.get('amount', 0)
+                
+                # Calculate leverage impact
+                positions = self.active_positions.get(agent_id, [])
+                leverage_contribution = sum(
+                    pos.unrealized_pnl * Decimal(str(pos.leverage_ratio))
+                    for pos in positions
+                )
+                
+                # Trigger profit securing
+                if self.profit_securing_service:
+                    secure_result = await self.profit_securing_service.secure_milestone_profit(
+                        agent_id, milestone_amount, float(leverage_contribution)
+                    )
+                else:
+                    secure_result = {'error': 'Profit securing service not available'}
+                
+                return {
+                    'type': 'profit_milestone_coordination',
+                    'agent_id': agent_id,
+                    'milestone_amount': milestone_amount,
+                    'leverage_contribution': float(leverage_contribution),
+                    'secure_result': secure_result
+                }
+            
+            elif request_type == 'autonomous_deleveraging':
+                # Coordinate autonomous deleveraging across agents
+                delever_results = {}
+                for agent_id in agent_ids:
+                    delever_result = await self.auto_delever_on_risk(agent_id, 0.85)
+                    delever_results[agent_id] = delever_result
+                
+                return {
+                    'type': 'autonomous_deleveraging_coordination',
+                    'results': delever_results
+                }
+            
+            elif request_type == 'leverage_optimization':
+                # Optimize leverage across agents
+                optimization_result = await self.coordinate_leverage_across_agents(agent_ids)
+                return {
+                    'type': 'leverage_optimization_coordination',
+                    'optimization_result': optimization_result
+                }
+            
+            else:
+                return {'error': f'Unknown coordination request type: {request_type}'}
+                
+        except Exception as e:
+            logger.error(f"Error in autonomous coordination: {e}")
+            return {'error': str(e)}
+    
+    async def persist_leverage_state(self) -> bool:
+        """Persist leverage engine state for autonomous operation"""
+        try:
+            if not self.state_persistence:
+                return False
+            
+            # Prepare state data
+            state_data = {
+                'active_positions': {
+                    agent_id: [
+                        {
+                            'position_id': pos.position_id,
+                            'agent_id': pos.agent_id,
+                            'asset': pos.asset,
+                            'side': pos.side,
+                            'size': str(pos.size),
+                            'entry_price': str(pos.entry_price),
+                            'current_price': str(pos.current_price),
+                            'leverage_ratio': pos.leverage_ratio,
+                            'margin_used': str(pos.margin_used),
+                            'unrealized_pnl': str(pos.unrealized_pnl),
+                            'liquidation_price': str(pos.liquidation_price),
+                            'margin_status': pos.margin_status.value,
+                            'created_at': pos.created_at.isoformat(),
+                            'updated_at': pos.updated_at.isoformat()
+                        }
+                        for pos in positions
+                    ]
+                    for agent_id, positions in self.active_positions.items()
+                },
+                'leverage_limits': self.leverage_limits,
+                'margin_requirements': {
+                    agent_id: str(margin)
+                    for agent_id, margin in self.margin_requirements.items()
+                },
+                'profit_milestones': self.profit_milestones,
+                'goal_linkages': self.goal_linkages,
+                'timestamp': datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Save state
+            await self.state_persistence.save_agent_state(
+                'leverage_engine', 'system_state', state_data
+            )
+            
+            logger.info("✅ Leverage engine state persisted successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error persisting leverage state: {e}")
+            return False
+    
+    async def restore_leverage_state(self) -> bool:
+        """Restore leverage engine state for autonomous operation"""
+        try:
+            if not self.state_persistence:
+                return False
+            
+            # Restore state
+            state_data = await self.state_persistence.restore_agent_state(
+                'leverage_engine', 'system_state'
+            )
+            
+            if not state_data:
+                logger.info("No leverage state to restore")
+                return True
+            
+            # Restore active positions
+            if 'active_positions' in state_data:
+                for agent_id, positions_data in state_data['active_positions'].items():
+                    restored_positions = []
+                    for pos_data in positions_data:
+                        position = LeveragePosition(
+                            position_id=pos_data['position_id'],
+                            agent_id=pos_data['agent_id'],
+                            asset=pos_data['asset'],
+                            side=pos_data['side'],
+                            size=Decimal(pos_data['size']),
+                            entry_price=Decimal(pos_data['entry_price']),
+                            current_price=Decimal(pos_data['current_price']),
+                            leverage_ratio=pos_data['leverage_ratio'],
+                            margin_used=Decimal(pos_data['margin_used']),
+                            unrealized_pnl=Decimal(pos_data['unrealized_pnl']),
+                            liquidation_price=Decimal(pos_data['liquidation_price']),
+                            margin_status=MarginStatus(pos_data['margin_status']),
+                            created_at=datetime.fromisoformat(pos_data['created_at']),
+                            updated_at=datetime.fromisoformat(pos_data['updated_at'])
+                        )
+                        restored_positions.append(position)
+                    
+                    self.active_positions[agent_id] = restored_positions
+            
+            # Restore other state
+            if 'leverage_limits' in state_data:
+                self.leverage_limits = state_data['leverage_limits']
+            
+            if 'margin_requirements' in state_data:
+                self.margin_requirements = {
+                    agent_id: Decimal(margin_str)
+                    for agent_id, margin_str in state_data['margin_requirements'].items()
+                }
+            
+            if 'profit_milestones' in state_data:
+                self.profit_milestones = defaultdict(list, state_data['profit_milestones'])
+            
+            if 'goal_linkages' in state_data:
+                self.goal_linkages = defaultdict(list, state_data['goal_linkages'])
+            
+            logger.info("✅ Leverage engine state restored successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error restoring leverage state: {e}")
+            return False
 
 
 # Global service instance
 _leverage_engine_service = None
 
 async def get_leverage_engine_service() -> LeverageEngineService:
-    """Get or create leverage engine service instance"""
+    """Get or create enhanced leverage engine service instance"""
     global _leverage_engine_service
     if _leverage_engine_service is None:
         _leverage_engine_service = LeverageEngineService()
         await _leverage_engine_service.initialize()
+        
+        # Restore state if available
+        await _leverage_engine_service.restore_leverage_state()
+        
     return _leverage_engine_service

@@ -275,7 +275,21 @@ class BackendClient {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        // Enhanced error handling with specific HTTP status codes
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        
+        try {
+          const errorBody = await response.json()
+          if (errorBody.detail) {
+            errorMessage = errorBody.detail
+          } else if (errorBody.message) {
+            errorMessage = errorBody.message
+          }
+        } catch {
+          // Use default status text if response body is not JSON
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -283,14 +297,42 @@ class BackendClient {
     } catch (error) {
       console.error(`Backend API Error [${endpoint}]:`, error)
       
-      // Return fallback response for development
-      return {
+      // Enhanced error response with no hardcoded fallback data
+      const errorResponse: APIResponse<T> = {
         success: false,
-        message: `API Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Backend API Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         data: null as T,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        // Add additional context for better error handling
+        endpoint,
+        baseURL: this.baseURL,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+        retryable: this.isRetryableError(error)
+      }
+      
+      return errorResponse
+    }
+  }
+
+  private isRetryableError(error: unknown): boolean {
+    if (error instanceof Error) {
+      // Network errors and timeouts are retryable
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        return true
+      }
+      
+      // 5xx server errors are retryable
+      if (error.message.includes('HTTP 5')) {
+        return true
+      }
+      
+      // Connection refused, network unreachable
+      if (error.message.includes('fetch') || error.message.includes('network')) {
+        return true
       }
     }
+    
+    return false
   }
 
   // Portfolio endpoints

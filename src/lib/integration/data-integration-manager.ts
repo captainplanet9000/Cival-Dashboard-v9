@@ -1,7 +1,7 @@
 'use client'
 
 import { EventEmitter } from 'events'
-import { liveMarketDataService } from '@/lib/market/live-market-data-service'
+import { EnhancedLiveMarketService } from '@/lib/market/enhanced-live-market-service'
 import { exchangeAPIService } from '@/lib/trading/exchange-api-service'
 import { productionRiskManager } from '@/lib/risk/production-risk-manager'
 import { operationalManager } from '@/lib/infrastructure/operational-manager'

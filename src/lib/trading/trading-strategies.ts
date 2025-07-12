@@ -3,7 +3,29 @@
  * Comprehensive algorithmic trading strategies implementation
  */
 
-import MarketDataService, { PriceData, OHLCVData } from './market-data-service'
+import { EnhancedMarketPrice } from '@/lib/market/enhanced-live-market-service'
+import { backendClient } from '@/lib/api/backend-client'
+
+// Updated data interfaces to match enhanced service
+export interface PriceData {
+  symbol: string
+  price: number
+  change24h: number
+  changePercent24h: number
+  volume24h: number
+  high24h: number
+  low24h: number
+  timestamp: Date
+}
+
+export interface OHLCVData {
+  timestamp: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
 
 export interface StrategyConfig {
   name: string

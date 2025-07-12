@@ -16,7 +16,7 @@ import { motion } from 'framer-motion'
 import { useAgentData } from '@/hooks/useAgentData'
 import { useAGUI } from '@/components/ag-ui/fallback'
 import { useSharedRealtimeData } from '@/lib/realtime/shared-data-manager'
-import { useMarketData } from '@/lib/market/market-data-service'
+import { useEnhancedLiveMarketData } from '@/lib/market/enhanced-live-market-service'
 import { toast } from 'react-hot-toast'
 import { ApiCallErrorBoundary } from '@/components/error-boundaries/ApiErrorBoundary'
 
@@ -302,15 +302,16 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   
   // Note: displayData is now declared earlier in the file with better fallback handling
 
-  // Market data for overview with live data indicators
+  // Enhanced live market data for overview with comprehensive data quality tracking
   const { 
     prices: marketPrices, 
     loading: marketLoading,
+    error: marketError,
     isLiveData: marketIsLive,
-    isFreshData: marketIsFresh,
-    dataFreshness: marketDataFreshness,
-    lastUpdate: marketLastUpdate
-  } = useMarketData()
+    dataQuality: marketDataQuality,
+    lastUpdate: marketLastUpdate,
+    refresh: refreshMarketData
+  } = useEnhancedLiveMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD'])
   
   // Calculate derived metrics
   const totalSystemValue = (displayData.totalPortfolioValue || 0) + (displayData.farmTotalValue || 0)
@@ -325,9 +326,9 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
   const ethData = marketPrices.find(p => p.symbol === 'ETH/USD' || p.symbol === 'ETHUSD' || p.symbol === 'ETH')
   const solData = marketPrices.find(p => p.symbol === 'SOL/USD' || p.symbol === 'SOLUSD' || p.symbol === 'SOL')
   
-  // Use the hook's live data indicators
-  const isLiveData = marketIsLive
-  const isFreshData = marketIsFresh
+  // Use the enhanced service's data quality indicators
+  const isLiveData = marketIsLive && marketDataQuality === 'excellent'
+  const isFreshData = marketDataQuality === 'excellent' || marketDataQuality === 'good'
   const systemHealthScore = [
     displayData.supabaseConnected,
     displayData.redisConnected,
@@ -507,7 +508,9 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                     BTC Price
                     {btcData && (
                       <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                        {isLiveData ? '🔴 LIVE' : btcData.source === 'fallback' ? '📊 CACHED' : '⚠️ OLD'}
+                        {btcData.dataQuality === 'excellent' ? '🔴 LIVE' : 
+                         btcData.dataQuality === 'good' ? '🟡 FRESH' :
+                         btcData.dataQuality === 'fair' ? '📊 CACHED' : '⚠️ STALE'}
                       </Badge>
                     )}
                   </span>
@@ -564,7 +567,9 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                     SOL Price
                     {solData && (
                       <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                        {isLiveData ? '🔴 LIVE' : solData.source === 'fallback' ? '📊 CACHED' : '⚠️ OLD'}
+                        {solData.dataQuality === 'excellent' ? '🔴 LIVE' : 
+                         solData.dataQuality === 'good' ? '🟡 FRESH' :
+                         solData.dataQuality === 'fair' ? '📊 CACHED' : '⚠️ STALE'}
                       </Badge>
                     )}
                   </span>
@@ -685,7 +690,9 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                     ETH Price
                     {ethData && (
                       <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                        {isLiveData ? '🔴 LIVE' : ethData.source === 'fallback' ? '📊 CACHED' : '⚠️ OLD'}
+                        {ethData.dataQuality === 'excellent' ? '🔴 LIVE' : 
+                         ethData.dataQuality === 'good' ? '🟡 FRESH' :
+                         ethData.dataQuality === 'fair' ? '📊 CACHED' : '⚠️ STALE'}
                       </Badge>
                     )}
                   </span>
@@ -812,6 +819,12 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
             <DollarSign className="h-5 w-5 text-green-600" />
             Live Market Prices
             {marketLoading && <Badge variant="secondary">Updating...</Badge>}
+            {marketError && <Badge variant="destructive">Error</Badge>}
+            <Badge variant={marketDataQuality === 'excellent' ? 'default' : 'secondary'} className="ml-2">
+              {marketDataQuality === 'excellent' ? 'Excellent' : 
+               marketDataQuality === 'good' ? 'Good' :
+               marketDataQuality === 'fair' ? 'Fair' : 'Poor'} Quality
+            </Badge>
           </CardTitle>
           <CardDescription>Real-time cryptocurrency and asset prices</CardDescription>
         </CardHeader>
@@ -836,7 +849,9 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                   <div className="text-lg font-bold text-gray-400">Loading...</div>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  BTC/USD • {isLiveData ? '🔴 Live' : '📊 Cached'}
+                  BTC/USD • {marketDataQuality === 'excellent' ? '🔴 Live' : 
+                           marketDataQuality === 'good' ? '🟡 Fresh' :
+                           marketDataQuality === 'fair' ? '📊 Cached' : '⚠️ Stale'}
                 </div>
               </motion.div>
               <motion.div 
@@ -857,7 +872,9 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                   <div className="text-lg font-bold text-gray-400">Loading...</div>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  ETH/USD • {isLiveData ? '🔴 Live' : '📊 Cached'}
+                  ETH/USD • {marketDataQuality === 'excellent' ? '🔴 Live' : 
+                           marketDataQuality === 'good' ? '🟡 Fresh' :
+                           marketDataQuality === 'fair' ? '📊 Cached' : '⚠️ Stale'}
                 </div>
               </motion.div>
               <motion.div 
@@ -878,7 +895,9 @@ export function ConnectedOverviewTab({ className, onNavigateToTab }: ConnectedOv
                   <div className="text-lg font-bold text-gray-400">Loading...</div>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  SOL/USD • {isLiveData ? '🔴 Live' : '📊 Cached'}
+                  SOL/USD • {marketDataQuality === 'excellent' ? '🔴 Live' : 
+                           marketDataQuality === 'good' ? '🟡 Fresh' :
+                           marketDataQuality === 'fair' ? '📊 Cached' : '⚠️ Stale'}
                 </div>
               </motion.div>
             <motion.div 

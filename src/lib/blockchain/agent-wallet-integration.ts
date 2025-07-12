@@ -2,8 +2,10 @@
 
 import { EventEmitter } from 'events'
 import { getTestnetWalletManager, TestnetWallet } from './testnet-wallet-manager'
+import { getMasterWalletManager, MasterWallet } from './master-wallet-manager'
 import { defiService, SwapQuote, ArbitrageOpportunity } from './defi-service'
 import { alchemyService } from './alchemy-service'
+import { ethers } from 'ethers'
 
 export interface AgentWalletConfig {
   agentId: string
@@ -15,6 +17,29 @@ export interface AgentWalletConfig {
   allowedTokens: string[]
   tradingStrategy: string
   autoTrading: boolean
+  useRealWallets: boolean // NEW: Use real blockchain wallets vs testnet
+  masterWalletAllocation: number // NEW: Amount allocated from master wallet
+}
+
+export interface RealAgentWallet {
+  id: string
+  agentId: string
+  agentName: string
+  address: string
+  privateKey: string // Encrypted
+  chain: 'ethereum' | 'arbitrum'
+  network: 'mainnet' | 'testnet'
+  balance: {
+    eth: number
+    usdc: number
+    usdt: number
+    dai: number
+    wbtc: number
+  }
+  allocatedAmount: number
+  isActive: boolean
+  createdAt: Date
+  lastActivity: Date
 }
 
 export interface AgentTrade {
@@ -55,6 +80,7 @@ class AgentWalletIntegration extends EventEmitter {
   private agentConfigs: Map<string, AgentWalletConfig> = new Map()
   private agentTrades: Map<string, AgentTrade[]> = new Map()
   private agentWallets: Map<string, TestnetWallet[]> = new Map()
+  private realAgentWallets: Map<string, RealAgentWallet[]> = new Map() // NEW: Real wallets
   private tradingInterval?: NodeJS.Timeout
   private arbitrageInterval?: NodeJS.Timeout
   private isRunning = false
@@ -81,34 +107,113 @@ class AgentWalletIntegration extends EventEmitter {
     console.log('🔗 Agent-Wallet integration initialized')
   }
 
-  // Register an agent for automated trading
+  // Register an agent for automated trading with real or testnet wallets
   async registerAgent(config: AgentWalletConfig): Promise<boolean> {
     try {
-      // Create wallets for the agent on specified chains
-      const wallets: TestnetWallet[] = []
+      console.log(`🤖 Registering agent ${config.agentName} with ${config.useRealWallets ? 'REAL' : 'testnet'} wallets...`)
       
-      for (const chain of config.chains) {
-        const wallet = await getTestnetWalletManager().createWalletForAgent(
-          config.agentId,
-          config.agentName,
-          chain
-        )
-        if (wallet) {
-          wallets.push(wallet)
+      if (config.useRealWallets) {
+        // Create real blockchain wallets for the agent
+        const realWallets = await this.createRealWalletsForAgent(config)
+        this.realAgentWallets.set(config.agentId, realWallets)
+        
+        console.log(`🔥 Agent ${config.agentName} registered with ${realWallets.length} REAL blockchain wallets`)
+        this.emit('realAgentRegistered', { agentId: config.agentId, wallets: realWallets })
+      } else {
+        // Create testnet wallets for the agent
+        const wallets: TestnetWallet[] = []
+        
+        for (const chain of config.chains) {
+          const wallet = await getTestnetWalletManager().createWalletForAgent(
+            config.agentId,
+            config.agentName,
+            chain
+          )
+          if (wallet) {
+            wallets.push(wallet)
+          }
         }
+        
+        this.agentWallets.set(config.agentId, wallets)
+        console.log(`✅ Agent ${config.agentName} registered with ${wallets.length} testnet wallets`)
+        this.emit('agentRegistered', { agentId: config.agentId, wallets })
       }
 
       this.agentConfigs.set(config.agentId, config)
-      this.agentWallets.set(config.agentId, wallets)
       this.agentTrades.set(config.agentId, [])
-
-      console.log(`✅ Agent ${config.agentName} registered with ${wallets.length} wallets`)
-      this.emit('agentRegistered', { agentId: config.agentId, wallets })
 
       return true
     } catch (error) {
       console.error('Error registering agent:', error)
       return false
+    }
+  }
+
+  // Create real blockchain wallets for an agent
+  private async createRealWalletsForAgent(config: AgentWalletConfig): Promise<RealAgentWallet[]> {
+    const realWallets: RealAgentWallet[] = []
+    const masterWalletManager = getMasterWalletManager()
+    
+    try {
+      // Check if master wallet exists for funding
+      const masterWallet = masterWalletManager.getMasterWallet('ethereum')
+      if (!masterWallet && config.masterWalletAllocation > 0) {
+        console.warn(`⚠️ No master wallet found - agent wallets will start with 0 balance`)
+      }
+      
+      for (const chain of config.chains) {
+        // Generate real wallet for each chain
+        const wallet = ethers.Wallet.createRandom()
+        
+        const realWallet: RealAgentWallet = {
+          id: `real_agent_${config.agentId}_${chain}_${Date.now()}`,
+          agentId: config.agentId,
+          agentName: config.agentName,
+          address: wallet.address,
+          privateKey: wallet.privateKey, // TODO: Encrypt this
+          chain,
+          network: 'testnet', // Start with testnet for safety
+          balance: {
+            eth: 0,
+            usdc: 0,
+            usdt: 0,
+            dai: 0,
+            wbtc: 0
+          },
+          allocatedAmount: config.masterWalletAllocation || 0,
+          isActive: true,
+          createdAt: new Date(),
+          lastActivity: new Date()
+        }
+        
+        realWallets.push(realWallet)
+        
+        console.log(`💰 Created real agent wallet on ${chain}: ${wallet.address}`)
+        
+        // Allocate funds from master wallet if available and requested
+        if (masterWallet && config.masterWalletAllocation > 0) {
+          try {
+            const success = await masterWalletManager.allocateFundsToAgent(
+              config.agentId,
+              config.agentName,
+              config.masterWalletAllocation,
+              chain
+            )
+            
+            if (success) {
+              console.log(`💸 Allocated $${config.masterWalletAllocation} to agent ${config.agentName} on ${chain}`)
+              realWallet.balance.usdc = config.masterWalletAllocation
+            }
+          } catch (error) {
+            console.error(`Failed to allocate funds to agent ${config.agentName}:`, error)
+          }
+        }
+      }
+      
+      return realWallets
+    } catch (error) {
+      console.error('Error creating real wallets for agent:', error)
+      return []
     }
   }
 
@@ -440,8 +545,22 @@ class AgentWalletIntegration extends EventEmitter {
     return stdDev > 0 ? avgReturn / stdDev : 0
   }
 
-  // Get agent wallets
-  getAgentWallets(agentId: string): TestnetWallet[] {
+  // Get agent wallets (testnet or real)
+  getAgentWallets(agentId: string): TestnetWallet[] | RealAgentWallet[] {
+    const config = this.agentConfigs.get(agentId)
+    if (config?.useRealWallets) {
+      return this.realAgentWallets.get(agentId) || []
+    }
+    return this.agentWallets.get(agentId) || []
+  }
+  
+  // Get specifically real agent wallets
+  getRealAgentWallets(agentId: string): RealAgentWallet[] {
+    return this.realAgentWallets.get(agentId) || []
+  }
+  
+  // Get specifically testnet agent wallets
+  getTestnetAgentWallets(agentId: string): TestnetWallet[] {
     return this.agentWallets.get(agentId) || []
   }
 
@@ -470,6 +589,99 @@ class AgentWalletIntegration extends EventEmitter {
     
     this.emit('agentConfigUpdated', { agentId, config: updatedConfig })
     return true
+  }
+  
+  // Upgrade agent from testnet to real wallets
+  async upgradeAgentToRealWallets(
+    agentId: string, 
+    masterWalletAllocation: number = 1000
+  ): Promise<boolean> {
+    try {
+      const config = this.agentConfigs.get(agentId)
+      if (!config) {
+        throw new Error(`Agent ${agentId} not found`)
+      }
+      
+      if (config.useRealWallets) {
+        console.log(`Agent ${agentId} already using real wallets`)
+        return true
+      }
+      
+      console.log(`🔄 Upgrading agent ${config.agentName} to REAL blockchain wallets...`)
+      
+      // Stop any existing trading
+      await this.stopAgentTrading(agentId)
+      
+      // Update config to use real wallets
+      const upgradedConfig: AgentWalletConfig = {
+        ...config,
+        useRealWallets: true,
+        masterWalletAllocation
+      }
+      
+      // Create real wallets
+      const realWallets = await this.createRealWalletsForAgent(upgradedConfig)
+      this.realAgentWallets.set(agentId, realWallets)
+      
+      // Update config
+      this.agentConfigs.set(agentId, upgradedConfig)
+      
+      console.log(`🚀 Agent ${config.agentName} upgraded to ${realWallets.length} REAL wallets with $${masterWalletAllocation} allocation`)
+      this.emit('agentUpgradedToReal', { agentId, realWallets, allocation: masterWalletAllocation })
+      
+      return true
+    } catch (error) {
+      console.error('Error upgrading agent to real wallets:', error)
+      return false
+    }
+  }
+  
+  // Get agent wallet balance summary
+  getAgentWalletSummary(agentId: string): {
+    totalUSD: number,
+    walletCount: number,
+    isReal: boolean,
+    chains: string[],
+    lastActivity: Date | null
+  } {
+    const config = this.agentConfigs.get(agentId)
+    if (!config) {
+      return { totalUSD: 0, walletCount: 0, isReal: false, chains: [], lastActivity: null }
+    }
+    
+    if (config.useRealWallets) {
+      const realWallets = this.realAgentWallets.get(agentId) || []
+      const totalUSD = realWallets.reduce((sum, wallet) => {
+        return sum + (wallet.balance.usdc + wallet.balance.usdt + wallet.balance.dai) + 
+               (wallet.balance.eth * 2300) + (wallet.balance.wbtc * 43000)
+      }, 0)
+      
+      return {
+        totalUSD,
+        walletCount: realWallets.length,
+        isReal: true,
+        chains: realWallets.map(w => w.chain),
+        lastActivity: realWallets.reduce((latest, wallet) => {
+          return !latest || wallet.lastActivity > latest ? wallet.lastActivity : latest
+        }, null as Date | null)
+      }
+    } else {
+      const testnetWallets = this.agentWallets.get(agentId) || []
+      const totalUSD = testnetWallets.reduce((sum, wallet) => {
+        return sum + (wallet.balance.usdc + wallet.balance.usdt + wallet.balance.dai) + 
+               (wallet.balance.eth * 2300) + (wallet.balance.wbtc * 43000)
+      }, 0)
+      
+      return {
+        totalUSD,
+        walletCount: testnetWallets.length,
+        isReal: false,
+        chains: testnetWallets.map(w => w.chain),
+        lastActivity: testnetWallets.reduce((latest, wallet) => {
+          return !latest || wallet.lastActivity > latest ? wallet.lastActivity : latest
+        }, null as Date | null)
+      }
+    }
   }
 
   // Clean up resources

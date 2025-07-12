@@ -19,15 +19,8 @@ import {
   Clock,
   Target
 } from 'lucide-react'
-import { 
-  getMockDataService, 
-  type MockPriceData, 
-  type MockPortfolioPosition,
-  type MockTrade,
-  type MockAgentPerformance,
-  type MockSymbol,
-  MOCK_SYMBOLS
-} from '@/lib/mock/comprehensive-mock-data'
+import { backendClient, type PortfolioSummary, type Position, type AgentStatus } from '@/lib/api/backend-client'
+import { useEnhancedLiveMarketData, type EnhancedMarketPrice } from '@/lib/market/enhanced-live-market-service'
 import { 
   getPersistentMemoryService,
   type AgentDecision,
@@ -36,12 +29,20 @@ import {
 } from '@/lib/memory/persistent-memory-service'
 
 export default function PaperTradingDashboard() {
-  const [priceData, setPriceData] = useState<MockPriceData[]>([])
-  const [portfolio, setPortfolio] = useState<MockPortfolioPosition[]>([])
-  const [trades, setTrades] = useState<MockTrade[]>([])
-  const [agents, setAgents] = useState<MockAgentPerformance[]>([])
-  const [portfolioSummary, setPortfolioSummary] = useState<any>(null)
+  const [portfolio, setPortfolio] = useState<Position[]>([])
+  const [trades, setTrades] = useState<any[]>([])
+  const [agents, setAgents] = useState<AgentStatus[]>([])
+  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null)
   const [marketSummary, setMarketSummary] = useState<any>(null)
+  const [backendConnected, setBackendConnected] = useState(false)
+  
+  // Live market data
+  const { 
+    prices: priceData, 
+    loading: marketLoading,
+    dataQuality: marketDataQuality,
+    isLiveData: marketIsLive 
+  } = useEnhancedLiveMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOT/USD'])
 
   // Memory system state
   const [agentDecisions, setAgentDecisions] = useState<AgentDecision[]>([])
@@ -50,23 +51,25 @@ export default function PaperTradingDashboard() {
   const [selectedAgent, setSelectedAgent] = useState<string>('')
 
   // Trading form state
-  const [selectedSymbol, setSelectedSymbol] = useState<MockSymbol>('BTC/USD')
+  const [selectedSymbol, setSelectedSymbol] = useState<string>('BTC/USD')
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy')
   const [quantity, setQuantity] = useState('')
-
-  const mockService = getMockDataService()
+  
   const memoryService = getPersistentMemoryService()
+  
+  // Available symbols from live market data
+  const availableSymbols = priceData.map(p => p.symbol)
 
   useEffect(() => {
     // Initial data load
     updateAllData()
     initializeMemorySystem()
 
-    // Set up real-time updates every 2 seconds
+    // Set up real-time updates every 30 seconds for live trading
     const interval = setInterval(() => {
       updateAllData()
       updateMemoryData()
-    }, 2000)
+    }, 30000)
 
     // Set up memory update listener
     const memoryUpdateHandler = (update: RealTimeMemoryUpdate) => {
@@ -88,13 +91,49 @@ export default function PaperTradingDashboard() {
     }
   }
 
-  const updateAllData = () => {
-    setPriceData(mockService.getPriceData())
-    setPortfolio(mockService.getPortfolio())
-    setTrades(mockService.getTradeHistory(10))
-    setAgents(mockService.getAgentPerformance())
-    setPortfolioSummary(mockService.getPortfolioSummary())
-    setMarketSummary(mockService.getMarketSummary())
+  const updateAllData = async () => {
+    try {
+      // Load live data from backend API
+      const [portfolioResponse, agentsResponse, positionsResponse] = await Promise.all([
+        backendClient.getPortfolioSummary(),
+        backendClient.getAgentsStatus(),
+        backendClient.getPositions()
+      ])
+      
+      if (portfolioResponse.success) {
+        setPortfolioSummary(portfolioResponse.data)
+      }
+      
+      if (agentsResponse.success) {
+        setAgents(agentsResponse.data.agents || [])
+      }
+      
+      if (positionsResponse.success) {
+        setPortfolio(positionsResponse.data || [])
+      }
+      
+      // Generate market summary from live price data
+      if (priceData.length > 0) {
+        const gainers = priceData.filter(p => p.changePercent24h > 0).length
+        const losers = priceData.filter(p => p.changePercent24h < 0).length
+        const avgChange = priceData.reduce((sum, p) => sum + p.changePercent24h, 0) / priceData.length
+        const totalVolume = priceData.reduce((sum, p) => sum + p.volume24h, 0)
+        
+        setMarketSummary({
+          gainers,
+          losers,
+          neutral: priceData.length - gainers - losers,
+          avgChange,
+          totalVolume,
+          marketTrend: gainers > losers ? 'bullish' : losers > gainers ? 'bearish' : 'neutral'
+        })
+      }
+      
+      setBackendConnected(true)
+    } catch (error) {
+      console.error('Failed to load live data:', error)
+      setBackendConnected(false)
+    }
   }
 
   const updateMemoryData = () => {
@@ -109,7 +148,29 @@ export default function PaperTradingDashboard() {
   const executeTrade = () => {
     if (!quantity || parseFloat(quantity) <= 0) return
 
-    const trade = mockService.simulateTrade(selectedSymbol, tradeType, parseFloat(quantity))
+    // Execute paper trade through backend API
+    const executePaperTrade = async () => {
+      try {
+        const order = {
+          symbol: selectedSymbol,
+          side: tradeType,
+          quantity: parseFloat(quantity),
+          order_type: 'market' as const
+        }
+        
+        const response = await backendClient.createPaperOrder(order)
+        if (response.success) {
+          console.log('Paper trade executed:', response.data)
+          updateAllData()
+        } else {
+          console.error('Paper trade failed:', response.message)
+        }
+      } catch (error) {
+        console.error('Error executing paper trade:', error)
+      }
+    }
+    
+    executePaperTrade()
     
     // Generate AI agent decision for this trade
     if (selectedAgent) {

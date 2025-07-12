@@ -3,7 +3,7 @@
 import { EventEmitter } from 'events'
 import { getAgentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
 import { redisAgentService } from '@/lib/redis/redis-agent-service'
-import { realMarketDataService } from '@/lib/market/real-market-data-service'
+import { EnhancedLiveMarketService } from '@/lib/market/enhanced-live-market-service'
 import { realLLMDecisionService, type LLMDecision } from '@/lib/llm/real-llm-decision-service'
 
 export interface AgentCoordinationMessage {

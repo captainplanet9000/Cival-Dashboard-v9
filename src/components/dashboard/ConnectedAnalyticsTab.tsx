@@ -38,7 +38,7 @@ import RealAnalyticsDashboard from '@/components/analytics/RealAnalyticsDashboar
 import RealRiskManagementDashboard from '@/components/risk/RealRiskManagementDashboard'
 import RealPortfolioAnalyticsDashboard from '@/components/portfolio/RealPortfolioAnalyticsDashboard'
 import RealBacktestingDashboard from '@/components/backtesting/RealBacktestingDashboard'
-import { useMarketData } from '@/lib/market/market-data-service'
+import { useEnhancedLiveMarketData } from '@/lib/market/enhanced-live-market-service'
 import { AnimatedPrice, AnimatedCounter } from '@/components/ui/animated-components'
 
 // Import ML Analytics Components
@@ -73,7 +73,12 @@ const AdvancedAnalytics = () => (
 )
 
 const RealTimeCharts = () => {
-  const { prices: marketPrices, loading: marketLoading } = useMarketData()
+  const { 
+    prices: marketPrices, 
+    loading: marketLoading, 
+    dataQuality: marketDataQuality,
+    isLiveData: marketIsLive 
+  } = useEnhancedLiveMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD'])
   
   return (
     <div className="space-y-6">
@@ -83,6 +88,9 @@ const RealTimeCharts = () => {
             <Activity className="h-5 w-5 text-blue-600" />
             Real-Time Market Data
             {marketLoading && <Badge variant="secondary">Updating...</Badge>}
+            <Badge variant={marketDataQuality === 'excellent' ? 'default' : 'secondary'} className="ml-2">
+              {marketIsLive ? '🔴 Live' : '📊 Cached'} • {marketDataQuality}
+            </Badge>
           </CardTitle>
           <CardDescription>Live market prices with trend analysis</CardDescription>
         </CardHeader>
@@ -94,8 +102,13 @@ const RealTimeCharts = () => {
                   <div>
                     <div className="font-bold text-lg">{price.symbol}</div>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(price.timestamp).toLocaleTimeString()}
+                      {new Date(price.lastUpdate).toLocaleTimeString()}
                     </div>
+                    <Badge variant="outline" className="text-xs mt-1">
+                      {price.dataQuality === 'excellent' ? '🔴 Live' : 
+                       price.dataQuality === 'good' ? '🟡 Fresh' :
+                       price.dataQuality === 'fair' ? '📊 Cached' : '⚠️ Stale'}
+                    </Badge>
                   </div>
                   <div className="text-right">
                     <AnimatedPrice 

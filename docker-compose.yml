@@ -24,6 +24,48 @@ services:
       - TRADING_API_URL=http://trading-api:3001
       - MCP_API_URL=http://mcp-server:3000
       - VAULT_API_URL=http://vault-service:3002
+      
+      # Database Configuration
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@postgres:5432/trading}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      
+      # Leverage Engine Configuration
+      - ENABLE_LEVERAGE_ENGINE=true
+      - MAX_LEVERAGE_RATIO=20
+      - LEVERAGE_MARGIN_CALL_THRESHOLD=0.80
+      - LEVERAGE_LIQUIDATION_THRESHOLD=0.95
+      - ENABLE_AUTO_DELEVERAGING=true
+      - LEVERAGE_RISK_MONITORING_INTERVAL=30000
+      
+      # Profit Securing Configuration
+      - ENABLE_PROFIT_SECURING=true
+      - PROFIT_SECURING_DEFAULT_PERCENTAGE=0.70
+      - ENABLE_MILESTONE_AUTOMATION=true
+      - DEFI_BORROW_PERCENTAGE=0.20
+      - PROFIT_SECURING_MONITORING_INTERVAL=60000
+      
+      # DeFi Protocol Configuration
+      - ENABLE_DEFI_PROTOCOLS=true
+      - AAVE_V3_ENABLED=true
+      - COMPOUND_V3_ENABLED=true
+      - MAKERDAO_ENABLED=true
+      - DEFI_HEALTH_FACTOR_THRESHOLD=2.0
+      - DEFI_REBALANCE_THRESHOLD=1.5
+      
+      # Autonomous Coordination Configuration
+      - ENABLE_AUTONOMOUS_COORDINATION=true
+      - COORDINATOR_FREQUENCY_OPTIMIZATION=true
+      - ADAPTIVE_MONITORING_ENABLED=true
+      - COORDINATOR_LOW_ACTIVITY_MODE=true
+      - COORDINATOR_HIGH_ACTIVITY_THRESHOLD=10
+      
+      # Enhanced Agent Configuration
+      - ENABLE_ENHANCED_AGENT_CREATION=true
+      - AGENT_LEVERAGE_INTEGRATION=true
+      - AGENT_PROFIT_SECURING_INTEGRATION=true
+      - AGENT_STATE_PERSISTENCE=true
+      - AGENT_PERFORMANCE_TRACKING=true
     depends_on:
       - redis
       - trading-api

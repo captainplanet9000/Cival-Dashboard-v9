@@ -12,7 +12,16 @@ import OrderManagementSystem, { TradingConfig, UnifiedOrder } from './order-mana
 import PortfolioTracker, { TradingAccount } from './portfolio-tracker'
 import RiskManager, { RiskConfig } from './risk-manager'
 import WalletManager, { WalletConfig } from './wallet-manager'
-import MarketDataService, { MarketDataConfig } from './market-data-service'
+import { EnhancedMarketPrice } from '@/lib/market/enhanced-live-market-service'
+import { backendClient } from '@/lib/api/backend-client'
+
+// Market data configuration interface
+export interface MarketDataConfig {
+  providers: string[]
+  updateInterval: number
+  symbols: string[]
+  enableWebSocket: boolean
+}
 import TradingStrategies, { StrategyConfig, TradingSignal } from './trading-strategies'
 import WebSocketManager, { WebSocketConfig } from './websocket-manager'
 
@@ -88,7 +97,7 @@ export class TradingEngine {
   private portfolioTracker?: PortfolioTracker
   private riskManager?: RiskManager
   private walletManager?: WalletManager
-  private marketData?: MarketDataService
+  private marketData?: EnhancedLiveMarketService
   private strategies?: TradingStrategies
   private webSocketManager?: WebSocketManager
   
@@ -134,8 +143,8 @@ export class TradingEngine {
         })
       }
 
-      // Initialize market data service
-      this.marketData = new MarketDataService(this.config.marketData)
+      // Initialize enhanced market data service
+      this.marketData = EnhancedLiveMarketService.getInstance()
 
       // Initialize wallet manager
       this.walletManager = new WalletManager(this.config.wallet)

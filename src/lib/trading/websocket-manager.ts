@@ -6,7 +6,7 @@
 import HyperliquidConnector from './hyperliquid-connector'
 import DEXConnector from './dex-connector'
 import CoinbaseProConnector from './coinbase-connector'
-import MarketDataService from './market-data-service'
+import { EnhancedLiveMarketService } from '@/lib/market/enhanced-live-market-service'
 import OrderManagementSystem from './order-management'
 import PortfolioTracker from './portfolio-tracker'
 import RiskManager from './risk-manager'

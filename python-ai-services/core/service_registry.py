@@ -236,6 +236,32 @@ def register_autonomous_services():
     
     logger.info("Registered Phase 6-8 autonomous services")
 
+# Import and register leverage and profit securing services
+def register_leverage_profit_services():
+    """Register leverage engine and profit securing services with enhanced coordination"""
+    from ..services.leverage_engine_service import get_leverage_engine_service
+    from ..services.smart_profit_securing_service import get_smart_profit_securing_service
+    from ..services.enhanced_autonomous_coordinator import create_enhanced_autonomous_coordinator
+    from ..services.autonomous_state_persistence import create_autonomous_state_persistence
+    
+    # Register leverage engine service
+    async def get_leverage_service():
+        return await get_leverage_engine_service()
+    registry.register_service_factory("leverage_engine_service", get_leverage_service)
+    
+    # Register profit securing service
+    async def get_profit_service():
+        return await get_smart_profit_securing_service()
+    registry.register_service_factory("smart_profit_securing_service", get_profit_service)
+    
+    # Register state persistence service
+    registry.register_service_factory("autonomous_state_persistence", create_autonomous_state_persistence)
+    
+    # Register enhanced autonomous coordinator (main integration service)
+    registry.register_service_factory("enhanced_autonomous_coordinator", create_enhanced_autonomous_coordinator)
+    
+    logger.info("Registered leverage engine and profit securing services with enhanced coordination")
+
 # Global registry instance
 registry = ServiceRegistry()
 

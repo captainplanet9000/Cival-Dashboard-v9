@@ -3,7 +3,7 @@
 import { EventEmitter } from 'events'
 import { agentLifecycleManager } from '@/lib/agents/agent-lifecycle-manager'
 import { realLLMDecisionService, type LLMDecision, type AgentDecisionContext } from '@/lib/llm/real-llm-decision-service'
-import { realMarketDataService, type MarketData } from '@/lib/market/real-market-data-service'
+import { EnhancedLiveMarketService, type EnhancedMarketPrice } from '@/lib/market/enhanced-live-market-service'
 import { multiAgentCoordinator } from '@/lib/coordination/multi-agent-coordinator'
 import { reinforcementLearningService, type RLState, type RLAction, type RLExperience } from '@/lib/ai/reinforcement-learning-service'
 import { redisAgentService } from '@/lib/redis/redis-agent-service'
@@ -23,7 +23,7 @@ export interface TradingExecution {
     executionTime: number // milliseconds
   }
   market: {
-    symbolData: MarketData
+    symbolData: EnhancedMarketPrice
     liquidityScore: number
     marketImpact: number
     optimalTiming: boolean

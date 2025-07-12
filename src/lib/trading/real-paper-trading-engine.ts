@@ -45,7 +45,8 @@ class EventEmitter {
   }
 }
 
-import { liveMarketDataService, type LiveMarketData } from '@/lib/market/live-market-data-service'
+import { EnhancedMarketPrice } from '@/lib/market/enhanced-live-market-service'
+import { backendClient } from '@/lib/api/backend-client'
 import { exchangeAPIService, type ExchangeOrder } from '@/lib/trading/exchange-api-service'
 
 // Core Types

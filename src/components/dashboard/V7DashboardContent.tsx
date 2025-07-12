@@ -14,30 +14,78 @@ import {
   BarChart3,
   Brain
 } from 'lucide-react'
-import { getMockDataService } from '@/lib/mock/comprehensive-mock-data'
+import { backendClient } from '@/lib/api/backend-client'
+import { useEnhancedLiveMarketData } from '@/lib/market/enhanced-live-market-service'
 import ChainlinkMarketData from '@/components/paper-trading/ChainlinkMarketData'
 
 export default function V7DashboardContent() {
   const [portfolioSummary, setPortfolioSummary] = useState<any>(null)
   const [agentData, setAgentData] = useState<any[]>([])
   const [marketSummary, setMarketSummary] = useState<any>(null)
+  const [backendConnected, setBackendConnected] = useState(false)
   
-  const mockService = getMockDataService()
+  // Use enhanced live market data
+  const { 
+    prices: marketPrices, 
+    dataQuality: marketDataQuality,
+    isLiveData: marketIsLive 
+  } = useEnhancedLiveMarketData(['BTC/USD', 'ETH/USD', 'SOL/USD'])
 
   useEffect(() => {
+    const loadLiveData = async () => {
+      try {
+        // Load live data from backend API
+        const [portfolioResponse, agentsResponse] = await Promise.all([
+          backendClient.getPortfolioSummary(),
+          backendClient.getAgentsStatus()
+        ])
+        
+        if (portfolioResponse.success) {
+          setPortfolioSummary({
+            totalValue: portfolioResponse.data.total_equity || 0,
+            totalPnL: portfolioResponse.data.total_pnl || 0,
+            totalPnLPercent: ((portfolioResponse.data.total_pnl || 0) / Math.max(portfolioResponse.data.total_equity || 1, 1)) * 100,
+            positionsCount: portfolioResponse.data.number_of_positions || 0,
+            cash: portfolioResponse.data.cash_balance || 0
+          })
+        }
+        
+        if (agentsResponse.success) {
+          setAgentData(agentsResponse.data.agents || [])
+        }
+        
+        // Generate market summary from live market data
+        if (marketPrices.length > 0) {
+          const gainers = marketPrices.filter(p => p.changePercent24h > 0).length
+          const losers = marketPrices.filter(p => p.changePercent24h < 0).length
+          const avgChange = marketPrices.reduce((sum, p) => sum + p.changePercent24h, 0) / marketPrices.length
+          const totalVolume = marketPrices.reduce((sum, p) => sum + p.volume24h, 0)
+          
+          setMarketSummary({
+            gainers,
+            losers,
+            neutral: marketPrices.length - gainers - losers,
+            avgChange,
+            totalVolume,
+            marketTrend: gainers > losers ? 'bullish' : losers > gainers ? 'bearish' : 'neutral'
+          })
+        }
+        
+        setBackendConnected(true)
+      } catch (error) {
+        console.error('Failed to load live data:', error)
+        setBackendConnected(false)
+      }
+    }
+    
     // Load initial data
-    setPortfolioSummary(mockService.getPortfolioSummary())
-    setAgentData(mockService.getAgentPerformance())
-    setMarketSummary(mockService.getMarketSummary())
-
-    // Update data every 5 seconds
-    const interval = setInterval(() => {
-      setPortfolioSummary(mockService.getPortfolioSummary())
-      setMarketSummary(mockService.getMarketSummary())
-    }, 5000)
-
+    loadLiveData()
+    
+    // Update data every 30 seconds for live trading
+    const interval = setInterval(loadLiveData, 30000)
+    
     return () => clearInterval(interval)
-  }, [])
+  }, [marketPrices])
 
   return (
     <div className="space-y-6">
@@ -74,13 +122,15 @@ export default function V7DashboardContent() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mock Data</CardTitle>
-            <BarChart3 className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium">Live Data</CardTitle>
+            <BarChart3 className={`h-4 w-4 ${marketIsLive ? 'text-green-600' : 'text-orange-600'}`} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">Live</div>
+            <div className={`text-2xl font-bold ${marketIsLive ? 'text-green-600' : 'text-orange-600'}`}>
+              {marketIsLive ? '🔴 Live' : '📊 Cached'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Real-time updates
+              {marketDataQuality} quality • {backendConnected ? 'Backend Connected' : 'Offline'}
             </p>
           </CardContent>
         </Card>
@@ -110,12 +160,12 @@ export default function V7DashboardContent() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Complete trading simulation with real-time mock data, AI agents, and portfolio management.
+              Complete trading simulation with live market data, AI agents, and portfolio management.
             </p>
             <ul className="text-sm space-y-2">
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                30+ Mock trading pairs with live price updates
+                Live trading pairs with real-time price feeds
               </li>
               <li className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
